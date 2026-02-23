@@ -184,7 +184,7 @@ class Context
   //!   @[set_dynamic_size()]
   protected int dynamic_max_size = DEFAULT_HEADER_TABLE_SIZE;
 
-  //! Index into @[dynamic_headers] and @[static_headers].
+  //! Index into @[dynamic_headers] and @[static_header_tab].
   //!
   //! @mapping
   //!   @member mapping(string(8bit):int)|int "header_name"

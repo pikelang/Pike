@@ -1,10 +1,16 @@
 
 #pike __REAL_VERSION__
 
+//! Wrapper for an @expr{array(mapping(string:mixed))@} that
+//! emulates a @[Result] object.
+
 inherit __builtin.Sql.Result;
 
 array _values;
 
+//! @param res
+//!   @expr{array(mapping(string:mixed))@} with one entry
+//!   per result row.
 protected void create(array res) {
   if(!res || !arrayp(res))
     error("Bad argument.\n");

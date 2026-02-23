@@ -67,7 +67,7 @@ class VertexBuffer
 //! in your program, then call @[set_size] or @[set_data] to set the
 //! size of the buffer, add the VertexBuffer to any relevant
 //! GLSLProgram instances, and then optionally call @[pwrite],
-//! @[vertex] or @[stream_vertex]() to update the data.
+//! @[vertex] or @[stream]() to update the data.
 //!
 //! The add_* functions can not be called once the VertexBuffer has
 //! been added to a @[GLSLProgram]. @[set_size], @[set_data] or @[recalc]
@@ -170,10 +170,10 @@ class VertexBuffer
     void add_vec4( string name )  { add_attribute( name, GL_FLOAT, GL_FALSE, 4 ); }
 
     //! Add a generic attribute named @[name], of the type @[type]
-    //! (eg, GL_FLOAT), @[normalized] or not of size @[size].
+    //! (eg, @[GL_FLOAT]), @[normalize] or not of size @[size].
     //!
     //! As an example add_vec2(@[name]) is an alias for add_attribute(
-    //! @[name], GL_FLOAT, GL_FALSE, 2 )
+    //! @[name], @[GL_FLOAT], @[GL_FALSE], 2 )
     void add_attribute( string name, int type, bool normalize, int size )
     {
         if( attributes_by_name[name] )

@@ -93,7 +93,7 @@ static struct hash *find_hash( struct blobs *d, struct pike_string *id )
   return h;
 }
 
-/*! @module Search
+/*! @module _WhiteFish
  */
 
 /*! @class Blobs

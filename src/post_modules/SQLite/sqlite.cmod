@@ -231,7 +231,7 @@ PIKECLASS SQLite
 
 /*! @class TypedResult
  *!
- *! Result object from @[typed_big_query()].
+ *! Result object from @[big_typed_query()].
  */
 
 PIKECLASS TypedResult

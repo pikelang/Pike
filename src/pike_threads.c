@@ -720,7 +720,7 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
 /*! @class MasterObject
  */
 
-/*! @decl void thread_quanta_exceeded(Thread.Thread thread, int ns)
+/*! @decl optional void thread_quanta_exceeded(Thread.Thread thread, int ns)
  *!
  *! Function called when a thread has exceeded the thread quanta.
  *!
@@ -739,7 +739,7 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
  *!   avoid handling of mutexes, etc.
  *!
  *! @seealso
- *!   @[get_thread_quanta()], @[set_thread_quanta()]
+ *!   @[Thread.get_thread_quanta()], @[Thread.set_thread_quanta()]
  */
 
 /*! @endclass
