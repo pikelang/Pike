@@ -2358,7 +2358,7 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 
     /* Opcode */
     if (opcode) {
-      char *opcode_end = strchr(opcode, '\n');
+      const char *opcode_end = strchr(opcode, '\n');
       size_t opcode_len;
       if (opcode_end) {
 	opcode_len = opcode_end - opcode;
