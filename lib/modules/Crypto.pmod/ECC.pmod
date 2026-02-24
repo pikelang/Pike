@@ -264,7 +264,7 @@ class Curve {
     //!   on failure.
     //!
     //! @seealso
-    //!   @[pkcs_verify()], @[digest_size()], @rfc{7515@}
+    //!   @[pkcs_verify()], @[Hash()->digest_size()], @rfc{7515@}
     string(7bit)|zero jose_sign(string(8bit) message, .Hash|void h,
 			   mapping(string(7bit):string(7bit)|int)|void headers)
     {
@@ -699,7 +699,7 @@ class _Curve25519 {
     //!   on failure.
     //!
     //! @seealso
-    //!   @[pkcs_verify()], @[digest_size()], @rfc{7515@}
+    //!   @[pkcs_verify()], @[Hash()->digest_size()], @rfc{7515@}
     string(7bit)|zero
       jose_sign(string(8bit) message, .Hash|void h,
                 mapping(string(7bit):string(7bit)|int)|void headers)
@@ -1030,7 +1030,7 @@ class _Curve448 {
     //!   on failure.
     //!
     //! @seealso
-    //!   @[pkcs_verify()], @[digest_size()], @rfc{7515@}
+    //!   @[pkcs_verify()], @[Hash()->digest_size()], @rfc{7515@}
     string(7bit)|zero
       jose_sign(string(8bit) message, .Hash|void h,
                 mapping(string(7bit):string(7bit)|int)|void headers)

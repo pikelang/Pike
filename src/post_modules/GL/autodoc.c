@@ -6079,7 +6079,7 @@
  *!: A sub v = A sub f:\^: A sub v = A sub f:A sub v = A sub f
  *!_
  *!@[GL_LUMINANCE]:C sub v = L sub t C sub f:undefined:C sub v = ( 1 - L sub t ) C sub f :C sub v = L sub t
- *!\@[_ALPHA]: : : + L sub t C sub c
+ *!\@[GL_ALPHA]: : : + L sub t C sub c
  *!2: : : :
  *!:A sub v = A sub t A sub f:\^:A sub v = A sub t A sub f:A sub v = A sub t
  *!_

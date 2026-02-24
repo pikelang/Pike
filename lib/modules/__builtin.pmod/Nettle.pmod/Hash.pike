@@ -209,6 +209,7 @@ protected class _HMAC
       return this;
     }
 
+    //! Generate the digest for the current state.
     string digest(int(0..)|void length)
     {
       string res = hash(okey + h->digest());

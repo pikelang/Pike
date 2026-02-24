@@ -711,7 +711,7 @@ class Element
     return old_attr;
   }
 
-  //! Returns the list of elements with the specified @[tagname]
+  //! Returns the list of elements with the specified @[name]
   //! rooted in the current node.
   NodeList get_elements_by_tag_name(string name)
   {
