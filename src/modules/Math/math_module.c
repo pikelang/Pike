@@ -37,7 +37,7 @@ static const struct math_class
    {"Transforms",init_math_transforms,&math_transforms_program},
 };
 
-/*! @module Math */
+/*! @module ___Math */
 
 /*! @decl constant pi
  *! The constant pi (3.14159265358979323846).
