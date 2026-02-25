@@ -4028,7 +4028,7 @@ void exit_cond_obj(struct object *UNUSED(o))
  *!   Currently a single flag is defined:
  *!   @int
  *!     @value 1
- *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       Return @[Pike.LiveBacktraceFrame]s. This flag causes the frame
  *!       objects to track changes (as long as they are in use), and
  *!       makes eg local variables for functions available for
  *!       inspection or change.
