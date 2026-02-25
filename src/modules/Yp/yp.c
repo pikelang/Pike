@@ -91,6 +91,21 @@ struct my_yp_domain
  *! distribute passwords and similar information within a network.
  */
 
+/*! @endmodule
+ */
+
+/*! @module ___Yp
+ *!
+ *!   Low-level intrface to YP (aka NIS).
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly.
+ *!   Use the @[Yp] module instead.
+ *!
+ *! @seealso
+ *!   @[Yp]
+ */
+
 /*! @decl string default_domain()
  *!
  *! Returns the default yp-domain.
