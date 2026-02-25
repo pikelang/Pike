@@ -16,7 +16,7 @@
 
 DECLARATIONS
 
-/*! @module Debug
+/*! @module _Debug
  */
 
 /*! @decl int(0..) map_all_objects(function(object:void) cb)
