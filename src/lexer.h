@@ -250,13 +250,13 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
         brace_mode = 1;
         c = buf[2];
       }
-      if ((c < '0') || (c > '9')) {
+      if ((c < '0') || (c > '7')) {
         yywarning("Invalid C2Y-style octal escape. "
                   "'%c' is not a valid octal digit.", c);
         c = 'o';
         break;
       }
-      buf += brace_mode + 1;
+      l += brace_mode + 1;
       /* FALLTHRU */
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
@@ -274,7 +274,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
        *          character constant is implementation-defined.)
        */
       unsigned INT32 n = c-'0';
-      for (l = 1; buf[l] >= '0' && buf[l] < '8'; l++) {
+      for (; buf[l] >= '0' && buf[l] < '8'; l++) {
 	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
 	  of = 1;
 	else

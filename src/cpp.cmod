@@ -7355,7 +7355,7 @@ void add_predefine(const char *s)
 {
   struct pike_predef_s *tmp=ALLOC_STRUCT(pike_predef_s);
   size_t len = strlen(s);
-  char *pos=strchr(s,'=');
+  const char *pos=strchr(s,'=');
 
   if(pos)
   {

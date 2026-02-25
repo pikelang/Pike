@@ -199,7 +199,7 @@ void report_os_error(const char *function_name)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[symlink()], @[clonefile()], @[mv()], @[rm()]
+ *!   @[symlink()], @[System.clonefile()], @[mv()], @[rm()]
  */
 /*! @decl void hardlink(string(8bit) from, string(8bit) to)
  *! @belongs System
@@ -244,7 +244,7 @@ void f_hardlink(INT32 args)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[hardlink()], @[readlink()], @[clonefile()], @[mv()], @[rm()]
+ *!   @[hardlink()], @[readlink()], @[System.clonefile()], @[mv()], @[rm()]
  */
 /*! @decl void symlink(string(8bit) from, string(8bit) to)
  *! @belongs System

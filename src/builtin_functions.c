@@ -8349,7 +8349,7 @@ struct callback *add_memory_usage_callback(callback_func call,
  *!   Exactly what fields this function returns is version dependant.
  *!
  *! @seealso
- *!   @[_verify_internals()]
+ *!   @[Debug.verify_internals()]
  */
 PMOD_EXPORT void f__memory_usage(INT32 args)
 {

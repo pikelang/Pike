@@ -93,6 +93,20 @@ DECLARATIONS
  *!   third class for files.
  */
 
+/*! @endmodule
+ */
+
+/*! @module ___Bz2
+ *!   Low-level implementation of @[Bz2].
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly.
+ *!   Use the @[Bz2] module instead.
+ *!
+ *! @seealso
+ *!   @[Bz2]
+ */
+
 /*! @class Deflate
  *!
  *! Bz2.Deflate is a builtin program written in C. It interfaces the
