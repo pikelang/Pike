@@ -1312,7 +1312,13 @@ string combine_path_with_cwd(string ... paths)
 int invalidate_time;
 mapping(string:multiset(string)) dir_cache = ([]);
 
-
+//! Get the directory contents for the master path @[x].
+//!
+//! @returns
+//!   Returns an array of filenames relative to @[x].
+//!
+//! @seealso
+//!   @[master_file_stat()], @[find_handler_for_path()]
 array(string) master_get_dir(string|void x)
 {
   string y = find_handler_for_path(file);
@@ -1325,6 +1331,10 @@ array(string) master_get_dir(string|void x)
   else return predef::get_dir(fakeroot(x));
 }
 
+//! Get the file status for the master path @[x].
+//!
+//! @seealso
+//!   @[master_get_dir()], @[find_handler_for_path()]
 object(Stat)|zero master_file_stat(string x)
 {
   string y = find_handler_for_path(file);
