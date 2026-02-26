@@ -1090,6 +1090,13 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 /*! @namespace predef::
  */
 
+/*! @decl optional constant int(1bit) __pragma_save_parent__
+ *!
+ *! Set this constant to @expr{1@} with eg @[add_constant()]
+ *! to cause the @[#pragma] @tt{save_parent@} behaviour to
+ *! be default.
+ */
+
 /*! @decl import cpp:: */
 
 /*! @class MasterObject
