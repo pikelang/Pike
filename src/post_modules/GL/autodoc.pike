@@ -56,6 +56,7 @@ mapping(string:array(array(string)|string)) docs = ([]);
 mapping(string:string) ref_alias = ([
   "glColor3": "glColor",
   "glColor4": "glColor",
+  "glDrawElement": "glDrawElements",	// Typo in enableclientstate.3gl.
   "glEvalCoord1": "glEvalCoord",
   "glEvalCoord2": "glEvalCoord",
   "glEvalPoint1": "glEvalPoint",
@@ -502,16 +503,6 @@ level counterparts for easy adoption of OpenGL code from other languages and
 examples off the web. Superfluous suffixes specifying the number and types of
 arguments have been dropped, though.
 ";
-  if (sizeof(not_implemented)) {
-    ret += #"
-OpenGL methods still missing in the Pike API:
-
-@xml{<matrix>
-";
-    foreach( sort( (array)not_implemented ), string name )
-      ret += "<r><c>" + name + "</c></r>\n";
-    ret += "</matrix>@}\n";
-  }
   if (sizeof(not_documented)) {
     ret += #"
 @fixme
@@ -523,7 +514,32 @@ Methods available, but lacking documentation:
       ret += "<r><c>" + name + "</c></r>\n";
     ret += "</matrix>@}";
   }
-  return comment(ret);
+
+  if (sizeof(not_implemented)) {
+    ret += #"
+@note
+All OpenGL methods have not been implemented. For a list of unimplemented
+methods, see @[glUnimplemented].
+";
+  }
+
+  ret = comment(ret);
+
+  if (sizeof(not_implemented)) {
+    string trailer = "@decl private void glUnimplemented()\n";
+    foreach( sort( (array)not_implemented ), string name ) {
+      trailer += "@decl private void " + name + "()\n";
+    }
+    trailer += #"
+These OpenGL methods are still missing in the Pike @[GL] API.
+
+@seealso
+@[GL]
+";
+    ret += comment(trailer);
+  }
+
+  return ret;
 }
 
 mapping(string:array(string)) refs = ([]);

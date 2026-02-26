@@ -13,32 +13,41 @@
  *!examples off the web. Superfluous suffixes specifying the number and types of
  *!arguments have been dropped, though.
  *!
- *!OpenGL methods still missing in the Pike API:
+ *!@note
+ *!All OpenGL methods have not been implemented. For a list of unimplemented
+ *!methods, see @[glUnimplemented].
  *!
- *!@xml{<matrix>
- *!<r><c>glAreTexturesResident</c></r>
- *!<r><c>glBitmap</c></r>
- *!<r><c>glBlendColorEXT</c></r>
- *!<r><c>glGetClipPlane</c></r>
- *!<r><c>glGetLight</c></r>
- *!<r><c>glGetMap</c></r>
- *!<r><c>glGetMaterial</c></r>
- *!<r><c>glGetPixelMap</c></r>
- *!<r><c>glGetPointerv</c></r>
- *!<r><c>glGetPolygonStipple</c></r>
- *!<r><c>glGetTexEnv</c></r>
- *!<r><c>glGetTexGen</c></r>
- *!<r><c>glGetTexLevelParameter</c></r>
- *!<r><c>glGetTexParameter</c></r>
- *!<r><c>glMap1</c></r>
- *!<r><c>glMap2</c></r>
- *!<r><c>glPixelMap</c></r>
- *!<r><c>glPixelStore</c></r>
- *!<r><c>glPixelTransfer</c></r>
- *!<r><c>glPolygonStipple</c></r>
- *!<r><c>glPrioritizeTextures</c></r>
- *!<r><c>glRect</c></r>
- *!</matrix>@}
+ */
+/*!@decl private void glUnimplemented()
+ *!@decl private void glAreTexturesResident()
+ *!@decl private void glBitmap()
+ *!@decl private void glBlendColorEXT()
+ *!@decl private void glBlendEquationEXT()
+ *!@decl private void glGetClipPlane()
+ *!@decl private void glGetLight()
+ *!@decl private void glGetMap()
+ *!@decl private void glGetMaterial()
+ *!@decl private void glGetPixelMap()
+ *!@decl private void glGetPointerv()
+ *!@decl private void glGetPolygonStipple()
+ *!@decl private void glGetTexEnv()
+ *!@decl private void glGetTexGen()
+ *!@decl private void glGetTexLevelParameter()
+ *!@decl private void glGetTexParameter()
+ *!@decl private void glMap1()
+ *!@decl private void glMap2()
+ *!@decl private void glPixelMap()
+ *!@decl private void glPixelStore()
+ *!@decl private void glPixelTransfer()
+ *!@decl private void glPolygonStipple()
+ *!@decl private void glPrioritizeTextures()
+ *!@decl private void glRect()
+ *!@decl private void glXCreateContext()
+ *!
+ *!These OpenGL methods are still missing in the Pike @[GL] API.
+ *!
+ *!@seealso
+ *!@[GL]
  *!
  */
 
@@ -11010,7 +11019,7 @@
  *!<r><c><ref>GL_COLOR_ARRAY</ref>
  *!</c><c>If enabled, the color array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or
- *!<ref>glDrawElement</ref> is called. See
+ *!<ref>glDrawElements</ref> is called. See
  *!<ref>glColorPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_EDGE_FLAG_ARRAY</ref>
@@ -11586,7 +11595,7 @@
  *!<r><c><ref>GL_COLOR_ARRAY</ref>
  *!</c><c>If enabled, the color array is enabled for writing and used during
  *!rendering when <ref>glDrawArrays</ref> or
- *!<ref>glDrawElement</ref> is called. See
+ *!<ref>glDrawElements</ref> is called. See
  *!<ref>glColorPointer</ref>.
  *!</c></r>
  *!<r><c><ref>GL_EDGE_FLAG_ARRAY</ref>
