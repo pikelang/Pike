@@ -121,6 +121,24 @@ static const int reverse_quality[101]=
  *!	Independent JPEG Group.
  */
 
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+/*! @module ____Image_JPEG
+ *!
+ *!   Low-level interface to @tt{libjpeg@}.
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly,
+ *!   but instead via @[Image.JPEG].
+ *!
+ *! @seealso
+ *!   @[Image.JPEG]
+ */
+
 static void my_output_message(struct jpeg_common_struct *UNUSED(cinfo))
 {
    /* no message */
@@ -1528,9 +1546,6 @@ void image_jpeg_quant_tables(INT32 args)
  */
 
 /*! @endclass
- */
-
-/*! @endmodule
  */
 
 /*! @endmodule

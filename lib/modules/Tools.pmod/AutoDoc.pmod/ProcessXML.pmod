@@ -2259,6 +2259,12 @@ void resolveInherits(NScope root)
   }
 }
 
+//! Resolve all remaining unresolved references in
+//! the documentation tree @[tree].
+//!
+//! @param logfile
+//!   Path to file where to log any unresolved references.
+//!   Defaults to @expr{"resolution.log"@}.
 void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
 {
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
