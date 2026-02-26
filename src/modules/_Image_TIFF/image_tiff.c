@@ -7,10 +7,16 @@
 #include "module.h"
 #include "config.h"
 
-/*! @module Image
- */
-
-/*! @module TIFF
+/*! @module ____Image_TIFF
+ *!
+ *!   Low-level interface to @tt{libtiff@}.
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly,
+ *!   but instead via @[Image.TIFF].
+ *!
+ *! @seealso
+ *!   @[Image.TIFF]
  */
 
 #ifdef HAVE_WORKING_LIBTIFF
@@ -1018,9 +1024,6 @@ void my_tiff_error_handler(const char *UNUSED(module), const char *fmt, va_list 
  */
 
 /*! @decl constant COMPRESSION_THUNDERSCAN
- */
-
-/*! @endmodule
  */
 
 /*! @endmodule
