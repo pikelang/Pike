@@ -73,6 +73,21 @@ static struct program *deflate_program;
  *!   added in the future.
  */
 
+/*! @endmodule
+ */
+
+/*! @module _Gz
+ *!
+ *! Low-level interface to @tt{zlib@}.
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly.
+ *!   Use the @[Gz] module instead.
+ *!
+ *! @seealso
+ *!   @[Gz]
+ */
+
 /*! @class deflate
  *!
  *! This class interfaces with the compression routines in the libz
