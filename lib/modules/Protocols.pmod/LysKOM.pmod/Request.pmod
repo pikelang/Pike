@@ -2330,7 +2330,7 @@ class Set_expire
 }
 
 /* 98 */
-class Query_read_texts
+class Query_read_texts10
 {
    inherit _Request;
 
@@ -2343,12 +2343,12 @@ class Query_read_texts
    }
 
 
-   Membership membership;
+   Membership10 membership;
 
-   Membership reply(array what)
+   Membership10 reply(array what)
    {
-      /* ( Membership ) */
-      return Membership(@what);
+      /* ( Membership-10 ) */
+      return Membership10(@what);
    }
 
    void failure(object error)
@@ -2357,7 +2357,7 @@ class Query_read_texts
 }
 
 /* 99 */
-class Get_membership
+class Get_membership10
 {
    inherit _Request;
 
@@ -2374,13 +2374,13 @@ class Get_membership
    }
 
 
-   array(Membership) memberships;
+   array(Membership10) memberships;
 
-   array(Membership) reply(array what)
+   array(Membership10) reply(array what)
    {
       /* ( ARRAY Membership ) */
       return memberships=Array.map(what[1]/26,
-                                lambda(array z) { return Membership(@z); });
+                                lambda(array z) { return Membership10(@z); });
    }
 
    void failure(object error)
@@ -2485,9 +2485,6 @@ class Local_to_global
                no_of_existing_texts});
    }
 
-
-   TextMapping textmapping;
-
    TextMapping reply(array what)
    {
       /* ( Text-Mapping ) */
@@ -2513,9 +2510,6 @@ class Map_created_texts
                first_local_no,
                no_of_existing_texts});
    }
-
-
-   TextMapping textmapping;
 
    TextMapping reply(array what)
    {
@@ -2550,6 +2544,349 @@ class Set_keep_commented
    }
 }
 
+/* 106 */
+class Set_pers_flags
+{
+   inherit _Request;
+
+   array indata(int(0..65535) pers_no,
+                multiset(string) flags)
+   {
+      return ({106,
+               pers_no,
+               B(@rows(flags, personalflagsnames))});
+   }
+
+   void reply(array what)
+   {
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 107 */
+class Query_read_texts
+{
+   inherit _Request;
+
+   array indata(int(0..65535) person,
+                int(0..65535) conference,
+                int(1bit) want_read_ranges,
+                int max_ranges)
+   {
+      return ({107,
+               person,
+               conference,
+               want_read_ranges,
+               max_ranges});
+   }
+
+
+   Membership membership;
+
+   Membership reply(array what)
+   {
+      /* ( Membership ) */
+      return Membership(@what);
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 108 */
+class Get_membership
+{
+   inherit _Request;
+
+   array indata(int(0..65535) person,
+                int(0..65535) first,
+                int(0..65535) no_of_confs,
+                int(1bit) want_read_ranges,
+                int(0..1) want_read_texts)
+   {
+      return ({108,
+               person,
+               first,
+               no_of_confs,
+               want_read_ranges,
+               B(want_read_texts)});
+   }
+
+
+   array(Membership) memberships;
+
+   array(Membership) reply(array what)
+   {
+      /* ( ARRAY Membership ) */
+      return memberships=Array.map(what[1]/26,
+                                lambda(array z) { return Membership(@z); });
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 109 */
+class Mark_as_unread
+{
+   inherit _Request;
+
+   array indata(int(0..65535) conf_no,
+                int text)
+   {
+      return ({109,
+               conf_no,
+               text});
+   }
+
+   void reply(array what)
+   {
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 110 */
+class Set_read_ranges
+{
+   inherit _Request;
+
+   array indata(int(0..65535) conf_no,
+                array(int) read_ranges)
+   {
+      return ({110,
+               conf_no,
+               @A(read_ranges)});
+   }
+
+   void reply(array what)
+   {
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 111 */
+class Get_stats_description
+{
+   inherit _Request;
+
+   array indata()
+   {
+      return ({111});
+   }
+
+   StatsDescription reply(array what)
+   {
+      return StatsDescription(@what);
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 112 */
+class Get_stats
+{
+   inherit _Request;
+
+   array indata(string what)
+   {
+      return ({112,
+               H(what)});
+   }
+
+   array(Stats) stats;
+
+   array(Stats) reply(array what)
+   {
+      /* ARRAY Stats */
+      return stats=Array.map(what[1]/3,
+                             lambda(array z) { return Stats(@z); });
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 113 */
+class Get_boottime_info
+{
+   inherit _Request;
+
+   array indata()
+   {
+      return ({113});
+   }
+
+   StaticServerInfo reply(array what)
+   {
+      return StaticServerInfo(@what);
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 114 */
+class First_unused_conf_no
+{
+   inherit _Request;
+
+   array indata()
+   {
+      return ({114});
+   }
+
+   int(0..65535) reply(array what)
+   {
+      return (int)what[0]; /* Conf-No */
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 115 */
+class First_unused_text_no
+{
+   inherit _Request;
+
+   array indata()
+   {
+      return ({115});
+   }
+
+   int reply(array what)
+   {
+      return (int)what[0]; /* Text-No */
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 116 */
+class Find_next_conf_no
+{
+   inherit _Request;
+
+   array indata(int(0..65535) start)
+   {
+      return ({116,
+               start});
+   }
+
+   int reply(array what)
+   {
+      return (int)what[0]; /* Conf-No */
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 117 */
+class Find_previous_conf_no
+{
+   inherit _Request;
+
+   array indata(int(0..65535) start)
+   {
+      return ({117,
+               start});
+   }
+
+   int reply(array what)
+   {
+      return (int)what[0]; /* Conf-No */
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 118 */
+class Get_scheduling
+{
+   inherit _Request;
+
+   array indata(int session_no)
+   {
+      return ({118,
+               session_no});
+   }
+
+   SchedulingInfo reply(array what)
+   {
+      return SchedulingInfo(@what);
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 119 */
+class Set_scheduling
+{
+   inherit _Request;
+
+   array indata(int session_no,
+                int(16bit) priority,
+                int(16bit) weight)
+   {
+      return ({119,
+               session_no,
+               priority,
+               weight});
+   }
+
+   void reply(array what)
+   {
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 120 */
+class Set_connection_time_format
+{
+   inherit _Request;
+
+   array indata(int(1bit) use_utc)
+   {
+      return ({120,
+               use_utc});
+   }
+
+   void reply(array what)
+   {
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
 /* 121 */
 class Local_to_global_reverse
 {
@@ -2564,6 +2901,35 @@ class Local_to_global_reverse
                local_no_ceiling,
                no_of_existing_texts});
    }
+
+   TextMapping textmapping;
+
+   TextMapping reply(array what)
+   {
+      /* ( Text-Mapping ) */
+      return TextMapping(@what);
+   }
+
+   void failure(object error)
+   {
+   }
+}
+
+/* 122 */
+class Map_created_texts_reverse
+{
+   inherit _Request;
+
+   array indata(int(0..65535) author,
+                int local_no_ceiling,
+                int no_of_existing_texts)
+   {
+      return ({122,
+               author,
+               local_no_ceiling,
+               no_of_existing_texts});
+   }
+
 
    TextMapping textmapping;
 
