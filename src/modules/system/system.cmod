@@ -202,7 +202,7 @@ void report_os_error(const char *function_name)
  *!   @[symlink()], @[System.clonefile()], @[mv()], @[rm()]
  */
 /*! @decl void hardlink(string(8bit) from, string(8bit) to)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Create a hardlink named @[to] from the file @[from].
  *!
@@ -247,7 +247,7 @@ void f_hardlink(INT32 args)
  *!   @[hardlink()], @[readlink()], @[System.clonefile()], @[mv()], @[rm()]
  */
 /*! @decl void symlink(string(8bit) from, string(8bit) to)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Create a symbolic link named @[to] that points to @[from].
  *!
@@ -292,7 +292,7 @@ void f_symlink(INT32 args)
  *!   @[symlink()]
  */
 /*! @decl string(8bit) readlink(string(8bit) path)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Returns what the symbolic link @[path] points to.
  *!
@@ -364,7 +364,7 @@ void f_readlink(INT32 args)
  *!   @[readlink()], @[symlink()]
  */
 /*! @decl string(8bit) resolvepath(string(8bit) path)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *!   Resolve all symbolic links of a pathname.
  *!
@@ -483,7 +483,7 @@ int clonefile(const char *from, const char *to, int flags)
 
 #ifdef HAVE_CLONEFILE
 /*! @decl void clonefile(string(8bit) from, string(8bit) to)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Copy a file @[from] with copy-on-write semantics to the destination named
  *! @[to].
@@ -529,7 +529,7 @@ void f_clonefile(INT32 args)
  *!   Returns the old umask setting.
  */
 /*! @decl int umask(void|int mask)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Set the current umask to @[mask].
  *!
@@ -567,7 +567,7 @@ void f_umask(INT32 args)
  *!   @[Stdio.File->open()], @[errno()]
  */
 /*! @decl void chmod(string path, int mode)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Sets the protection mode of the specified path.
  *!
@@ -614,7 +614,7 @@ void f_chmod(INT32 args)
  *!   function does nothing if @[path] is a symlink.
  */
 /*! @decl void chown(string path, int uid, int gid, void|int symlink)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Sets the owner and group of the specified path.
  *!
@@ -713,7 +713,7 @@ void f_chown(INT32 args)
  *! @[System.set_file_atime], @[System.set_file_mtime]
  */
 /*! @decl void utime(string path, int atime, int mtime, void|int symlink)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Set the last access time and last modification time for the path
  *! @[path] to @[atime] and @[mtime] repectively. They are specified
@@ -858,7 +858,7 @@ static void sync(void)
 
 #ifdef HAVE_SYNC
 /*! @decl void sync()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Flush operating system disk buffers to permanent storage.
  *!
@@ -892,7 +892,7 @@ void f_sync(INT32 args)
  *!   @[geteuid()], @[setegid()], @[getegid()], @[getgroups()], @[setgroups()]
  */
 /*! @decl void initgroups(string name, int base_gid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Initializes the supplemental group access list according to the system
  *! group database. @[base_gid] is also added to the group access
@@ -936,7 +936,7 @@ void f_initgroups(INT32 args)
  *!   @[setgroups()], @[initgroups()], @[getgroups()]
  */
 /*! @decl void cleargroups()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Clear the supplemental group access list.
  *!
@@ -974,7 +974,7 @@ void f_cleargroups(INT32 args)
  *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
  */
 /*! @decl void setgroups(array(int) gids)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Set the supplemental group access list for this process.
  *!
@@ -1035,7 +1035,7 @@ void f_setgroups(INT32 args)
  *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
  */
 /*! @decl array(int) getgroups()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Get the current supplemental group access list for this process.
  *!
@@ -1092,7 +1092,7 @@ void f_getgroups(INT32 args)
  */
 /*! @decl int(0..1) innetgr(string netgroup, string|void machine, @
  *!                   string|void user, string|void domain)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Searches for matching entries in the netgroup database (usually
  *! @tt{/etc/netgroup@}). If any of the @[machine], @[user] or @[domain]
@@ -1147,7 +1147,7 @@ void f_innetgr(INT32 args)
  *!   @[setegid()], @[getegid()]
  */
 /*! @decl int setuid(int uid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Sets the real user ID, effective user ID and saved user ID to @[uid].
  *!
@@ -1203,7 +1203,7 @@ void f_setuid(INT32 args)
  *!   @[setegid()], @[getegid()]
  */
 /*! @decl int setgid(int gid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Sets the real group ID, effective group ID and saved group ID to @[gid].
  *! If @[gid] is @expr{-1@} the uid for "nobody" will be used.
@@ -1260,7 +1260,7 @@ void f_setgid(INT32 args)
  *! This function isn't available on all platforms.
  */
 /*! @decl int seteuid(int euid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Set the effective user ID to @[euid]. If @[euid] is
  *! @expr{-1@} the uid for "nobody" will be used.
@@ -1320,7 +1320,7 @@ void f_seteuid(INT32 args)
  *! This function isn't available on all platforms.
  */
 /*! @decl int setegid(int egid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Set the effective group ID to @[egid]. If @[egid] is
  *! @expr{-1@} the uid for "nobody" will be used.
@@ -1380,7 +1380,7 @@ void f_setegid(INT32 args)
  *!   @[getpid], @[getppid]
  */
 /*! @decl int getpgrp(int|void pid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Get the process group id for the process @[pid].
  *! With no argguments or with 'pid' equal to zero,
@@ -1430,7 +1430,7 @@ void f_getpgrp(INT32 args)
  *!   Not supported on all platforms.
  */
 /*! @decl int setpgrp()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Make this process a process group leader.
  *!
@@ -1470,7 +1470,7 @@ void f_setpgrp(INT32 args)
  *!   @[getpid], @[getpgrp], @[setsid]
  */
 /*! @decl int getsid(int|void pid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Get the process session ID for the given process. If pid is
  *!   not specified, the session ID for the current process will
  *!   be returned.
@@ -1507,7 +1507,7 @@ void f_getsid(INT32 args)
  *!   @[getpid], @[setpgrp], @[getsid]
  */
 /*! @decl int setsid()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Set a new process session ID for the current process, and return it.
  *! @note
  *!   This function isn't available on all platforms.
@@ -1529,7 +1529,7 @@ void f_setsid(INT32 args)
 
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
 /*! @decl int(0..1) dumpable(int(0..1)|void val)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Get and/or set whether this process should be able to
  *!   dump core.
  *!
@@ -1584,7 +1584,7 @@ void f_dumpable(INT32 args)
  *! Returns zero on success and errno on failure.
  */
 /*! @decl int setresuid(int ruid, int euid, int suid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Sets the real, effective and saved set-user-ID to @[ruid],
  *! @[euid] and @[suid] respectively.
@@ -1616,7 +1616,7 @@ void f_setresuid(INT32 args)
  *! Returns zero on success and errno on failure.
  */
 /*! @decl int setresgid(int rgid, int egid, int sgid)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Sets the real, effective and saved group ID to @[rgid],
  *! @[egid] and @[sgid] respectively.
@@ -1649,7 +1649,7 @@ void f_setresgid(INT32 args)
  *!   @[geteuid], @[setegid], @[getegid]
  */
 /*! @decl int getuid()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Get the real user ID.
  *! @seealso
  *!   @[setuid], @[setgid], @[getgid], @[seteuid],
@@ -1666,7 +1666,7 @@ f_get(f_getuid, getuid)
  *!   @[seteuid], @[geteuid], @[getegid], @[setegid]
  */
 /*! @decl int getgid()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Get the real group ID.
  *! @seealso
  *!   @[setuid], @[getuid], @[setgid],
@@ -1683,7 +1683,7 @@ f_get(f_getgid, getgid)
  *!   @[seteuid], @[getegid], @[setegid]
  */
 /*! @decl int geteuid()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Get the effective user ID.
  *! @seealso
  *!   @[setuid], @[getuid], @[setgid], @[getgid],
@@ -1698,7 +1698,7 @@ f_get(f_geteuid, geteuid)
  *!   @[seteuid], @[geteuid], @[setegid]
  */
 /*! @decl int getegid()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Get the effective group ID.
  *! @seealso
  *!   @[setuid], @[getuid], @[setgid], @[getgid],
@@ -1708,7 +1708,7 @@ f_get(f_getegid, getegid)
 #endif
 
 /*! @decl int getpid()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!   Returns the process ID of this process.
  *! @seealso
  *!   @[getppid], @[getpgrp]
@@ -1722,7 +1722,7 @@ f_get(f_getpid, getpid)
  *!   @[getpid], @[getpgrp]
  */
 /*! @decl int getppid()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!  Returns the process ID of the parent process.
  *! @seealso
  *!   @[getpid], @[getpgrp]
@@ -1763,7 +1763,7 @@ f_get(f_getppid, getppid)
  */
 /*! @decl int chroot(string newroot)
  *! @decl int chroot(Stdio.File newroot)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Changes the root directory for this process to the indicated directory.
  *!
@@ -1930,7 +1930,7 @@ static const struct {
  *!   Only the first five elements are always available.
  */
 /*! @decl mapping(string:string) uname()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Get operating system information.
  *!
@@ -2035,7 +2035,7 @@ void f_uname(INT32 args)
  *!   or uname(2) system calls.
  */
 /*! @decl string gethostname()
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Returns a string with the name of the host.
  *!
@@ -2612,7 +2612,7 @@ static void describe_hostent(struct hostent *hp)
  *!   @[gethostbyname()]
  */
 /*! @decl array(string|array(string)) gethostbyaddr(string addr)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Returns an array with information about the specified IP address.
  *!
@@ -2675,7 +2675,7 @@ void f_gethostbyaddr(INT32 args)
  *!   @[gethostbyaddr()]
  */
 /*! @decl array(string|array(string)) gethostbyname(string hostname)
- *! @belongs System
+ *! @belongs _static_modules._system
  *!
  *! Returns an array with information about the specified host.
  *!
@@ -2724,6 +2724,25 @@ extern void init_system_memory(void);
  *!
  *! This module embodies common operating system calls, making them
  *! available to the Pike programmer.
+ */
+
+/*! @endmodule
+ */
+
+/*! @module _static_modules
+ */
+
+/*! @module _system
+ *!
+ *!   Low-level module that embodies common operating system calls,
+ *!   making them available to the Pike programmer.
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly.
+ *!   Use the @[System] module instead.
+ *!
+ *! @seealso
+ *!   @[System]
  */
 
 #ifdef HAVE_SLEEP
@@ -3667,6 +3686,9 @@ void f_hw_random(INT32 args)
   push_string(end_shared_string(ret));
 }
 #endif
+
+/*! @endmodule
+ */
 
 /*! @endmodule
  */

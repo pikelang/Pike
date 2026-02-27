@@ -4533,6 +4533,18 @@ PIKEFUN int(0..1) signal_contextp()
 /*! @module Builtin
  */
 
+/*! @decl inherit _static_modules.Builtin
+ */
+
+/*! @endmodule
+ */
+
+/*! @module _static_modules
+ */
+
+/*! @module Builtin
+ */
+
 /*! @class Future(<ValueType>)
  *!
  *! Prototype class for @[Concurrent.Future].
@@ -4839,6 +4851,9 @@ PIKECLASS Promise
   }
 }
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 /*! @endmodule
