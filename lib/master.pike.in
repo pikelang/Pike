@@ -4539,9 +4539,12 @@ void _main(array(string(0..255)) orig_argv)
 	  else throw (compile_err);
 	}
 
-#if constant(_debug)
-	if(debug) _debug(debug);
-#endif
+        if (debug) {
+          function(int:void) _debug = main_resolv("Debug.debug");
+          if (_debug) {
+            _debug(debug);
+          }
+        }
 	if(trace) trace = predef::trace(trace);
 	mixed ret;
 	mixed err = catch {
@@ -4687,9 +4690,12 @@ void _main(array(string(0..255)) orig_argv)
   if(!prog)
     error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
 
-#if constant(_debug)
-  if(debug) _debug(debug);
-#endif
+  if (debug) {
+    function(int:void) _debug = main_resolv("Debug.debug");
+    if (_debug) {
+      _debug(debug);
+    }
+  }
   if(trace) trace = predef::trace(trace);
   mixed ret;
   mixed err = catch {
