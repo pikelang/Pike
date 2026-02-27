@@ -1331,6 +1331,8 @@ array(string) master_get_dir(string|void x)
   else return predef::get_dir(fakeroot(x));
 }
 
+//! @decl Stdio.Stat|zero master_file_stat(string x)
+//!
 //! Get the file status for the master path @[x].
 //!
 //! @seealso
