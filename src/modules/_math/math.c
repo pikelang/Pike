@@ -22,6 +22,20 @@
   if(TYPEOF(sp[-args]) == T_INT) SET_SVAL(sp[-1],T_FLOAT,0,float_number,(FLOAT_TYPE)(sp[-1].u.integer)); \
   else if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_ARG_TYPE_ERROR(X, 1, "float");
 
+/*! @module _static_modules
+ */
+
+/*! @module _math
+ *!
+ *!   This module does not contain any public symbols.
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
 #endif

@@ -472,7 +472,7 @@ PIKEFUN void gc_set_watch(array|multiset|mapping|object|function|program|string 
  *!
  *!   Dumps the 1024 latest executed opcodes, along with the source
  *!   code lines, to standard error. The backlog is only collected on
- *!   debug level 1 or higher, set with @[_debug] or with the @tt{-d@}
+ *!   debug level 1 or higher, set with @[debug()] or with the @tt{-d@}
  *!   argument on the command line.
  *!
  *! @note

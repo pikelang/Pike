@@ -5939,6 +5939,27 @@ static void encode_tm_tz(const struct tm*tm)
                                  );
 }
 
+/*! @decl array(2:string) tzname()
+ *!
+ *!   Get the name of the local timezone.
+ *!
+ *! @returns
+ *!   Returns an array with two elements:
+ *!   @array
+ *!     @elem string(7bit) 0
+ *!       Timezone name when not DST.
+ *!     @elem string(7bit) 1
+ *!       Timezone name when DST.
+ *!   @endarray
+ */
+static void f_tzname(INT32 args)
+{
+  pop_n_elems(args);
+  push_text(tzname[0]);
+  push_text(tzname[1]);
+  f_aggregate(2);
+}
+
 /*! @decl mapping(string:int) gmtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, Jan 1, 1970 into components.
@@ -10908,6 +10929,9 @@ void init_builtin_efuns(void)
   ADD_EFUN("__get_type_attributes", f___get_type_attributes,
 	   tFunc(tType(tMix), tArr(tString)),
 	   OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("tzname", f_tzname, tFunc(tNone, tLArr(tInt2, tStr7)),
+           OPT_EXTERNAL_DEPEND);
 
   /* function(int:mapping(string:int)) */
   ADD_EFUN("localtime",f_localtime,

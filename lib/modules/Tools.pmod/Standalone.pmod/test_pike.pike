@@ -621,6 +621,11 @@ int main(int argc, array(string) argv)
   replace_master(TestMaster(real_master));
   add_constant("__real_master", real_master);
 
+  // Improve compat with old testsuites.
+#if constant(Debug.debug)
+  add_constant("_debug", Debug.debug);
+#endif
+
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
   // Many Linux distributions default to having coredumps disabled.
