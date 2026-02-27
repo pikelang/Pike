@@ -83,7 +83,7 @@ static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 #define CT_QUOTE   9
 unsigned char rfc822ctype[1<<CHAR_BIT];
 
-/*! @module MIME
+/*! @module ___MIME
  */
 
 /*! @decl constant TOKENIZE_KEEP_ESCAPES
@@ -1521,7 +1521,7 @@ static void low_tokenize( INT32 args, int mode )
  *!
  *! @seealso
  *!   @[MIME.quote()], @[tokenize_labled()],
- *!   @[decode_words_tokenized_remapped()].
+ *!   @[MIME.decode_words_tokenized_remapped()].
  */
 static void f_tokenize( INT32 args )
 {
@@ -1562,7 +1562,7 @@ static void f_tokenize( INT32 args )
  *!
  *! @seealso
  *!   @[MIME.quote()], @[tokenize()],
- *!   @[decode_words_tokenized_labled_remapped()]
+ *!   @[MIME.decode_words_tokenized_labled_remapped()]
  */
 static void f_tokenize_labled( INT32 args )
 {
