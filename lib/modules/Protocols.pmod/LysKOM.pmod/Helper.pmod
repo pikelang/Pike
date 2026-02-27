@@ -368,6 +368,34 @@ mapping _lyskomerror=
 	"specifically mentioned in the"
 	"documentation for a specific call."}),
 
+   55:({55,"invalid-range",
+        "The lower limit of a supplied range is "
+        "greater than the upper limit."}),
+
+   56:({56,"invalid-range-list",
+        "The lower limit of a supplied range is "
+        "not greater than the upper limit of the "
+        "previous range in the list."}),
+
+   57:({57,"undefined-measurement",
+        "A request for a measurement that the "
+        "server doesn't make has been made."}),
+
+   58:({58,"priority-denied",
+        "You don't have enough privileges to "
+        "lower your priority."}),
+
+   59:({59,"weight-denied",
+        "You don't have enough privileges to "
+        "set the specified weight."}),
+
+   60:({60,"weight-zero",
+        "The scheduling weight must be non-zero."}),
+
+   61:({61,"bad-bool",
+        "An argument of type BOOL was given a "
+        "value that is neither 0 nor 1."}),
+
    CONNECTION_CLOSED:({CONNECTION_CLOSED,"connection closed",
 		       "LysKOM module: connection has been closed"})
 ]);

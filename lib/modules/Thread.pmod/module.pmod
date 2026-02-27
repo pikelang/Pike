@@ -471,7 +471,7 @@ class Queue {
 //!
 class ResourceCountKey {
 
-  private inherit __builtin.DestructImmediate;
+  private inherit Pike.DestructImmediate;
 
   /*semi*/private ResourceCount parent;
 
