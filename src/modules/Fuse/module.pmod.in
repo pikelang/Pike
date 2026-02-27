@@ -249,6 +249,7 @@ class Operations
     //!
     //! The operation mode depends on the @[mode] argument.
     //!
+    //! @param mode
     //! @int mode
     //!   @value F_SETLK
     //!
@@ -261,23 +262,49 @@ class Operations
     //!
     //!   @value F_SETLKW
     //!
-    //!     Identical to SETLK, but if a lock is held on the file, wait
+    //!     Identical to @[F_SETLK], but if a lock is held on the file, wait
     //!     for it to be released before returning. You are allowed to
-    //!     return EINTR, to signal that the waiting has been interrupted
-    //!     and must be restarted.
+    //!     return @[System.EINTR], to signal that the waiting has been
+    //!     interrupted and must be restarted.
     //!
     //!   @value F_GETLK
     //!
-    //!     Identical to SETLK, but do not actually aquire the lock if it
+    //!     Identical to @[F_SETLK], but do not actually aquire the lock if it
     //!     can be aquired.  If one or more incompatible locks would
-    //!     prevent this lock being placed, then @[fcntl()] returns details
+    //!     prevent this lock being placed, then @[lock()] returns details
     //!     about one of these locks in the @expr{"type"@}, @expr{"whence"@},
     //!     @expr{start@}, and @expr{"len"@} fields of @[how] and sets
     //!     the @expr{"pid"@} field to be the PID of the process
     //!     holding that lock. Then return the mapping.
     //!
     //! @endint
-    mapping(string:int)|int lock( string path, int mode, mapping(string:int) how );
+    //!
+    //! @param how
+    //! @mapping how
+    //!   @member int "owner"
+    //!     Uid of the lock owner (if any).
+    //!   @member int "type"
+    //!     Type of operation. One of
+    //!     @int
+    //!       @value F_RDLCK
+    //!         Acquire a read lock.
+    //!       @value F_WRLCK
+    //!         Acquite a write lock.
+    //!       @value F_UNLCK
+    //!         Release a lock.
+    //!     @endint
+    //!   @member int "whence"
+    //!     How to interpret the @expr{"start"@} field. One of
+    //!     @[Stdio.SEEK_CUR], @[Stdio.SEEK_SET] or @[Stdio.SEEK_END].
+    //!   @member int "start"
+    //!     Start offset of the file @[path] to lock.
+    //!   @member int "len"
+    //!     Number of bytes starting at @expr{"start"@} to lock.
+    //!   @member int "pid"
+    //!     Pid of the lock owner (if any).
+    //! @endmapping
+    mapping(string:int)|int lock( string path, int mode,
+                                  mapping(string:int) how );
 
     //! Write unwritten data.
     int flush( string path, int flags );
