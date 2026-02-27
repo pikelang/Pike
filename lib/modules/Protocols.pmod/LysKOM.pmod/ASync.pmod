@@ -136,9 +136,9 @@ array decode_22(array what)
 {
    return ({ (int)what[0],
              Array.map(what[2]/15,
-                       lambda(array(z) { return AuxItem(@z); })),
+                       lambda(array z) { return AuxItem(@z); }),
              Array.map(what[4]/15,
-                       lambda(array(z) { return AuxItem(@z); })));
+                       lambda(array z) { return AuxItem(@z); })});
 }
 
 mapping name2no=
