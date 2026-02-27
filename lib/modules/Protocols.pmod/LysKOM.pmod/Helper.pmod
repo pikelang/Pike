@@ -32,7 +32,7 @@ array(string) A(array z)
    return ({ ""+sizeof(z), "{ "+encode(@Array.flatten(z))+" }" });
 }
 
-//!
+//! LysKOM protocol error.
 class LysKOMError
 {
    constant iserror=1;
