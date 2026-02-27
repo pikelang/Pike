@@ -5960,7 +5960,7 @@ static void f_tzname(INT32 args)
 #ifdef HAVE__GET_TZNAME
     size_t bufsize;
     if (!_get_tzname(&bufsize, NULL, 0, index)) {
-      char buf[bufsize];
+      char* buf = alloca(bufsize);
       if (!_get_tzname(&bufsize, buf, bufsize, index))
         push_text(buf);
       else
