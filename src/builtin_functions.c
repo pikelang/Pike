@@ -5954,9 +5954,23 @@ static void encode_tm_tz(const struct tm*tm)
  */
 static void f_tzname(INT32 args)
 {
+  int index;
   pop_n_elems(args);
-  push_text(tzname[0]);
-  push_text(tzname[1]);
+  for (index = 0; index < 2; index ++) {
+#ifdef HAVE__GET_TZNAME
+    size_t bufsize;
+    if (!_get_tzname(&bufsize, NULL, 0, index)) {
+      char* buf = alloca(bufsize);
+      if (!_get_tzname(&bufsize, buf, bufsize, index))
+        push_text(buf);
+      else
+        push_int(0);
+    } else
+      push_int(0);
+#else
+    push_text(tzname[index]);
+#endif
+  }
   f_aggregate(2);
 }
 

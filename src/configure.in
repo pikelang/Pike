@@ -4736,6 +4736,7 @@ AC_CHECK_FUNCS( \
  MakeDataExecutable \
  _get_timezone \
  _get_daylight \
+ _get_tzname \
  localtime_s \
  sysconf \
  getpagesize \
