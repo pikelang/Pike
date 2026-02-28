@@ -2698,16 +2698,12 @@ static void f_compilation_apply_type_attribute(INT32 args)
  *!   of the function type based on @[value].
  *!
  *!   The default implementation implements the @expr{"sprintf_format"@},
- *!   @expr{"sscanf_format"@} and @expr{"sscanf_76_format"@} attributes.
- *!
- *! @param state
- *!   Mapping intended to hold state during checking of multiple
- *!   arguments.
+ *!   @expr{"sscanf_format"@} and @expr{"sscanf_80_format"@} attributes.
  *!
  *! @returns
  *!   Returns a continuation type if it succeeded in strengthening the type.
  *!
- *!   Returns @tt{UNDEFINED@} otherwise (this is not an error indication).
+ *!   Returns @[UNDEFINED] otherwise (this is not an error indication).
  *!
  *! @seealso
  *!   @[pop_type_attribute()], @[push_type_attribute()]
@@ -2764,7 +2760,7 @@ static void f_compilation_apply_attribute_constant(INT32 args)
     f___handle_sscanf_format(args);
     return;
   }
-  MAKE_CONST_STRING(test, "sscanf_76_format");
+  MAKE_CONST_STRING(test, "sscanf_80_format");
   if (attribute == test) {
     f___handle_sscanf_format(args);
     return;

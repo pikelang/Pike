@@ -3260,7 +3260,7 @@ void f___handle_sprintf_format(INT32 args)
   push_undefined();
 }
 
-/*! @decl constant sprintf_format = __attribute__("sprintf_format")
+/*! @decl constant sprintf_format = __attribute__("sprintf_format", string)
  *!
  *!   Type constant used for typing arguments that are optionally
  *!   sent to @[sprintf()] depending on the presence of extra arguments.
@@ -3270,7 +3270,7 @@ void f___handle_sprintf_format(INT32 args)
  */
 
 /*! @decl constant strict_sprintf_format = @
- *!         __attribute__("strict_sprintf_format")
+ *!         __attribute__("strict_sprintf_format", string)
  *!
  *!   Type constant used for typing arguments that are always
  *!   sent to @[sprintf()] regardless of the presence of extra arguments.
@@ -3279,7 +3279,7 @@ void f___handle_sprintf_format(INT32 args)
  *!   @[sprintf_format], @[sprintf_args], @[sprintf()]
  */
 
-/*! @decl constant sprintf_args = __attribute__("sprintf_args")
+/*! @decl constant sprintf_args = __attribute__("sprintf_args", mixed)
  *!
  *!   Type constant used for typing extra arguments that are
  *!   sent to @[sprintf()].
@@ -3288,12 +3288,52 @@ void f___handle_sprintf_format(INT32 args)
  *!   @[strict_sprintf_format], @[sprintf_format], @[sprintf()]
  */
 
-/*! @decl constant sprintf_result = __attribute__("sprintf_result")
+/*! @decl constant sprintf_result = __attribute__("sprintf_result", int)
  *!
  *!   Type constant used for typing the return value from @[sprintf()].
  *!
  *! @seealso
  *!   @[strict_sprintf_format], @[sprintf_format], @[sprintf()]
+ */
+
+/*! @decl constant sscanf_format = __attribute__("sscanf_format", string)
+ *!
+ *!   Type constant used for typing sscanf format strings that are sent
+ *!   to @[sscanf()].
+ *!
+ *! @seealso
+ *!   @[sscanf_80_format], @[sscanf()], @[array_sscanf()]
+ */
+
+/*! @decl constant sscanf_80_format = __attribute__("sscanf_80_format", string)
+ *!
+ *!   Type constant used for typing sscanf format strings that are sent
+ *!   to @[8.0::sscanf()].
+ *!
+ *! @note
+ *!   The main difference between @[8.0::sscanf()] and @[sscanf()]
+ *!   is that all integers in the former are signed.
+ *!
+ *! @seealso
+ *!   @[sscanf_format], @[8.0::sscanf()], @[8.0::array_sscanf()]
+ */
+
+/*! @decl constant sscanf_args = __attribute__("sscanf_args", mixed)
+ *!
+ *!   Type constant used for typing lvalues to be assigned by @[sscanf()],
+ *!   et al.
+ *!
+ *! @seealso
+ *!   @[sscanf_format], @[sscanf_input], @[sscanf()], @[array_sscanf()]
+ */
+
+/*! @decl constant sscanf_input = __attribute__("sscanf_input", string)
+ *!
+ *!   Type constant used for typing the string to be parsed by @[sscanf()],
+ *!   et al.
+ *!
+ *! @seealso
+ *!   @[sscanf_format], @[sscanf_args], @[sscanf()], @[array_sscanf()]
  */
 
 /*! @module String
@@ -3364,6 +3404,26 @@ void init_sprintf(void)
   MAKE_CONST_STRING(sprintf_string_string, "sprintf_string");
   MAKE_CONST_STRING(sprintf_char_string, "sprintf_char");
   MAKE_CONST_STRING(sprintf_lfun_string, "sprintf_lfun");
+
+  MAKE_CONST_STRING(attr, "sscanf_format");
+  s.u.type = make_pike_type(tAttr("sscanf_format", tStr));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
+
+  MAKE_CONST_STRING(attr, "sscanf_80_format");
+  s.u.type = make_pike_type(tAttr("sscanf_80_format", tStr));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
+
+  MAKE_CONST_STRING(attr, "sscanf_args");
+  s.u.type = make_pike_type(tAttr("sscanf_args", tMix));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
+
+  MAKE_CONST_STRING(attr, "sscanf_input");
+  s.u.type = make_pike_type(tAttr("sscanf_input", tStr));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
 }
 
 void exit_sprintf(void)

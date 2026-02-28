@@ -1641,7 +1641,8 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format,
   UNREACHABLE();
 }
 
-/*! @decl int sscanf(string data, string format, mixed ... lvalues)
+/*! @decl int sscanf(sscanf_input data, sscanf_format format, @
+ *!                  sscanf_args ... lvalues)
  *!
  *! The purpose of sscanf is to match a string @[data] against a @[format]
  *! string and place the matching results into a list of variables. The list
@@ -1842,6 +1843,19 @@ void o_sscanf(INT32 args)
   push_int(i);
 }
 
+/*! @decl int sscanf(sscanf_input data, sscanf_80_format format, @
+ *!                  sscanf_args ... lvalues)
+ *! @belongs 8.0::
+ *!
+ *!   Compatibility implementation of @[predef::sscanf()].
+ *!
+ *! @note
+ *!   The main difference between @[8.0::sscanf()] and @[predef::sscanf()]
+ *!   is that all integers in the former are signed.
+ *!
+ *! @seealso
+ *!   @[predef::sscanf()], @[8.0::array_sscanf()]
+ */
 void o_sscanf_80(INT32 args)
 {
   INT32 i=0;
