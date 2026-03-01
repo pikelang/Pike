@@ -241,7 +241,7 @@ protected class CommandSet {
     }
 
     if(arg_check("debug")) {
-#if constant(_debug)
+#if constant(Debug.debug)
       e->debug_level = (int)words[2];
 #else
       write("Debug not available.\n");
@@ -2120,7 +2120,7 @@ class Evaluator {
   //! Only available if Pike is compiled with RTL debug.
   int compiler_trace_level;
 #endif
-#if constant(_debug)
+#if constant(Debug.debug)
   //! The current debug level.
   //! Only available if Pike is compiled with RTL debug.
   int debug_level;
@@ -2329,9 +2329,9 @@ class Evaluator {
   {
     if(trace_level)
         a = "\ntrace("+trace_level+");\n"+a;
-#if constant(_debug)
+#if constant(Debug.debug)
     if(debug_level)
-      a = "\n_debug("+debug_level+");\n" + a;
+      a = "\nDebug.debug("+debug_level+");\n" + a;
 #endif
     a = "mixed ___HilfeWrapper() { " + a + " ; }";
 
@@ -2345,8 +2345,8 @@ class Evaluator {
 	  res = o->___HilfeWrapper();
 	};
 	trace(0);
-#if constant(_debug)
-	_debug(0);
+#if constant(Debug.debug)
+        Debug.debug(0);
 #endif
       };
       last_eval_time = (int)(eval_time*1000000);
