@@ -3097,7 +3097,6 @@ void f___handle_sprintf_format(INT32 args)
 {
   struct pike_string *attr;
   struct mapping *state;
-  int found = 0;
 
 #if 0
   fprintf(stderr, "f___handle_sprintf_format(%d)\n", args);
