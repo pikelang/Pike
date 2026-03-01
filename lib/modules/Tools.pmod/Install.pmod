@@ -48,7 +48,7 @@ array(string) features()
   a += ({ "profiling" });
 #endif
 
-#if constant(_debug)
+#if constant(Debug.debug)
   a += ({ "rtl_debug" });
 #endif
 
