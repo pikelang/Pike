@@ -83,7 +83,10 @@ static GISignalInfo *g_object_info_find_signal (GIObjectInfo *info,
 static GQuark object_quark;
 static struct mapping *magic_mapping = NULL;
 
-/*! @module GI
+/*! @namespace predef::
+ */
+
+/*! @module ___GI
  */
 
 static void throw_gerror(GError *error)
@@ -2382,6 +2385,9 @@ PIKEFUN Repository get_default_repository()
 }
 
 /*! @endmodule
+ */
+
+/*! @endnamespace
  */
 
 #endif
