@@ -3,17 +3,19 @@
 //! GTK wrapper module.
 //!
 //! This is a convenience module that is identical to the latest
-//! supported GTK versionm, if available. Currently only @[GTK2] is
-//! possible.
+//! supported GTK version, if available.
 //!
 //! @seealso
-//!   @[GTK2]
+//!   @[GTK2], @[GI.repository]
 
-#if constant(GTK2.Widget)
-//!
-inherit GTK2;
+#if constant(GI.repository.Gtk)
+constant _module_value = GI.repository.Gtk;
 #else
-constant module_value = UNDEFINED;
+#require constant(GTK2.Widget)
+
+//! @decl inherit GTK2
+
+constant _module_value = GTK2;
 #endif
 
 
