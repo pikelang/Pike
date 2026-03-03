@@ -28,11 +28,12 @@
 #if constant(GTK2.parse_rc)
 #define USE_GTK2
 #define GTK GTK2
-#else
-#if !constant(GTK.parse_rc)
+#endif
+#endif
+
+#ifndef USE_GTK2
+// No suitable GTK found.
 #undef USE_GTK
-#endif
-#endif
 #endif
 
 #if !constant(zero)
@@ -939,39 +940,23 @@ void update_entry2()
   entry2->set_text( combine_path( entry1 -> get_text(), "bin/pike") );
 }
 
-#ifdef USE_GTK2
 void close_fileselector(object button, object selector)
-#else
-void close_fileselector(object selector, object button)
-#endif
 {
   selector->hide();
   destruct(selector);  
 }
 
-#ifdef USE_GTK2
 void set_filename(object button, array ob)
-#else
-void set_filename(array ob, object button)
-#endif
 {
   object selector=ob[0];
   object entry=ob[1];
   entry->set_text(selector->get_filename());
   if(entry == entry1)
     update_entry2();
-#ifdef USE_GTK2
   close_fileselector(button,selector);
-#else
-  close_fileselector(selector,button);
-#endif
 }
 
-#ifdef USE_GTK2
 void selectfile(object button, object entry)
-#else
-void selectfile(object entry, object button)
-#endif
 {
   object selector;
   selector=GTK.FileSelection("Pike installation prefix");

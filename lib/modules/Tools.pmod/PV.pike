@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+#require constant(GTK2.Window)
+
 //! Display a image on the screen. Requires GTK.
 
 #if constant(GTK2.Window)
