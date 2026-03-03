@@ -28,8 +28,8 @@ object|zero progress_bar;
 array(int) debug_level = ({});
 
 class GTKProgress {
-#if constant(GTK.Window)
-  GTK.ProgressBar bar;
+#if constant(GTK2.Window)
+  GTK2.ProgressBar bar;
 #endif
   float progress;
   float scale;
@@ -37,22 +37,22 @@ class GTKProgress {
   void update(int num) {
     progress += scale*num;
     progress = min(progress, 1.0);
-#if constant(GTK.Window)
+#if constant(GTK2.Window)
     bar->update(progress);
 #endif
   }
 
-#if constant(GTK.Window)
-  GTK.Window win;
-  GTK.Frame frame;
+#if constant(GTK2.Window)
+  GTK2.Window win;
+  GTK2.Frame frame;
 
   protected void create() {
-    GTK.setup_gtk();
-    win = GTK.Window(GTK.WINDOW_TOPLEVEL);
+    GTK2.setup_gtk();
+    win = GTK2.Window(GTK2.WINDOW_TOPLEVEL);
     win->set_title(version() + " Module Dumping")
-       ->add(frame = GTK.Frame("Dumping Pike modules...")
+       ->add(frame = GTK2.Frame("Dumping Pike modules...")
              ->set_border_width(16)
-             ->add(bar = GTK.ProgressBar()));
+             ->add(bar = GTK2.ProgressBar()));
     win->show_all();
   }
 #endif
