@@ -1907,7 +1907,7 @@ static void f_proxy_getter(INT32 args)
     wrong_number_of_args_error(NULL, args, 0);
   }
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
@@ -1946,7 +1946,7 @@ static void f_proxy_setter(INT32 args)
     wrong_number_of_args_error(NULL, args, 1);
   }
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       &Pike_fp->context->prog->constants[1].sval);
   }
@@ -1979,7 +1979,7 @@ static void f_proxy_fun(INT32 args)
   struct inherit *inh;
   struct identifier *id;
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
@@ -2010,7 +2010,7 @@ static void f_proxy__sprintf(INT32 args)
   struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
   struct object *obj;
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
