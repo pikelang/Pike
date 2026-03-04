@@ -189,6 +189,9 @@ int main(int num, array(string) args) {
   M(Gettext.gettext);
   F(Gettext.LC_MESSAGES);
 
+  write("\GI\n");
+  M(GI.repository);
+
   write("\nGL\n");
   M(GL.glGet);
   M(GL.GLSL.glCreateShader);
