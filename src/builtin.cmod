@@ -1456,6 +1456,9 @@ PIKEFUN int string_count(string haystack, string needle)
  *! @belongs String
  *!
  *! Trim leading and trailing spaces and tabs from the string @[s].
+ *!
+ *! @seealso
+ *!   @[String.trim()], @[String.trim_all_whites()]
  */
 PMOD_EXPORT
 PIKEFUN string string_trim_whites (string s)
@@ -1633,12 +1636,33 @@ skip##TYPE:;								\
   RETURN finish_string_builder (&sb);
 }
 
+/*! @decl __deprecated__ string trim_all_whites(string s)
+ *! @belongs String
+ *!
+ *!   Trim leading and trailing white spaces characters (space, tab,
+ *!   newline, carriage return, form feed, vertical tab and all the
+ *!   white spaces defined in Unicode) from the string @[s].
+ *!
+ *! @deprecated String.trim()
+ *!   This function was renamed to @[String.trim()] in Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[String.trim()], @[String.trim_whites()]
+ */
+
 /*! @decl string trim (string s)
  *! @belongs String
  *!
  *! Trim leading and trailing white spaces characters (space, tab,
  *! newline, carriage return, form feed, vertical tab and all the
  *! white spaces defined in Unicode) from the string @[s].
+ *!
+ *! @note
+ *!   This function was called @[String.trim_all_whites()] before
+ *!   Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[String.trim_all_whites()], @[String.trim_whites()]
  */
 PMOD_EXPORT
 PIKEFUN string string_trim (string s)
