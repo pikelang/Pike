@@ -189,7 +189,7 @@ int main(int num, array(string) args) {
   M(Gettext.gettext);
   F(Gettext.LC_MESSAGES);
 
-  write("\GI\n");
+  write("\nGI\n");
   M(GI.repository);
 
   write("\nGL\n");
