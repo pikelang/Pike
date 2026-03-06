@@ -19,10 +19,16 @@ DECLARATIONS
 
 #ifdef HAVE_GI
 
+#ifdef HAVE_GIREPOSITORY_GIREPOSITORY_H
+/* girepository-2.0 */
+#include <girepository/girepository.h>
+#include <girepository/girffi.h>
+#else
+/* girepository-1.0 (aka gobject-introspection-1.0) */
 #include <girepository.h>
 #include <girffi.h>
-#include <ffi.h>
 
+/* Various forward-compat. */
 
 #if GLIB_CHECK_VERSION(2, 54, 0)
 #define USE_G_OBJECT_NEW_WITH_PROPERTIES 1
@@ -79,6 +85,9 @@ static GISignalInfo *g_object_info_find_signal (GIObjectInfo *info,
   return NULL;
 }
 #endif
+
+#endif
+#include <ffi.h>
 
 static GQuark object_quark;
 static struct mapping *magic_mapping = NULL;
