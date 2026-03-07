@@ -236,13 +236,17 @@ static void push_and_free_argv(gchar **data, int argc, int np) {
 
 array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 //! Initialize GTK, and all that comes with it.
-//! Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
-//! The single argument, if supplied, is the argument array passed to
-//! the program. This is used to set default window titles etc.
-//! The second argument, if supplied, indicates that pike specific *rc files
-//! should <b>not</b> be parsed.
-//! <p>
-//! The most common usage is GTK2.setup_gtk(argv);</p>
+//! Also parses @tt{$HOME/.pgtkrc@} and @tt{$HOME/.gtkrc@} if they exist.
+//!
+//! @param argv
+//!   If supplied, this is the argument array passed to
+//!   the program. This is used to set default window titles etc.
+//!
+//! @param do_not_parse_rc
+//!   If supplied, this indicates that pike specific @tt{*rc@} files
+//!   should @b{not@} be parsed.
+//!
+//! The most common usage is @expr{GTK2.setup_gtk(argv);@}
 {
   gchar **data;
   int argc;
