@@ -3582,7 +3582,7 @@ PMOD_EXPORT void secure_zero(void *p, size_t n)
 
 void init_pike_memory (void)
 {
-#ifdef HAVE_PROCCTL
+#if defined(HAVE_PROCCTL) && defined(PROC_WX_MAPPINGS_PERMIT)
   {
     pid_t pid = getpid();
     int permit = PROC_WX_MAPPINGS_PERMIT;
