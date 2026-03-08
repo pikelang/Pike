@@ -1,8 +1,16 @@
 #pike __REAL_VERSION__
 
-#require constant(GTK2.Window)
-
 //! Display a image on the screen. Requires GTK.
+
+#if constant(GI.repository.Gtk) && constant(Cairo.Context)
+
+import GI.repository;
+inherit Gtk.Window;
+#define USE_GI
+
+#else
+
+#require constant(GTK2.Window)
 
 #if constant(GTK2.Window)
 // Toplevel compat for GTK2
@@ -20,6 +28,8 @@ GTK2.GdkWindow get_gdkwindow() { return get_window(); }
 void set_policy( int a, int b, int c ) { set_resizable(a||b); }
 void set_usize(int w, int h) { set_size_request(w, h); }
 void set_app_paintable(int flag) { (flag? set_flags:unset_flags)(GTK2.APP_PAINTABLE); }
+#endif
+
 #endif
 
 typedef Standards.URI|string|Image.Image|Image.Layer|array(Image.Layer) PVImage;
@@ -40,7 +50,12 @@ enum AlphaMode {
 
 #define STEP 30
 protected {
+#ifdef USE_GI
+ Gtk.Widget area;
+ Cairo.SurfacePattern image_pattern, squares_pattern;
+#else
  GDK.Pixmap pixmap;
+#endif
  PVImage old_image;
  AlphaMode alpha_mode;
  Image.Color.Color alpha_color1 = Image.Color.grey,
@@ -83,12 +98,47 @@ protected {
    return t=='O' && sprintf( "%O(%O)", this_program, old_image );
  }
 
+#ifdef USE_GI
+ void draw(Gtk.DrawingArea area, Cairo.Context ctx, int w, int h)
+ {
+   if (!w || !h || !image_pattern) return;
+   if (squares_pattern) {
+     ctx->set_source(squares_pattern);
+     ctx->paint();
+   }
+   Cairo.Matrix m = Cairo.Matrix();
+   m->scale(image_pattern->get_surface()->get_width()/(float)w,
+            image_pattern->get_surface()->get_height()/(float)h);
+   image_pattern->set_matrix(m);
+   ctx->set_source(image_pattern);
+   ctx->paint();
+ }
+#endif
+
  void create( PVImage i )
  {
+#ifdef USE_GI
+   ::create();
+   area = Gtk.DrawingArea();
+   if (area->set_draw_func)
+      area->set_draw_func(draw);
+   else
+      area->connect("draw", lambda(Gtk.DrawingArea area, Cairo.Context ctx) {
+         draw(area, ctx, area->get_allocated_width(), area->get_allocated_height());
+      });
+   if (::set_child)
+      ::set_child(area);
+   else {
+      area->show();
+      ::add(area);
+   }
+   ::set_title("PV");
+#else
    catch(GTK.setup_gtk());
    ::create( GTK.WindowToplevel );
    set_policy( 0,0,1 );
    show_now();
+#endif
    if( i )
      set_image( i );
  }
@@ -144,6 +194,22 @@ void set_image( PVImage i )
   }
 
   old_image = i;
+#ifdef USE_GI
+  if( arrayp( i ) )
+    i = Image.lay( i );
+  int(0..1) has_alpha = i->alpha() && `+(@i->alpha()->min()) < 3*255;
+  image_pattern = Cairo.SurfacePattern(Cairo.ImageSurface(i));
+  if (has_alpha) {
+    squares_pattern =
+      Cairo.SurfacePattern(Cairo.ImageSurface(get_alpha_squares()));
+    squares_pattern->set_extend(Cairo.EXTEND_REPEAT);
+  } else
+    squares_pattern = 0;
+  area->set_size_request((int) (i->xsize() * scale_factor),
+                         (int) (i->ysize() * scale_factor));
+  area->queue_draw();
+  ::set_visible(1);
+#else
   i = get_as_image( i );
   if( scale_factor != 1.0 )
     i = i->scale( scale_factor );
@@ -164,6 +230,7 @@ void set_image( PVImage i )
   get_gdkwindow()->clear();
   GTK.flush();
   while( GTK.main_iteration_do( 0 ) );
+#endif
 }
 
 void scale( float factor )
