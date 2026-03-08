@@ -103,9 +103,9 @@ static void throw_gerror(GError *error)
   Pike_error("%s\n", error->message);
 }
 
-static void free_glist_full_free(void *p)
+static void free_glist_full_g_free(void *p)
 {
-  g_list_free_full(p, free);
+  g_list_free_full(p, g_free);
 }
 
 struct GI_GBoxed_struct;
@@ -2293,7 +2293,7 @@ PIKECLASS Repository
       push_int(0);
       return;
     }
-    SET_ONERROR(onerror, free_glist_full_free, versions);
+    SET_ONERROR(onerror, free_glist_full_g_free, versions);
     pop_n_elems(args);
     for (item = versions; item; item = item->next) {
         char *version = item->data;
