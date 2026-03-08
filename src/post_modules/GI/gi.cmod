@@ -648,12 +648,18 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     break;
 
   case GI_TYPE_TAG_UTF8:
-    push_text(arg->v_pointer);
-    f_utf8_to_string(1);
+    if (arg->v_pointer) {
+      push_text(arg->v_pointer);
+      f_utf8_to_string(1);
+    } else
+      push_undefined();
     break;
 
   case GI_TYPE_TAG_FILENAME:
-    push_text(arg->v_pointer);
+    if (arg->v_pointer)
+      push_text(arg->v_pointer);
+    else
+      push_undefined();
     break;
 
   case GI_TYPE_TAG_INTERFACE:
