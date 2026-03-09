@@ -696,7 +696,7 @@ class Annotation
 	  buf->add(elem);
 	  break;
 	default:
-	  elem = String.trim_all_whites(elem);
+	  elem = String.trim(elem);
 	  if (elem == "") continue;
 	  if ((elem[0] == '"') || (elem[0] == '\'')) {
 	    // String or character literal.
