@@ -1,4 +1,4 @@
-#require constant(GI.repository.Gtk) && constant(Cairo.Context)
+#require constant(GI.repository.Gtk.Application) && constant(Cairo.Context)
 
 import GI.repository;
 

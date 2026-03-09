@@ -2,7 +2,7 @@
 
 //! Display a image on the screen. Requires GTK.
 
-#if constant(GI.repository.Gtk) && constant(Cairo.Context)
+#if constant(GI.repository.Gtk.Application) && constant(Cairo.Context)
 
 import GI.repository;
 inherit Gtk.Window;
