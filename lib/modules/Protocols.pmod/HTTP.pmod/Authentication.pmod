@@ -47,7 +47,7 @@
 mapping(string:string) split_header(string hdr) {
   mapping parts = ([]);
   while( sizeof(hdr) ) {
-    hdr = String.trim_all_whites(hdr);
+    hdr = String.trim(hdr);
 
     string name;
     if( sscanf(hdr, "%s=%s", name, hdr)!=2 ) {
@@ -58,14 +58,14 @@ mapping(string:string) split_header(string hdr) {
 
       return parts;
     }
-    hdr = String.trim_all_whites(hdr);
+    hdr = String.trim(hdr);
 
     string value;
     if( !sizeof(hdr) ) return parts;
     if( hdr[0]=='\"' ) {
       if( sscanf(hdr, "\"%s\"%s", value, hdr)!=2 )
         return parts;
-      hdr = String.trim_all_whites(hdr);
+      hdr = String.trim(hdr);
       if( sizeof(hdr) && hdr[0]==',' )
         hdr = hdr[1..];
     }
@@ -74,7 +74,7 @@ mapping(string:string) split_header(string hdr) {
         value = hdr;
         hdr = "";
       }
-      value = String.trim_all_whites(value);
+      value = String.trim(value);
     }
 
     // Warn on overwrite?
