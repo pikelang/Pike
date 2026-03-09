@@ -140,8 +140,7 @@ class Compiler
             q->status, (string) uri);
     }
 
-    array(string) ct_parts = map(q->headers["content-type"]/";",
-                                 String.trim_all_whites);
+    array(string) ct_parts = map(q->headers["content-type"]/";", String.trim);
 
     if (http_import == HTTP_IMPORT_GREEDY) {
       if (!http_import_allow_ct[ct_parts[0]]) {

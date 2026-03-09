@@ -21,6 +21,14 @@ constant precompile_api_version = "3";
 typedef int(0..0) zero;
 #endif
 
+constant string_trim =
+#if constant(String.trim)
+  String.trim
+#else
+  String.trim_all_whites
+#endif
+  ;
+
 constant want_args = 1;
 
 //! Convert .cmod-files to .c files.
@@ -2307,7 +2315,7 @@ sprintf("        } else {\n"
 
             if (attributes->bind_generics) {
               array(string) binding_types =
-                map(attributes->bind_generics/",", String.trim_all_whites) -
+                map(attributes->bind_generics/",", string_trim) -
                 ({ "" });
               foreach(binding_types, string rawtype) {
                 pre += ({
