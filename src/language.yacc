@@ -712,6 +712,9 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	add_constant($1->u.sval.u.string, 0,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
       } else {
+        struct pike_type *t = NULL;
+        node *n = Pike_compiler->current_attributes;
+
 	if(!Pike_compiler->num_parse_error)
 	{
 	  ptrdiff_t tmp=eval_low($3,1);
@@ -725,33 +728,57 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	} else {
 	  push_undefined();
 	}
+
         if ($<n>0) {
           /* New-style syntax for typed constants. */
-          struct pike_type *t = $<n>0->u.sval.u.type;
+          t = $<n>0->u.sval.u.type;
           if (!pike_types_le($3->type, t, 0, 0)) {
             yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, $3->type,
                           0, "Bad value for constant.");
             t = NULL;
+          } else {
+            add_ref(t);
           }
-          add_typed_constant($1->u.sval.u.string, t, Pike_sp-1,
-                             Pike_compiler->current_modifiers & ~ID_EXTERN);
-        } else if ((Pike_compiler->current_modifiers & ID_LOCAL) ||
-                   ($3->token == F_SOFT_CAST) ||
-                   (($3->token == F_COMMA_EXPR) &&
-                    (CAR($3)->token == F_SOFT_CAST))) {
-          /* Node type set intentionally via a soft-cast,
-           * or value is not overridable via inherit.
-           */
-          add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
-                             Pike_compiler->current_modifiers & ~ID_EXTERN);
-        } else {
-          /* Compat: Derive the type from the value.
-           *
-           * Cf LysLysKOM 16630665.
-           */
-          add_typed_constant($1->u.sval.u.string, NULL, Pike_sp-1,
-                             Pike_compiler->current_modifiers & ~ID_EXTERN);
         }
+
+        if (!t) {
+          if ((Pike_compiler->current_modifiers & ID_LOCAL) ||
+              ($3->token == F_SOFT_CAST) ||
+              (($3->token == F_COMMA_EXPR) &&
+               (CAR($3)->token == F_SOFT_CAST))) {
+            /* Node type set intentionally via a soft-cast,
+             * or value is not overridable via inherit.
+             */
+            t = $3->type;
+            add_ref(t);
+          } else {
+            /* Compat: Derive the type from the value.
+             *
+             * Cf LysLysKOM 16630665.
+             */
+            if (Pike_compiler->current_modifiers & ID_INLINE) {
+              t = get_type_of_svalue(Pike_sp-1);
+            } else {
+              t = get_lax_type_of_svalue(Pike_sp-1);
+            }
+          }
+        }
+
+        if (n) {
+          /* Handle type attributes. */
+          type_stack_mark();
+          push_finished_type(t);
+          while(n) {
+            push_type_attribute(CDR(n)->u.sval.u.string);
+            n = CAR(n);
+          }
+          free_type(t);
+          t = pop_unfinished_type();
+        }
+
+        add_typed_constant($1->u.sval.u.string, t, Pike_sp-1,
+                           Pike_compiler->current_modifiers & ~ID_EXTERN);
+        free_type(t);
 	pop_stack();
       }
     }
@@ -775,24 +802,24 @@ optional_type: /* empty */ { $$ = NULL; }
   }
   ;
 
-constant: modifiers TOK_CONSTANT optional_type constant_list ';'
+constant: modifiers optional_attributes TOK_CONSTANT optional_type constant_list ';'
   {
-    free_node($3);
+    free_node($4);
   }
-  | modifiers TOK_CONSTANT optional_type error ';'
+  | modifiers optional_attributes TOK_CONSTANT optional_type error ';'
   {
-    free_node($3);
+    free_node($4);
     yyerrok;
   }
-  | modifiers TOK_CONSTANT optional_type error TOK_LEX_EOF
+  | modifiers optional_attributes TOK_CONSTANT optional_type error TOK_LEX_EOF
   {
-    free_node($3);
+    free_node($4);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers TOK_CONSTANT optional_type error '}'
+  | modifiers optional_attributes TOK_CONSTANT optional_type error '}'
   {
-    free_node($3);
+    free_node($4);
     yyerror("Missing ';'.");
   }
   ;
@@ -2219,8 +2246,11 @@ constant_expr: safe_assignment_expr
   }
   ;
 
+/* NB: $0 is optional_type. */
 local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
   {
+    struct pike_type *t = NULL;
+
     /* Ugly hack to make sure that $3 is optimized */
     {
       int tmp=Pike_compiler->compiler_pass;
@@ -2245,12 +2275,22 @@ local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	pop_stack();
       }
     }
-    low_add_local_name(NULL, $1->u.sval.u.string, NULL,
+
+    if ($<n>0 && $3) {
+      /* New-style syntax for typed constants. */
+      t = $<n>0->u.sval.u.type;
+      if (!pike_types_le($3->type, t, 0, 0)) {
+        yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, $3->type,
+                      0, "Bad value for constant.");
+        t = NULL;
+      }
+    }
+    low_add_local_name(NULL, $1->u.sval.u.string, t,
 		       $3?$3:mknode(F_UNDEFINED, 0, 0), NULL);
     /* Note: Intentionally not marked as used. */
     free_node($1);
   }
-  | bad_identifier '=' safe_assignment_expr { if ($3) free_node($3); }
+  | bad_const_expr_ident '=' safe_assignment_expr { if ($3) free_node($3); }
   | error '=' safe_assignment_expr { if ($3) free_node($3); }
   ;
 
@@ -2258,14 +2298,26 @@ local_constant_list: local_constant_name
   | local_constant_list ',' local_constant_name
   ;
 
-local_constant: TOK_CONSTANT local_constant_list ';'
-  | TOK_CONSTANT error ';' { yyerrok; }
-  | TOK_CONSTANT error TOK_LEX_EOF
+local_constant: TOK_CONSTANT optional_type local_constant_list ';'
   {
+    free_node($2);
+  }
+  | TOK_CONSTANT optional_type error ';'
+  {
+    free_node($2);
+    yyerrok;
+  }
+  | TOK_CONSTANT optional_type error TOK_LEX_EOF
+  {
+    free_node($2);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | TOK_CONSTANT error '}' { yyerror("Missing ';'."); }
+  | TOK_CONSTANT optional_type error '}'
+  {
+    free_node($2);
+    yyerror("Missing ';'.");
+  }
   ;
 
 
