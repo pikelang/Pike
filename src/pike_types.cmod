@@ -4113,7 +4113,7 @@ static void push_remap_markers(struct pike_type *t,
       }
 
       if (flags & PT_FLAG_REMAP_BOTH_MARKERS) {
-	marker = alloc_remap_marker(remap, CAR_TO_INT(t),
+        marker = alloc_remap_marker(remap, m->type,
 				    flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 
 	if (!(flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
@@ -9702,7 +9702,6 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
     if(ret && (!bb_markers[m] || a->type != T_VOID))
     {
-      int m = CAR_TO_INT(b);
       struct pike_type *tmp;
       int i;
 

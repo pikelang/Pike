@@ -119,7 +119,7 @@ test_eq(String.trim_whites (""), "")
 test_eq(String.trim_whites (" \t\rx\r\t "), "\rx\r")
 test_eq(String.trim_whites (" \t\nx\n\t "), "\nx\n")
 
-test_eq(String.trim_all_whites, String.trim)
+test_eq(String["trim_all_whites"], String.trim)
 
 test_eq(String.trim (" \t\n\r\0 \t\n\r"), "\0")
 test_eq(String.trim (" \t\n\r\400 \t\n\r"), "\400")

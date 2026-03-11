@@ -2,7 +2,7 @@
 
 //! Display a image on the screen. Requires GTK.
 
-#if constant(GI.repository.Gtk) && constant(Cairo.Context)
+#if constant(GI.repository.Gtk.Application) && constant(Cairo.Context)
 
 import GI.repository;
 inherit Gtk.Window;
@@ -102,16 +102,32 @@ protected {
  void draw(Gtk.DrawingArea area, Cairo.Context ctx, int w, int h)
  {
    if (!w || !h || !image_pattern) return;
+   ctx->set_operator(Cairo.OPERATOR_SOURCE);
    if (squares_pattern) {
-     ctx->set_source(squares_pattern);
+     switch( alpha_mode )
+     {
+       case Squares:    ctx->set_source(squares_pattern); break;
+       case Solid:      ctx->set_source_rgb(@alpha_color1->rgbf()); break;
+       case AlphaOnly:  ctx->set_source_rgb(0.0, 0.0, 0.0); break;
+     }
      ctx->paint();
+     ctx->set_operator(Cairo.OPERATOR_OVER);
+   } else if (alpha_mode == AlphaOnly) {
+     ctx->set_source_rgb(1.0, 1.0, 1.0);
+     ctx->paint();
+     return;
    }
    Cairo.Matrix m = Cairo.Matrix();
    m->scale(image_pattern->get_surface()->get_width()/(float)w,
             image_pattern->get_surface()->get_height()/(float)h);
    image_pattern->set_matrix(m);
-   ctx->set_source(image_pattern);
-   ctx->paint();
+   if (alpha_mode == AlphaOnly) {
+     ctx->set_source_rgb(1.0, 1.0, 1.0);
+     ctx->mask(image_pattern);
+   } else {
+     ctx->set_source(image_pattern);
+     ctx->paint();
+   }
  }
 #endif
 
@@ -197,7 +213,13 @@ void set_image( PVImage i )
 #ifdef USE_GI
   if( arrayp( i ) )
     i = Image.lay( i );
-  int(0..1) has_alpha = i->alpha() && `+(@i->alpha()->min()) < 3*255;
+  int(0..1) has_alpha = 0;
+  if (i->alpha && i->alpha()) {
+    if (alpha_mode == None || `+(@i->alpha()->min()) == 3*255)
+      i = i->image();
+    else
+      has_alpha = 1;
+  }
   image_pattern = Cairo.SurfacePattern(Cairo.ImageSurface(i));
   if (has_alpha) {
     squares_pattern =
