@@ -20,8 +20,11 @@ inherit @module@ : GI;
 //!   the directory @tt{/usr/lib64/girepository-1.0/@} (or
 //!   similar).
 //!
-//!   Typical such modules include @expr{GI.repository.GTK@},
-//!   @expr{GI.repository.GDK@} and @expr{GI.repository.Pango@}.
+//!   Typical such modules include @[GI.repository.Gtk],
+//!   @[GI.repository.Gdk] and @[GI.repository.Pango].
+//!
+//!   Several GI-compatible APIs are documented at
+//!   @url{https://www.gtk.org/docs/apis/@}.
 //!
 //! @seealso
 //!   @[Cairo], @[GDK], @[GTK], @[Pango]
