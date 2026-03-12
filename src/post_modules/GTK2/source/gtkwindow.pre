@@ -57,17 +57,23 @@ signal keys_changed;
 signal move_focus;
 signal set_focus;
 
-void create(int|mapping(string:mixed) props)
+void create(int|mapping(string:mixed)|void props)
 //! Argument is one of CONST(GTK_WINDOW), or a mapping of allowed properties.
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   {
-    INT_TYPE wt;
-    
-    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
+    INT_TYPE wt = GTK_WINDOW_TOPLEVEL;
+
+    if (!args) {
+      GtkWidget *gw = gtk_window_new(wt);
+      THIS->obj = G_OBJECT(gw);
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       GtkWidget *gw;
       get_all_args(NULL,args,"%i",&wt);
+      /* NB: GTK_WINDOW_TOPLEVEL == 0
+       * if (!wt) wt = GTK_WINDOW_TOPLEVEL;
+       */
       gw=gtk_window_new(wt);
       THIS->obj=G_OBJECT(gw); 
     } else {
