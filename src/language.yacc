@@ -1026,8 +1026,8 @@ def: modifiers optional_attributes simple_type optional_constant
   | import {}
   | constant {}
   | generic {}
-  | modifiers named_class { free_node($2); }
-  | modifiers enum { free_node($2); }
+  | modifiers optional_attributes named_class { free_node($3); }
+  | modifiers optional_attributes enum { free_node($3); }
   | annotation ';'
   {
     $1 = mknode(F_COMMA_EXPR, $1, NULL);
@@ -1387,7 +1387,7 @@ attribute: TOK_ATTRIBUTE_ID '(' string_constant optional_comma ')'
   }
   ;
 
-optional_attributes: /* empty */
+dummy_attributes: /* empty */
   {
     if (Pike_compiler->current_attributes) {
       free_node(Pike_compiler->current_attributes);
@@ -1397,6 +1397,9 @@ optional_attributes: /* empty */
       add_ref(Pike_compiler->current_attributes);
     }
   }
+  ;
+
+optional_attributes: dummy_attributes
   | optional_attributes attribute
   {
     if ($2) {
@@ -2371,7 +2374,7 @@ statement: normal_label_statement
   | labeled_statement
   | simple_type2 local_function { $$=mkcastnode(void_type_string, $2); }
   | local_restartable_function { $$=mkcastnode(void_type_string, $1); }
-  | implicit_modifiers named_class { $$=mkcastnode(void_type_string, $2); }
+  | implicit_modifiers dummy_attributes named_class { $$=mkcastnode(void_type_string, $3); }
   ;
 
 labeled_statement: TOK_IDENTIFIER
@@ -2887,7 +2890,7 @@ failsafe_program: '{' program { $<n>$ = NULL; } end_block
 		}
                 ;
 
-/* Modifiers at $0. */
+/* Modifiers at $-1, dummy_attributes at $0. */
 anon_class: TOK_CLASS line_number_info
   {
     struct pike_string *s;
@@ -2899,17 +2902,17 @@ anon_class: TOK_CLASS line_number_info
     s = make_shared_string(buffer);
     $<n>$ = mkstrnode(s);
     free_string(s);
-    $<number>0 |= ID_PROTECTED | ID_PRIVATE | ID_INLINE;
+    $<number>-1 |= ID_PROTECTED | ID_PRIVATE | ID_INLINE;
   }
   {
     /* fprintf(stderr, "LANGUAGE.YACC: ANON CLASS start\n"); */
     if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)
     {
-      if ($<number>0 & ID_EXTERN) {
+      if ($<number>-1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
       low_start_new_program(0, COMPILER_PASS_FIRST, $<n>3->u.sval.u.string,
-			    $<number>0,
+                            $<number>-1,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
@@ -2929,7 +2932,7 @@ anon_class: TOK_CLASS line_number_info
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
 	low_start_new_program(0, COMPILER_PASS_LAST, 0,
-			      $<number>0,
+                              $<number>-1,
 			      &$<number>$);
       }else{
 	id=ID_FROM_INT(Pike_compiler->new_program, i);
@@ -2943,7 +2946,7 @@ anon_class: TOK_CLASS line_number_info
 	  {
 	    low_start_new_program(s->u.program, COMPILER_PASS_LAST,
 				  $<n>3->u.sval.u.string,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
@@ -2952,13 +2955,13 @@ anon_class: TOK_CLASS line_number_info
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
 	  low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				$<number>0,
+                                $<number>-1,
 				&$<number>$);
 	}
       }
@@ -2983,7 +2986,7 @@ anon_class: TOK_CLASS line_number_info
   }
   ;
 
-/* Modifiers at $0. */
+/* Modifiers at $-1, optional_attributes/dummy_attributes at $0. */
 named_class: TOK_CLASS line_number_info simple_identifier
   {
     if(!$3)
@@ -2997,17 +3000,17 @@ named_class: TOK_CLASS line_number_info simple_identifier
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
-      $<number>0|=ID_PROTECTED | ID_PRIVATE | ID_INLINE;
+      $<number>-1|=ID_PROTECTED | ID_PRIVATE | ID_INLINE;
     }
 
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
     if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)
     {
-      if ($<number>0 & ID_EXTERN) {
+      if ($<number>-1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
       low_start_new_program(0, COMPILER_PASS_FIRST, $3->u.sval.u.string,
-			    $<number>0,
+                            $<number>-1,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
@@ -3027,7 +3030,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
 	low_start_new_program(0, COMPILER_PASS_LAST, 0,
-			      $<number>0,
+                              $<number>-1,
 			      &$<number>$);
       }else{
 	id=ID_FROM_INT(Pike_compiler->new_program, i);
@@ -3041,7 +3044,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	  {
 	    low_start_new_program(s->u.program, COMPILER_PASS_LAST,
 				  $3->u.sval.u.string,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
@@ -3050,13 +3053,13 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
 	  low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				$<number>0,
+                                $<number>-1,
 				&$<number>$);
 	}
       }
@@ -3187,7 +3190,13 @@ enum: TOK_ENUM
   }
   enum_list { $<n>$ = NULL; } end_block
   {
-    struct pike_type *t = pop_unfinished_type();
+    struct pike_type *t;
+    node *n = Pike_compiler->current_attributes;
+    while(n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
+    t = pop_unfinished_type();
     free_node($<n>5);
     if ($3) {
       ref_push_type_value(t);
@@ -3865,8 +3874,8 @@ primary_expr: literal_expr
   | sscanf
   | static_assertion { $$ = mknewintnode(0); }
   | lambda
-  | implicit_modifiers anon_class { $$ = $2; }
-  | implicit_modifiers enum { $$ = $2; }
+  | implicit_modifiers dummy_attributes anon_class { $$ = $3; }
+  | implicit_modifiers dummy_attributes enum { $$ = $3; }
   | apply
   | primary_expr '.' line_number_info TOK_IDENTIFIER
   {
@@ -5357,10 +5366,23 @@ static void compiler_end_class(int has___create__, int parent_constant_id)
   {
     struct identifier *i;
     struct svalue sv;
+    struct pike_type *t;
+    node *n = Pike_compiler->previous->current_attributes;
     SET_SVAL(sv, T_PROGRAM, 0, program, Pike_compiler->new_program);
     i = ID_FROM_INT(Pike_compiler->previous->new_program, parent_constant_id);
     free_type(i->type);
-    i->type = get_type_of_svalue(&sv);
+    t = get_type_of_svalue(&sv);
+    if (n) {
+      type_stack_mark();
+      push_finished_type(t);
+      while(n) {
+        push_type_attribute(CDR(n)->u.sval.u.string);
+        n = CAR(n);
+      }
+      free_type(t);
+      t = pop_unfinished_type();
+    }
+    i->type = t;
     if (Pike_compiler->new_program->flags & PROGRAM_CONSTANT) {
       /* Update, in case of @constant. */
       i->opt_flags = 0;
