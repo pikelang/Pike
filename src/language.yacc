@@ -379,6 +379,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> catch_arg
 %type <n> anon_class
 %type <n> named_class
+%type <n> save_attributes
 %type <n> enum
 %type <n> enum_value
 %type <n> range_bound
@@ -1384,6 +1385,13 @@ attribute: TOK_ATTRIBUTE_ID '(' string_constant optional_comma ')'
     struct pike_string *experimental_string;
     MAKE_CONST_STRING(experimental_string, "experimental");
     $$ = mkstrnode(experimental_string);
+  }
+  ;
+
+save_attributes: /* empty */
+  {
+    $$ = Pike_compiler->current_attributes;
+    Pike_compiler->current_attributes = NULL;
   }
   ;
 
@@ -3094,22 +3102,25 @@ enum_value: /* EMPTY */ { $$ = 0; }
 
 /* Previous enum value at $0. */
 enum_def: /* EMPTY */
-  | simple_identifier enum_value
+  | save_attributes optional_attributes simple_identifier enum_value
   {
-    if ($1) {
-      if ($2) {
+    if ($3) {
+      node *n = Pike_compiler->current_attributes;
+      struct pike_type *t;
+
+      if ($4) {
 	/* Explicit enum value. */
 
 	/* This can be made more lenient in the future */
 
-	/* Ugly hack to make sure that $2 is optimized */
+        /* Ugly hack to make sure that $4 is optimized */
 	{
 	  int tmp=Pike_compiler->compiler_pass;
-	  $2=mknode(F_COMMA_EXPR,$2,0);
+          $4 = mknode(F_COMMA_EXPR, $4, 0);
 	  Pike_compiler->compiler_pass=tmp;
 	}
 
-	if(!is_const($2))
+        if(!is_const($4))
 	{
 	  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
 	    yyerror("Enum definition is not constant.");
@@ -3117,7 +3128,7 @@ enum_def: /* EMPTY */
 	} else {
 	  if(!Pike_compiler->num_parse_error)
 	  {
-	    ptrdiff_t tmp=eval_low($2,1);
+            ptrdiff_t tmp = eval_low($4, 1);
 	    if(tmp < 1)
 	    {
 	      yyerror("Error in enum definition.");
@@ -3129,7 +3140,7 @@ enum_def: /* EMPTY */
 	    push_int(0);
 	  }
 	}
-	free_node($2);
+        free_node($4);
 	free_node($<n>0);
 	$<n>0 = mkconstantsvaluenode(Pike_sp-1);
       } else {
@@ -3137,24 +3148,38 @@ enum_def: /* EMPTY */
 	$<n>0 = safe_inc_enum($<n>0);
 	push_svalue(&$<n>0->u.sval);
       }
-      add_constant($1->u.sval.u.string, Pike_sp-1,
-		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
+      t = get_type_of_svalue(Pike_sp-1);
+      if (n) {
+        type_stack_mark();
+        push_finished_type(t);
+        while(n) {
+          push_type_attribute(CDR(n)->u.sval.u.string);
+          n = CAR(n);
+        }
+        free_type(t);
+        t = pop_unfinished_type();
+      }
+      add_typed_constant($3->u.sval.u.string, t, Pike_sp-1,
+                         (Pike_compiler->current_modifiers & ~ID_EXTERN) |
+                         ID_INLINE);
       /* Update the type. */
       {
 	struct pike_type *current = pop_unfinished_type();
-	struct pike_type *new = get_type_of_svalue(Pike_sp-1);
-	struct pike_type *res = or_pike_types(new, current, 2);
+        struct pike_type *res = or_pike_types(t, current, 2);
 	free_type(current);
-	free_type(new);
+        free_type(t);
 	type_stack_mark();
 	push_finished_type(res);
 	free_type(res);
       }
       pop_stack();
-      free_node($1);
-    } else if ($2) {
-      free_node($2);
+      free_node($3);
+    } else if ($4) {
+      free_node($4);
     }
+    /* Restore attributes */
+    free_node(Pike_compiler->current_attributes);
+    Pike_compiler->current_attributes = $1;
   }
   ;
 
