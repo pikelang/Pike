@@ -2763,10 +2763,11 @@ local_restartable_function: local_modifier simple_type2 TOK_IDENTIFIER
   }
   ;
 
-create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
-  optional_default_value
+create_arg: modifiers optional_attributes simple_type
+            optional_dot_dot_dot TOK_IDENTIFIER optional_default_value
   {
     struct pike_type *type;
+    node *n = Pike_compiler->current_attributes;
     int ref_no;
     int l_no;
 
@@ -2774,13 +2775,15 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
       yyerror("Can't define more variables after ...");
     }
 
-    if ($3) {
-      push_finished_type(Pike_compiler->compiler_frame->current_type);
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    if ($4) {
       push_unlimited_array_type(T_ARRAY);
-      type = compiler_pop_type();
-    } else {
-      copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
     }
+    while(n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
+    type = compiler_pop_type();
 
     /* Add the identifier globally.
      * Note: Since these are the first identifiers (and references)
@@ -2789,29 +2792,29 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
      *       is sufficient extra information to be able to keep
      *       track of them.
      */
-    ref_no = define_variable($4->u.sval.u.string, type,
+    ref_no = define_variable($5->u.sval.u.string, type,
 			     Pike_compiler->current_modifiers);
 
     if ((Pike_compiler->num_create_args != ref_no) &&
 	(Pike_compiler->num_create_args != -ref_no)) {
       my_yyerror("Multiple definitions of create variable %pS (%d != %d).",
-		 $4->u.sval.u.string,
+                 $5->u.sval.u.string,
 		 Pike_compiler->num_create_args, ref_no);
     }
-    if ($3) {
+    if ($4) {
       /* Encode varargs marker as negative number of args. */
       Pike_compiler->num_create_args = -(ref_no + 1);
 
-      if ($5) {
+      if ($6) {
 	yyerror("Varargs variable with default value.");
-	free_node($5);
-	$5 = NULL;
+        free_node($6);
+        $6 = NULL;
       }
     } else {
       Pike_compiler->num_create_args = ref_no + 1;
     }
 
-    l_no = add_local_name($4->u.sval.u.string, type, $5);
+    l_no = add_local_name($5->u.sval.u.string, type, $6);
     bind_local(NULL, l_no);
     Pike_compiler->compiler_frame->local_names[l_no].flags |=
       LOCAL_VAR_IS_ARGUMENT | LOCAL_VAR_IS_USED;
@@ -2821,11 +2824,12 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     }
 
     /* free_type(type); */
-    free_node($4);
+    free_node($5);
     $$=0;
   }
-  | modifiers simple_type optional_dot_dot_dot bad_identifier { $$=0; }
-  | modifiers simple_type optional_dot_dot_dot {
+  | modifiers optional_attributes simple_type
+    optional_dot_dot_dot bad_identifier { $$=0; }
+  | modifiers optional_attributes simple_type optional_dot_dot_dot {
     yyerror("Missing identifier.");
     $$=0;
   }
