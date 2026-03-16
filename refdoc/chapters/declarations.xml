@@ -545,4 +545,115 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
     </subsection>
   </section>
 
+  <section title="Type attributes">
+    <p>Attributes are markers that modify the type-checker behavior for
+    a type. They can either be declared directly on a type, or after
+    the modifers and before the type in a declaration.</p>
+    <p>They are used to improve type-checking for some special functions
+    eg <ref>sprintf()</ref> and <ref>sscanf()</ref>, as well as marking
+    stuff that is likely to be removed in later versions of Pike
+    as deprecated (causing the type checker to warn on use).</p>
+
+    <subsection title="__attribute__">
+      <p>This sets a generic attribute on a type. It can be used to
+      set any attribute.</p>
+
+      <example>
+        __attribute__("SYM_ATTR") __attribute__("RET_ATTR", string)
+          fun(__attribute__("ARG_ATTR", int(16bit)) arg)
+        {
+          // ...
+        }
+      </example>
+
+      <p>In the above the symbol <tt>fun</tt> is declared as a function
+      with the type:
+        <tt>__attribute("SYM_ATTR",
+                        function(__attribute__("ARG_ATTR", int(16bit)):
+                                 __attribute__("RET_ATTR", string)))</tt>
+      </p>
+
+      <p>Some commonly used attributes are:</p>
+      <matrix>
+        <r><c><b>Attribute name</b></c><c><b>Description</b></c></r>
+        <r><c><expr>"deprecated"</expr></c>
+           <c>Marks the corresponding value as deprecated.
+              There is a short-hand syntax <expr>__deprecated__</expr>
+              for declaring this attribute; see below.</c></r>
+        <r><c><expr>"experimental"</expr></c>
+           <c>Marks the corresponding value as deprecated.
+              There is a short-hand syntax <expr>__experimental__</expr>
+              for declaring this attribute; see below.</c></r>
+        <r><c><expr>"sprintf_args"</expr></c>
+           <c>Used to mark lists of arguments that will be passed to
+              <ref>sprintf()</ref>. There is a short-hand typedef
+              <ref>sprintf_args</ref> that has the value
+              <expr>__attribute__("sprintf_args", mixed)</expr>.
+              See <ref>__handle_sprintf_format()</ref> for details.</c></r>
+        <r><c><expr>"sprintf_format"</expr></c>
+           <c>Used to mark arguments that will be passed as the first
+              argument to <ref>sprintf()</ref>. There is a short-hand typedef
+              <ref>sprintf_format</ref> that has the value
+              <expr>__attribute__("sprintf_format", string)</expr>.
+              See <ref>__handle_sprintf_format()</ref> for details.</c></r>
+        <r><c><expr>"sscanf_args"</expr></c>
+           <c>Used to mark variables will be assinged to by
+              <ref>sscanf()</ref>. There is a short-hand typedef
+              <ref>sscanf_args</ref> that has the value
+              <expr>__attribute__("sscanf_args", mixed)</expr>.
+              See <ref>__handle_sscanf_format()</ref> for details.</c></r>
+        <r><c><expr>"sscanf_format"</expr></c>
+           <c>Used to mark arguments that will be used as the formatting
+              string for <ref>sscanf()</ref>. There is a short-hand typedef
+              <ref>sscanf_format</ref> that has the value
+              <expr>__attribute__("sscanf_format", string)</expr>.
+              See <ref>__handle_sscanf_format()</ref> for details.</c></r>
+      </matrix>
+    </subsection>
+
+    <subsection title="__deprecated__">
+      <p>The <tt>__deprecated__</tt> attribute marks a symbol, return value
+      or argument with the attribute <expr>"deprecated"</expr>, which causes
+      the type-checker to complain when such values are accessed or used.</p>
+      <p>Deprecation warnings can be suppressed with the
+      <ref>cpp::#pragma</ref> <tt>no_deprecation_warnings</tt></p>
+
+      <example>
+        __deprecated__ __deprecated__(string)
+          fun(__deprecated__(int(16bit)) arg)
+        {
+          // ...
+        }
+      </example>
+
+      <p>In the above the symbol <tt>fun</tt> is declared as a deprecated
+      function that takes a deprecated argument and returns a deprecated
+      value. The above markup is (of course) excessive; just
+      <expr>__deprecated__ string fun(int(16bit) arg) {}</expr> would be
+      sufficient in most cases.</p>
+    </subsection>
+
+    <subsection title="__experimental__">
+      <p>The <tt>__experimental__</tt> attribute marks a symbol, return value
+      or argument with the attribute <expr>"experimental"</expr>, which causes
+      the type-checker to complain when such values are accessed or used.</p>
+      <p>Experimental warnings can be suppressed with the
+      <ref>cpp::#pragma</ref> <tt>no_experimental_warnings</tt> or
+      <ref>cpp::#pragma</ref> <tt>no_deprecation_warnings</tt></p>
+
+      <example>
+        __experimental__ __deprecated__(string)
+          fun(__deprecated__(int(16bit))|void arg)
+        {
+          // ...
+        }
+      </example>
+
+      <p>In the above the symbol <tt>fun</tt> is declared as an experimental
+      function that takes an optional deprecated argument and returns a
+      deprecated value. In a <tt>no_experimental_warnings</tt> context
+      it would thus be needed to call the function without any arguments
+      and not use the return value in order to avoid the related warnings.</p>
+    </subsection>
+  </section>
 </chapter>
