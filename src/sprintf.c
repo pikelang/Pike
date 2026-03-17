@@ -3088,10 +3088,12 @@ static void low_handle_sprintf_format(struct svalue *fmt_sval,
  *!   Returns @[cont_type] with @expr{"sprintf_args"@} replaced by the
  *!   arguments required by the @[fmt] formatting string, and
  *!   @expr{"sprintf_result"@} replaced by the resulting string type.
+ *!   May return @[UNDEFINED] in case of non-fatal failure (eg when @[fmt]
+ *!   is not a literal string constant).
  *!
  *! @seealso
  *!   @[CompilerEnvironment.PikeCompiler()->apply_attribute_constant()],
- *!   @[sprintf()]
+ *!   @[sprintf()], @[__handle_sscanf_format()]
  */
 void f___handle_sprintf_format(INT32 args)
 {
