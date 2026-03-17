@@ -2230,6 +2230,47 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
   }
 }
 
+/*! @decl type(mixed) __handle_sscanf_format(string attribute_name, @
+ *!                                          string|zero fmt, @
+ *!                                          type arg_type, @
+ *!                                          type(function)|zero cont_type, @
+ *!                                          mapping state)
+ *!
+ *!   Type attribute handler for @expr{"sscanf_input"@}.
+ *!
+ *! @param attr
+ *!   Attribute to handle, one of @expr{"sscanf_input"@},
+ *!   @expr{"sscanf_format"@} or @expr{"sscanf_80_format"@}.
+ *!
+ *! @param fmt
+ *!   Sscanf-style formatting string to generate type information from.
+ *!
+ *! @param arg_type
+ *!   Declared type of the @[fmt] argument (typically @expr{string@}).
+ *!
+ *! @param cont_type
+ *!   Continuation function type after the @[fmt] argument. This is
+ *!   scanned for the type attribute @expr{"sscanf_args"@} to
+ *!   determine where @[sscanf()] will put its extracted values.
+ *!
+ *! @param state
+ *!   State mapping.
+ *!
+ *! This function is typically called from
+ *! @[CompilerEnvironment.PikeCompiler()->apply_attribute_constant()] and
+ *! is used to perform stricter compile-time argument checking of
+ *! @[sscanf()]-style functions.
+ *!
+ *! @returns
+ *!   Returns @[cont_type] with @expr{"sscanf_args"@} replaced by the
+ *!   arguments required by the @[fmt] formatting string.
+ *!   May return @[UNDEFINED] in case of non-fatal failure (eg when @[fmt]
+ *!   is not a literal string constant).
+ *!
+ *! @seealso
+ *!   @[CompilerEnvironment.PikeCompiler()->apply_attribute_constant()],
+ *!   @[sprintf()], @[__handle_sprintf_format()]
+ */
 void f___handle_sscanf_format(INT32 args)
 {
   struct pike_type *res;

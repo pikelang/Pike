@@ -597,7 +597,7 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
               <expr>__attribute__("sprintf_format", string)</expr>.
               See <ref>__handle_sprintf_format()</ref> for details.</c></r>
         <r><c><expr>"sscanf_args"</expr></c>
-           <c>Used to mark variables will be assinged to by
+           <c>Used to mark variables will be assigned to by
               <ref>sscanf()</ref>. There is a short-hand typedef
               <ref>sscanf_args</ref> that has the value
               <expr>__attribute__("sscanf_args", mixed)</expr>.
@@ -607,6 +607,12 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
               string for <ref>sscanf()</ref>. There is a short-hand typedef
               <ref>sscanf_format</ref> that has the value
               <expr>__attribute__("sscanf_format", string)</expr>.
+              See <ref>__handle_sscanf_format()</ref> for details.</c></r>
+        <r><c><expr>"sscanf_input"</expr></c>
+           <c>Used to the input string that will be parsed by
+              <ref>sscanf()</ref>. There is a short-hand typedef
+              <ref>sscanf_input</ref> that has the value
+              <expr>__attribute__("sscanf_input", string)</expr>.
               See <ref>__handle_sscanf_format()</ref> for details.</c></r>
       </matrix>
     </subsection>
