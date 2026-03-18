@@ -1064,7 +1064,7 @@ static int do_docode2(node *n, int flags)
     switch(n->token)
     {
       default:
-	yyerror("Illegal lvalue.");
+        my_yyerror("Illegal lvalue: %pN.", n);
 	emit1(F_NUMBER,0);
 	emit1(F_NUMBER,0);
 	return 2;
