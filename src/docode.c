@@ -1149,7 +1149,7 @@ static int do_docode2(node *n, int flags)
     switch(n->token)
     {
       default:
-	yyerror("Illegal lvalue.");
+        my_yyerror("Illegal lvalue: %pN.", n);
 	emit1(F_NUMBER,0);
 	emit1(F_NUMBER,0);
 	return 2;
@@ -2482,7 +2482,17 @@ static int do_docode2(node *n, int flags)
       if(current_switch.jumptable[e]==-1)
 	current_switch.jumptable[e]=current_switch.default_label;
       else if (e & 1) {
-        got_range = 1;
+        /* NB Differentiate short integer ranges (max 16). See below. */
+         if ((e > 1) && ((e>>1) < cases) &&
+            (TYPEOF(ITEM(Pike_sp[-1].u.array)[e>>1]) == PIKE_T_INT) &&
+            (TYPEOF(ITEM(Pike_sp[-1].u.array)[(e - 2)>>1]) == PIKE_T_INT) &&
+            ((ITEM(Pike_sp[-1].u.array)[e>>1].u.integer -
+              ITEM(Pike_sp[-1].u.array)[(e - 2)>>1].u.integer) < 16)) {
+          /* Found short integer range. This may be expanded. */
+          got_range |= 2;
+        } else {
+          got_range = 1;
+        }
       }
     }
 
