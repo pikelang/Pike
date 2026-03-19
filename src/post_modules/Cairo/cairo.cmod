@@ -5837,7 +5837,9 @@ static struct object *ref_pattern_to_object(cairo_pattern_t *pat)
  */
 PIKECLASS Context
 {
-  CVAR cairo_t *cr;
+  /*! @decl inherit Val.Pointer
+   */
+  INHERIT Pointer;
 
   /*! @decl protected void create(Surface target)
    *!
@@ -5847,24 +5849,32 @@ PIKECLASS Context
    *! @param target
    *!   target surface for the context
    */
-  PIKEFUN void create( object(Surface)|object(Val.Pointer) target )
+  PIKEFUN void create( object(Surface)|object(Val.Pointer)|void target )
     flags ID_PROTECTED;
     get_all_args;
   {
     struct Cairo_Surface_struct *surface;
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
 
-    if (THIS->cr)
+    if (!target) {
+      if (!cr)
+        Pike_error("No pointer for context\n");
+      return;
+    }
+
+    if (cr)
       Pike_error("Context already initialized\n");
 
     if ((surface = get_storage(target, Cairo_Surface_program))) {
-      THIS->cr = cairo_create(surface->surface);
-      check_status(cairo_status(THIS->cr));
+      cr = cairo_create(surface->surface);
+      check_status(cairo_status(cr));
     } else {
-      cairo_t *cr = get_pointer_from_pointer_object(target);
+      cr = get_pointer_from_pointer_object(target);
       if (!cr)
         Pike_error("No valid pointer provided\n");
-      THIS->cr = cairo_reference(cr);
+      cr = cairo_reference(cr);
     }
+    set_pointer_in_pointer_object(NULL, cr);
 
     RETURN;
   }
@@ -5879,7 +5889,8 @@ PIKECLASS Context
    */
   PIKEFUN void save()
   {
-    cairo_save(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_save(cr);
   }
 
   /*! @decl void restore()
@@ -5889,7 +5900,8 @@ PIKECLASS Context
    */
   PIKEFUN void restore()
   {
-    cairo_restore(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_restore(cr);
   }
 
   /*! @decl Surface get_target()
@@ -5901,7 +5913,8 @@ PIKECLASS Context
    */
   PIKEFUN Surface get_target()
   {
-    cairo_surface_t *surf = cairo_get_target(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_surface_t *surf = cairo_get_target(cr);
     check_status(cairo_surface_status(surf));
     RETURN ref_surface_to_object(surf);
   }
@@ -5928,7 +5941,8 @@ PIKECLASS Context
   PIKEFUN void set_source_rgb(float red, float green, float blue)
     get_all_args;
   {
-    cairo_set_source_rgb(THIS->cr, red, green, blue);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_source_rgb(cr, red, green, blue);
     RETURN;
   }
 
@@ -5959,7 +5973,8 @@ PIKECLASS Context
   PIKEFUN void set_source_rgba(float red, float green, float blue, float alpha)
     get_all_args;
   {
-    cairo_set_source_rgba(THIS->cr, red, green, blue, alpha);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_source_rgba(cr, red, green, blue, alpha);
     RETURN;
   }
 
@@ -5986,11 +6001,12 @@ PIKECLASS Context
   PIKEFUN void set_source(Pattern source)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct Cairo_Pattern_struct *pattern;
     if (!(pattern = get_storage(source, Cairo_Pattern_program)))
       SIMPLE_ARG_TYPE_ERROR("set_source", 1, "Cairo.Pattern");
-    cairo_set_source(THIS->cr, pattern->pattern);
-    check_status(cairo_status(THIS->cr));
+    cairo_set_source(cr, pattern->pattern);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6022,11 +6038,12 @@ PIKECLASS Context
   PIKEFUN void set_source_surface(Surface surface, float|int x, float|int y)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct Cairo_Surface_struct *surf;
     if (!(surf = get_storage(surface, Cairo_Surface_program)))
       SIMPLE_ARG_TYPE_ERROR("set_source_surface", 1, "Cairo.Surface");
-    cairo_set_source_surface(THIS->cr, surf->surface, x, y);
-    check_status(cairo_status(THIS->cr));
+    cairo_set_source_surface(cr, surf->surface, x, y);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6039,7 +6056,8 @@ PIKECLASS Context
    */
   PIKEFUN Pattern get_source()
   {
-    cairo_pattern_t *pat = cairo_get_source(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_pattern_t *pat = cairo_get_source(cr);
     check_status(cairo_pattern_status(pat));
     RETURN ref_pattern_to_object(pat);
   }
@@ -6060,8 +6078,9 @@ PIKECLASS Context
   PIKEFUN void set_antialias(int antialias)
     get_all_args;
   {
-    cairo_set_antialias(THIS->cr, antialias);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_antialias(cr, antialias);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6075,7 +6094,8 @@ PIKECLASS Context
    */
   PIKEFUN int get_antialias()
   {
-    RETURN cairo_get_antialias(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_antialias(cr);
   }
 
   /*! @decl void set_dash(array(float|int) dashes, float|int offset)
@@ -6110,6 +6130,7 @@ PIKECLASS Context
   PIKEFUN void set_dash(array(float|int) dashes, float|int offset)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double *double_dashes = NULL;
     if (dashes->size) {
       INT32 i;
@@ -6126,10 +6147,10 @@ PIKECLASS Context
         }
       }
     }
-    cairo_set_dash(THIS->cr, double_dashes, dashes->size, offset);
+    cairo_set_dash(cr, double_dashes, dashes->size, offset);
     if (double_dashes)
       free(double_dashes);
-    check_status(cairo_status(THIS->cr));
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6148,8 +6169,9 @@ PIKECLASS Context
   PIKEFUN void set_fill_rule(int fill_rule)
     get_all_args;
   {
-    cairo_set_fill_rule(THIS->cr, fill_rule);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_fill_rule(cr, fill_rule);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6162,7 +6184,8 @@ PIKECLASS Context
    */
   PIKEFUN int get_fill_rule()
   {
-    RETURN cairo_get_fill_rule(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_fill_rule(cr);
   }
 
   /*! @decl void set_line_cap(int line_cap)
@@ -6181,8 +6204,9 @@ PIKECLASS Context
   PIKEFUN void set_line_cap(int line_cap)
     get_all_args;
   {
-    cairo_set_line_cap(THIS->cr, line_cap);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_line_cap(cr, line_cap);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6195,7 +6219,8 @@ PIKECLASS Context
    */
   PIKEFUN int get_line_cap()
   {
-    RETURN cairo_get_line_cap(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_line_cap(cr);
   }
 
   /*! @decl void set_line_join(int line_join)
@@ -6214,8 +6239,9 @@ PIKECLASS Context
   PIKEFUN void set_line_join(int line_join)
     get_all_args;
   {
-    cairo_set_line_join(THIS->cr, line_join);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_line_join(cr, line_join);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6228,7 +6254,8 @@ PIKECLASS Context
    */
   PIKEFUN int get_line_join()
   {
-    RETURN cairo_get_line_join(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_line_join(cr);
   }
 
   /*! @decl void set_line_width(float|int width)
@@ -6248,8 +6275,9 @@ PIKECLASS Context
   PIKEFUN void set_line_width(float|int width)
     get_all_args;
   {
-    cairo_set_line_width(THIS->cr, width);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_line_width(cr, width);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6265,7 +6293,8 @@ PIKECLASS Context
    */
   PIKEFUN float get_line_width()
   {
-    RETURN cairo_get_line_width(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_line_width(cr);
   }
 
   /*! @decl void set_miter_limit(float|int limit)
@@ -6298,8 +6327,9 @@ PIKECLASS Context
   PIKEFUN void set_miter_limit(float|int limit)
     get_all_args;
   {
-    cairo_set_miter_limit(THIS->cr, limit);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_miter_limit(cr, limit);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6312,7 +6342,8 @@ PIKECLASS Context
    */
   PIKEFUN float get_miter_limit()
   {
-    RETURN cairo_get_miter_limit(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_miter_limit(cr);
   }
 
 
@@ -6329,8 +6360,9 @@ PIKECLASS Context
   PIKEFUN void set_operator(int op)
     get_all_args;
   {
-    cairo_set_operator(THIS->cr, op);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_operator(cr, op);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6343,7 +6375,8 @@ PIKECLASS Context
    */
   PIKEFUN int get_operator()
   {
-    RETURN cairo_get_operator(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_operator(cr);
   }
 
   /*! @decl void set_tolerance(float|int tolerance)
@@ -6365,8 +6398,9 @@ PIKECLASS Context
   PIKEFUN void set_tolerance(float|int tolerance)
     get_all_args;
   {
-    cairo_set_tolerance(THIS->cr, tolerance);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_tolerance(cr, tolerance);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6379,7 +6413,8 @@ PIKECLASS Context
    */
   PIKEFUN float get_tolerance()
   {
-    RETURN cairo_get_tolerance(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_tolerance(cr);
   }
 
   /*! @decl void clip()
@@ -6404,7 +6439,8 @@ PIKECLASS Context
    */
   PIKEFUN void clip()
   {
-    cairo_clip(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_clip(cr);
   }
 
   /*! @decl void clip_preserve()
@@ -6429,7 +6465,8 @@ PIKECLASS Context
    */
   PIKEFUN void clip_preserve()
   {
-    cairo_clip_preserve(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_clip_preserve(cr);
   }
 
   /*! @decl void reset_clip()
@@ -6448,7 +6485,8 @@ PIKECLASS Context
    */
   PIKEFUN void reset_clip()
   {
-    cairo_reset_clip(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_reset_clip(cr);
   }
 
   /*! @decl void fill()
@@ -6463,7 +6501,8 @@ PIKECLASS Context
    */
   PIKEFUN void fill()
   {
-    cairo_fill(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_fill(cr);
   }
 
   /*! @decl void fill_preserve()
@@ -6478,7 +6517,8 @@ PIKECLASS Context
    */
   PIKEFUN void fill_preserve()
   {
-    cairo_fill_preserve(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_fill_preserve(cr);
   }
 
   /*! @decl array(float) fill_extents()
@@ -6508,8 +6548,9 @@ PIKECLASS Context
    */
   PIKEFUN array(float) fill_extents()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double x1, y1, x2, y2;
-    cairo_fill_extents(THIS->cr, &x1, &y1, &x2, &y2);
+    cairo_fill_extents(cr, &x1, &y1, &x2, &y2);
     push_float(x1);
     push_float(y1);
     push_float(x2);
@@ -6538,7 +6579,8 @@ PIKECLASS Context
   PIKEFUN int(0..1) in_fill(float|int x, float|int y)
     get_all_args;
   {
-    RETURN cairo_in_fill(THIS->cr, x, y);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_in_fill(cr, x, y);
   }
 
   /*! @decl void mask(Pattern pattern)
@@ -6553,11 +6595,12 @@ PIKECLASS Context
   PIKEFUN void mask(Pattern pattern)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct Cairo_Pattern_struct *pat;
     if (!(pat = get_storage(pattern, Cairo_Pattern_program)))
       SIMPLE_ARG_TYPE_ERROR("mask", 1, "Cairo.Pattern");
-    cairo_mask(THIS->cr, pat->pattern);
-    check_status(cairo_status(THIS->cr));
+    cairo_mask(cr, pat->pattern);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6577,11 +6620,12 @@ PIKECLASS Context
   PIKEFUN void mask_surface(Surface surface, float|int surface_x, float|int surface_y)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct Cairo_Surface_struct *surf;
     if (!(surf = get_storage(surface, Cairo_Surface_program)))
       SIMPLE_ARG_TYPE_ERROR("mask_surface", 1, "Cairo.Surface");
-    cairo_mask_surface(THIS->cr, surf->surface, surface_x, surface_y);
-    check_status(cairo_status(THIS->cr));
+    cairo_mask_surface(cr, surf->surface, surface_x, surface_y);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6592,7 +6636,8 @@ PIKECLASS Context
    */
   PIKEFUN void paint()
   {
-    cairo_paint(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_paint(cr);
   }
 
   /*! @decl void paint_with_alpha(float alpha)
@@ -6608,7 +6653,8 @@ PIKECLASS Context
   PIKEFUN void paint_with_alpha(float alpha)
     get_all_args;
   {
-    cairo_paint_with_alpha(THIS->cr, alpha);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_paint_with_alpha(cr, alpha);
   }
 
   /*! @decl void stroke()
@@ -6624,7 +6670,8 @@ PIKECLASS Context
    */
   PIKEFUN void stroke()
   {
-    cairo_stroke(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_stroke(cr);
   }
 
   /*! @decl void stroke_preserve()
@@ -6640,7 +6687,8 @@ PIKECLASS Context
    */
   PIKEFUN void stroke_preserve()
   {
-    cairo_stroke_preserve(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_stroke_preserve(cr);
   }
 
 
@@ -6673,8 +6721,9 @@ PIKECLASS Context
    */
   PIKEFUN array(float) stroke_extents()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double x1, y1, x2, y2;
-    cairo_stroke_extents(THIS->cr, &x1, &y1, &x2, &y2);
+    cairo_stroke_extents(cr, &x1, &y1, &x2, &y2);
     push_float(x1);
     push_float(y1);
     push_float(x2);
@@ -6704,7 +6753,8 @@ PIKECLASS Context
   PIKEFUN int(0..1) in_stroke(float|int x, float|int y)
     get_all_args;
   {
-    RETURN cairo_in_stroke(THIS->cr, x, y);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_in_stroke(cr, x, y);
   }
 
   /*! @decl void copy_page()
@@ -6719,8 +6769,9 @@ PIKECLASS Context
    */
   PIKEFUN void copy_page()
   {
-    cairo_copy_page(THIS->cr);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_copy_page(cr);
+    check_status(cairo_status(cr));
   }
 
   /*! @decl void show_page()
@@ -6734,8 +6785,9 @@ PIKECLASS Context
    */
   PIKEFUN void show_page()
   {
-    cairo_show_page(THIS->cr);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_show_page(cr);
+    check_status(cairo_status(cr));
   }
 
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 2, 0)
@@ -6768,7 +6820,8 @@ PIKECLASS Context
    */
   PIKEFUN void push_group()
   {
-    cairo_push_group(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_push_group(cr);
   }
 
   /*! @decl void push_group_with_content(int content)
@@ -6791,8 +6844,9 @@ PIKECLASS Context
   PIKEFUN void push_group_with_content(int content)
     get_all_args;
   {
-    cairo_push_group_with_content(THIS->cr, content);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_push_group_with_content(cr, content);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -6813,7 +6867,8 @@ PIKECLASS Context
    */
   PIKEFUN Pattern pop_group()
   {
-    cairo_pattern_t *pat = cairo_pop_group(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_pattern_t *pat = cairo_pop_group(cr);
     push_object(pattern_to_object(pat));
     check_status(cairo_pattern_status(pat));
   }
@@ -6830,7 +6885,8 @@ PIKECLASS Context
    */
   PIKEFUN void pop_group_to_source()
   {
-    cairo_pop_group_to_source(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_pop_group_to_source(cr);
   }
 
   /*! @decl Surface get_group_target()
@@ -6845,7 +6901,8 @@ PIKECLASS Context
    */
   PIKEFUN Surface get_group_target()
   {
-    cairo_surface_t *surf = cairo_get_group_target(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_surface_t *surf = cairo_get_group_target(cr);
     check_status(cairo_surface_status(surf));
     RETURN ref_surface_to_object(surf);
   }
@@ -6865,7 +6922,8 @@ PIKECLASS Context
    */
   PIKEFUN int get_dash_count()
   {
-    RETURN cairo_get_dash_count(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_dash_count(cr);
   }
 
   /*! @decl array(array(float)|float) get_dash()
@@ -6878,11 +6936,12 @@ PIKECLASS Context
    */
   PIKEFUN array(array(float)|float) get_dash()
   {
-    int count = cairo_get_dash_count(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    int count = cairo_get_dash_count(cr);
     double offset, *dashes = NULL;
     if (count)
       dashes = xalloc(count * sizeof(double));
-    cairo_get_dash(THIS->cr, dashes, &offset);
+    cairo_get_dash(cr, dashes, &offset);
     if (dashes) {
       int i;
       for (i=0; i<count; i++)
@@ -6906,8 +6965,9 @@ PIKECLASS Context
    */
   PIKEFUN array(float) clip_extents()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double x1, y1, x2, y2;
-    cairo_clip_extents(THIS->cr, &x1, &y1, &x2, &y2);
+    cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
     push_float(x1);
     push_float(y1);
     push_float(x2);
@@ -6926,7 +6986,8 @@ PIKECLASS Context
    */
   PIKEFUN array(Rectangle) copy_clip_rectangle_list()
   {
-    cairo_rectangle_list_t *rects = cairo_copy_clip_rectangle_list(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_rectangle_list_t *rects = cairo_copy_clip_rectangle_list(cr);
     cairo_status_t status = rects->status;
     if (status != CAIRO_STATUS_SUCCESS) {
       cairo_rectangle_list_destroy(rects);
@@ -6962,7 +7023,8 @@ PIKECLASS Context
   PIKEFUN int(0..1) in_clip(float|int x, float|int y)
     get_all_args;
   {
-    RETURN cairo_in_clip(THIS->cr, x, y);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_in_clip(cr, x, y);
   }
 #endif
 
@@ -6996,7 +7058,8 @@ PIKECLASS Context
   PIKEFUN void set_hairline(int(0..1) set_hairline)
     get_all_args;
   {
-    cairo_set_hairline(THIS->cr, set_hairline);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_hairline(cr, set_hairline);
     RETURN;
   }
 
@@ -7010,7 +7073,8 @@ PIKECLASS Context
    */
   PIKEFUN int(0..1) get_hairline()
   {
-    RETURN cairo_get_hairline(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_get_hairline(cr);
   }
 #endif
 
@@ -7024,9 +7088,10 @@ PIKECLASS Context
    */
   PIKEFUN Path copy_path()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct object *o = fast_clone_object(Cairo_Path_program);
     struct Cairo_Path_struct *p = GET_CAIRO_PATH_STORAGE(o);
-    p->path = cairo_copy_path(THIS->cr);
+    p->path = cairo_copy_path(cr);
     push_object(o);
     check_status(p->path->status);
   }
@@ -7046,9 +7111,10 @@ PIKECLASS Context
    */
   PIKEFUN Path copy_path_flat()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct object *o = fast_clone_object(Cairo_Path_program);
     struct Cairo_Path_struct *p = GET_CAIRO_PATH_STORAGE(o);
-    p->path = cairo_copy_path_flat(THIS->cr);
+    p->path = cairo_copy_path_flat(cr);
     push_object(o);
     check_status(p->path->status);
   }
@@ -7065,8 +7131,9 @@ PIKECLASS Context
   PIKEFUN void append_path(Path path)
     get_all_args;
   {
-    cairo_append_path(THIS->cr, GET_CAIRO_PATH_STORAGE(path)->path);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_append_path(cr, GET_CAIRO_PATH_STORAGE(path)->path);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7085,8 +7152,9 @@ PIKECLASS Context
    */
   PIKEFUN array(float) get_current_point()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double x, y;
-    cairo_get_current_point (THIS->cr, &x, &y);
+    cairo_get_current_point (cr, &x, &y);
     push_float(x);
     push_float(y);
     f_aggregate(2);
@@ -7099,7 +7167,8 @@ PIKECLASS Context
    */
   PIKEFUN void new_path()
   {
-    cairo_new_path(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_new_path(cr);
   }
 
   /*! @decl void close_path()
@@ -7121,7 +7190,8 @@ PIKECLASS Context
    */
   PIKEFUN void close_path()
   {
-    cairo_close_path(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_close_path(cr);
   }
 
   /*! @decl void arc(float|int xc, float|int yc, float|int radius, float angle1, float angle2)
@@ -7163,7 +7233,8 @@ PIKECLASS Context
   PIKEFUN void arc(float|int xc, float|int yc, float|int radius, float angle1, float angle2)
     get_all_args;
   {
-    cairo_arc(THIS->cr, xc, yc, radius, angle1, angle2);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_arc(cr, xc, yc, radius, angle1, angle2);
     RETURN;
   }
 
@@ -7192,7 +7263,8 @@ PIKECLASS Context
   PIKEFUN void arc_negative(float|int xc, float|int yc, float|int radius, float angle1, float angle2)
     get_all_args;
   {
-    cairo_arc_negative(THIS->cr, xc, yc, radius, angle1, angle2);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_arc_negative(cr, xc, yc, radius, angle1, angle2);
     RETURN;
   }
 
@@ -7222,7 +7294,8 @@ PIKECLASS Context
   PIKEFUN void curve_to(float|int x1, float|int y1, float|int x2, float|int y2, float|int x3, float|int y3)
     get_all_args;
   {
-    cairo_curve_to(THIS->cr, x1, y1, x2, y2, x3, y3);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_curve_to(cr, x1, y1, x2, y2, x3, y3);
     RETURN;
   }
 
@@ -7243,7 +7316,8 @@ PIKECLASS Context
   PIKEFUN void line_to(float|int x, float|int y)
     get_all_args;
   {
-    cairo_line_to(THIS->cr, x, y);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_line_to(cr, x, y);
     RETURN;
   }
 
@@ -7260,7 +7334,8 @@ PIKECLASS Context
   PIKEFUN void move_to(float|int x, float|int y)
     get_all_args;
   {
-    cairo_move_to(THIS->cr, x, y);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_move_to(cr, x, y);
     RETURN;
   }
 
@@ -7281,7 +7356,8 @@ PIKECLASS Context
   PIKEFUN void rectangle(float|int x, float|int y, float|int width, float|int height)
     get_all_args;
   {
-    cairo_rectangle(THIS->cr, x, y, width, height);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_rectangle(cr, x, y, width, height);
     RETURN;
   }
 
@@ -7310,13 +7386,14 @@ PIKECLASS Context
   PIKEFUN void glyph_path(array(Glyph|array(int|float)) glyphs)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_glyph_t *gglyphs = NULL;
     if (glyphs->size)
       gglyphs = parse_glyphs_arg(glyphs, "glyph_path", args, 1);
-    cairo_glyph_path(THIS->cr, gglyphs, glyphs->size);
+    cairo_glyph_path(cr, gglyphs, glyphs->size);
     if (gglyphs)
       free(gglyphs);
-    check_status(cairo_status(THIS->cr));
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7341,13 +7418,14 @@ PIKECLASS Context
   PIKEFUN void text_path(string|zero text)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     const char *utf8 = NULL;
     if (text) {
       f_string_to_utf8(1);
       text = Pike_sp[-1].u.string;
       utf8 = (const char *)STR0(text);
     }
-    cairo_text_path(THIS->cr, utf8);
+    cairo_text_path(cr, utf8);
     RETURN;
   }
 
@@ -7383,8 +7461,9 @@ PIKECLASS Context
   PIKEFUN void rel_curve_to(float|int dx1, float|int dy1, float|int dx2, float|int dy2, float|int dx3, float|int dy3)
     get_all_args;
   {
-    cairo_rel_curve_to(THIS->cr, dx1, dy1, dx2, dy2, dx3, dy3);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_rel_curve_to(cr, dx1, dy1, dx2, dy2, dx3, dy3);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7409,8 +7488,9 @@ PIKECLASS Context
   PIKEFUN void rel_line_to(float|int dx, float|int dy)
     get_all_args;
   {
-    cairo_rel_line_to(THIS->cr, dx, dy);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_rel_line_to(cr, dx, dy);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7433,8 +7513,9 @@ PIKECLASS Context
   PIKEFUN void rel_move_to(float|int dx, float|int dy)
     get_all_args;
   {
-    cairo_rel_move_to(THIS->cr, dx, dy);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_rel_move_to(cr, dx, dy);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7454,7 +7535,8 @@ PIKECLASS Context
    */
   PIKEFUN void new_sub_path()
   {
-    cairo_new_sub_path(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_new_sub_path(cr);
   }
 #endif
 
@@ -7472,7 +7554,8 @@ PIKECLASS Context
    */
   PIKEFUN int(0..1) has_current_point()
   {
-    RETURN cairo_has_current_point(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    RETURN cairo_has_current_point(cr);
   }
 
   /*! @decl array(float) path_extents()
@@ -7493,8 +7576,9 @@ PIKECLASS Context
    */
   PIKEFUN array(float) path_extents()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double x1, y1, x2, y2;
-    cairo_path_extents(THIS->cr, &x1, &y1, &x2, &y2);
+    cairo_path_extents(cr, &x1, &y1, &x2, &y2);
     push_float(x1);
     push_float(y1);
     push_float(x2);
@@ -7520,7 +7604,8 @@ PIKECLASS Context
   PIKEFUN void translate(float|int tx, float|int ty)
     get_all_args;
   {
-    cairo_translate(THIS->cr, tx, ty);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_translate(cr, tx, ty);
     RETURN;
   }
 
@@ -7539,7 +7624,8 @@ PIKECLASS Context
   PIKEFUN void scale(float|int sx, float|int sy)
     get_all_args;
   {
-    cairo_scale(THIS->cr, sx, sy);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_scale(cr, sx, sy);
     RETURN;
   }
 
@@ -7557,7 +7643,8 @@ PIKECLASS Context
   PIKEFUN void rotate(float angle)
     get_all_args;
   {
-    cairo_rotate(THIS->cr, angle);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_rotate(cr, angle);
     RETURN;
   }
 
@@ -7573,10 +7660,11 @@ PIKECLASS Context
   PIKEFUN void transform(Matrix matrix)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_matrix_t m;
     if (!matrix_from_object(matrix, &m))
       SIMPLE_ARG_TYPE_ERROR("transform", 1, "Cairo.Matrix");
-    cairo_transform(THIS->cr, &m);
+    cairo_transform(cr, &m);
     RETURN;
   }
 
@@ -7591,10 +7679,11 @@ PIKECLASS Context
   PIKEFUN void set_matrix(Matrix matrix)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_matrix_t m;
     if (!matrix_from_object(matrix, &m))
       SIMPLE_ARG_TYPE_ERROR("set_matrix", 1, "Cairo.Matrix");
-    cairo_set_matrix(THIS->cr, &m);
+    cairo_set_matrix(cr, &m);
     RETURN;
   }
 
@@ -7607,8 +7696,9 @@ PIKECLASS Context
    */
   PIKEFUN Matrix get_matrix()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_matrix_t matrix;
-    cairo_get_matrix(THIS->cr, &matrix);
+    cairo_get_matrix(cr, &matrix);
     RETURN matrix_to_object(&matrix);
   }
 
@@ -7621,7 +7711,8 @@ PIKECLASS Context
    */
   PIKEFUN void identity_matrix()
   {
-    cairo_identity_matrix(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_identity_matrix(cr);
   }
 
   /*! @decl array(float) user_to_device(float|int x, float|int y)
@@ -7647,9 +7738,10 @@ PIKECLASS Context
   PIKEFUN array(float) user_to_device(float|int x, float|int y)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double dx = x;
     double dy = y;
-    cairo_user_to_device(THIS->cr, &dx, &dy);
+    cairo_user_to_device(cr, &dx, &dy);
     pop_n_elems(2);
     push_float(dx);
     push_float(dy);
@@ -7680,9 +7772,10 @@ PIKECLASS Context
   PIKEFUN array(float) user_to_device_distance(float|int dx, float|int dy)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double ddx = dx;
     double ddy = dy;
-    cairo_user_to_device_distance(THIS->cr, &ddx, &ddy);
+    cairo_user_to_device_distance(cr, &ddx, &ddy);
     pop_n_elems(2);
     push_float(ddx);
     push_float(ddy);
@@ -7712,9 +7805,10 @@ PIKECLASS Context
   PIKEFUN array(float) device_to_user(float|int x, float|int y)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double dx = x;
     double dy = y;
-    cairo_device_to_user(THIS->cr, &dx, &dy);
+    cairo_device_to_user(cr, &dx, &dy);
     pop_n_elems(2);
     push_float(dx);
     push_float(dy);
@@ -7745,9 +7839,10 @@ PIKECLASS Context
   PIKEFUN array(float) device_to_user_distance(float|int dx, float|int dy)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     double ddx = dx;
     double ddy = dy;
-    cairo_device_to_user_distance(THIS->cr, &ddx, &ddy);
+    cairo_device_to_user_distance(cr, &ddx, &ddy);
     pop_n_elems(2);
     push_float(ddx);
     push_float(ddy);
@@ -7800,11 +7895,12 @@ PIKECLASS Context
   PIKEFUN void select_font_face(string family, int slant, int weight)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     pop_n_elems(2);
     f_string_to_utf8(1);
     family = Pike_sp[-1].u.string;
-    cairo_select_font_face(THIS->cr, (const char *)STR0(family), slant, weight);
-    check_status(cairo_status(THIS->cr));
+    cairo_select_font_face(cr, (const char *)STR0(family), slant, weight);
+    check_status(cairo_status(cr));
     pop_stack();
   }
 
@@ -7826,8 +7922,9 @@ PIKECLASS Context
   PIKEFUN void set_font_size(float|int size)
     get_all_args;
   {
-    cairo_set_font_size(THIS->cr, size);
-    check_status(cairo_status(THIS->cr));
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_set_font_size(cr, size);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7847,10 +7944,11 @@ PIKECLASS Context
   PIKEFUN void set_font_matrix(Matrix matrix)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_matrix_t m;
     if (!matrix_from_object(matrix, &m))
       SIMPLE_ARG_TYPE_ERROR("set_font_matrix", 1, "Cairo.Matrix");
-    cairo_set_font_matrix(THIS->cr, &m);
+    cairo_set_font_matrix(cr, &m);
     RETURN;
   }
 
@@ -7863,8 +7961,9 @@ PIKECLASS Context
    */
   PIKEFUN Matrix get_font_matrix()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_matrix_t matrix;
-    cairo_get_font_matrix(THIS->cr, &matrix);
+    cairo_get_font_matrix(cr, &matrix);
     RETURN matrix_to_object(&matrix);
   }
 
@@ -7882,11 +7981,12 @@ PIKECLASS Context
   PIKEFUN void set_font_options(FontOptions options)
     get_all_args
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct Cairo_FontOptions_struct *opt;
     if (!(opt = get_storage(options, Cairo_FontOptions_program)))
       SIMPLE_ARG_TYPE_ERROR("set_font_options", 1, "Cairo.FontOptions");
-    cairo_set_font_options(THIS->cr, opt->options);
-    check_status(cairo_status(THIS->cr));
+    cairo_set_font_options(cr, opt->options);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7904,11 +8004,12 @@ PIKECLASS Context
   PIKEFUN void get_font_options(FontOptions options)
     get_all_args
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct Cairo_FontOptions_struct *opt;
     if (!(opt = get_storage(options, Cairo_FontOptions_program)))
       SIMPLE_ARG_TYPE_ERROR("get_font_options", 1, "Cairo.FontOptions");
-    cairo_get_font_options(THIS->cr, opt->options);
-    check_status(cairo_status(THIS->cr));
+    cairo_get_font_options(cr, opt->options);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7923,6 +8024,7 @@ PIKECLASS Context
   PIKEFUN void set_font_face(FontFace|zero font_face)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_font_face_t *fff = NULL;
     if (font_face) {
       struct Cairo_FontFace_struct *ff;
@@ -7930,8 +8032,8 @@ PIKECLASS Context
         SIMPLE_ARG_TYPE_ERROR("set_font_face", 1, "Cairo.FontFace");
       fff = ff->font_face;
     }
-    cairo_set_font_face(THIS->cr, fff);
-    check_status(cairo_status(THIS->cr));
+    cairo_set_font_face(cr, fff);
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -7944,7 +8046,8 @@ PIKECLASS Context
    */
   PIKEFUN FontFace get_font_face()
   {
-    cairo_font_face_t *font_face = cairo_get_font_face(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_font_face_t *font_face = cairo_get_font_face(cr);
     check_status(cairo_font_face_status(font_face));
     RETURN ref_font_face_to_object(font_face);
   }
@@ -7981,13 +8084,14 @@ PIKECLASS Context
   PIKEFUN void show_text(string|zero text)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     const char *utf8 = NULL;
     if (text) {
       f_string_to_utf8(1);
       text = Pike_sp[-1].u.string;
       utf8 = (const char *)STR0(text);
     }
-    cairo_show_text(THIS->cr, utf8);
+    cairo_show_text(cr, utf8);
     RETURN;
   }
 
@@ -8016,13 +8120,14 @@ PIKECLASS Context
   PIKEFUN void show_glyphs(array(Glyph|array(int|float)) glyphs)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_glyph_t *gglyphs = NULL;
     if (glyphs->size)
       gglyphs = parse_glyphs_arg(glyphs, "show_glyphs", args, 1);
-    cairo_show_glyphs(THIS->cr, gglyphs, glyphs->size);
+    cairo_show_glyphs(cr, gglyphs, glyphs->size);
     if (gglyphs)
       free(gglyphs);
-    check_status(cairo_status(THIS->cr));
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -8067,9 +8172,10 @@ PIKECLASS Context
    */
   PIKEFUN array(float) font_extents()
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_font_extents_t extents;
-    cairo_font_extents(THIS->cr, &extents);
-    check_status(cairo_status(THIS->cr));
+    cairo_font_extents(cr, &extents);
+    check_status(cairo_status(cr));
     push_font_extents(&extents);
   }
 
@@ -8098,6 +8204,7 @@ PIKECLASS Context
   PIKEFUN TextExtents text_extents(string|zero text)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_text_extents_t extents;
     const char *utf8 = NULL;
     if (text) {
@@ -8105,8 +8212,8 @@ PIKECLASS Context
       text = Pike_sp[-1].u.string;
       utf8 = (const char *)STR0(text);
     }
-    cairo_text_extents(THIS->cr, utf8, &extents);
-    check_status(cairo_status(THIS->cr));
+    cairo_text_extents(cr, utf8, &extents);
+    check_status(cairo_status(cr));
     RETURN text_extents_to_obj(&extents);
   }
 
@@ -8144,14 +8251,15 @@ PIKECLASS Context
   PIKEFUN TextExtents glyph_extents(array(Glyph|array(int|float)) glyphs)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     cairo_text_extents_t extents;
     cairo_glyph_t *gglyphs = NULL;
     if (glyphs->size)
       gglyphs = parse_glyphs_arg(glyphs, "glyph_extents", args, 1);
-    cairo_glyph_extents(THIS->cr, gglyphs, glyphs->size, &extents);
+    cairo_glyph_extents(cr, gglyphs, glyphs->size, &extents);
     if (gglyphs)
       free(gglyphs);
-    check_status(cairo_status(THIS->cr));
+    check_status(cairo_status(cr));
     RETURN text_extents_to_obj(&extents);
   }
 
@@ -8170,11 +8278,12 @@ PIKECLASS Context
   PIKEFUN void set_scaled_font(ScaledFont scaled_font)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     struct Cairo_ScaledFont_struct *sf;
     if (!(sf = get_storage(scaled_font, Cairo_ScaledFont_program)))
       SIMPLE_ARG_TYPE_ERROR("set_scaled_font", 1, "Cairo.ScaledFont");
-    cairo_set_scaled_font(THIS->cr, sf->scaled_font);
-    check_status(cairo_status(THIS->cr));
+    cairo_set_scaled_font(cr, sf->scaled_font);
+    check_status(cairo_status(cr));
     RETURN;
   }
 #endif
@@ -8189,7 +8298,8 @@ PIKECLASS Context
    */
   PIKEFUN ScaledFont get_scaled_font()
   {
-    cairo_scaled_font_t *scaled_font = cairo_get_scaled_font(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    cairo_scaled_font_t *scaled_font = cairo_get_scaled_font(cr);
     check_status(cairo_scaled_font_status(scaled_font));
     RETURN ref_scaled_font_to_object(scaled_font);
   }
@@ -8236,6 +8346,7 @@ PIKECLASS Context
                                 array(TextCluster) clusters, int cluster_flags)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     const char *utf8;
     int utf8_len;
     cairo_glyph_t *gglyphs = NULL;
@@ -8253,13 +8364,13 @@ PIKECLASS Context
     text = Pike_sp[-1].u.string;
     utf8 = (const char *)STR0(text);
     utf8_len = text->len;
-    cairo_show_text_glyphs(THIS->cr, utf8, utf8_len,
+    cairo_show_text_glyphs(cr, utf8, utf8_len,
                            gglyphs, glyphs->size,
                            cclusters, clusters->size, cluster_flags);
     CALL_AND_UNSET_ONERROR(onerror_cluster);
     CALL_AND_UNSET_ONERROR(onerror_glyph);
     pop_stack();
-    check_status(cairo_status(THIS->cr));
+    check_status(cairo_status(cr));
     RETURN;
   }
 #endif
@@ -8298,6 +8409,7 @@ PIKECLASS Context
   PIKEFUN void tag_begin(string tag_name, string|void attributes)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     ref_push_string(tag_name);
     f_string_to_utf8(1);
     tag_name = Pike_sp[-1].u.string;
@@ -8306,12 +8418,12 @@ PIKECLASS Context
       f_string_to_utf8(1);
       attributes = Pike_sp[-1].u.string;
     }
-    cairo_tag_begin(THIS->cr, (const char *)STR0(tag_name),
+    cairo_tag_begin(cr, (const char *)STR0(tag_name),
                     (attributes? (const char *)STR0(attributes) : NULL));
     if (attributes)
       pop_stack();
     pop_stack();
-    check_status(cairo_status(THIS->cr));
+    check_status(cairo_status(cr));
     RETURN;
   }
 
@@ -8328,27 +8440,23 @@ PIKECLASS Context
   PIKEFUN void tag_end(string tag_name)
     get_all_args;
   {
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
     ref_push_string(tag_name);
     f_string_to_utf8(1);
     tag_name = Pike_sp[-1].u.string;
-    cairo_tag_end(THIS->cr, (const char *)STR0(tag_name));
+    cairo_tag_end(cr, (const char *)STR0(tag_name));
     pop_stack();
-    check_status(cairo_status(THIS->cr));
+    check_status(cairo_status(cr));
     RETURN;
-  }
-#endif
-
-#ifdef PIKE_NULL_IS_SPECIAL
-  INIT {
-    THIS->cr = NULL;
   }
 #endif
 
   EXIT
     gc_trivial;
   {
-    if (THIS->cr)
-      cairo_destroy(THIS->cr);
+    cairo_t *cr = get_pointer_from_pointer_object(Pike_fp->current_object);
+    if (cr)
+      cairo_destroy(cr);
   }
 }
 /*! @endclass */
