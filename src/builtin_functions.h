@@ -179,6 +179,7 @@ int foreach_iterate(struct object *o);
 /* From builtin.cmod. */
 extern struct program *Future_program;
 extern struct program *Promise_program;
+PMOD_EXPORT extern struct program *Pointer_program;
 
 PMOD_EXPORT void f_cq__describe_program(INT32 args);
 PMOD_EXPORT void f_basetype(INT32 args);
@@ -233,6 +234,7 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
 PMOD_EXPORT struct object *get_setter(struct object *o, int f);
 PMOD_EXPORT struct object *make_pointer_object(void *ptr, void (*destroy_func)(void *));
 PMOD_EXPORT void *get_pointer_from_pointer_object(struct object *o);
+PMOD_EXPORT void set_pointer_in_pointer_object(struct object *o, void *ptr);
 void init_builtin(void);
 void exit_builtin(void);
 

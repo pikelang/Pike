@@ -6428,9 +6428,10 @@ PIKECLASS Pointer
   {
     pop_n_elems(args);
     if (fmt == 'O') {
-      char buf[32 + (sizeof(void *)*CHAR_BIT)/4];
-      snprintf(buf, sizeof(buf), "Val.Pointer(%p)", THIS->ptr);
-      push_text(buf);
+      push_text("%O(0x%08x)");
+      ref_push_program(Pike_fp->current_object->prog);
+      push_int64((INT64)(ptrdiff_t)THIS->ptr);
+      f_sprintf(3);
     } else {
       push_undefined();
     }
@@ -6486,6 +6487,16 @@ PMOD_EXPORT void *get_pointer_from_pointer_object(struct object *o)
 {
     struct Pointer_struct *pointer = get_storage(o, Pointer_program);
     return (pointer? pointer->ptr : NULL);
+}
+
+PMOD_EXPORT void set_pointer_in_pointer_object(struct object *o,
+                                               void *ptr)
+{
+  struct Pointer_struct *pointer =
+    get_storage(o?o:Pike_fp->current_object, Pointer_program);
+  if (pointer) {
+    pointer->ptr = ptr;
+  }
 }
 
 
