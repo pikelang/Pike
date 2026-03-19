@@ -7,6 +7,8 @@
 #pike __REAL_VERSION__
 #require constant(Odbc.odbc)
 
+//! Sql interface class to connect to an ODBC Data Source Name.
+
 // Cannot dump this since the #require check above depends on the
 // presence of system libs at runtime.
 optional constant dont_dump_program = 1;

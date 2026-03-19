@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! This module contains usage strings for the @[master()->_main()].
+//! This module contains usage strings for the @[MasterObject()->_main()].
 
 //! Summary of the options for the Pike interpreter binary, and the
 //! default master.

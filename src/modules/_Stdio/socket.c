@@ -127,6 +127,14 @@ static void do_close(struct port *p)
   }
 }
 
+/*! @decl protected mixed _id
+ *!
+ *! The id set via @[set_id()] (if any).
+ *!
+ *! @seealso
+ *!   @[query_id()], @[set_id()]
+ */
+
 /*! @decl mixed set_id(mixed id)
  *!
  *! This function sets the id used for accept_callback by this port.
@@ -168,7 +176,7 @@ static void port_set_id(INT32 args)
  *!   New accept callback.
  *!
  *! @seealso
- *!   @[bind()], @[listen()], @[set_id()]
+ *!   @[bind()], @[listen_fd()], @[set_id()]
  */
 static void port_set_accept_callback(INT32 args)
 {
@@ -570,6 +578,20 @@ static void port_create(INT32 args)
 }
 
 extern struct program *file_program;
+
+
+/*! @decl protected Stdio.Fd fd_factory()
+ *!
+ *! Factory creating empty @[Stdio.Fd] objects.
+ *!
+ *! @returns
+ *!   Returns a new unopened @[Stdio.Fd] object.
+ *!
+ *! The default implementation creates an empty @[Stdio.Fd] object.
+ *!
+ *! @seealso
+ *!   @[accept()], @[Stdio.File()->fd_factory()]
+ */
 
 static int port_fd_factory_fun_num = -1;
 static void port_fd_factory(INT32 args)

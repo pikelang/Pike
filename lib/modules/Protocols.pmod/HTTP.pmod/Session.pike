@@ -408,9 +408,11 @@ class Request
 multiset(Cookie) all_cookies=(<>);
 mapping(string:mapping(string:Cookie)) cookie_lookup=([]);
 
-// this class is internal for now, until there is a
-// decent use for it externally
-
+//! Representation of a single cookie.
+//!
+//! @note
+//!   This class is internal for now, until there is a
+//!   decent use for it externally
 class Cookie
 {
    string key="?";

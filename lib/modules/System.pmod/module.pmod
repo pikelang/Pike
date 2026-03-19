@@ -10,6 +10,31 @@ constant Time  = __builtin.Time;
 #if constant(__builtin.TM)
 constant TM    = __builtin.TM;
 #endif
+
+#if constant(_system.utime)
+//! Set the file last access time to @[atime].
+void set_file_atime(string path, int atime, int(1bit)|void symlink)
+{
+  Stdio.Stat st = file_stat(path, symlink);
+  if (!st) {
+    error("File not found.\n");
+  }
+
+  utime(path, atime, [int]st->mtime, symlink);
+}
+
+//! Set the file last modification time to @[mtime].
+void set_file_mtime(string path, int mtime, int(1bit)|void symlink)
+{
+  Stdio.Stat st = file_stat(path, symlink);
+  if (!st) {
+    error("File not found.\n");
+  }
+
+  utime(path, [int]st->atime, mtime, symlink);
+}
+#endif
+
 //! Get the username of the user that started the process.
 //!
 //! @returns

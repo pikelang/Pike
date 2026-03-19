@@ -798,6 +798,7 @@ protected void recurseAppears(string namespace,
   mapping attr = current->get_attributes() || ([]);
   if (attr["appears"] || attr["belongs"] || attr["global"]) {
     ReOrganizeTask t = ReOrganizeTask(current, parent);
+    parent->remove_child(current);
     array(string) a = ({});
     if (string attrRef = attr["appears"]) {
       a = splitRef(attrRef);
@@ -814,7 +815,7 @@ protected void recurseAppears(string namespace,
       if (a[0] != "top::")
 	namespace = a[0];
     } else {
-      // Prefix with the durrent namespace.
+      // Prefix with the current namespace.
       a = ({ namespace }) + a;
     }
     // Strip the :: from the namespace name.
@@ -860,6 +861,7 @@ void handleAppears(SimpleNode root, .Flags|void flags)
       if (flags & .FLAG_VERB_MASK)
 	werror("Couldn't find the new parent node: %O for fragment:\n%s\n",
 	       belongsRef*".", (string)n);
+      task->parent->add_child(n);	// Attempt to restore the doc node.
       continue;
     }
     if (type == "docgroup") {
@@ -884,8 +886,6 @@ void handleAppears(SimpleNode root, .Flags|void flags)
     m_delete(n->get_attributes(), "belongs");
     m_delete(n->get_attributes(), "appears");
 
-    task->parent->remove_child(n);
-
     // Perform a merge in case the destination already has some doc.
     if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE) {
       werror("Merging <%s> node %s:: with <%s> %s...\n",
@@ -901,6 +901,18 @@ void handleAppears(SimpleNode root, .Flags|void flags)
 //========================================================================
 // RESOLVING REFERENCES
 //========================================================================
+
+constant pike_release_versions = ({
+  "7.0", "7.2", "7.4", "7.6", "7.8", "8.0", "9.0",
+});
+constant pike_devel_versions = ({
+  "0.7", "7.1", "7.3", "7.5", "7.7", "7.9", "8.1",
+});
+
+constant pike_release_to_devel_version =
+  mkmapping(pike_release_versions, pike_devel_versions);
+constant pike_devel_to_release_version =
+  mkmapping(pike_devel_versions, pike_release_versions);
 
 // Rather DWIM splitting of a string into a chain of identifiers:
 // "Module.Class->funct(int i)" ==> ({"Module","Class","func"})
@@ -985,7 +997,8 @@ protected string mergeRef(array(string) ref) {
   return s;
 }
 
-protected class Scope(string|void type, string|void name) {
+protected class Scope(string|void type, string|void name,
+                      int(1bit)|void is_global) {
   multiset(string) idents = (<>);
 
   multiset(string) failures = (<>);
@@ -1003,20 +1016,12 @@ protected class ScopeStack {
 
   array(array(string|array(Scope))) namespaceStack = ({});
 
-  void enter(string|void type, string|void name) {
+  void enter(string|void type, string|void name, int(1bit)|void is_global) {
     //werror("entering scope type(%O), name(%O)\n", type, name);
     if (type == "namespace") {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
-      scopes[namespace = name] = ({ Scope(type, name+"::") });
-      if (name = ([
-	    "predef":"8.1",
-	    "8.0":"7.9",
-	    "7.8":"7.7",
-	    "7.6":"7.5",
-	    "7.4":"7.3",
-	    "7.2":"7.1",
-	    "7.0":"0.7",
-	  ])[name]) {
+      scopes[namespace = name] = ({ Scope(type, name+"::", is_global) });
+      if (name = pike_release_to_devel_version[name]) {
 	// Add an alias for development version.
 	scopes[name] = scopes[namespace];
       }
@@ -1024,9 +1029,9 @@ protected class ScopeStack {
       if (!sizeof(scopes[namespace]||({}))) {
 	werror("WARNING: Implicit enter of namespace %s:: for %s %s\n",
 	       namespace, type, name||"");
-	scopes[namespace] = ({ Scope("namespace", namespace+"::") });
+        scopes[namespace] = ({ Scope("namespace", namespace+"::", is_global) });
       }
-      scopes[namespace] += ({ Scope(type, name) });
+      scopes[namespace] += ({ Scope(type, name, is_global) });
     }
   }
 
@@ -1169,7 +1174,8 @@ protected void fixupRefs(ScopeStack scopes, SimpleNode node) {
 protected void resolveFun(ScopeStack scopes, SimpleNode node) {
   if (node->get_any_name() == "namespace") {
     // Create the namespace.
-    scopes->enter("namespace", node->get_attributes()["name"]);
+    scopes->enter("namespace", node->get_attributes()["name"],
+                  !!node->get_attributes()["is_global"]);
   }
   // first collect the names of all things inside the scope
   foreach (node->get_children(), SimpleNode child) {
@@ -1207,7 +1213,8 @@ protected void resolveFun(ScopeStack scopes, SimpleNode node) {
 	  break;
         case "class":
         case "module":
-          scopes->enter(tag, child->get_attributes()["name"]);
+          scopes->enter(tag, child->get_attributes()["name"],
+                        !! child->get_attributes()["is_global"]);
           {
             resolveFun(scopes, child);
           }
@@ -1294,6 +1301,12 @@ void oldResolveRefs(SimpleNode tree) {
   scopes->leave();
 }
 
+protected inline enum LookupFlags {
+  LOOKUP_DEFAULT = 0,
+  LOOKUP_TRACE = 1,
+  LOOKUP_NO_IMPORTS = 2,
+}
+
 protected class DummyNScope(string name)
 {
   string|zero lookup(array(string) ref)
@@ -1302,10 +1315,13 @@ protected class DummyNScope(string name)
   }
 }
 
+ADT.Queue(<NScope>) pending_inherits = ADT.Queue(<NScope>)();
+
 //! A symbol lookup scope.
 class NScope
 {
   string name;
+  int(1bit) is_global;
   string node_name;
   string type;
   string path;
@@ -1332,11 +1348,15 @@ class NScope
       error("Unsupported node type: %O, name: %O, path: %O\n",
 	    type, name, path);
     }
-    if (!(<"autodoc", "namespace", "module", "class", "method", "enum">)[type]) {
+    if (!(<"autodoc", "namespace", "module", "class", "method", "enum",
+            "variable", "constant" >)[type]) {
       error("Unsupported node type: %O, name: %O, path: %O\n",
 	    type, name, path);
     }
     this::path = path;
+    if (tree->get_attributes()->is_global) {
+      is_global = 1;
+    }
     enterNode(tree);
   }
 
@@ -1356,15 +1376,20 @@ class NScope
       break;
     case "namespace":
       if (inherits && sizeof(inherits) == 1) {
-	foreach(symbols;;int(1..)|NScope scope) {
+        string inh = indices(inherits)[0];
+        if (has_prefix(inh, "\0")) break;
+        foreach(symbols;; int(1..)|NScope scope) {
 	  if (objectp(scope)) {
-	    scope->addImplicitInherits(indices(inherits)[0]);
+            scope->addImplicitInherits(inh);
 	  }
 	}
       }
       break;
     case "module":
       if (!inherits) inherits = ([]);
+      if (!has_suffix(fallback_namespace, "::")) {
+        fallback_namespace += "::";
+      }
       string inh = fallback_namespace + (name/"::")[-1];
       inherits["\0"+inh] = inh;
       foreach(symbols;;int(1..)|NScope scope) {
@@ -1372,8 +1397,22 @@ class NScope
 	  scope->addImplicitInherits(fallback_namespace);
 	}
       }
+      pending_inherits->put(this);
       break;
     }
+  }
+
+  array(SimpleNode) object_types_for_node(SimpleNode n)
+  {
+    switch(n->get_any_name()) {
+    case "type": case "returntype":
+    case "or": case "and":
+      return map(n->get_children(), object_types_for_node) * ({});
+    case "object":
+      return ({ n });
+    }
+
+    return ({});
   }
 
   void enterNode(SimpleNode tree)
@@ -1388,8 +1427,28 @@ class NScope
 	  n = (thing->get_attributes() || ([]))->name;
 	  string subtype = thing->get_any_name();
 	  switch(subtype) {
+          case "variable":
+          case "constant":
+            // The above need a scope in case they are indexed via.
+            // Eg: SSL.Port()->ctx->add_cert().
+            //
+            // FALL_THROUGH
 	  case "method":
 	    if (n) {
+              // NB: h_scope is used to join the scopes for the various
+              //     methods so that the documentation can refer to any
+              //     of the method arguments.
+              //     Cf: Stdio.File()->set_read_callback() et al.
+              //
+              // NB: Note that this will pollute the scope for methods
+              //     that have multiple documentation blocks where one
+              //     or more are non-homogenous. In practice this should
+              //     not be a problem.
+              //
+              // FIXME: The above also has the potential issue where there
+              //        are separate documentation blocks for two methods,
+              //        followed by a common documentation block. This will
+              //        cause one of the earlier scopes to be lost.
 	      NScope scope = h_scope || symbols[n];
 	      if (!scope) {
 		scope = NScope(thing, path);
@@ -1400,7 +1459,7 @@ class NScope
 	      } else {
 		scope->enterNode(thing);
 	      }
-	      symbols[n] = scope;
+              h_scope = symbols[n] = scope;
 	    }
 	    break;
 	  case "import":
@@ -1413,6 +1472,7 @@ class NScope
 	    } else {
 	      imports = (< scope >);
 	    }
+            pending_inherits->put(this);
 	    break;
 	  case "inherit":
 	    SimpleNode inh = thing->get_first_element("classname");
@@ -1424,6 +1484,7 @@ class NScope
 	    } else {
 	      inherits = ([ n:scope ]);
 	    }
+            pending_inherits->put(this);
 	    break;
 	  default:
             // variable, constant, typedef, generic, enum, etc.
@@ -1464,18 +1525,33 @@ class NScope
 	}
 	break;
       case "arguments":
-	foreach(child->get_children(), SimpleNode arg) {
-	  if (arg->get_node_type() == XML_ELEMENT) {
-	    string arg_name = arg->get_attributes()->name;
-	    if (objectp(symbols[arg_name])) {
-	      werror("%s is both a %s scope and an argument!\n",
-		     path + arg_name, h_scope->type);
-	    } else {
-	      symbols[arg_name] = 1;
-	    }
+        foreach(child->get_elements("argument"), SimpleNode arg) {
+          string arg_name = arg->get_attributes()->name;
+          if (objectp(symbols[arg_name])) {
+            werror("%s is both a %s scope and an argument!\n",
+                   path + arg_name, h_scope->type);
+          } else {
+            symbols[arg_name] = 1;
 	  }
 	}
 	break;
+      case "type":
+        // Handle stuff like @[SSL.Port()->ctx->add_cert()].
+        // FALL_THROUGH
+      case "returntype":
+        // Handle stuff like @[master()->report()].
+        // CAVEAT: This causes references to symbols from
+        //         the function doc to also follow the return
+        //         value's type. In practice this is likely
+        //         not a problem.
+        foreach(Array.uniq(object_types_for_node(child)), SimpleNode obj_type) {
+          string obj_name = String.trim(obj_type->value_of_node());
+          if (!sizeof(obj_name)) continue;
+          if (!inherits) inherits = ([]);
+          inherits["\0" + obj_name] = obj_name;
+          pending_inherits->put(this);
+        }
+        break;
       default:
 	break;
       }
@@ -1498,8 +1574,18 @@ class NScope
 
     seen[this] = 1;
 
-    int(1..1)|NScope scope =
+    int(1bit)|NScope scope =
       symbols[path[0]] || symbols["/precompiled/"+path[0]];
+
+    if (!scope && has_prefix(path[0], "`") && !has_prefix(path[0], "``")) {
+      // Potential getter/setter.
+      string sym = path[0][1..];
+      if (has_suffix(path[0], "=")) {
+        sym = sym[..<1];
+      }
+      scope = symbols[sym];
+    }
+
     if (!scope) {
       // Not immediately available in this scope.
       if (inherits) {
@@ -1533,16 +1619,180 @@ class NScope
     return scope->lookup(path[1..], 1);
   }
 
+  //! Lookup the inherit with the name @[inh].
+  //!
+  //! Performs a breadth-first search for the inherit.
+  NScope lookup_inherit(string inh)
+  {
+    if ((inh == "predef") || ((int)inh)) return 0;
+    ADT.Queue(<NScope>) inherited_scopes = ADT.Queue(<NScope>)();
+    inherited_scopes->put(this);
+    while(sizeof(inherited_scopes)) {
+      NScope scope = inherited_scopes->get();
+      if (!scope->inherits) continue;
+      NScope found = scope->inherits[inh];
+      if (objectp(found)) return found;
+      if (found) return UNDEFINED;	// Not resolved yet.
+      foreach(scope->inherits; string inh; string|NScope subscope) {
+        if (has_prefix(inh, "\0")) continue;	// Skip implicit inherits.
+        if (objectp(subscope)) {
+          inherited_scopes->put(subscope);
+        }
+      }
+    }
+
+    return UNDEFINED;
+  }
+
+  NScope lookup_scope(array(string) path, LookupFlags|void lookup_flags,
+                      multiset(NScope) seen = (<>))
+  {
+    if( !sizeof(path) ) {
+      return this;
+    }
+
+    if (seen[this]) {
+      return UNDEFINED;
+    }
+
+    seen[this] = 1;
+
+    if ((path[0] == "this_program") && (<"module", "class">)[type]) {
+      return this;
+    }
+
+    int(1bit)|NScope scope =
+      symbols[path[0]] || symbols["/precompiled/"+path[0]];
+
+    if (!scope && has_prefix(path[0], "`") && !has_prefix(path[0], "``")) {
+      // Potential getter/setter.
+      string sym = path[0][1..];
+      if (has_suffix(path[0], "=")) {
+        sym = sym[..<1];
+      }
+      scope = symbols[sym];
+    }
+
+    if (!scope) {
+      // Not immediately available in this scope.
+
+      if (has_suffix(path[0], "::")) {
+        switch(path[0]) {
+        case "::":
+          path = path[1..];
+          lookup_flags |= LOOKUP_NO_IMPORTS;
+          break;
+        default:
+          string inh = path[0][..<2];
+          if (inherits) {
+            scope = lookup_inherit(inh);
+            if (objectp(scope)) {
+              return scope->lookup_scope(path[1..], lookup_flags);
+            }
+          }
+          if (has_suffix(name || "", inh) && (splitRef(name)[-1] == inh)) {
+            return lookup_scope(path[1..], lookup_flags);
+          }
+          return 0;	// Either not resolved yet or not found.
+        }
+      }
+
+      if (inherits) {
+        foreach(inherits; string inh; string|NScope scope) {
+          if (stringp(scope)) {
+            continue;	// Skip for now.
+          }
+          if (objectp(scope)) {
+            NScope res =
+              scope->lookup_scope(path, LOOKUP_NO_IMPORTS | lookup_flags,
+                                  seen);
+            if (res) {
+              return res;
+            }
+          }
+        }
+      }
+      if (imports && !(lookup_flags & LOOKUP_NO_IMPORTS)) {
+        // NB: The cast to array de-couples the loop from
+        //     the altering of the imports multiset.
+        foreach((array)imports, string|NScope scope) {
+          if (stringp(scope)) {
+            continue;	// Skip for now.
+          }
+          if (objectp(scope)) {
+            NScope res =
+              scope->lookup_scope(path, LOOKUP_NO_IMPORTS | lookup_flags,
+                                  seen);
+            if (res) {
+              return res;
+            }
+          }
+        }
+      }
+      return UNDEFINED;
+    } else if (sizeof(path) == 1) {
+      if (objectp(scope)) {
+        return scope;
+      }
+      return UNDEFINED;
+    } else if (!objectp(scope)) {
+      return UNDEFINED;
+    }
+    return scope->lookup_scope(path[1..], LOOKUP_NO_IMPORTS | lookup_flags,
+                               seen);
+  }
+
+  NScope resolve(NScope root, array(string) path)
+  {
+    if (!sizeof(path)) return this;
+
+    // Try direct.
+    NScope subscope = lookup_scope(path);
+    if (subscope) return subscope;
+
+    // Try lexical parent.
+    if (!name) return UNDEFINED;	// No lexical parent.
+    if ((is_global || (type == "module")) && (path[0] == "")) {
+      // Local directory indexing.
+      path = path[1..];
+
+      if (type == "module") {
+        // Special case to handle local directory indexing from module.pmod.
+        subscope = lookup_scope(path);
+        if (subscope) return subscope;
+      }
+    }
+
+    NScope lexical_parent = root->lookup_scope(splitRef(name)[..<1]);
+    return lexical_parent->resolve(root, path);
+  }
+
+  variant NScope resolve(NScope root, string sym)
+  {
+    return resolve(root, splitRef(sym));
+  }
+
   array(string|int)|zero low_resolve_inherit(string inh, array(string) path,
                                              int|void depth)
   {
     if (!inherits || !sizeof(inherits)) return 0;
     if (inherits[inh]) {
+      if (stringp(inherits[inh])) {
+        string sym = inherits[inh];
+        m_delete(inherits, inh);	// Avoid infinite loop.
+        if (!(inherits[inh] = lookup(splitRef(sym)))) {
+          inherits[inh] = sym;
+          werror("Failed to lookup inherited symbol %O.\n", sym);
+          return 0;
+        }
+      }
       string|zero found = inherits[inh]->lookup(path);
       if (found) return ({ depth, found });
     }
     array(string|int)|zero res;
-    foreach(inherits; string i; string|NScope s) {
+    mapping(string: string|NScope) inhs = inherits;
+    inherits = UNDEFINED;	// Avoid infinite loop.
+    foreach(inhs; string i; string|NScope s) {
       if (stringp(s)) continue;
       if (!s->low_resolve_inherit) {
         werror("Unexpected inherited scope: %O\n", s);
@@ -1554,6 +1804,7 @@ class NScope
         res = sub;
       }
     }
+    inherits = inhs;
     return res;
   }
 
@@ -1733,18 +1984,19 @@ class NScopeStack
       default:
 	// Strip the trailing "::".
 	string inh = ref[0][..sizeof(ref[0])-3];
-	// Map intermediate version namespaces to existing.
-	// FIXME: This ought be done based on the set of namespaces.
-	inh = ([
-	  "0.7":"7.0",
-	  "7.1":"7.2",
-	  "7.3":"7.4",
-	  "7.5":"7.6",
-	  "7.7":"7.8",
-	  "7.9":"8.0",
-	  "8.1":"predef",
-	])[inh] || inh;
         if (inh == "global") {
+          pos = sizeof(stack);
+          current = top;
+          while(pos) {
+            /* Check whether the scope at pos is a global:: scope. */
+            if (current->is_global) {
+              string res = current->lookup(ref[1..]);
+              if (res) return res;
+            }
+            /* Go to the next lexical scope. */
+            pos--;
+            current = stack[pos];
+          }
         } else {
           while(pos) {
             string|NScope scope;
@@ -1822,164 +2074,6 @@ class NScopeStack
     // Fall back to looking in predef::.
     return scopes->lookup(({ "predef::" }) + ref);
   }
-
-  void resolveInherits()
-  {
-    int removed_self;
-    string name = sizeof(stack) && splitRef(top->name)[-1];
-    if (sizeof(stack) && (stack[-1]->symbols[name] == top)) {
-      removed_self = 1;
-      m_delete(stack[-1]->symbols, name);
-    }
-    // FIXME: Inherits and imports add visibility of symbols
-    //        to later inherits and imports. This is not handled
-    //        by the code below.
-    foreach(top->inherits||([]); string inh; string|NScope scope) {
-      if (stringp(scope)) {
-	if (sizeof(scope) && scope[0] == '"') {
-	  // Inherit of files not supported yet.
-	} else {
-	  top->inherits[inh] = DummyNScope(scope);
-	  string path = resolve(splitRef(scope));
-	  if (path) {
-	    top->inherits[inh] = path;
-	    continue;
-          } else if (inh[0]) {
-	    warn("Failed to resolve inherit %O.\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  Stack: %O\n"
-		 "  Ref: %O\n",
-		 inh, top, scope, stack, splitRef(scope));
-	  }
-	}
-	m_delete(top->inherits, inh);
-      }
-    }
-    foreach(indices(top->imports||(<>)); ; string|NScope scope) {
-      if (stringp(scope)) {
-	top->imports[scope] = 0;
-	if (sizeof(scope) && scope[0] == '"') {
-	  // Import of files not supported yet.
-	} else {
-	  string path = resolve(splitRef(scope));
-	  if (path) {
-	    top->imports[path] = 1;
-	    continue;
-	  } else {
-	    warn("Failed to resolve import %O.\n"
-		 "  Top: %O\n"
-		 "  Stack: %O\n",
-		 scope, top, stack);
-	  }
-	}
-      }
-    }
-    // Make ourselves available again.
-    // This is needed for looking up of symbols in ourself.
-    if (removed_self) {
-      stack[-1]->symbols[name] = top;
-    }
-    foreach(top->inherits||([]); string inh; string|NScope scope) {
-      if (stringp(scope)) {
-	string path = [string]scope;
-	int(1..1)|NScope nscope = lookup(path);
-	if (objectp(nscope)) {
-	  // Avoid loops...
-	  if (nscope != top) {
-	    top->inherits[inh] = nscope;
-	    continue;
-	  }
-          if (inh[0]) {
-            warn("Failed to lookup inherit %O (loop).\n"
-                 "  Top: %O\n"
-                 "  Scope: %O\n"
-                 "  Path: %O\n"
-                 "  NewScope: %O\n"
-                 "  Stack: %O\n",
-                 inh, top, scope, path, nscope, stack);
-          }
-        } else if (inh[0]) {
-	  warn("Failed to lookup inherit %O.\n"
-	       "  Top: %O\n"
-	       "  Scope: %O\n"
-	       "  Path: %O\n"
-	       "  NewScope: %O\n"
-	       "  Stack: %O\n"
-	       "  Top->Symbols: %O\n",
-	       inh, top, scope, path, nscope, stack,
-	       indices(top->symbols));
-	}
-	m_delete(top->inherits, inh);
-      }
-    }
-    foreach(indices(top->imports||(<>)); ; string|NScope scope) {
-      if (stringp(scope)) {
-	string path = [string]scope;
-	top->imports[path] = 0;
-	int(1..1)|NScope nscope = lookup(path);
-	if (objectp(nscope)) {
-	  // Avoid loops...
-	  if (nscope != top) {
-	    top->imports[nscope] = 1;
-	    continue;
-	  }
-	  warn("Failed to lookup import %O (loop).\n"
-	       "  Top: %O\n"
-	       "  Scope: %O\n"
-	       "  NewScope: %O\n"
-	       "  Stack: %O\n",
-	       path, top, scope, nscope, stack);
-	} else {
-	  warn("Failed to lookup import %O.\n"
-	       "  Top: %O\n"
-	       "  Scope: %O\n"
-	       "  NewScope: %O\n"
-	       "  Stack: %O\n"
-	       "  Top->Symbols: %O\n",
-	       path, top, scope, nscope, stack,
-	       indices(top->symbols));
-	}
-      }
-    }
-    array(NScope) old_stack = stack;
-    NScope old_top = top;
-    foreach(top->inherits||([]); string inh; NScope scope) {
-      if (sizeof(filter(scope->inherits||({}), stringp))) {
-	// We've inherited a scope with unresolved inherits.
-	// We need to resolve them before we can resolve
-	// stuff in ourselves.
-	reset();
-	foreach(splitRef(scope->name), string sym) {
-	  enter(sym);
-	}
-	resolveInherits();
-      }
-    }
-    // Note: We need to do the same for imports, since
-    //       they may contain inherited symbols.
-    foreach(top->imports||(<>); NScope scope; ) {
-      if (sizeof(filter(scope->inherits||({}), stringp))) {
-	// We've imported a scope with unresolved inherits.
-	// We need to resolve them before we can resolve
-	// stuff in ourselves.
-	reset();
-	foreach(splitRef(scope->name), string sym) {
-	  enter(sym);
-	}
-	resolveInherits();
-      }
-    }
-    top = old_top;
-    stack = old_stack;
-    foreach(top->symbols; string sym; int(1..1)|NScope scope) {
-      if (objectp(scope)) {
-	enter(sym);
-	resolveInherits();
-	leave();
-      }
-    }
-  }
 }
 
 void doResolveNode(NScopeStack scopestack, SimpleNode tree)
@@ -2027,6 +2121,7 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
 	string ref = child->value_of_node();
 	NScope ns;
 	if (ns = (scopestack->top->inherits[ref])) {
+          if (stringp(ns)) continue;
 	  string resolution = scopestack->resolve(splitRef(ns->name));
 	  if (resolution) {
 	    m->resolved = resolution;
@@ -2065,6 +2160,111 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
   }
 }
 
+void resolveInherits(NScope root)
+{
+  int loop_limit = 10;
+  int(1bit) init_namespaces = 1;
+  int(0..2) state = 1;
+
+  do {
+    ADT.Queue(<NScope>) todo = pending_inherits;
+    pending_inherits = ADT.Queue(<NScope>)();
+
+    while (sizeof(todo)) {
+      NScope scope = todo->get();
+      int(1bit) scope_is_pending;
+
+      if (sizeof(scope->imports || (<>))) {
+        foreach((array)scope->imports, string|NScope sym) {
+          if (objectp(sym)) continue;
+          if (init_namespaces && !has_suffix(sym, "::")) {
+            scope_is_pending = 1;
+            continue;
+          }
+          scope->imports[sym] = 0;	// Temporary removal.
+          NScope val = scope->resolve(root, sym);
+          if (objectp(val)) {
+            scope->imports[val] = 1;
+            state = 0;
+#if 0
+            werror("%O: Resolved import %O to %O\n",
+                   scope->name, sym, val->name);
+#endif
+            continue;
+          }
+          scope->imports[sym] = 1;	// Restore.
+          scope_is_pending = 1;
+        }
+      }
+
+      if (sizeof(scope->inherits || ([]))) {
+        foreach(scope->inherits; string inh; string|NScope sym) {
+          if (objectp(sym)) continue;
+          if (init_namespaces && !has_suffix(sym, "::")) {
+            scope_is_pending = 1;
+            continue;
+          }
+          m_delete(scope->inherits, inh);	// Temporary removal.
+          NScope val = scope->resolve(root, sym);
+          if (objectp(val)) {
+            scope->inherits[inh] = val;
+            state = 0;
+#if 0
+            werror("%O: Resolved inherit %O:%O to %O\n",
+                   scope->name, sym, inh, val->name);
+#endif
+            continue;
+          }
+          // NB: Do not restore failed implicit inherits in the
+          //     last pass as they may very well not exist.
+          if ((state < 2) && (loop_limit || !has_prefix(inh, "\0"))) {
+            scope->inherits[inh] = sym;	// Restore.
+            scope_is_pending = 1;
+          }
+        }
+      }
+
+      if (scope_is_pending) {
+        pending_inherits->put(scope);
+      }
+    }
+
+    if (init_namespaces) {
+      init_namespaces = 0;
+      state = 0;
+    } else if (state) {
+      // Failed to update any of the remaining pending inherits.
+      if (state == 2) break;
+    }
+    state++;
+  } while (sizeof(pending_inherits) && loop_limit--);
+
+  if (sizeof(pending_inherits)) {
+    werror("Failed to resolve all inherits for scopes after %d passes:\n",
+           11 - loop_limit);
+    foreach(Array.uniq(values(pending_inherits)), NScope scope) {
+      foreach(scope->inherits || ([]); string inh; string|NScope sym) {
+        if (stringp(sym)) {
+          werror("%O: inherit %O:%O\n", scope->name, sym, inh);
+        }
+      }
+      foreach((array)(scope->imports || (<>)), string|NScope sym) {
+        if (stringp(sym)) {
+          werror("%O: import %O\n", scope->name, sym);
+        }
+      }
+    }
+  } else {
+    werror("Resolved all inherits after %d passes.\n", 10 - loop_limit);
+  }
+}
+
+//! Resolve all remaining unresolved references in
+//! the documentation tree @[tree].
+//!
+//! @param logfile
+//!   Path to file where to log any unresolved references.
+//!   Defaults to @expr{"resolution.log"@}.
 void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
 {
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
@@ -2074,9 +2274,33 @@ void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
     werror("Adding implicit inherits for compatibility modules...\n");
   scopestack->addImplicitInherits();
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Adding aliases for various version scopes...\n");
+  NScope prev = scopestack->scopes->symbols["predef::"];
+  foreach(reverse(pike_release_versions), string rel) {
+    NScope found = scopestack->scopes->symbols[rel + "::"];
+    if (found) {
+      prev = found;
+    } else {
+      if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+        werror("Aliasing %s:: to %s.\n", rel, prev->name);
+      scopestack->scopes->symbols[rel + "::"] = prev;
+    }
+  }
+  // Map intermediate version namespaces to existing.
+  foreach(pike_devel_to_release_version; string dev; string rel) {
+    NScope found = scopestack->scopes->symbols[dev + "::"];
+    if (found) continue;
+    found = scopestack->scopes->symbols[rel + "::"];
+    if (found) {
+      if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+        werror("Aliasing %s:: to %s.\n", dev, found->name);
+      scopestack->scopes->symbols[dev + "::"] = found;
+    }
+  }
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Resolving inherits...\n");
+  resolveInherits(scopestack->scopes);
   scopestack->reset();
-  scopestack->resolveInherits();
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Resolving references...\n");
   doResolveNode(scopestack, tree);
@@ -2085,6 +2309,11 @@ void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
     werror("Done.\n");
 }
 
+//! Filter nodes from @[tree] that are undocumented and
+//! do not have the attribute @tt{keep@} set.
+//!
+//! This is mainly used to filter undocumented classes that
+//! have been automatically added by the @[PikeExtractor].
 void cleanUndocumented(SimpleNode tree, .Flags|void flags)
 {
   int(0..1) check_node(SimpleNode n) {
@@ -2092,19 +2321,29 @@ void cleanUndocumented(SimpleNode tree, .Flags|void flags)
     int num = sizeof(children);
     children = filter(children, map(children, check_node));
     if (sizeof(children) != num) {
+#if 0
+      werror("Removing empty children from %s %O: %O\n",
+             n->get_tag_name(), n->get_attributes()->name,
+             (array(string))(n->get_children() - children));
+#endif
       n->replace_children(children);
       check_node(n);
     }
 
     string name = n->get_tag_name();
     if(name!="class" && name!="module") return 1;
+    if (n->get_attributes()->keep) return 1;
 
     array ch = n->get_elements()->get_tag_name();
     ch -= ({ "modifiers" });
     ch -= ({ "source-position" });
     if(sizeof(ch)) return 1;
-    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
-      werror("Removed empty %s %O\n", name, n->get_attributes()->name);
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE) {
+      werror("Removed empty %s: %O\n", name, n->get_attributes()->name);
+      if ((flags & .FLAG_VERB_MASK) >= .FLAG_DEBUG) {
+        werror("%O\n", (string)n);
+      }
+    }
     return 0;
   };
 

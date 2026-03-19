@@ -2,6 +2,8 @@
 
 constant description = "Makes a high granularity Pike feature list.";
 
+//! Standalone program displaying a high granularity Pike feature list.
+
 void item(string name, int(0..1) check) {
   write(" [%s] %s\n", (check?"X":" "), name);
 }
@@ -186,6 +188,9 @@ int main(int num, array(string) args) {
   write("\nGettext\n");
   M(Gettext.gettext);
   F(Gettext.LC_MESSAGES);
+
+  write("\nGI\n");
+  M(GI.repository);
 
   write("\nGL\n");
   M(GL.glGet);

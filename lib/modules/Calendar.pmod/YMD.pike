@@ -968,6 +968,9 @@ class YMD
 		 { return Month("ymd_ym",rules,y,x,1); });
    }
 
+   //! method Month month()
+   //! method Month month(int n)
+
    cMonth month(int ... mp)
    {
       if (md==CALUNKNOWN) make_month();
@@ -1012,6 +1015,9 @@ class YMD
 		 lambda(int x)
 		 { return Week("ymd_yw",rules,wy,x,1); });
    }
+
+   //! method Week	week()
+   //! method Week	week(int n)
 
    cWeek week(int ... mp)
    {
@@ -1499,7 +1505,7 @@ class cYear
 //!	<tt>year-&gt;month("April")</tt>
 //!
 //!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.month>YMD</ref>().
+//!	from <ref to=YMD.month>month</ref>().
 
    cMonth month(int|string ... mp)
    {
@@ -1528,7 +1534,7 @@ class cYear
 //!	<tt>year-&gt;week("w17")</tt>
 //!
 //!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.week>YMD</ref>().
+//!	from <ref to=YMD.week>week</ref>().
 //!
 //!	This is useful, since the first week of a year
 //!	not always (about half the years, in the ISO calendar)
@@ -2160,7 +2166,7 @@ class cWeek
 //!	<tt>week-&gt;day("sunday")</tt>
 //!
 //!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.day>YMD</ref>().
+//!	from <ref to=YMD.day>day</ref>().
 //!
 //! note:
 //!	the weekday-from-string routine is language dependent.
@@ -3113,31 +3119,46 @@ object(TimeRange)|zero parse(string fmt,string arg,void|TimeRange context)
 //! method Day dwim_day(string date)
 //! method Day dwim_day(string date,TimeRange context)
 //!	Tries a number of different formats on the given date (in order):
-//!	<pre>
-//!     <ref>parse</ref> format                  as in
-//!	"%y-%M-%D (%M) -W%W-%e (%e)"  "2000-03-20 (Mar) -W12-1 (Mon)"
-//!	"%y-%M-%D"		      "2000-03-20", "00-03-20"
-//!	"%M%/%D/%y"	              "3/20/2000"
-//!	"%D%*[ /]%M%*[ /-,]%y"	      "20/3/2000" "20 mar 2000" "20/3 -00"
-//!	"%e%*[ ]%D%*[ /]%M%*[ /-,]%y" "Mon 20 Mar 2000" "Mon 20/3 2000"
-//!	"-%y%*[ /]%D%*[ /]%M"	      "-00 20/3" "-00 20 mar"
-//!	"-%y%*[ /]%M%*[ /]%D"	      "-00 3/20" "-00 march 20"
-//!	"%y%*[ /]%D%*[ /]%M"	      "00 20 mar" "2000 20/3"
-//!	"%y%*[ /]%M%*[ /]%D"	      "2000 march 20"
-//!	"%D%.%M.%y"	              "20.3.2000"
-//!	"%D%*[ -/]%M"                 "20/3" "20 mar" "20-03"
-//!	"%M%*[ -/]%D"		      "3/20" "march 20"
-//!     "%M-%D-%y"                    "03-20-2000"
-//!     "%D-%M-%y"                    "20-03-2000"
-//!     "%e%*[- /]%D%*[- /]%M"        "mon 20 march"
-//!     "%e%*[- /]%M%*[- /]%D"        "mon/march/20"
-//!	"%e%*[ -/wv]%W%*[ -/]%y"      "mon w12 -00" "1 w12 2000"
-//!	"%e%*[ -/wv]%W"               "mon w12"
-//!     "%d"                          "20000320", "000320"
-//!     "today"                       "today"
-//!	"last %e"                     "last monday"
-//!	"next %e"                     "next monday"
-//!	</pre>
+//!     <matrix>
+//!       <r><c><b><ref>parse</ref> format</b></c><c><b>as in</b></c></r>
+//!	  <r><c><expr>"%y-%M-%D (%M) -W%W-%e (%e)"</expr></c>
+//!          <c><expr>"2000-03-20 (Mar) -W12-1 (Mon)"</expr></c></r>
+//!	  <r><c><expr>"%y-%M-%D"</expr></c>
+//!          <c><expr>"2000-03-20", "00-03-20"</expr></c></r>
+//!	  <r><c><expr>"%M%/%D/%y"</expr></c><c><expr>"3/20/2000"</expr></c></r>
+//!	  <r><c><expr>"%D%*[ /]%M%*[ /-,]%y"</expr></c>
+//!          <c><expr>"20/3/2000" "20 mar 2000" "20/3 -00"</expr></c></r>
+//!	  <r><c><expr>"%e%*[ ]%D%*[ /]%M%*[ /-,]%y"</expr></c>
+//!          <c><expr>"Mon 20 Mar 2000" "Mon 20/3 2000"</expr></c></r>
+//!	  <r><c><expr>"-%y%*[ /]%D%*[ /]%M"</expr></c>
+//!          <c><expr>"-00 20/3" "-00 20 mar"</expr></c></r>
+//!	  <r><c><expr>"-%y%*[ /]%M%*[ /]%D"</expr></c>
+//!          <c><expr>"-00 3/20" "-00 march 20"</expr></c></r>
+//!	  <r><c><expr>"%y%*[ /]%D%*[ /]%M"</expr></c>
+//!          <c><expr>"00 20 mar" "2000 20/3"</expr></c></r>
+//!	  <r><c><expr>"%y%*[ /]%M%*[ /]%D"</expr></c>
+//!          <c><expr>"2000 march 20"</expr></c></r>
+//!	  <r><c><expr>"%D%.%M.%y"</expr></c><c><expr>"20.3.2000"</expr></c></r>
+//!	  <r><c><expr>"%D%*[ -/]%M"</expr></c>
+//!          <c><expr>"20/3" "20 mar" "20-03"</expr></c></r>
+//!	  <r><c><expr>"%M%*[ -/]%D"</expr></c>
+//!          <c><expr>"3/20" "march 20"</expr></c></r>
+//!       <r><c><expr>"%M-%D-%y"</expr></c><c><expr>"03-20-2000"</expr></c></r>
+//!       <r><c><expr>"%D-%M-%y"</expr></c><c><expr>"20-03-2000"</expr></c></r>
+//!       <r><c><expr>"%e%*[- /]%D%*[- /]%M"</expr></c>
+//!          <c><expr>"mon 20 march"</expr></c></r>
+//!       <r><c><expr>"%e%*[- /]%M%*[- /]%D"</expr></c>
+//!          <c><expr>"mon/march/20"</expr></c></r>
+//!	  <r><c><expr>"%e%*[ -/wv]%W%*[ -/]%y"</expr></c>
+//!          <c><expr>"mon w12 -00" "1 w12 2000"</expr></c></r>
+//!	  <r><c><expr>"%e%*[ -/wv]%W"</expr></c>
+//!          <c><expr>"mon w12"</expr></c></r>
+//!       <r><c><expr>"%d"</expr></c>
+//!          <c><expr>"20000320", "000320"</expr></c></r>
+//!       <r><c><expr>"today"</expr></c><c><expr>"today"</expr></c></r>
+//!	  <r><c><expr>"last %e"</expr></c><c><expr>"last monday"</expr></c></r>
+//!	  <r><c><expr>"next %e"</expr></c><c><expr>"next monday"</expr></c></r>
+//!	</matrix>
 //!
 //! note:
 //!	Casts exception if it fails to dwim out a day.

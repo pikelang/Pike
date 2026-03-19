@@ -21,6 +21,8 @@
 //! @decl inherit Filesystem.Monitor.basic
 inherit "basic.pike" : basic;
 
+//! @decl import DefaultCompilerEnvironment
+
 #define MON_WERR(X...)	report(NOTICE,	__func__, X)
 #define MON_WARN(X...)	report(WARNING,	__func__, X)
 #define MON_ERROR(X...)	report(ERROR,	__func__, X)
@@ -116,7 +118,7 @@ inherit "basic.pike" : basic;
 //! considered "stable".
 //!
 //! "Stable" in this case means that there have been no detected
-//! changes for at lease @[stable_time] seconds.
+//! changes for at least @[stable_time] seconds.
 //!
 //! @note
 //!   It differs from the @[Filesystem.Monitor.basic] version in that

@@ -2,7 +2,11 @@
 
 #pragma no_deprecation_warnings
 
+//! @decl inherit Thread : pre
+
+//! @ignore
 inherit Thread.module : pre;
+//! @endignore
 
 #if constant(thread_create)
 

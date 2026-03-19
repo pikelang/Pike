@@ -49,7 +49,7 @@ DOCSTART() @decl key_ptype encode_key(mixed o)
  *! @decl mixed decode_key(key_ptype o)
  *! These callbacks can be implemented when inheriting tree_class in order
  *! to allow for arbitrary key types. @[encode_key] is similar to the
- *! @[lfun::_hash()] callback. This only works as expected when it is possible
+ *! @[lfun::__hash()] callback. This only works as expected when it is possible
  *! to implement a unique representation for keys. These callbacks are called
  *! everytime a key is stored or indexed in the tree.
 DOCEND()

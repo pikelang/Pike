@@ -379,6 +379,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> catch_arg
 %type <n> anon_class
 %type <n> named_class
+%type <n> save_attributes
 %type <n> enum
 %type <n> enum_value
 %type <n> range_bound
@@ -712,6 +713,9 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	add_constant($1->u.sval.u.string, 0,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
       } else {
+        struct pike_type *t = NULL;
+        node *n = Pike_compiler->current_attributes;
+
 	if(!Pike_compiler->num_parse_error)
 	{
 	  ptrdiff_t tmp=eval_low($3,1);
@@ -725,33 +729,57 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	} else {
 	  push_undefined();
 	}
+
         if ($<n>0) {
           /* New-style syntax for typed constants. */
-          struct pike_type *t = $<n>0->u.sval.u.type;
+          t = $<n>0->u.sval.u.type;
           if (!pike_types_le($3->type, t, 0, 0)) {
             yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, $3->type,
                           0, "Bad value for constant.");
             t = NULL;
+          } else {
+            add_ref(t);
           }
-          add_typed_constant($1->u.sval.u.string, t, Pike_sp-1,
-                             Pike_compiler->current_modifiers & ~ID_EXTERN);
-        } else if ((Pike_compiler->current_modifiers & ID_LOCAL) ||
-                   ($3->token == F_SOFT_CAST) ||
-                   (($3->token == F_COMMA_EXPR) &&
-                    (CAR($3)->token == F_SOFT_CAST))) {
-          /* Node type set intentionally via a soft-cast,
-           * or value is not overridable via inherit.
-           */
-          add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
-                             Pike_compiler->current_modifiers & ~ID_EXTERN);
-        } else {
-          /* Compat: Derive the type from the value.
-           *
-           * Cf LysLysKOM 16630665.
-           */
-          add_typed_constant($1->u.sval.u.string, NULL, Pike_sp-1,
-                             Pike_compiler->current_modifiers & ~ID_EXTERN);
         }
+
+        if (!t) {
+          if ((Pike_compiler->current_modifiers & ID_LOCAL) ||
+              ($3->token == F_SOFT_CAST) ||
+              (($3->token == F_COMMA_EXPR) &&
+               (CAR($3)->token == F_SOFT_CAST))) {
+            /* Node type set intentionally via a soft-cast,
+             * or value is not overridable via inherit.
+             */
+            t = $3->type;
+            add_ref(t);
+          } else {
+            /* Compat: Derive the type from the value.
+             *
+             * Cf LysLysKOM 16630665.
+             */
+            if (Pike_compiler->current_modifiers & ID_INLINE) {
+              t = get_type_of_svalue(Pike_sp-1);
+            } else {
+              t = get_lax_type_of_svalue(Pike_sp-1);
+            }
+          }
+        }
+
+        if (n) {
+          /* Handle type attributes. */
+          type_stack_mark();
+          push_finished_type(t);
+          while(n) {
+            push_type_attribute(CDR(n)->u.sval.u.string);
+            n = CAR(n);
+          }
+          free_type(t);
+          t = pop_unfinished_type();
+        }
+
+        add_typed_constant($1->u.sval.u.string, t, Pike_sp-1,
+                           Pike_compiler->current_modifiers & ~ID_EXTERN);
+        free_type(t);
 	pop_stack();
       }
     }
@@ -775,24 +803,24 @@ optional_type: /* empty */ { $$ = NULL; }
   }
   ;
 
-constant: modifiers TOK_CONSTANT optional_type constant_list ';'
+constant: modifiers optional_attributes TOK_CONSTANT optional_type constant_list ';'
   {
-    free_node($3);
+    free_node($4);
   }
-  | modifiers TOK_CONSTANT optional_type error ';'
+  | modifiers optional_attributes TOK_CONSTANT optional_type error ';'
   {
-    free_node($3);
+    free_node($4);
     yyerrok;
   }
-  | modifiers TOK_CONSTANT optional_type error TOK_LEX_EOF
+  | modifiers optional_attributes TOK_CONSTANT optional_type error TOK_LEX_EOF
   {
-    free_node($3);
+    free_node($4);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers TOK_CONSTANT optional_type error '}'
+  | modifiers optional_attributes TOK_CONSTANT optional_type error '}'
   {
-    free_node($3);
+    free_node($4);
     yyerror("Missing ';'.");
   }
   ;
@@ -999,8 +1027,8 @@ def: modifiers optional_attributes simple_type optional_constant
   | import {}
   | constant {}
   | generic {}
-  | modifiers named_class { free_node($2); }
-  | modifiers enum { free_node($2); }
+  | modifiers optional_attributes named_class { free_node($3); }
+  | modifiers optional_attributes enum { free_node($3); }
   | annotation ';'
   {
     $1 = mknode(F_COMMA_EXPR, $1, NULL);
@@ -1360,7 +1388,14 @@ attribute: TOK_ATTRIBUTE_ID '(' string_constant optional_comma ')'
   }
   ;
 
-optional_attributes: /* empty */
+save_attributes: /* empty */
+  {
+    $$ = Pike_compiler->current_attributes;
+    Pike_compiler->current_attributes = NULL;
+  }
+  ;
+
+dummy_attributes: /* empty */
   {
     if (Pike_compiler->current_attributes) {
       free_node(Pike_compiler->current_attributes);
@@ -1370,6 +1405,9 @@ optional_attributes: /* empty */
       add_ref(Pike_compiler->current_attributes);
     }
   }
+  ;
+
+optional_attributes: dummy_attributes
   | optional_attributes attribute
   {
     if ($2) {
@@ -2219,8 +2257,11 @@ constant_expr: safe_assignment_expr
   }
   ;
 
+/* NB: $0 is optional_type. */
 local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
   {
+    struct pike_type *t = NULL;
+
     /* Ugly hack to make sure that $3 is optimized */
     {
       int tmp=Pike_compiler->compiler_pass;
@@ -2245,12 +2286,22 @@ local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	pop_stack();
       }
     }
-    low_add_local_name(NULL, $1->u.sval.u.string, NULL,
+
+    if ($<n>0 && $3) {
+      /* New-style syntax for typed constants. */
+      t = $<n>0->u.sval.u.type;
+      if (!pike_types_le($3->type, t, 0, 0)) {
+        yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, $3->type,
+                      0, "Bad value for constant.");
+        t = NULL;
+      }
+    }
+    low_add_local_name(NULL, $1->u.sval.u.string, t,
 		       $3?$3:mknode(F_UNDEFINED, 0, 0), NULL);
     /* Note: Intentionally not marked as used. */
     free_node($1);
   }
-  | bad_identifier '=' safe_assignment_expr { if ($3) free_node($3); }
+  | bad_const_expr_ident '=' safe_assignment_expr { if ($3) free_node($3); }
   | error '=' safe_assignment_expr { if ($3) free_node($3); }
   ;
 
@@ -2258,14 +2309,26 @@ local_constant_list: local_constant_name
   | local_constant_list ',' local_constant_name
   ;
 
-local_constant: TOK_CONSTANT local_constant_list ';'
-  | TOK_CONSTANT error ';' { yyerrok; }
-  | TOK_CONSTANT error TOK_LEX_EOF
+local_constant: TOK_CONSTANT optional_type local_constant_list ';'
   {
+    free_node($2);
+  }
+  | TOK_CONSTANT optional_type error ';'
+  {
+    free_node($2);
+    yyerrok;
+  }
+  | TOK_CONSTANT optional_type error TOK_LEX_EOF
+  {
+    free_node($2);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | TOK_CONSTANT error '}' { yyerror("Missing ';'."); }
+  | TOK_CONSTANT optional_type error '}'
+  {
+    free_node($2);
+    yyerror("Missing ';'.");
+  }
   ;
 
 
@@ -2319,7 +2382,7 @@ statement: normal_label_statement
   | labeled_statement
   | simple_type2 local_function { $$=mkcastnode(void_type_string, $2); }
   | local_restartable_function { $$=mkcastnode(void_type_string, $1); }
-  | implicit_modifiers named_class { $$=mkcastnode(void_type_string, $2); }
+  | implicit_modifiers dummy_attributes named_class { $$=mkcastnode(void_type_string, $3); }
   ;
 
 labeled_statement: TOK_IDENTIFIER
@@ -2691,10 +2754,11 @@ local_restartable_function: local_modifier simple_type2 TOK_IDENTIFIER
   }
   ;
 
-create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
-  optional_default_value
+create_arg: modifiers optional_attributes simple_type
+            optional_dot_dot_dot TOK_IDENTIFIER optional_default_value
   {
     struct pike_type *type;
+    node *n = Pike_compiler->current_attributes;
     int ref_no;
     int l_no;
 
@@ -2702,13 +2766,15 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
       yyerror("Can't define more variables after ...");
     }
 
-    if ($3) {
-      push_finished_type(Pike_compiler->compiler_frame->current_type);
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    if ($4) {
       push_unlimited_array_type(T_ARRAY);
-      type = compiler_pop_type();
-    } else {
-      copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
     }
+    while(n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
+    type = compiler_pop_type();
 
     /* Add the identifier globally.
      * Note: Since these are the first identifiers (and references)
@@ -2717,29 +2783,29 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
      *       is sufficient extra information to be able to keep
      *       track of them.
      */
-    ref_no = define_variable($4->u.sval.u.string, type,
+    ref_no = define_variable($5->u.sval.u.string, type,
 			     Pike_compiler->current_modifiers);
 
     if ((Pike_compiler->num_create_args != ref_no) &&
 	(Pike_compiler->num_create_args != -ref_no)) {
       my_yyerror("Multiple definitions of create variable %pS (%d != %d).",
-		 $4->u.sval.u.string,
+                 $5->u.sval.u.string,
 		 Pike_compiler->num_create_args, ref_no);
     }
-    if ($3) {
+    if ($4) {
       /* Encode varargs marker as negative number of args. */
       Pike_compiler->num_create_args = -(ref_no + 1);
 
-      if ($5) {
+      if ($6) {
 	yyerror("Varargs variable with default value.");
-	free_node($5);
-	$5 = NULL;
+        free_node($6);
+        $6 = NULL;
       }
     } else {
       Pike_compiler->num_create_args = ref_no + 1;
     }
 
-    l_no = add_local_name($4->u.sval.u.string, type, $5);
+    l_no = add_local_name($5->u.sval.u.string, type, $6);
     bind_local(NULL, l_no);
     Pike_compiler->compiler_frame->local_names[l_no].flags |=
       LOCAL_VAR_IS_ARGUMENT | LOCAL_VAR_IS_USED;
@@ -2749,11 +2815,12 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     }
 
     /* free_type(type); */
-    free_node($4);
+    free_node($5);
     $$=0;
   }
-  | modifiers simple_type optional_dot_dot_dot bad_identifier { $$=0; }
-  | modifiers simple_type optional_dot_dot_dot {
+  | modifiers optional_attributes simple_type
+    optional_dot_dot_dot bad_identifier { $$=0; }
+  | modifiers optional_attributes simple_type optional_dot_dot_dot {
     yyerror("Missing identifier.");
     $$=0;
   }
@@ -2835,7 +2902,7 @@ failsafe_program: '{' program { $<n>$ = NULL; } end_block
 		}
                 ;
 
-/* Modifiers at $0. */
+/* Modifiers at $-1, dummy_attributes at $0. */
 anon_class: TOK_CLASS line_number_info
   {
     struct pike_string *s;
@@ -2847,17 +2914,17 @@ anon_class: TOK_CLASS line_number_info
     s = make_shared_string(buffer);
     $<n>$ = mkstrnode(s);
     free_string(s);
-    $<number>0 |= ID_PROTECTED | ID_PRIVATE | ID_INLINE;
+    $<number>-1 |= ID_PROTECTED | ID_PRIVATE | ID_INLINE;
   }
   {
     /* fprintf(stderr, "LANGUAGE.YACC: ANON CLASS start\n"); */
     if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)
     {
-      if ($<number>0 & ID_EXTERN) {
+      if ($<number>-1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
       low_start_new_program(0, COMPILER_PASS_FIRST, $<n>3->u.sval.u.string,
-			    $<number>0,
+                            $<number>-1,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
@@ -2877,7 +2944,7 @@ anon_class: TOK_CLASS line_number_info
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
 	low_start_new_program(0, COMPILER_PASS_LAST, 0,
-			      $<number>0,
+                              $<number>-1,
 			      &$<number>$);
       }else{
 	id=ID_FROM_INT(Pike_compiler->new_program, i);
@@ -2891,7 +2958,7 @@ anon_class: TOK_CLASS line_number_info
 	  {
 	    low_start_new_program(s->u.program, COMPILER_PASS_LAST,
 				  $<n>3->u.sval.u.string,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
@@ -2900,13 +2967,13 @@ anon_class: TOK_CLASS line_number_info
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
 	  low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				$<number>0,
+                                $<number>-1,
 				&$<number>$);
 	}
       }
@@ -2931,7 +2998,7 @@ anon_class: TOK_CLASS line_number_info
   }
   ;
 
-/* Modifiers at $0. */
+/* Modifiers at $-1, optional_attributes/dummy_attributes at $0. */
 named_class: TOK_CLASS line_number_info simple_identifier
   {
     if(!$3)
@@ -2945,17 +3012,17 @@ named_class: TOK_CLASS line_number_info simple_identifier
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
-      $<number>0|=ID_PROTECTED | ID_PRIVATE | ID_INLINE;
+      $<number>-1|=ID_PROTECTED | ID_PRIVATE | ID_INLINE;
     }
 
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
     if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)
     {
-      if ($<number>0 & ID_EXTERN) {
+      if ($<number>-1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
       low_start_new_program(0, COMPILER_PASS_FIRST, $3->u.sval.u.string,
-			    $<number>0,
+                            $<number>-1,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
@@ -2975,7 +3042,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
 	low_start_new_program(0, COMPILER_PASS_LAST, 0,
-			      $<number>0,
+                              $<number>-1,
 			      &$<number>$);
       }else{
 	id=ID_FROM_INT(Pike_compiler->new_program, i);
@@ -2989,7 +3056,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	  {
 	    low_start_new_program(s->u.program, COMPILER_PASS_LAST,
 				  $3->u.sval.u.string,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
@@ -2998,13 +3065,13 @@ named_class: TOK_CLASS line_number_info simple_identifier
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				  $<number>0,
+                                  $<number>-1,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
 	  low_start_new_program(0, COMPILER_PASS_LAST, 0,
-				$<number>0,
+                                $<number>-1,
 				&$<number>$);
 	}
       }
@@ -3039,22 +3106,25 @@ enum_value: /* EMPTY */ { $$ = 0; }
 
 /* Previous enum value at $0. */
 enum_def: /* EMPTY */
-  | simple_identifier enum_value
+  | save_attributes optional_attributes simple_identifier enum_value
   {
-    if ($1) {
-      if ($2) {
+    if ($3) {
+      node *n = Pike_compiler->current_attributes;
+      struct pike_type *t;
+
+      if ($4) {
 	/* Explicit enum value. */
 
 	/* This can be made more lenient in the future */
 
-	/* Ugly hack to make sure that $2 is optimized */
+        /* Ugly hack to make sure that $4 is optimized */
 	{
 	  int tmp=Pike_compiler->compiler_pass;
-	  $2=mknode(F_COMMA_EXPR,$2,0);
+          $4 = mknode(F_COMMA_EXPR, $4, 0);
 	  Pike_compiler->compiler_pass=tmp;
 	}
 
-	if(!is_const($2))
+        if(!is_const($4))
 	{
 	  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
 	    yyerror("Enum definition is not constant.");
@@ -3062,7 +3132,7 @@ enum_def: /* EMPTY */
 	} else {
 	  if(!Pike_compiler->num_parse_error)
 	  {
-	    ptrdiff_t tmp=eval_low($2,1);
+            ptrdiff_t tmp = eval_low($4, 1);
 	    if(tmp < 1)
 	    {
 	      yyerror("Error in enum definition.");
@@ -3074,7 +3144,7 @@ enum_def: /* EMPTY */
 	    push_int(0);
 	  }
 	}
-	free_node($2);
+        free_node($4);
 	free_node($<n>0);
 	$<n>0 = mkconstantsvaluenode(Pike_sp-1);
       } else {
@@ -3082,24 +3152,38 @@ enum_def: /* EMPTY */
 	$<n>0 = safe_inc_enum($<n>0);
 	push_svalue(&$<n>0->u.sval);
       }
-      add_constant($1->u.sval.u.string, Pike_sp-1,
-		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
+      t = get_type_of_svalue(Pike_sp-1);
+      if (n) {
+        type_stack_mark();
+        push_finished_type(t);
+        while(n) {
+          push_type_attribute(CDR(n)->u.sval.u.string);
+          n = CAR(n);
+        }
+        free_type(t);
+        t = pop_unfinished_type();
+      }
+      add_typed_constant($3->u.sval.u.string, t, Pike_sp-1,
+                         (Pike_compiler->current_modifiers & ~ID_EXTERN) |
+                         ID_INLINE);
       /* Update the type. */
       {
 	struct pike_type *current = pop_unfinished_type();
-	struct pike_type *new = get_type_of_svalue(Pike_sp-1);
-	struct pike_type *res = or_pike_types(new, current, 2);
+        struct pike_type *res = or_pike_types(t, current, 2);
 	free_type(current);
-	free_type(new);
+        free_type(t);
 	type_stack_mark();
 	push_finished_type(res);
 	free_type(res);
       }
       pop_stack();
-      free_node($1);
-    } else if ($2) {
-      free_node($2);
+      free_node($3);
+    } else if ($4) {
+      free_node($4);
     }
+    /* Restore attributes */
+    free_node(Pike_compiler->current_attributes);
+    Pike_compiler->current_attributes = $1;
   }
   ;
 
@@ -3135,7 +3219,13 @@ enum: TOK_ENUM
   }
   enum_list { $<n>$ = NULL; } end_block
   {
-    struct pike_type *t = pop_unfinished_type();
+    struct pike_type *t;
+    node *n = Pike_compiler->current_attributes;
+    while(n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
+    t = pop_unfinished_type();
     free_node($<n>5);
     if ($3) {
       ref_push_type_value(t);
@@ -3239,6 +3329,55 @@ foreach_lvalues:  ',' safe_lvalue { $$=$2; }
 foreach: TOK_FOREACH save_block_level save_locals line_number_info
   '(' assignment_expr foreach_lvalues end_cond
   {
+    /*! @decl void foreach(array a, mixed lvalue)
+     *!
+     *!   Loop over an array or an @[Iterator] or a value
+     *!   supported by @[get_iterator()].
+     *!
+     *! @param a
+     *!   Array to loop over in sequence starting at index @expr{0@}.
+     *!
+     *! @param lvalue
+     *!   Variable or equivalent that will be assigned a value from
+     *!   the array.
+     *!
+     *!   There are two syntaxes, The classic array-style syntax:
+     *!
+     *!   @code
+     *!     foreach(({ 1, 2, 3 }), mixed val) {
+     *!       // This block of code will execute 3 times,
+     *!       // with val having the values 1, 2 and 3 in sequence.
+     *!     }
+     *!   @endcode
+     *!
+     *!   Note that the above syntax only supports looping over arrays.
+     *!
+     *!   And the @[Iterator]-style syntax:
+     *!
+     *!   @code
+     *!     Iterator|array|mapping|multiset|object|string iter;
+     *!     foreach(iter; mixed ind; mixed val) {
+     *!       // predef::get_iterator(iter) will be called once to create
+     *!       // an iterator if iter is not already an iterator, and then
+     *!       // this code clock will be looped over until
+     *!       // predef::iterator_next() returns false. The lvalues
+     *!       // ind and val will be assigned the values from
+     *!       // predef::iterator_index() and predef::iterator_value()
+     *!       // respectively. Either (or both) of ind and val may
+     *!       // be omitted.
+     *!     }
+     *!   @endcode
+     *!
+     *!   Note the semi-colons used to separate the parameters to
+     *!   @[foreach] above.
+     *!
+     *! @note
+     *!   @[foreach] is not a @tt{function@}, but a special form.
+     *!
+     *! @seealso
+     *!   @[Iterator], @[get_iterator()], @[lfun::_get_iterator()],
+     *!   @[iterator_next()], @[iterator_index()], @[iterator_value()].
+     */
   }
   statement
   {
@@ -3331,15 +3470,18 @@ switch: TOK_SWITCH save_block_level save_locals line_number_info
   }
   ;
 
+/* For syntax compatibility with C2Y we allow '...' here. */
+expected_range_op: TOK_DOT_DOT | TOK_DOT_DOT_DOT ;
+
 case: TOK_CASE safe_init_expr expected_colon
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | TOK_CASE safe_init_expr expected_dot_dot optional_init_expr expected_colon
+  | TOK_CASE safe_init_expr expected_range_op optional_init_expr expected_colon
   {
      $$=mknode(F_CASE_RANGE,$2,$4);
   }
-  | TOK_CASE expected_dot_dot safe_init_expr expected_colon
+  | TOK_CASE expected_range_op safe_init_expr expected_colon
   {
      $$=mknode(F_CASE_RANGE,0,$3);
   }
@@ -3747,8 +3889,7 @@ generic_assoc_list: generic_association
   }
   ;
 
-generic_selection: TOK__GENERIC open_paren_with_line_info
-  assignment_expr ',' generic_assoc_list ')'
+generic_selection: TOK__GENERIC '(' assignment_expr ',' generic_assoc_list ')'
   {
     $$ = mkgeneric_selection($3, $5);
   }
@@ -3762,8 +3903,8 @@ primary_expr: literal_expr
   | sscanf
   | static_assertion { $$ = mknewintnode(0); }
   | lambda
-  | implicit_modifiers anon_class { $$ = $2; }
-  | implicit_modifiers enum { $$ = $2; }
+  | implicit_modifiers dummy_attributes anon_class { $$ = $3; }
+  | implicit_modifiers dummy_attributes enum { $$ = $3; }
   | apply
   | primary_expr '.' line_number_info TOK_IDENTIFIER
   {
@@ -4444,6 +4585,39 @@ range_bound:
 
 gauge: TOK_GAUGE catch_arg
   {
+    /*! @decl float gauge(mixed expression)
+     *!
+     *!   Gauge the time that the expression takes to evaluate.
+     *!
+     *! @param expression
+     *!   Expression to evaluate.
+     *!
+     *! Analogous to @[catch()], there are two syntaxes:
+     *!
+     *!   @code
+     *!     float elapsed = gauge(expression);
+     *!   @endcode
+     *!
+     *! and
+     *!
+     *!   @code
+     *!     float elapsed = gauge {
+     *!       // Code block
+     *!     };
+     *!   @endcode
+     *!
+     *! Where the latter is more versatile and more common.
+     *!
+     *! @returns
+     *!   Returns the time in seconds as a @tt{float@}.
+     *!
+     *! @note
+     *!   @[gauge] is not a @tt{function@}, but a special form. It is thus
+     *!   not valid to pass as a @tt{function@}.
+     *!
+     *! @seealso
+     *!   @[catch()], @[gethrvtime()]
+     */
     $$=mkopernode("`/",
 		  mkopernode("`-",
 			     mkopernode("`-",
@@ -4459,6 +4633,27 @@ gauge: TOK_GAUGE catch_arg
 
 typeof: TOK_TYPEOF '(' assignment_expr ')'
   {
+    /*! @decl type(mixed) typeof(mixed expression)
+     *!
+     *!   Return the compile-time type for the expression.
+     *!
+     *! @param expression
+     *!   Expression for which the type is to be returned.
+     *!
+     *!   This is similar to @[_typeof()], but returns the type
+     *!   that the type checker has derived for the expression.
+     *!   The expression is NOT evaluated.
+     *!
+     *! @returns
+     *!   Returns the derived type for the expression.
+     *!
+     *! @note
+     *!   @[typeof] is not a @tt{function@}, but a special form. It is thus
+     *!   not valid to pass as a @tt{function@}.
+     *!
+     *! @seealso
+     *!   @[_typeof()]
+     */
     $$ = mknode(F_TYPEOF, $3, 0);
   }
   | TOK_TYPEOF '(' error ')' { $$=0; yyerrok; }
@@ -4486,6 +4681,45 @@ catch_arg: '(' init_expr ')'  { $$=$2; }
 
 catch: TOK_CATCH
      {
+       /*! @decl mixed catch(mixed expression)
+        *!
+        *!   Catch run time errors or other thrown values triggered
+        *!   by the evaluation of the expression.
+        *!
+        *! @param expression
+        *!   Expression to evaluate.
+        *!
+        *! Analogous to @[gauge()], there are two syntaxes:
+        *!
+        *!   @code
+        *!     mixed err = catch(expression);
+        *!   @endcode
+        *!
+        *! and
+        *!
+        *!   @code
+        *!     mixed err = catch {
+        *!       // Code block
+        *!     };
+        *!   @endcode
+        *!
+        *! Where the latter is more versatile and more common.
+        *!
+        *! @returns
+        *!   Returns the value that was caught. If no value was caught
+        *!   @expr{0@} is returned.
+        *!
+        *! @note
+        *!   @[catch] is not a @tt{function@}, but a special form. It is thus
+        *!   not valid to pass as a @tt{function@}.
+        *!
+        *!   Note also that @[catch] does not perform any filtering of
+        *!   the caught values. If a caught value is not of interrest
+        *!   it is up to user code to re-@[throw] the value.
+        *!
+        *! @seealso
+        *!   @[gauge()], @[throw()]
+        */
        Pike_compiler->catch_level++;
      }
      catch_arg
@@ -5161,10 +5395,23 @@ static void compiler_end_class(int has___create__, int parent_constant_id)
   {
     struct identifier *i;
     struct svalue sv;
+    struct pike_type *t;
+    node *n = Pike_compiler->previous->current_attributes;
     SET_SVAL(sv, T_PROGRAM, 0, program, Pike_compiler->new_program);
     i = ID_FROM_INT(Pike_compiler->previous->new_program, parent_constant_id);
     free_type(i->type);
-    i->type = get_type_of_svalue(&sv);
+    t = get_type_of_svalue(&sv);
+    if (n) {
+      type_stack_mark();
+      push_finished_type(t);
+      while(n) {
+        push_type_attribute(CDR(n)->u.sval.u.string);
+        n = CAR(n);
+      }
+      free_type(t);
+      t = pop_unfinished_type();
+    }
+    i->type = t;
     if (Pike_compiler->new_program->flags & PROGRAM_CONSTANT) {
       /* Update, in case of @constant. */
       i->opt_flags = 0;

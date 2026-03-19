@@ -16,7 +16,23 @@ constant exclude_dlls = (<
   "advapi32.dll",
   "ole32.dll",
   "oleaut32.dll",
-  "opengl32.dll"
+  "opengl32.dll",
+  "bcrypt.dll",
+  "crypt32.dll",
+  "dwrite.dll",
+  "gdi32.dll",
+  "iphlpapi.dll",
+  "kernelbase.dll",
+  "msimg32.dll",
+  "msvcrt.dll",
+  "ntdll.dll",
+  "rpcrt4.dll",
+  "secur32.dll",
+  "shlwapi.dll",
+  "user32.dll",
+  "usp10.dll",
+  "win32u.dll",
+  "wldap32.dll"
 >);
 
 protected string load_rva(Stdio.File f, array(array(int)) sections,

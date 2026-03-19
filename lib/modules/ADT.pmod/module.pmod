@@ -5,7 +5,9 @@
 //! Various Abstract Data Types.
 
 #if constant(_ADT)
+//! @ignore
 inherit _ADT;
+//! @endignore
 #endif /* _ADT */
 
 constant List = __builtin.List;

@@ -453,10 +453,10 @@ static void do_yyparse(void)
  *!         @value NOTICE
  *!           Ignored.
  *!         @value WARNING
- *!           Calls @[MasterObject()->compile_warning()].
+ *!           Calls @[master()->compile_warning()].
  *!         @value ERROR
  *!         @value FATAL
- *!           Calls @[MasterObject()->compile_error()].
+ *!           Calls @[master()->compile_error()].
  *!       @endint
  *!   @endul
  *!
@@ -469,7 +469,7 @@ static void do_yyparse(void)
  *!   In Pike 8.0 the fallback output was not UTF8-encoded.
  *!
  *! @seealso
- *!   @[PikeCompiler()->report()]
+ *!   @[CompilerEnvironment.PikeCompiler()->report()]
  */
 /* NOTE: This function MUST NOT use any storage in the Reporter program! */
 static void f_reporter_report(INT32 args)
@@ -555,8 +555,13 @@ static void f_reporter_report(INT32 args)
  *!   @[predef::compile()] is essentially an alias for the
  *!   @[CompilerEnvironment()->compile()] in this object.
  *!
+ *! @note
+ *!   The default @[MasterObject] replaces this object with
+ *!   an instance of @[HandlerCompilerEnvironment].
+ *!
  *! @seealso
- *!   @[CompilerEnvironment], @[predef::compile()]
+ *!   @[CompilerEnvironment], @[HandlerCompilerEnvironment],
+ *!   @[predef::compile()]
  */
 
 /*! @decl inherit CompilerEnvironment
@@ -575,6 +580,10 @@ static void f_reporter_report(INT32 args)
  *! @note
  *!   Prior to Pike 7.8 this sort of customization has to be done
  *!   either via custom master objects, or via @[CompilationHandler]s.
+ *!
+ *! @note
+ *!   The default @[MasterObject] replaces this class with
+ *!   @[HandlerCompilerEnvironment].
  *!
  *! @seealso
  *!   @[CompilationHandler], @[MasterObject], @[master()], @[replace_master()]
@@ -765,7 +774,7 @@ static void f_compilation_env_get_compilation_handler(INT32 args)
  *!
  *! @note
  *!   This function is typically called by
- *!   @[Pike_compiler()->get_default_module()].
+ *!   @[PikeCompiler()->get_default_module()].
  *!
  *! @seealso
  *!   @[MasterObject()->get_default_module()].
@@ -1012,6 +1021,9 @@ static void free_compilation(struct compilation *c)
      *     during the ba_walk(), so that really_free_node_s(), and
      *     count_memory_in_node_ss() can find the node_allocator.
      */
+#ifdef PIKE_DEBUG
+    size_t n = 0, s = 0;
+#endif
     struct program_state fake_compiler, *orig_compiler = Pike_compiler;
     memset(&fake_compiler, 0, sizeof(fake_compiler));
     fake_compiler.compiler = c;
@@ -1027,21 +1039,21 @@ static void free_compilation(struct compilation *c)
     fake_compiler.pike_type_mark_stackp = orig_compiler->pike_type_mark_stackp;
 
     if (!c->cumulative_parse_error) {
+      ba_count_all(&c->node_allocator, &n, &s);
+    }
+
+    if (n) {
       ba_walk(&c->node_allocator, &node_marker, c);
 
       ba_walk(&c->node_allocator, &node_reporter, c);
+
+      Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n", n);
     }
 #endif
 
     ba_walk(&c->node_allocator, &node_walker, c);
 
 #ifdef PIKE_DEBUG
-    if(!c->cumulative_parse_error) {
-      size_t n, s;
-      ba_count_all(&c->node_allocator, &n, &s);
-      if (n)
-	Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",n);
-    }
 
     if ((fake_compiler.type_stackp != orig_compiler->type_stackp) ||
         (fake_compiler.pike_type_mark_stackp !=
@@ -1098,6 +1110,7 @@ static void run_init(struct compilation *c)
   }
 
   c->lex.pos=c->prog->str;
+  c->lex.prev_token = 0;
 }
 
 static void run_init2(struct compilation *c)
@@ -1585,14 +1598,14 @@ static void compilation_event_handler(int e)
  *!
  *!   @ol
  *!     @item
- *!       Call handler->report().
+ *!       Call @tt{handler->report()@}.
  *!     @item
- *!       Call handler->compile_warning() or handler->compile_error()
- *!       depending on @[severity].
+ *!       Call @tt{handler->compile_warning()@} or
+ *!       @tt{handler->compile_error()@} depending on @[severity].
  *!     @item
- *!       Call compat->report().
+ *!       Call @tt{compat->report()@}.
  *!     @item
- *!       Call compat->compile_warning() or compat->compile_error()
+ *!       Call @tt{compat->compile_warning()@} or @tt{compat->compile_error()@}
  *!       depending on @[severity].
  *!     @item
  *!       Fallback: Call @[CompilerEnvironment()->report()]
@@ -1602,22 +1615,22 @@ static void compilation_event_handler(int e)
  *!   The arguments will be as follows:
  *!   @dl
  *!     @item report()
- *!       The report() function will be called with the same arguments
+ *!       The @tt{report()@} function will be called with the same arguments
  *!       as this function.
  *!     @item compile_warning()/compile_error()
- *!       Depending on the @[severity] either compile_warning()
- *!       or compile_error() will be called.
+ *!       Depending on the @[severity] either @tt{compile_warning()@}
+ *!       or @tt{compile_error()@} will be called.
  *!
  *!       They will be called with the @[filename], @[linenumber]
  *!       and formatted @[message] as arguments.
  *!
  *!       Note that these will not be called for the @[NOTICE] severity,
- *!       and that compile_error() will be used for both @[ERROR] and
+ *!       and that @tt{compile_error()@} will be used for both @[ERROR] and
  *!       @[FATAL].
  *!   @enddl
  *!
  *! @note
- *!   In Pike 7.8 and earlier the report() function was not called
+ *!   In Pike 7.8 and earlier the @tt{report()@} function was not called
  *!   in the handlers.
  *!
  *! @seealso
@@ -1946,7 +1959,7 @@ static void f_compilation_compile(INT32 args)
  *!   current @[PikeCompiler] context.
  *!
  *! @returns
- *!   Returns the value of @[sym] if found, and @[UNDEFINED] if not.
+ *!   Returns the value of @[identifier] if found, and @[UNDEFINED] if not.
  */
 static void f_compilation_resolv(INT32 args)
 {
@@ -2685,16 +2698,12 @@ static void f_compilation_apply_type_attribute(INT32 args)
  *!   of the function type based on @[value].
  *!
  *!   The default implementation implements the @expr{"sprintf_format"@},
- *!   @expr{"sscanf_format"@} and @expr{"sscanf_76_format"@} attributes.
- *!
- *! @param state
- *!   Mapping intended to hold state during checking of multiple
- *!   arguments.
+ *!   @expr{"sscanf_format"@} and @expr{"sscanf_80_format"@} attributes.
  *!
  *! @returns
  *!   Returns a continuation type if it succeeded in strengthening the type.
  *!
- *!   Returns @tt{UNDEFINED@} otherwise (this is not an error indication).
+ *!   Returns @[UNDEFINED] otherwise (this is not an error indication).
  *!
  *! @seealso
  *!   @[pop_type_attribute()], @[push_type_attribute()]
@@ -2751,7 +2760,7 @@ static void f_compilation_apply_attribute_constant(INT32 args)
     f___handle_sscanf_format(args);
     return;
   }
-  MAKE_CONST_STRING(test, "sscanf_76_format");
+  MAKE_CONST_STRING(test, "sscanf_80_format");
   if (attribute == test) {
     f___handle_sscanf_format(args);
     return;
@@ -4082,15 +4091,17 @@ PIKECLASS AutoCodecClass
 /*! @endclass
  */
 
-/*! @decl constant AutoCodec = AutoCodecClass()
+/*! @decl constant AutoCodecClass AutoCodec = AutoCodecClass()
  *!
  *! This @[Annotation] causes the compiler to automatically
- *! add an implementation of @[_encode()] that returns
+ *! add an implementation of @tt{_encode()@} that returns
  *! an array with suitable arguments to @[lfun::create].
+ *! The generated @tt{_encode@} function is thus suitable for
+ *! @[Encoder()->encode_object()].
  *!
  *! @note
  *!   This annotation is only useful for classes that
- *!   use the implicit create()-syntax, or have a create()
+ *!   use the implicit @tt{create()@}-syntax, or have a @tt{create()@}
  *!   that doesn't need any arguments.
  */
 EXTRA

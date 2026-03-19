@@ -6007,7 +6007,7 @@ PIKECLASS Context
    *!
    *! Other than the initial translation pattern matrix, as described
    *! above, all other pattern attributes, (such as its extend mode),
-   *! are set to the default values as in @[Pattern->create()].  The
+   *! are set to the default values as in @[Pattern()].  The
    *! resulting pattern can be queried with @[get_source()] so that
    *! these attributes can be modified if desired, (eg. to create a
    *! repeating pattern with @[Pattern->set_extend()]).
@@ -7779,7 +7779,7 @@ PIKECLASS Context
    *! For "real" font selection, see the font-backend-specific
    *! font_face_create functions for the font backend you are using.
    *! The resulting font face could then be used with
-   *! @[scaled_font_create()] and @[set_scaled_font()].
+   *! @[ScaledFont()] and @[set_scaled_font()].
    *!
    *! If text is drawn without a call to select_font_face(), (nor
    *! @[set_font_face()] nor @[set_scaled_font()]), the default family
@@ -7788,7 +7788,7 @@ PIKECLASS Context
    *! @[FONT_WEIGHT_NORMAL].
    *!
    *! This function is equivalent to a call to
-   *! @[toy_font_face_create()] followed by @[set_font_face()].
+   *! @[ToyFontFace()] followed by @[set_font_face()].
    *!
    *! @param family
    *!   a font family name
@@ -7999,7 +7999,7 @@ PIKECLASS Context
    *!
    *! @param glyphs
    *!   array of glyphs to show, with each glyph being represented
-   *!   either as a @[Glypg] object or as an array of the following
+   *!   either as a @[Glyph] object or as an array of the following
    *!   format:
    *!   @array
    *!     @elem int 0
@@ -8268,7 +8268,7 @@ PIKECLASS Context
   /*! @decl void tag_begin(string tag_name, string|void attributes)
    *!
    *! Marks the beginning of the @[tag_name] structure.  Call
-   *! @[ddtag_end()] with the same @[tag_name] to mark the end of the
+   *! @[tag_end()] with the same @[tag_name] to mark the end of the
    *! structure.
    *!
    *! The attributes string is of the form "key1=value2 key2=value2

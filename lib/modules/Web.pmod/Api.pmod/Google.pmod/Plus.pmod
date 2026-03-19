@@ -52,7 +52,7 @@ class V1
   //! @url{https://developers.google.com/+/api/latest/people@}
   //!
   //! Retreive an instance of this class through the
-  //! @[Social.Google.Plus()->people] property
+  //! @[people] property
   class People
   {
     inherit Method;

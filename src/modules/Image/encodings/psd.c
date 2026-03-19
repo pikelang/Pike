@@ -36,6 +36,16 @@ extern struct program *image_program;
 #include "psd_constant_strings.h"
 #undef STRING
 
+/*! @module Image
+ */
+
+/*! @class _PSD
+ *!
+ *!   Support for the Adobe Photoshop PSD file format.
+ *!
+ *! @seealso
+ *!   @[Image.PSD]
+ */
 
 struct buffer
 {
@@ -377,6 +387,9 @@ static void f_decode_packbits_encoded(INT32 args)
   return;
 }
 
+/*! @decl Image.Image ___decode_image_channel(int width, int height, @
+ *!                                           string(8bit) source)
+ */
 static void f_decode_image_channel( INT32 args )
 {
   INT_TYPE w, h;
@@ -410,7 +423,11 @@ static void f_decode_image_channel( INT32 args )
 }
 
 
-
+/*! @decl Image.Image ___decode_image_data(int width, int height, @
+ *!                                        int d, int m, @
+ *!                                        int c, string(8bit) s, @
+ *!                                        string(8bit) ct)
+ */
 static void f_decode_image_data( INT32 args )
 {
   INT_TYPE w, h, c, d, m;
@@ -747,6 +764,8 @@ static void decode_resources( struct buffer *b )
   f_aggregate_mapping( (int)(sp-osp) );
 }
 
+/*! @decl mapping ___decode(string(8bit) psd_data)
+ */
 static void image_f_psd___decode( INT32 args )
 {
   struct pike_string *s;
@@ -776,6 +795,8 @@ static void image_f_psd___decode( INT32 args )
   }
 }
 
+/*! @decl void __apply_cmap(Image.Image io, string(8bit) cmap)
+ */
 static void f_apply_cmap( INT32 args )
 {
   struct object *io;
@@ -809,18 +830,52 @@ void init_image_psd(void)
   ADD_FUNCTION( "___decode_image_data", f_decode_image_data,tFunction,0);
   ADD_FUNCTION( "__apply_cmap", f_apply_cmap, tFunc(tObj tStr,tVoid), 0);
 
+  /*! @decl constant int Bitmap
+   */
   add_integer_constant("Bitmap" , Bitmap, 0 );
+
+  /*! @decl constant int Greyscale
+   */
   add_integer_constant("Greyscale" , Greyscale, 0 );
+
+  /*! @decl constant int Indexed
+   */
   add_integer_constant("Indexed" , Indexed, 0 );
+
+  /*! @decl constant int RGB
+   */
   add_integer_constant("RGB" , RGB, 0 );
+
+  /*! @decl constant int CMYK
+   */
   add_integer_constant("CMYK" , CMYK, 0 );
+
+  /*! @decl constant int Multichannel
+   */
   add_integer_constant("Multichannel" , Multichannel, 0 );
+
+  /*! @decl constant int Duotone
+   */
   add_integer_constant("Duotone" , Duotone, 0 );
+
+  /*! @decl constant int Lab
+   */
   add_integer_constant("Lab" , Lab, 0 );
 
+  /*! @decl constant int LAYER_FLAG_PRESERVE_TRANSPARENCY
+   */
   add_integer_constant("LAYER_FLAG_PRESERVE_TRANSPARENCY", 0x01, 0 );
+
+  /*! @decl constant int LAYER_FLAG_INVISIBLE
+   */
   add_integer_constant("LAYER_FLAG_INVISIBLE", 0x02, 0 );
+
+  /*! @decl constant int LAYER_FLAG_BIT4
+   */
   add_integer_constant("LAYER_FLAG_BIT4", 0x04, 0 );
+
+  /*! @decl constant int LAYER_FLAG_NOPIX
+   */
   add_integer_constant("LAYER_FLAG_NOPIX", 0x08, 0 );
 
 #define STRING(X) PIKE_CONCAT(s_, X) = \
@@ -836,3 +891,9 @@ void exit_image_psd(void)
 #include "psd_constant_strings.h"
 #undef STRING
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */

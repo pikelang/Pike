@@ -57,7 +57,7 @@ Crypto.RSA rsa;
 Crypto.DSA dsa;
 
 //! Sets the proper authentication method and cipher specification
-//! for the given cipher @[suite] and @[verison].
+//! for the given cipher @[suite] and @[version].
 void set_cipher_suite(int suite, ProtocolVersion|int version)
 {
   array res = .Cipher.lookup(suite, version);

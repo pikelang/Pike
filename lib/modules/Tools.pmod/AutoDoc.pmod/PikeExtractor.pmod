@@ -328,7 +328,7 @@ private class Extractor {
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
   object(Documentation)|zero
-    parseClassBody(AutoDoc root, Class|Module c,
+    parseClassBody(AutoDoc root, Class|Module|Enum|NameSpace c,
                    array(string)|zero defModifiers,
                    void|string filename,
                    void|string inAt)
@@ -336,7 +336,7 @@ private class Extractor {
     object(Documentation)|zero filedoc = 0;
 
     object(Method)|zero implicit_create;
-    foreach(c->docGroups, DocGroup dg) {
+    foreach(c->docGroups || ({}), DocGroup dg) {
       foreach(dg->objects, PikeObject po) {
         if ((po->objtype == "method") && (po->name == "__create__")) {
           // Found.
@@ -425,6 +425,7 @@ private class Extractor {
               // if (c->objtype == "class" && what == "module")
               //   extractorError("@module not allowed in class files");
               // fall through
+            case "enum":
             case "class":
               if (sizeof(decls))
                 extractorError("@%s doc comment must stand alone", what);
@@ -439,7 +440,11 @@ private class Extractor {
                                  what, m->name, m->name, m->objtype);
               }
               else {
-                m = what == "class" ? Class() : Module();
+                m = ([
+                  "module": Module,
+                  "enum": Enum,
+                  "class": Class,
+                  "namespace": NameSpace])[what]();
                 m->appears = meta->appears;
                 m->belongs = meta->belongs;
                 m->name = meta->name;
@@ -460,6 +465,7 @@ private class Extractor {
               continue mainloop;
 
             case "endclass":
+            case "endenum":
             case "endmodule":
             case "endnamespace":
               if (sizeof(decls))
@@ -694,11 +700,11 @@ private class Extractor {
 //! @seealso
 //!   @[extractModule()], @[extractClass()]
 void extractNamespace(AutoDoc root, string s, void|string filename,
-		      void|string namespaceName, void|.Flags flags)
+                      void|string namespaceName, .Flags flags = .FLAG_NORMAL)
 {
-  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   NameSpace ns = NameSpace();
+  ns->is_global = 1;
   ns->name = namespaceName || filename;
   root->addChild(ns);
   Documentation doc = e->parseClassBody(root, ns, 0, filename);
@@ -710,11 +716,11 @@ void extractNamespace(AutoDoc root, string s, void|string filename,
 //! @seealso
 //!   @[extractNamespace()], @[extractClass()]
 void extractModule(AutoDoc root, Module parent, string s, void|string filename,
-		   void|string moduleName, void|.Flags flags)
+                   void|string moduleName, .Flags flags = .FLAG_NORMAL)
 {
-  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Module m = Module();
+  m->is_global = 1;
   m->name = moduleName || filename;
   parent->addChild(m);
   Documentation doc = e->parseClassBody(root, m, 0, filename);
@@ -734,11 +740,11 @@ void extractModule(AutoDoc root, Module parent, string s, void|string filename,
 //! @seealso
 //!   @[extractNamespace()], @[extractModule()]
 void extractClass(AutoDoc root, Module parent, string s, void|string filename,
-		  void|string className, void|.Flags flags)
+                  void|string className, .Flags flags = .FLAG_NORMAL)
 {
-  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Class c = Class();
+  c->is_global = 1;
   c->name = className || filename;
   parent->addChild(c);
   Documentation doc = e->parseClassBody(root, c, 0, filename);

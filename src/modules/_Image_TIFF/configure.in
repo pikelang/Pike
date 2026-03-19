@@ -9,7 +9,7 @@ PIKE_FEATURE_WITHOUT(Image.TIFF)
 if test x$with_tifflib = xyes ; then
   PIKE_FEATURE_NODEP(Image.TIFF)
 
-  AC_CHECK_HEADERS(tiff.h tiffvers.h tiffio.h tiffiop.h)
+  AC_CHECK_HEADERS(tiff.h tiffvers.h tiffio.h)
   if test $ac_cv_header_tiff_h = yes ; then
     AC_CHECK_LIB(m, floor)
     AC_CHECK_LIB(jpeg, jpeg_CreateCompress)
@@ -37,9 +37,6 @@ if test x$with_tifflib = xyes ; then
 #undef INLINE
 #endif
 #include <tiff.h>
-#ifdef HAVE_TIFFIOP_H
-#include <tiffiop.h>
-#endif
 #include <tiffio.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,9 +71,6 @@ int main(int argc, char **argv)
 #undef INLINE
 #endif
 #include <tiff.h>
-#ifdef HAVE_TIFFIOP_H
-#include <tiffiop.h>
-#endif
 #include <tiffio.h>
 #include <stdio.h>
 #include <errno.h>

@@ -1,14 +1,15 @@
+#charset utf-8
 #pike __REAL_VERSION__
 
 //
-// 2004-11-01 Henrik Grubbström
+// 2004-11-01 Henrik GrubbstrÃ¶m
 
-//! Helper module for generating Windows Installer XML structures.
+//! Helper module for generating Windows Installer XML version 3 structures.
 //!
 //! @seealso
-//!   @[Parser.XML.Tree.SimpleNode]
+//!   @[8.0::Standards.XML.Wix], @[Parser.XML.Tree.SimpleNode]
 
-constant wix_ns = "http://schemas.microsoft.com/wix/2003/01/wi";
+constant wix_ns = "http://schemas.microsoft.com/wix/2006/wi";
 
 Parser.XML.Tree.SimpleTextNode line_feed =
   Parser.XML.Tree.SimpleTextNode("\n");
@@ -22,12 +23,15 @@ Parser.XML.Tree.SimpleTextNode line_feed =
 #define MK_UUID(NAME, PARENT_UUID)	Standards.UUID.make_version1(-1)
 #endif /* constant(Standards.UUID.make_version3) */
 
+//! This class represents a single Wix XML element node.
 class WixNode
 {
+  //!
   inherit Parser.XML.Tree.SimpleElementNode;
 
+  //!
   protected void create(string name, mapping(string:string) attrs,
-		     string|void text)
+                        string|void text)
   {
     ::create(wix_ns + name, attrs);
     mTagName = name;
@@ -38,6 +42,40 @@ class WixNode
   }
 }
 
+//! This class represents a Wix @tt{<Package/>@} node.
+class PackageNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    ::create("Package", attrs);
+  }
+}
+
+//! This class represents a Wix @tt{<Binary/>@} node.
+class BinaryNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    ::create("Binary", attrs);
+  }
+}
+
+//! This class represents a Wix @tt{<UIRef/>@} node.
+class UIRefNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    ::create("UIRef", attrs);
+  }
+}
+
+//! This class is used to generate Wix @tt{<RegistryValue/>@} nodes.
 class RegistryEntry
 {
   string root;
@@ -67,10 +105,11 @@ class RegistryEntry
       "Value":value,
     ]);
     if (name) attrs->Name = name;
-    return WixNode("Registry", attrs);
+    return WixNode("RegistryValue", attrs);
   }
 }
 
+//! This class is used to generate Wix @tt{<Merge/>@} nodes.
 class Merge
 {
   string source;
@@ -88,7 +127,7 @@ class Merge
   {
     mapping(string:string) attrs = ([
       "Id":id,
-      "src":source,
+      "SourceFile":source,
       "Language": language || "1033",
       "DiskId":"1",
       "FileCompression": "yes",
@@ -97,6 +136,7 @@ class Merge
   }
 }
 
+//! This class is used to generate Wix XML for a directory of files.
 class Directory
 {
   string name;
@@ -190,14 +230,14 @@ class Directory
     {
       mapping(string:string) attrs = ([
 	"Id":id,
-	"Name":gen_8dot3(name),
-	"LongName":name,
+	"ShortName":gen_8dot3(name),
+	"Name":name,
 	"Vital":"yes",
 	//      "KeyPath":"yes",
 	//      "DiskId":"1",
       ]);
       if (source) {
-	attrs->src = replace(source, "/", "\\");
+	attrs->Source = replace(source, "/", "\\");
 	if (has_suffix(lower_case(source), ".ttf")) {
 	  // Orca doesn't like us otherwise...
 	  attrs->DefaultLanguage="1033";
@@ -236,8 +276,8 @@ class Directory
     {
       mapping(string:string) attrs = ([
 	"Id":id,
-	"Name":gen_8dot3(name),
-	"LongName":name,
+	"ShortName":gen_8dot3(name),
+	"Name":name,
 	"Directory":directory,
 	"Show":show,
       ]);
@@ -284,8 +324,7 @@ class Directory
     {
       mapping(string:string) attrs = ([
 	"Id":id,
-	"Name":gen_8dot3(name),
-	"LongName":name,
+	"Name":name,
 	"On":"uninstall",
       ]);
       return WixNode("RemoveFile", attrs);
@@ -353,7 +392,7 @@ class Directory
   {
     Directory d = low_add_path(dest/"/");
 
-    foreach(get_dir(src), string fname) {
+    foreach(sort(get_dir(src)), string fname) {
       string fullname = combine_path(src, fname);
       Stdio.Stat stat = file_stat(fullname);
       if (stat->isdir) {
@@ -398,7 +437,7 @@ class Directory
   void recurse_uninstall_file(string pattern)
   {
     low_uninstall_file(pattern);
-    foreach(sub_dirs;; Directory d) {
+    foreach(map(sort(indices(sub_dirs)), sub_dirs), Directory d) {
       d->recurse_uninstall_file(pattern);
     }
   }
@@ -437,26 +476,26 @@ class Directory
     parent += "/" + name;
 
     mapping(string:string) attrs = ([
-      "Name":short_name||name,
+      "Name":name,
       "Id":id,
     ]);
     if (short_name && (short_name != name)) {
       // Win32 stupidity...
-      attrs->LongName = name;
+      attrs->ShortName = short_name;
     }
     if (source) {
-      attrs->src = replace(source+"/", "/", "\\");
+      attrs->FileSource = replace(source+"/", "/", "\\");
     }
     WixNode root = WixNode("Directory", attrs, "\n");
     WixNode node = root;
-    foreach(extra_ids; string sub_id;) {
+    foreach(sort(indices(extra_ids)), string sub_id) {
       node->add_child(node = WixNode("Directory", ([
 				       "Id": sub_id,
 				       "Name":".",
 				     ]), "\n"))->
 	add_child(line_feed);
     }
-    foreach(sub_dirs;; object(Directory)|Merge d) {
+    foreach(map(sort(indices(sub_dirs)), sub_dirs), object(Directory)|Merge d) {
       root->add_child(d->gen_xml(parent, disk_id))->add_child(line_feed);
     }
     if (sizeof(files) || sizeof(other_entries)) {
@@ -470,10 +509,11 @@ class Directory
 				  (contains_dlls ? ([
 				    "SharedDllRefCount":"yes"
 				  ]):([])), "\n");
-      foreach(files;; File f) {
+      foreach(map(sort(indices(files)), files), File f) {
 	component->add_child(f->gen_xml())->add_child(line_feed);
       }
-      foreach(other_entries;; RegistryEntry r) {
+      foreach(map(sort(indices(other_entries)), other_entries),
+              RegistryEntry r) {
 	component->add_child(r->gen_xml())->add_child(line_feed);
       }
       node->add_child(component)->add_child(line_feed);
@@ -493,7 +533,6 @@ WixNode get_module_xml(Directory dir, string id, string version,
   mapping(string:string) package_attrs = ([
     "Id":guid,
     "InstallerVersion": installer_version || "200",
-    "Compressed":"yes",
   ]);
   if (manufacturer) {
     package_attrs->Manufacturer = manufacturer;
@@ -519,7 +558,6 @@ WixNode get_module_xml(Directory dir, string id, string version,
     add_child(WixNode("Wix", ([	"xmlns":wix_ns ]), "\n")->
 	      add_child(WixNode("Module", ([
 				  "Id":id,
-				  "Guid":guid,
 				  "Language":"1033",
 				  "Version":version,
 				]), "\n")->
@@ -566,7 +604,6 @@ Parser.XML.Tree.SimpleRootNode get_xml_node()
 						   "Languages":"1033",
 						   "Compressed":"yes",
 						   "InstallerVersion":"200",
-						   "Platforms":"Intel",
 						   "SummaryCodepage":"1252",
 						   "Id":product_id,
 						 ])))));

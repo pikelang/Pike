@@ -2,13 +2,13 @@
 
 #pike __REAL_VERSION__
 
-#if constant(GTK.GLArea)
+#if constant(GTK2.GLArea)
 
 inherit .Interface;
 import GLUE.Events;
 
-protected GTK.GLArea area;
-protected GTK.Window window;
+protected GTK2.GLArea area;
+protected GTK2.Window window;
 protected int gl_flags;
 
 protected class MEvent
@@ -38,7 +38,7 @@ void set_resolution( int x, int y )
 
 void flush()
 {
-  GTK.flush();
+  GTK2.flush();
 }
 
 void set_mode( int fullscreen, int depth,
@@ -49,7 +49,7 @@ void set_mode( int fullscreen, int depth,
     window->destroy();
 
   window =
-    GTK.Window( fullscreen ? GTK.WindowPopup : GTK.WindowToplevel);
+    GTK2.Window( fullscreen ? GTK2.WindowPopup : GTK2.WindowToplevel);
 
   window->signal_connect( "configure_event", lambda() {
 					       configure_event(window->xsize(),
@@ -58,26 +58,26 @@ void set_mode( int fullscreen, int depth,
 
 
   window->signal_connect( "key_press_event",
-			  lambda(int x, GTK.Widget w, GDK.Event e){
+                          lambda(int x, GTK2.Widget w, GDK2.Event e){
 			    evt( MEvent( e->keyval, 1, e->data, e->state ) );
 			  } );
 
   window->signal_connect( "key_release_event",
-			  lambda(int x, GTK.Widget w, GDK.Event e){
+                          lambda(int x, GTK2.Widget w, GDK2.Event e){
 			    evt( MEvent( e->keyval, 0, e->data, e->state ) );
 			  } );
 
   window->signal_connect( "button_press_event",
-			  lambda(int x, GTK.Widget w, GDK.Event e){
+                          lambda(int x, GTK2.Widget w, GDK2.Event e){
 			    evt( MEvent( -e->button, 1,0,e->state ) );
 			  } );
   window->signal_connect( "button_release_event",
-			  lambda(int x, GTK.Widget w, GDK.Event e){
+                          lambda(int x, GTK2.Widget w, GDK2.Event e){
 			    evt( MEvent( -e->button, 0,0,e->state ) );
 			  } );
-  window->add_events( GDK.KeyPressMask | GDK.KeyReleaseMask |
-		      GDK.StructureMask | GDK.ButtonPressMask |
-		      GDK.ButtonReleaseMask );
+  window->add_events( GDK2.KeyPressMask | GDK2.KeyReleaseMask |
+                      GDK2.StructureMask | GDK2.ButtonPressMask |
+                      GDK2.ButtonReleaseMask );
   window->set_policy( 1, 1, 1 );
 
   window->set_usize( width, height );
@@ -85,11 +85,11 @@ void set_mode( int fullscreen, int depth,
   window->realize();
   if( fullscreen )
   {
-#if constant(GTK.move_cursor_abs)
+#if constant(GTK2.move_cursor_abs)
 #if constant( ChangeRes.change_res )
     restore_res =
       lambda() {
-	ChangeRes.change_res( @rows( GTK.root_window()->get_geometry(),
+        ChangeRes.change_res( @rows( GTK2.root_window()->get_geometry(),
 				     ({ "width", "height" })) );
       };
     ChangeRes.change_res( width, height );
@@ -97,15 +97,15 @@ void set_mode( int fullscreen, int depth,
 #endif
 
     window->show_now();
-    GDK.Window w = window->get_gdkwindow();
-    GTK.move_cursor_abs( w, 10, 10 );
+    GDK2.Window w = window->get_gdkwindow();
+    GTK2.move_cursor_abs( w, 10, 10 );
     w->grab_input_focus();
 
     hide_cursor();
-    window->add_events( GDK.PointerMotionMask );
+    window->add_events( GDK2.PointerMotionMask );
     int nomove;
     window->signal_connect( "motion_notify_event",
-			    lambda( int x, GTK.Widget wi, GDK.Event e )
+                            lambda( int x, GTK2.Widget wi, GDK2.Event e )
 			    {
 			      if( nomove )
 				return;
@@ -135,27 +135,27 @@ void set_mode( int fullscreen, int depth,
 				  evt( MEvent( MOUSE_UP, 0 ) );
 				}
 				nomove = 1;
-				GTK.flush();
-				GTK.move_cursor_abs( w, window->xsize()/2,
-						     window->ysize()/2 );
-				GTK.flush();
+                                GTK2.flush();
+                                GTK2.move_cursor_abs( w, window->xsize()/2,
+                                                      window->ysize()/2 );
+                                GTK2.flush();
 				call_out(lambda(){nomove = 0;},0.01);
 			      }
 			    }
 			  );
-#else /* !constant(GTK.move_cursor_abs) */
+#else /* !constant(GTK2.move_cursor_abs) */
     error("Full screen mode not supported with this version of GTK.\n");
-#endif /* constant(GTK.move_cursor_abs) */
+#endif /* constant(GTK2.move_cursor_abs) */
   }
 #if constant( ChangeRes.change_res )
   else
-    ChangeRes.change_res( @rows( GTK.root_window()->get_geometry(),
+    ChangeRes.change_res( @rows( GTK2.root_window()->get_geometry(),
 				 ({ "width", "height" })) );
 #endif
 
-  area = GTK.GLArea(({gl_flags | GTK.GDK_GL_RGBA,
-		      GTK.GDK_GL_DOUBLEBUFFER,
-		      /* GTK.GDK_GL_DEPTH_SIZE,1,*/0 }) )->show();
+  area = GTK2.GLArea(({gl_flags | GTK2.GDK_GL_RGBA,
+                       GTK2.GDK_GL_DOUBLEBUFFER,
+                       /* GTK2.GDK_GL_DEPTH_SIZE,1,*/0 }) )->show();
   window->add( area )->show();
   area->make_current();
   configure_event( width, height );
@@ -177,11 +177,11 @@ protected void repeat( int r )
 
 void init(void|string title, void|string icon)
 {
-  GTK.setup_gtk();
+  GTK2.setup_gtk();
   if(title)
-    GTK.root_window()->set_title(title);
+    GTK2.root_window()->set_title(title);
   if(icon)
-    GTK.root_window()->set_icon_name(icon);
+    GTK2.root_window()->set_icon_name(icon);
   repeat(0);
 }
 
@@ -192,9 +192,9 @@ void exit() {
 }
 
 void hide_cursor() {
-  GDK.Bitmap bm = GDK.Bitmap( Image.Image( 1,1 ) );
-  GDK.Color c   = GDK.Color( 0,0,0 );
-  GDK.Window w = window->get_gdkwindow();
+  GDK2.Bitmap bm = GDK2.Bitmap( Image.Image( 1,1 ) );
+  GDK2.Color c   = GDK2.Color( 0,0,0 );
+  GDK2.Window w = window->get_gdkwindow();
   w->set_bitmap_cursor( bm,bm,c,c,0,0 );
 }
 
@@ -202,4 +202,4 @@ void show_cursor() {
   // FIXME: What do we do.
 }
 
-#endif /* constant(GTK.GLArea) */
+#endif /* constant(GTK2.GLArea) */

@@ -42,6 +42,8 @@
 //!   destructed timely when dropped.
 //! @endul
 
+//! @decl import Constants
+
 // #define DEBUG
 // #define SSL3_DEBUG
 // #define SSL3_DEBUG_MORE

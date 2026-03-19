@@ -306,6 +306,14 @@ protected Iterator get_iterator(mixed x)
 //!
 //! @deprecated Debug.next_object
 
+//! @decl array(sscanf_args) array_sscanf(sscanf_input str, @
+//!                                       sscanf_80_format fmt)
+//! @note
+//!   The main difference between @[8.0::array_sscanf()] and
+//!   @[predef::array_sscanf()] is that all integers in the former are signed.
+//!
+//! @deprecated 9.0::array_sscanf
+
 protected int|array(string) _glob(string|array(string) a, string|array(string) b)
 {
   mapping r = ([

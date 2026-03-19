@@ -1112,7 +1112,7 @@ PIKECLASS BlockCipher
    *! the parent class (@[Cipher]).
    *!
    *! @seealso
-   *!   @[Crypto.CBC], @[GCM]
+   *!   @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_BlockCipher_cq__CBC) CBC;
 
@@ -1442,7 +1442,7 @@ PIKECLASS BlockCipher
    *! the parent class (@[Cipher]).
    *!
    *! @seealso
-   *!   @[CBC], @[GCM]
+   *!   @[CBC], @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_BlockCipher_cq__PCBC) PCBC;
 
@@ -1597,7 +1597,7 @@ PIKECLASS BlockCipher
    *! This is a mode of operation suggested in 1977 by C. Cambell.
    *!
    *! @seealso
-   *!   @[CBC], @[GCM], @[CFB]
+   *!   @[CBC], @[BlockCipher16.GCM], @[CFB]
    */
   PIKEVAR object(Nettle_Cipher) IGE;
 
@@ -1978,7 +1978,7 @@ PIKECLASS BlockCipher
    *! @[AES] by Lars R. Knudsen.
    *!
    *! @seealso
-   *!   @[CBC], @[GCM], @[CFB], @[IGE]
+   *!   @[CBC], @[BlockCipher16.GCM], @[CFB], @[IGE]
    */
   PIKEVAR object(Nettle_Cipher) ABC;
 
@@ -2361,7 +2361,7 @@ PIKECLASS BlockCipher
    *!   Requires Nettle 3.4 or later.
    *!
    *! @seealso
-   *!   @[CBC], @[GCM]
+   *!   @[CBC], @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_Cipher) CFB;
 
@@ -2659,9 +2659,6 @@ PIKECLASS BlockCipher
        *!
        *! Neither the input or output data is not automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
-       *!
-       *! @seealso
-       *!   @[update()], @[digest()]
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
       {
@@ -2821,7 +2818,7 @@ PIKECLASS BlockCipher
    *! Message Authentication Code (MAC).
    *!
    *! @seealso
-   *!   @[CBC], @[GCM], @[Buffer]
+   *!   @[CBC], @[BlockCipher16.GCM], @[Buffer]
    */
   PIKEVAR object(Nettle_Cipher) CTR;
 
@@ -3115,9 +3112,6 @@ PIKECLASS BlockCipher
        *!
        *! Neither the input or output data is not automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
-       *!
-       *! @seealso
-       *!   @[update()], @[digest()]
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
       {
@@ -3192,7 +3186,7 @@ PIKECLASS BlockCipher
    *! Message Authentication Code (MAC).
    *!
    *! @seealso
-   *!   @[CFB], @[CBC], @[CTR], @[GCM]
+   *!   @[CFB], @[CBC], @[CTR], @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_Cipher) OFB;
 
@@ -3480,9 +3474,6 @@ PIKECLASS BlockCipher
        *!
        *! Neither the input or output data is not automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
-       *!
-       *! @seealso
-       *!   @[update()], @[digest()]
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
       {
@@ -3688,7 +3679,7 @@ PIKECLASS BlockCipher16
      *!
      *! @note
      *!   @rfc{6931:2.6.3@} indicates that the @rfc{3394@} algorithm
-     *!   is also appropriate for @[Camellia].
+     *!   is also appropriate for @[CAMELLIA].
      *!
      *! @seealso
      *!   @[unwrap_key()]
@@ -3831,7 +3822,7 @@ PIKECLASS BlockCipher16
      *!
      *! @note
      *!   @rfc{6931:2.6.3@} indicates that the @rfc{3394@} algorithm
-     *!   is also appropriate for @[Camellia].
+     *!   is also appropriate for @[CAMELLIA].
      *!
      *! @seealso
      *!   @[wrap_key()]
@@ -4195,7 +4186,10 @@ PIKECLASS BlockCipher16
           push_int(13);
       }
 
-
+      /*! @decl State update(string(8bit) public_data)
+       *!
+       *! Add some authenticated data.
+       */
       PIKEFUN object(Nettle_AEAD_State) update(string(8bit) public_data)
       {
 	if (!public_data->len) return;
@@ -4269,7 +4263,7 @@ PIKECLASS BlockCipher16
        *!
        *! @returns
        *!   The default implementation returns the result from calling
-       *!   @[global::digest_size()], but overloading via inherit is supported,
+       *!   @[CCM::digest_size()], but overloading via inherit is supported,
        *!   and may return any even number in the range @expr{[4..16]@}.
        *!
        *! @note
@@ -4411,7 +4405,7 @@ PIKECLASS BlockCipher16
        *!   it doesn't simply imply a truncation.
        *!
        *! @seealso
-       *!   @[digest_size()], @[global::digest_size()]
+       *!   @[digest_size()], @[CCM::digest_size()]
        */
       PIKEFUN string(8bit) digest(int(4..16)|void bytes_p)
       {
@@ -4847,6 +4841,9 @@ PIKECLASS BlockCipher16
 	push_object(this_object());
       }
 
+      /*! @decl this_program set_iv(string(0..255) iv)
+       *! Set the initialization vector to @[iv].
+       */
       PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv)
       {
 	pike_nettle_crypt_func func = pike_crypt_func;
@@ -4931,7 +4928,7 @@ PIKECLASS BlockCipher16
        *!   calling @[digest_size()] will be used.
        *!
        *! @seealso
-       *!   @[digest_size()], @[global::digest_size()]
+       *!   @[digest_size()], @[EAX::digest_size()]
        */
       PIKEFUN string(8bit) digest(int(1..16)|void bytes_p)
       {
@@ -6056,6 +6053,9 @@ PIKECLASS BlockCipher16
         push_object(this_object());
       }
 
+      /*! @decl this_program set_iv(string(0..255) iv)
+       *! Set the initialization vector to @[iv].
+       */
       PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv,
                                                int(1..16)|void tag_length)
       {
@@ -6150,7 +6150,7 @@ PIKECLASS BlockCipher16
        *!   @[set_iv()].
        *!
        *! @seealso
-       *!   @[set_iv()], @[digest_size()], @[global::digest_size()]
+       *!   @[set_iv()], @[digest_size()], @[OCB::digest_size()]
        */
       PIKEFUN string(8bit) digest()
       {

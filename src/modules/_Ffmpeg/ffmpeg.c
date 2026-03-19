@@ -204,7 +204,9 @@ int encoder_flg(const AVCodec *codec) {
  *! You can find more info about it at @url{http://ffmpeg.sf.net/@}.
  */
 
-/*! @decl void create(int codec_name, int encoder)
+/*! @decl void create(int codec_name, int(1bit) encoder, @
+ *!                   int(16bit)|void rate, int(16bit)|void wide, @
+ *!                   int(16bit)|void chns)
  *!
  *! Create decoder or encoder object.
  *!
@@ -337,7 +339,7 @@ static void f_codec_info(INT32 args) {
  *!   Returns 1 on success, 0 otherwise (parameter not known).
  *!
  *! @seealso
- *!   @[get_codec_params()]
+ *!   @[get_codec_status()]
  */
 static void f_set_codec_param(INT32 args) {
   struct pike_string *pname;

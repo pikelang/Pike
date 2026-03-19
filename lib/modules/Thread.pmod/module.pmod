@@ -471,7 +471,7 @@ class Queue {
 //!
 class ResourceCountKey {
 
-  private inherit __builtin.DestructImmediate;
+  private inherit Pike.DestructImmediate;
 
   /*semi*/private ResourceCount parent;
 
@@ -494,7 +494,7 @@ class ResourceCountKey {
 
 //! Implements an inverted-semaphore-like resource
 //! counter.  A thread can poll or perform a blocking wait for the
-//! resource-count to drop below a certain @ref{level@}.
+//! resource-count to drop below a certain @tt{level@}.
 //!
 //! @seealso
 //!   @[ResourceCountKey], @[Condition], @[Mutex]
@@ -507,12 +507,12 @@ class ResourceCount {
   //!   The maximum level that is considered drained.
   //!
   //! @returns
-  //!   True if the resource counter drops to equal or below @ref{level@}.
+  //!   True if the resource counter drops to equal or below @[level].
   /*semi*/final int(0..1) drained(void|int level) {
     return level >= _count;
   }
 
-  //! Blocks until the resource-counter dips to max @ref{level@}.
+  //! Blocks until the resource-counter dips to max @[level].
   //!
   //! @param level
   //!   The maximum level that is considered drained.

@@ -10,7 +10,7 @@ this_program `port()
   return this;
 }
 
-//! @deprecated add_cert
+//! @deprecated ctx->add_cert
 void set_key(string skey)
 {
   tmp_key = skey;
@@ -18,7 +18,7 @@ void set_key(string skey)
     ctx->add_cert( tmp_key, tmp_cert );
 }
 
-//! @deprecated add_cert
+//! @deprecated ctx->add_cert
 void set_certificate(string|array(string) certificate)
 {
   if(arrayp(certificate))

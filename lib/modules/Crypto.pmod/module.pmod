@@ -11,7 +11,7 @@
 //!
 //!   @item Cipher modules
 //!     These are based on the @[Nettle.Cipher] API.
-//!     Examples include @[AES], @[Arcfour], @[DES], @[DES3], @[CAMELLIA].
+//!     Examples include @[AES], @[Arcfour], @[DES], @[DES3], @[Camellia].
 //!
 //!     The @[Substitution] program is compatible with @[Cipher.State].
 //!
@@ -30,7 +30,7 @@
 //!     also take into account some associated data that is provided out of band.
 //!     This API is compatible with both @[Cipher] and @[Hash].
 //!     AEADs are provided as sub-modules to their corresponding ciphers.
-//!     Examples include @[AES.CCM], @[AES.GCM] and @[CAMELLIA.EAX].
+//!     Examples include @[AES.CCM], @[AES.GCM] and @[Camellia.EAX].
 //! @enddl
 //!
 //! As the cryptographic services offered from this module aren't
@@ -115,6 +115,7 @@ bool verify_crypt_md5(string(8bit) password, string(7bit) hash)
   return Nettle.crypt_md5(password, salt) == hash;
 }
 
+//! Alias for @[Nettle.Cipher.State].
 constant CipherState = Nettle.Cipher.State;
 
 //! Abstract class for crypto algorithms. Contains some tools useful

@@ -1,9 +1,18 @@
+// -*- mode: pike; c-basic-offset: 3; -*-
 #charset iso-8859-1
 
 #pike __REAL_VERSION__
 
-/* MirarDoc documentation extractor.
- */
+//! MirarDoc documentation extractor.
+//!
+//! This module extracts an old markup format that currently is
+//! primarily used by the @[Image] and @[Calendar] modules.
+//!
+//! @deprecated PikeExtractor, CExtractor
+//!   Use either of @[PikeExtractor] or @[CExtractor] instead.
+//!
+//! @note
+//!   Do NOT use this markup for any new code!
 
 string IMAGE_DIR;
 
@@ -484,14 +493,18 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
   // werror("fix_nesting(%O, %O)\n", p, value);
 
   if ((nesting->top() == "pre") && !has_prefix(value, "</pre>")) {
-    return ({ _Roxen.html_encode_string(value) });
+    value = _Roxen.html_encode_string(value);
+    // Restore <ref>...</ref> if any.
+    // NB: Does NOT handle <ref to=...>...</ref>.
+    value = replace(value, ([ "&lt;ref&gt;": "<ref>",
+                              "&lt;/ref&gt;": "</ref>",
+                    ]));
+    return ({ value });
   }
 
   string orig_value = value;
 
-  value = lower_case(value);
-
-  string tag = p->parse_tag_name(value[1..<1]);
+  string tag = p->parse_tag_name(lower_case(value[1..<1]));
 
   array(string) ret = ({});
 
@@ -663,7 +676,7 @@ string doctype(string type,void|string indent)
       return nindent+combine_or(doctype(a+"("+b+")"+d,nindent),
 			       doctype(e,nindent));
 
-   a = String.trim_all_whites(a);
+   a = String.trim(a);
    switch (a)
    {
       case "int":
@@ -752,13 +765,13 @@ array(string) parse_decl(string raw_decl)
       tokens = tokens[..<1];
    }
    if (arrayp(tokens[-1])) {
-      params = Parser.Pike.simple_reconstitute(tokens[-1]);
+      params = Parser.Pike.simple_reconstitute(tokens[-1], 1);
       tokens = tokens[..<1];
    }
    name = objectp(tokens[-1])?tokens[-1]->text:tokens[-1];
    rv = "mixed";
    if (sizeof(tokens) > 1) {
-      rv = Parser.Pike.simple_reconstitute(tokens[..<1]);
+      rv = Parser.Pike.simple_reconstitute(tokens[..<1], 1);
    }
 
    if (params) {

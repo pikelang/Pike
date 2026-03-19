@@ -1344,11 +1344,16 @@ static void dsv_add_string_to_buf (struct byte_buffer *buf, struct pike_string *
 	if (backslashes % 2)
 	  /* Got an odd number of preceding backslashes, so adding a
 	   * unicode escape here would make it quoted. Have to escape
-	   * the preceding backslash to avoid that. */
+           * the preceding backslash to avoid this. */
 	  buffer_add_str_unsafe(buf, "u005c");	/* The starting backslash is already there. */
-	if (j > 0xffff)
+        if (j > 0xfffff)
+          /* 6 or more hex digits. */
           buffer_advance(buf, snprintf(buffer_dst(buf), 11, "\\U%08x", j));
+        else if (j > 0xffff)
+          /* 5 hex digits. */
+          buffer_advance(buf, snprintf(buffer_dst(buf), 11, "\\u{%5x}", j));
 	else
+          /* 4 or less hex digits. */
           buffer_advance(buf, snprintf(buffer_dst(buf), 11, "\\u%04x", j));
       }
       backslashes = 0;
@@ -1487,9 +1492,12 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 		/* Use unicode escapes for wide chars to avoid the
 		 * double quote trickery. Also, hex is easier to read
 		 * than octal. */
-                if (((unsigned INT32)j) > 0xffff)
+                if (((unsigned INT32)j) > 0xfffff)
                   buffer_advance(buf, snprintf(buffer_dst(buf), 11,
                                                "\\U%08x", j));
+                else if (((unsigned INT32)j) > 0xffff)
+                  buffer_advance(buf, snprintf(buffer_dst(buf), 11,
+                                               "\\u{%5x}", j));
 		else
                   buffer_advance(buf, snprintf(buffer_dst(buf), 11,
                                                "\\u%04x", j));

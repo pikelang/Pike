@@ -25,5 +25,13 @@
 //!     Simple stack implementation.
 //! @endul
 
+//! @decl constant program(ADT.LowLevelStack) Stack
+//!   Simple stack implementation.
+//! @note
+//!   Do not use this class. Use either @[ADT.LowLevelStack] or
+//!   @[ADT.Stack] instead.
+//! @seealso
+//!   @[ADT.LowLevelStack], @[ADT.Stack]
+
 //!
 inherit _static_modules.Builtin;

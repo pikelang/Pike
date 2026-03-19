@@ -4,6 +4,11 @@
 // PARSING OF DOCUMENTATION COMMENTS
 //========================================================================
 
+//! Module for parsing of AutoDoc markup comments.
+//!
+//! @seealso
+//!   @[PikeExtractor], @[CExtractor]
+
 inherit .PikeObjects;
 
 #include "./debug.h"
@@ -14,7 +19,7 @@ class MetaData {
   string type;
 
   //! If @[type] is one of @expr{"class"@}, @expr{"module"@},
-  //! @expr{"endmodule"@}, or @expr{"endclass"@}.
+  //! @expr{"namespace"@}, @expr{"endmodule"@}, or @expr{"endclass"@}.
   string name;
 
   //! Set of declarations.
@@ -351,6 +356,7 @@ protected class DocParserClass {
     "item": itemArgHandler,
   ]);
 
+  // @member <value_type> <index_value>
   protected string memberArgHandler(string keyword, string arg) {
     //  werror("This is the @member arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -371,6 +377,7 @@ protected class DocParserClass {
       + xmltag("index", xmlquote(s));
   }
 
+  // @elem <value_type> <index_range>
   protected string elemArgHandler(string keyword, string arg) {
     //  werror("This is the @elem arg handler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -407,6 +414,7 @@ protected class DocParserClass {
     return type;
   }
 
+  // @index <index_value>
   protected string indexArgHandler(string keyword, string arg) {
     //  werror("indexArgHandler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -433,8 +441,33 @@ protected class DocParserClass {
       if (!s) {
         parseError("@deprecated: expected list identifier, got %O", arg);
 	if (parser->peekToken() != ",") return res;
-      } else
+      } else {
+        string token = "";
+
+        while (!(< EOF, "," >)[token = parser->peekToken()]) {
+          switch(token) {
+          case "(":
+            parser->eat("(");
+            parser->eat(")");
+            s += "()";
+            continue;
+
+          case "->":
+            parser->eat("->");
+            string ss = parser->parseIdents();
+            if (!ss) break;
+            s += "->" + ss;
+            continue;
+          }
+          werror("Unexpected token: %O\n"
+                 "Tokens: %O\n",
+                 parser->peekToken(),
+                 parser->remainingTokens());
+          break;
+        }
+
 	res += xmltag("name", xmltag("ref", s));
+      }
       if (parser->peekToken() == EOF)
         return res;
       parser->eat(",");
@@ -445,6 +478,7 @@ protected class DocParserClass {
     return ([ "title" : String.trim (arg) ]);
   }
 
+  // @type <type_expression>
   protected string typeArgHandler(string keyword, string arg) {
     //  werror("This is the @type arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -459,6 +493,7 @@ protected class DocParserClass {
     return t->xml();
   }
 
+  // @value <value_expression>
   protected string valueArgHandler(string keyword, string arg)
   {
     //  werror("This is the @value arg handler ");
@@ -491,6 +526,7 @@ protected class DocParserClass {
     return "";
   }
 
+  // @item <name_opt>
   protected string|mapping(string:string) itemArgHandler(string keyword, string arg)
   {
     arg = String.trim(arg);
@@ -1111,7 +1147,7 @@ protected class DocParserClass {
 //!
 //! @returns
 //!   Each of the arrays in the returned array can be fed to
-//!   @[Parse::create()]
+//!   @[Parse()->create()]
 array(array(Token)) splitDocBlock(string block, SourcePosition position) {
   array(Token) tokens = split(block, position);
   array(Token) current = ({ });

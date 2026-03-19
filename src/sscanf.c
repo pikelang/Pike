@@ -22,6 +22,7 @@
 #include "sscanf.h"
 #include "bitvector.h"
 #include "pike_search.h"
+#include "lex.h"
 
 /*
  * helper functions for sscanf %O
@@ -108,7 +109,6 @@ static void skip_to_token( PCHARP *str, ptrdiff_t *len )
 static int pcharp_to_svalue_rec(PCHARP *str,
 				ptrdiff_t *len)
 {
-  extern int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len);
   struct svalue *begin = Pike_sp;
   PCHARP start = *str;
   check_stack(100);
@@ -1641,7 +1641,8 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format,
   UNREACHABLE();
 }
 
-/*! @decl int sscanf(string data, string format, mixed ... lvalues)
+/*! @decl int sscanf(sscanf_input data, sscanf_format format, @
+ *!                  sscanf_args ... lvalues)
  *!
  *! The purpose of sscanf is to match a string @[data] against a @[format]
  *! string and place the matching results into a list of variables. The list
@@ -1842,6 +1843,19 @@ void o_sscanf(INT32 args)
   push_int(i);
 }
 
+/*! @decl int sscanf(sscanf_input data, sscanf_80_format format, @
+ *!                  sscanf_args ... lvalues)
+ *! @belongs 8.0::
+ *!
+ *!   Compatibility implementation of @[predef::sscanf()].
+ *!
+ *! @note
+ *!   The main difference between @[8.0::sscanf()] and @[predef::sscanf()]
+ *!   is that all integers in the former are signed.
+ *!
+ *! @seealso
+ *!   @[predef::sscanf()], @[8.0::array_sscanf()]
+ */
 void o_sscanf_80(INT32 args)
 {
   INT32 i=0;
@@ -2147,6 +2161,47 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
   }
 }
 
+/*! @decl type(mixed) __handle_sscanf_format(string attribute_name, @
+ *!                                          string|zero fmt, @
+ *!                                          type arg_type, @
+ *!                                          type(function)|zero cont_type, @
+ *!                                          mapping state)
+ *!
+ *!   Type attribute handler for @expr{"sscanf_input"@}.
+ *!
+ *! @param attr
+ *!   Attribute to handle, one of @expr{"sscanf_input"@},
+ *!   @expr{"sscanf_format"@} or @expr{"sscanf_80_format"@}.
+ *!
+ *! @param fmt
+ *!   Sscanf-style formatting string to generate type information from.
+ *!
+ *! @param arg_type
+ *!   Declared type of the @[fmt] argument (typically @expr{string@}).
+ *!
+ *! @param cont_type
+ *!   Continuation function type after the @[fmt] argument. This is
+ *!   scanned for the type attribute @expr{"sscanf_args"@} to
+ *!   determine where @[sscanf()] will put its extracted values.
+ *!
+ *! @param state
+ *!   State mapping.
+ *!
+ *! This function is typically called from
+ *! @[CompilerEnvironment.PikeCompiler()->apply_attribute_constant()] and
+ *! is used to perform stricter compile-time argument checking of
+ *! @[sscanf()]-style functions.
+ *!
+ *! @returns
+ *!   Returns @[cont_type] with @expr{"sscanf_args"@} replaced by the
+ *!   arguments required by the @[fmt] formatting string.
+ *!   May return @[UNDEFINED] in case of non-fatal failure (eg when @[fmt]
+ *!   is not a literal string constant).
+ *!
+ *! @seealso
+ *!   @[CompilerEnvironment.PikeCompiler()->apply_attribute_constant()],
+ *!   @[sprintf()], @[__handle_sprintf_format()]
+ */
 void f___handle_sscanf_format(INT32 args)
 {
   struct pike_type *res;

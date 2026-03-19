@@ -332,7 +332,7 @@ test_do([[
   ctx->random = random_string;
   ctx->ffdhe_groups += ({ GROUP_ffdhe_private0 });
   ctx->preferred_compressors = ({ COMPRESSION_null,
-#if constant(Gz)
+#if constant(Gz.deflate)
     COMPRESSION_deflate,
 #endif
   });

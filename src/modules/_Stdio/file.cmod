@@ -414,7 +414,7 @@ static void fd_backtick__fd(INT32 args)
 			  Pike_fp->current_program->inherits);
 }
 
-/*! @decl protected int(0..) _errno
+/*! @decl protected System.Errno _errno
  *!
  *! Variable containing the internal value returned by @[errno()].
  *!
@@ -3081,7 +3081,7 @@ static void file_linger(INT32 args)
  *!   This operation is only valid on sockets.
  *!
  *! @seealso
- *!   setsockopt()
+ *!   @[setsockopt()]
  */
 static void file_nodelay(INT32 args)
 {
@@ -3286,8 +3286,8 @@ static int fd_openpty(int *master, int *slave, void *PIKE_UNUSED(name),
  *! @returns
  *!   Returns the filename of the corresponding pts.
  *!
- *!  @note
- *!    This function is only available on some platforms.
+ *! @note
+ *!   This function is only available on some platforms.
  */
 #if defined(HAVE_GRANTPT)
 static void file_grantpt( INT32 args )
@@ -3707,8 +3707,8 @@ void file_sync(INT32 args)
  *! The offset is set to the size of the file plus @[offset] bytes.
  *! @endstring
  *!
- *! If @[whence] is not specified it is SEEK_SET if @[offset] is
- *! positive, and if @[offset] is negative SEEK_END.
+ *! If @[whence] is not specified it is @[SEEK_SET] if @[offset] is
+ *! positive, and if @[offset] is negative @[SEEK_END].
  *!
  *! The seek() function on most operating systems allows the file
  *! offset to be set beyond the end of the file (but this does not
@@ -3718,7 +3718,7 @@ void file_sync(INT32 args)
  *!
  *! Seeking file data and holes
  *!
- *! Stdio.SEEK_DATA and Stdio.SEEK_HOLE are nonstandard extensions
+ *! @[Stdio.SEEK_DATA] and @[Stdio.SEEK_HOLE] are nonstandard extensions
  *! present in Linux, Solaris, FreeBSD, and DragonFly BSD; they are
  *! proposed for inclusion in the next POSIX revision.
  *! @string
@@ -3735,7 +3735,7 @@ void file_sync(INT32 args)
  *! (i.e., there is an implicit hole at the end of any file).
  *! @endstring
  *!
- *! In both of the above cases, seek() fails if offset points past the
+ *! In both of the above cases, @[seek()] fails if @[offset] points past the
  *! end of the file.
  *!
  *! These operations allow applications to map holes in a sparsely
@@ -3752,15 +3752,15 @@ void file_sync(INT32 args)
  *! to the underlying storage may or may not be reported as a hole.)
  *!
  *! In the simplest implementation, a filesystem can support the
- *! operations by making SEEK_HOLE always return the offset of the end
- *! of the file, and making SEEK_DATA always return offset (i.e., even
+ *! operations by making @[SEEK_HOLE] always return the offset of the end
+ *! of the file, and making @[SEEK_DATA] always return offset (i.e., even
  *! if the location referred to by offset is a hole, it can be
  *! considered to consist of data that is a sequence of zeros).
  *!
  *! @returns
- *! Upon successful completion, seek() returns the resulting offset
+ *! Upon successful completion, @[seek()] returns the resulting offset
  *! location as measured in bytes from the beginning of the file.  On
- *! error, the value (off_t) -1 is returned and @[errno] is set to
+ *! error, the value @expr{(off_t) -1@} is returned and @[errno] is set to
  *! indicate the error.
  *!
  *! @seealso
@@ -3772,11 +3772,12 @@ void file_sync(INT32 args)
  *!
  *! Seek to a specified offset in a file.
  *!
- *! If @[mult] or @[add] are specified, @[pos] is calculated as
- *! @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *! If @[mult] or @[add] are specified, the position is calculated as
+ *! @expr{pos = @[unit]*@[mult] + @[add]@}.
  *!
- *! If @[pos] is negative then it is relative to the end of the file,
- *! otherwise it's an absolute offset from the start of the file.
+ *! If the resulting position is negative then it is relative to
+ *! the end of the file, otherwise it's an absolute offset from
+ *! the start of the file.
  *!
  *! @returns
  *!   Returns the new offset, or @expr{-1@} on failure.
@@ -4563,9 +4564,12 @@ static void file_setxattr( INT32 args )
 }
 #endif
 
-/*! @decl int errno()
+/*! @decl System.Errno errno()
  *!
  *! Return the errno for the latest failed file operation.
+ *!
+ *! @seealso
+ *!   @[System.Errno]
  */
 static void file_errno(INT32 args)
 {
@@ -4636,7 +4640,10 @@ static void file_mode(INT32 args)
  *! Also, this object does not keep a reference to the backend.
  *!
  *! @seealso
- *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback], @[set_fs_event_callback]
+ *!   @[query_backend()], @[set_nonblocking()],
+ *!   @[Stdio.File()->set_read_callback()],
+ *!   @[Stdio.File()->set_write_callback()],
+ *!   @[Stdio.File()->set_fs_event_callback()]
  */
 static void file_set_backend (INT32 args)
 {
@@ -4736,13 +4743,13 @@ static void file_set_blocking(INT32 UNUSED(args))
  *! Marks the file as to be closed in spawned processes.
  *!
  *! This function determines whether this file will be closed when
- *! calling exec().
+ *! calling @[exece()].
  *!
  *! Default is that the file WILL be closed on exec except for
  *! stdin, stdout and stderr.
  *!
  *! @seealso
- *!   @[Process.create_process()], @[exec()]
+ *!   @[Process.create_process()], @[exece()]
  */
 static void file_set_close_on_exec(INT32 args)
 {
@@ -4931,7 +4938,7 @@ PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
  *!   but it certainly helps to increase data transfer speed when it does.
  *!
  *! @seealso
- *!   @[open_socket()], @[accept()]
+ *!   @[open_socket()], @[Stdio.Port()->accept()]
  */
 static void file_set_buffer(INT32 args)
 {
@@ -5408,9 +5415,10 @@ static void low_dup(struct object *UNUSED(toob),
  *!
  *! Duplicate a file over another.
  *!
- *! This function works similarly to @[assign()], but instead of making
- *! the argument a reference to the same file, it creates a new file
- *! with the same properties and places it in the argument.
+ *! This function works similarly to @[Stdio.File()->assign()],
+ *! but instead of making the argument a reference to the same file,
+ *! it creates a new file with the same properties and places it in
+ *! the argument.
  *!
  *! @returns
  *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
@@ -5424,7 +5432,7 @@ static void low_dup(struct object *UNUSED(toob),
  *!   as this object.
  *!
  *! @seealso
- *!   @[assign()], @[dup()]
+ *!   @[Stdio.File()->assign()], @[dup()]
  */
 static void file_dup2(INT32 args)
 {
@@ -5700,7 +5708,8 @@ static void file_open_socket(INT32 args)
 
 /*! @decl int(0..1) set_keepalive(int(0..1) on_off)
  *!
- *! Equivalent to setsockopt(Stdio.SO_KEEPALIVE, on_off), but will set errno
+ *! Equivalent to @[setsockopt](@[Stdio.SO_KEEPALIVE], on_off),
+ *! but will set errno
  *! if SO_KEEPALIVE is not supported, rather than issuing a compilation error
  *! for the missing constant.
  */
@@ -5799,7 +5808,7 @@ static void file_setsockopt(INT32 args)
  *!   to @tt{EWOULDBLOCK@}. This should not be regarded as a connection failure.
  *!
  *! @note
- *!   @[path] had a quite restrictive length limit (~100 characters)
+ *!   @[filename] had a quite restrictive length limit (~100 characters)
  *!   prior to Pike 7.8.334.
  */
 static void file_connect_unix( INT32 args )
@@ -5895,7 +5904,7 @@ static void file_connect_unix( INT32 args )
  *!   @endmixed
  *!
  *! @note
- *!   Note that in versions of Pike prior to 9.0 expr{1@} was returned
+ *!   Note that in versions of Pike prior to 9.0 @expr{1@} was returned
  *!   also in the not yet established case.
  *!
  *!   Note that @expr{-1@} may be returned also for sockets in blocking
@@ -6356,6 +6365,16 @@ PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
 
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
 
+/*! @class FileLockKey
+ *! @belongs _Stdio
+ *!
+ *!   Holds the state of a lock returned from @[Fd()->lock()]
+ *!   or @[Fd()->trylock()].
+ *!
+ *! @seealso
+ *!   @[Fd()->lock()], @[Fd()->trylock()]
+ */
+
 static struct program * file_lock_key_program;
 
 struct file_lock_key_storage
@@ -6428,6 +6447,9 @@ static void low_file_lock(INT32 args, int flags)
     push_object(o);
   }
 }
+
+/*! @endclass
+ */
 
 /*! @decl Stdio.FileLockKey lock()
  *! @decl Stdio.FileLockKey lock(int(0..1) is_recursive)
@@ -7153,53 +7175,82 @@ PIKE_MODULE_INIT
       SEEK_HOLE,0
 #endif
     };
+
+    /*! @decl constant int SEEK_CUR
+     *!   Used in @[Fd()->seek()] to specify an absolute offset
+     *!   from the beginning of the file.
+     */
     add_string_constant( "SEEK_CUR", seek_how+0, 0 );
+
+    /*! @decl constant int SEEK_SET
+     *!   Used in @[Fd()->seek()] to specify an offset relative
+     *!   to the current offset.
+     */
     add_string_constant( "SEEK_SET", seek_how+2, 0 );
+
+    /*! @decl constant int SEEK_END
+     *!   Used in @[Fd()->seek()] to specify an offset relative
+     *!   to the end of the file.
+     */
     add_string_constant( "SEEK_END", seek_how+4, 0 );
+
 #ifdef SEEK_DATA
+    /*! @decl constant int SEEK_DATA
+     *!   Used in @[Fd()->seek()] to specify an offset past the
+     *!   specified absolute offset that contains data (ie is
+     *!   not a hole). Seeking past the end of the file is not
+     *!   supported.
+     */
     add_string_constant( "SEEK_DATA", seek_how+6, 0 );
+
+    /*! @decl constant int SEEK_HOLE
+     *!   Used in @[Fd()->seek()] to specify an offset past the
+     *!   specified absolute offset that is a hole. There is an
+     *!   implicit hole at the end of the file. Seeking past the
+     *!   end of the file is not supported.
+     */
     add_string_constant( "SEEK_HOLE", seek_how+8, 0 );
 #endif
   };
 
 #ifdef SOL_SOCKET
   /*! @decl constant SOL_SOCKET
-   *! Used in @[File.setsockopt()] to set socket-level options
+   *! Used in @[Fd()->setsockopt()] to set socket-level options
    */
   add_integer_constant("SOL_SOCKET", SOL_SOCKET, 0);
 #endif
 
 #ifdef IPPROTO_IP
   /*! @decl constant IPPROTO_IP
-   *! Used in @[File.setsockopt()] to set IP-level options
+   *! Used in @[Fd()->setsockopt()] to set IP-level options
    */
   add_integer_constant("IPPROTO_IP", IPPROTO_IP, 0);
 #endif
 
 #ifdef IPPROTO_TCP
   /*! @decl constant IPPROTO_TCP
-   *! Used in @[File.setsockopt()] to set TCP-level options
+   *! Used in @[Fd()->setsockopt()] to set TCP-level options
    */
   add_integer_constant("IPPROTO_TCP", IPPROTO_TCP, 0);
 #endif
 
 #ifdef TCP_NODELAY
   /*! @decl constant TCP_NODELAY
-   *! Used in @[File.setsockopt()] to control Nagle's Algorithm.
+   *! Used in @[Fd()->setsockopt()] to control Nagle's Algorithm.
    */
   add_integer_constant("TCP_NODELAY", TCP_NODELAY, 0);
 #endif
 
 #ifdef SO_KEEPALIVE
   /*! @decl constant SO_KEEPALIVE
-   *! Used in @[File.setsockopt()] to control TCP/IP keep-alive packets.
+   *! Used in @[Fd()->setsockopt()] to control TCP/IP keep-alive packets.
    */
   add_integer_constant("SO_KEEPALIVE", SO_KEEPALIVE, 0);
 #endif
 
 #ifdef IP_TOS
   /*! @decl constant IP_TOS
-   *! Used in @[File.setsockopt()] to set Type Of Service
+   *! Used in @[Fd()->setsockopt()] to set Type Of Service
    */
   add_integer_constant("IP_TOS", IP_TOS, 0);
 #endif

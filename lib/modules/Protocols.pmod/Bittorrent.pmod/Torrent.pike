@@ -298,7 +298,7 @@ class Target(string base,int length,int offset,void|array path)
 //! Opens target datafile(s).
 //!
 //! If all files are created, the verify info will be filled as well,
-//! but if it isn't created, a call to @[verify_target()] is necessary
+//! but if it isn't created, a call to @[verify_targets()] is necessary
 //! after this call.
 //!
 //! @param allocate

@@ -291,8 +291,10 @@ class Result
   public string get() {
     string decdata = data;
 
+#if constant(Gz.uncompress)
     if (content_encoding == "gzip")
       decdata = Gz.uncompress(decdata[10..<8], true);
+#endif
 
     return decdata;
   }

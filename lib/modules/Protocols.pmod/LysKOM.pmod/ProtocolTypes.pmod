@@ -451,7 +451,7 @@ multiset(string) MembershipType(string bits)
 }
 
 //!
-class Membership
+class Membership10
 {
    int              position;                      // INT32
    LysKOMTime       last_time_read;                // Time
@@ -487,6 +487,47 @@ class Membership
             priority,                              // INT8
             last_text_read,                        // Local-Text-No
             @A((array(string))read_texts),         // ARRAY Local-Text-No
+            added_by,                              // Pers-No
+            @added_at->encode(),                   // Time
+            B(@rows(type, membershiptypenames)),   // Membership-Type
+         });
+   }
+}
+
+//!
+class Membership
+{
+   int              position;                      // INT32
+   LysKOMTime       last_time_read;                // Time
+   int(0..65535)    conf_no;                       // Conf-No
+   int(0..255)      priority;                      // INT8
+   array(int)       read_ranges;                   // ARRAY Read-Range-11
+   int(0..65535)    added_by;                      // Pers-No
+   LysKOMTime       added_at;                      // Time
+   multiset(string) type;                          // Membership-Type
+
+   protected void create(string|int|array ... args)
+   {
+      position=(int)args[0];                       // INT32
+      last_time_read=LysKOMTime(@args[1..9]);      // Time
+      conf_no=(int)args[10];                       // Conf-No
+      priority=(int)args[11];                      // INT8
+      // --- skip array size: args[12]
+      read_ranges=(array(int))args[13];            // ARRAY Read-Range-11
+      added_by=(int)args[14];                      // Pers-No
+      added_at=LysKOMTime(@args[15..23]);          // Time
+      type=MembershipType(args[24]);               // Membership-Type
+   }
+
+   array encode()
+   {
+      return
+         ({
+            position,                              // INT32
+            @last_time_read->encode(),             // Time
+            conf_no,                               // Conf-No
+            priority,                              // INT8
+            @A((array(string))read_ranges),        // ARRAY Read-Range-11
             added_by,                              // Pers-No
             @added_at->encode(),                   // Time
             B(@rows(type, membershiptypenames)),   // Membership-Type
@@ -597,6 +638,28 @@ class Info
 }
 
 //!
+class SchedulingInfo
+{
+   int(16bit) priority;                            // INT16
+   int(16bit) weight;                              // INT16
+
+   protected void create(int ... args)
+   {
+      priority = args[0];                          // INT16
+      weight = args[1];                            // INT16
+   }
+
+   array encode()
+   {
+      return
+         ({
+            priority,                              // INT16
+            weight,                                // INT16
+         });
+   }
+}
+
+//!
 class StaticSessionInfo
 {
    string           username;                      // HOLLERITH
@@ -620,6 +683,80 @@ class StaticSessionInfo
             H(hostname),                           // HOLLERITH
             H(ident_user),                         // HOLLERITH
             @connection_time->encode(),            // Time
+         });
+   }
+}
+
+//!
+class StaticServerInfo
+{
+   LysKOMTime       boot_time;                     // Time
+   LysKOMTime       save_time;                     // Time
+   string           db_status;                     // HOLLERITH
+
+   protected void create(string|int ... args)
+   {
+      boot_time=LysKOMTime(@args[..8]);            // Time
+      save_time=LysKOMTime(@args[9..17]);          // Time
+      db_status=args[18];                          // HOLLERITH
+   }
+
+   array encode()
+   {
+      return
+         ({
+            @boot_time->encode(),                  // Time
+            @save_time->encode(),                  // Time
+            H(db_status),                          // HOLLERITH
+         });
+   }
+}
+
+//!
+class StatsDescription
+{
+   array(string) what;                             // ARRAY HOLLERITH
+   array(int) when;                                // ARRAY INT32
+
+   protected void create(int|array ... args)
+   {
+      // --- skip array size: args[0]
+      what = args[1];                              // ARRAY HOLLERITH
+      // --- skip array size: args[2]
+      when = args[3];                              // ARRAY INT32
+   }
+
+   array encode()
+   {
+      return
+         ({
+            @A(map(what, H)),                      // ARRAY HOLLERITH
+            @A(when),                              // ARRAY INT32
+         });
+   }
+}
+
+//!
+class Stats
+{
+   float average;                                  // FLOAT
+   float ascent_rate;                              // FLOAT
+   float descent_rate;                             // FLOAT
+
+   protected void create(float ... args)
+   {
+      average = args[0];                           // FLOAT
+      ascent_rate = args[1];                       // FLOAT
+      descent_rate = args[2];                      // FLOAT
+   }
+
+   array encode()
+   {
+      return
+         ({
+            average,                               // FLOAT
+            ascent_rate,                           // FLOAT
+            descent_rate,                          // FLOAT
          });
    }
 }
@@ -661,7 +798,7 @@ class TextList
    }
 }
 
-//!
+//! LysKOM AuxItemInput.
 class AuxItemInput
 {
    int              tag;                           // INT32
@@ -738,7 +875,7 @@ multiset(string) ConfType(string bits)
    return res;
 }
 
-//!
+//! LysKOM ConfZInfo.
 class ConfZInfo
 {
    string           name;                          // HOLLERITH

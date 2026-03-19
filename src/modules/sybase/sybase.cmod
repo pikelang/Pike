@@ -156,7 +156,16 @@ static void show_severity(CS_INT severity) {
 #define show_severity(X)
 #endif
 
-/*! @module Sybase
+/*! @module sybase
+ *!
+ *! This module enables access to Sybase databases from within Pike.
+ *!
+ *! @note
+ *!  You typically don't want to access this module directly, instead
+ *!  use @[Sql.Sql()] with an "sybase://" URL.
+ *!
+ *! @seealso
+ *!  @[sybase.sybase], @[Sql.Sql]
  */
 
 /*! @class sybase
@@ -1204,7 +1213,7 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
 /*! @endclass sybase
  */
 
-/*! @endmodule Sybase
+/*! @endmodule sybase
  */
 
 /********/

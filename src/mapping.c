@@ -2443,8 +2443,10 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 
   if (a->data == b->data) return 1;
 
-  /* If either is weak, they're different. */
-  if ((a->data->flags | b->data->flags) & MAPPING_WEAK) return 0;
+  if ((a->data->flags ^ b->data->flags) & MAPPING_WEAK) {
+    /* Weak flags differ. */
+    return 0;
+  }
 
   check_mapping_for_destruct(a);
   check_mapping_for_destruct(b);

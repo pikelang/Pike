@@ -25,6 +25,8 @@
 
 #pike __REAL_VERSION__
 
+//! Various constants and convenience functions.
+
 object display_re = Regexp("^([^:]*):([0-9]+)(.[0-9]+|)$");
 
 string pad(string s)

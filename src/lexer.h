@@ -184,12 +184,17 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
  *   \e			escape (ESC)
  *   \f			form-feed (FF)
  *   \n			newline (LF)
+ *   \o[0-7]*		octal escape
+ *   \o{[0-7]*}		octal escape
  *   \r			carriage-return (CR)
  *   \t			tab (HT)
  *   \v			vertical-tab (VT)
  *   \x[0-9a-fA-F]*	hexadecimal escape
+ *   \x{[0-9a-fA-F]*}	hexadecimal escape
  *   \u+[0-9a-fA-F]{4,4} 16 bit unicode style escape
+ *   \u+{[0-9a-fA-F]+}	Variable-length unicode escape
  *   \U+[0-9a-fA-F]{8,8} 32 bit unicode style escape
+ *   \U+{[0-9a-fA-F]+}	Variable-length unicode escape
  *
  * If there are more than one u or U in the unicode style escapes, one
  * is removed and the escape remains otherwise intact.
@@ -205,11 +210,15 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
  * 5: Too large hexadecimal escape. *len is gobbled to the end of it all.
  * 6: Too large decimal escape. *len is gobbled to the end of it all.
  * 7: Not 4 digits in \u escape. *len is up to the last found digit.
- * 8: Not 8 digits in \U escape. *len is up to the last found digit. */
+ * 8: Not 8 digits in \U escape. *len is up to the last found digit.
+ * 9: Missing end } in \u{xxx} escape. *len is up to the last found digit.
+ * 10: Missing end } in \U{xxx} escape. *len is up to the last found digit.
+ */
 {
   ptrdiff_t l = 1;
   p_wchar2 c;
   int of = 0;
+  int brace_mode = 0;
 
   switch ((c = *buf))
   {
@@ -226,6 +235,20 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     case 'r': c = 13; break;	/* CR */
     case 'e': c = 27; break;	/* ESC */
 
+    case 'o':			/* C2Y-style octal escape. */
+      c = buf[1];
+      if (c == '{') {
+        brace_mode = 1;
+        c = buf[2];
+      }
+      if ((c < '0') || (c > '7')) {
+        yywarning("Invalid C2Y-style octal escape. "
+                  "'%c' is not a valid octal digit.", c);
+        c = 'o';
+        break;
+      }
+      l += brace_mode + 1;
+      /* FALLTHRU */
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
       /* FIXME: The C23 standard limits octal escapes to 3 digits.
@@ -242,11 +265,18 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
        *          character constant is implementation-defined.)
        */
       unsigned INT32 n = c-'0';
-      for (l = 1; buf[l] >= '0' && buf[l] < '8'; l++) {
+      for (; buf[l] >= '0' && buf[l] < '8'; l++) {
 	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
 	  of = 1;
 	else
 	  n += buf[l] - '0';
+      }
+      if (brace_mode) {
+        if (buf[l] == '}') {
+          l++;
+        } else {
+          yywarning("Missing '}' in octal escape.");
+        }
       }
       if (of) {
 	*len = l;
@@ -258,12 +288,15 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '8': case '9':
       if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
-	yywarning("%c is not a valid octal digit.", c);
+        yywarning("'%c' is not a valid octal digit.", c);
       break;
 
     case 'x': {
       unsigned INT32 n=0;
-      for (l = 1;; l++) {
+      if (buf[1] == '{') {
+        brace_mode = 1;
+      }
+      for (l = 1 + brace_mode;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
@@ -286,6 +319,13 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	    continue;
 	}
 	break;
+      }
+      if (brace_mode) {
+        if (buf[l] == '}') {
+          l++;
+        } else {
+          yywarning("Missing '}' in hexadecimal escape.");
+        }
       }
       if (of) {
 	*len = l;
@@ -341,6 +381,11 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	stop = l + 8;
 	longq = 1;
       }
+      if (buf[1] == '{') {
+        stop = 0x7fffffff;
+        longq += 2;
+        l++;
+      }
       for (; l < stop; l++)
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
@@ -353,9 +398,20 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
 	    n = 16 * n + buf[l] - 'A' + 10;
 	    break;
+          case '}':
+            if (longq >= 2) {
+              l++;
+              *len = l;
+              *chr = (p_wchar2)n;
+              return 0;
+            }
+            /* FALLTHRU */
 	  default:
+            if (longq >= 2) {
+              yywarning("Missing '}' in unicode escape.");
+            }
 	    *len = l;
-	    return longq ? 8 : 7;
+            return 7 + longq;
 	}
       c = (p_wchar2)n;
       break;
@@ -379,7 +435,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
 static p_wchar2 char_const(struct lex *lex)
 {
-  p_wchar2 c;
+  p_wchar2 c = 0;
   ptrdiff_t l;
   switch (parse_esc_seq ((WCHAR *)lex->pos, &c, &l)) {
     case 0:
@@ -407,6 +463,19 @@ static p_wchar2 char_const(struct lex *lex)
     case 8:
       if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too few hex digits in \\U escape.");
+      return '\\';
+    case 9:
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
+        yyerror("Missing end brace in \\u{xxx} escape.");
+      return '\\';
+    case 10:
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
+        yyerror("Missing end brace in \\U{xxx} escape.");
+      return '\\';
+    default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("Default case in char_const() reached.\n");
+#endif /* PIKE_DEBUG */
       return '\\';
   }
   SKIPN (l);
@@ -518,8 +587,10 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
   {
     c = GETC();
 
-    if((c>'9') && lex_isidchar(c))
-    {
+    if(((c>'9') ||
+        (lex->prev_token == '.') ||
+        (lex->prev_token == TOK_ARROW)) &&
+       lex_isidchar(c)) {
       lex->pos -= (1<<SHIFT);
       READBUF(lex_isidchar(C));
 
@@ -1036,57 +1107,42 @@ unknown_directive:
 	if(GOBBLE('.')) return TOK_DOT_DOT_DOT;
 	return TOK_DOT_DOT;
       }
-      if (((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
-	  (c >= '0')) {
+      if ((lex->prev_token != TOK_IDENTIFIER) &&
+          ((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
+          (c >= '0')) {
         lex->pos -= (1<<SHIFT);
-	goto read_float;
+        goto read_float;
       }
       return '.';
 
     case '0':
-    {
-      int base = 0;
-
-      if(GOBBLE('b') || GOBBLE('B'))
       {
-	base = 2;
-	goto read_based_number;
-      }
-      else if(GOBBLE('x') || GOBBLE('X'))
-      {
-	struct svalue sval;
-	base = 16;
-      read_based_number:
-	SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-	safe_wide_string_to_svalue_inumber(&sval,
-					   lex->pos,
-					   &lex->pos,
-					   base,
-                                           (lex->end - lex->pos)>>SHIFT,
-					   SHIFT);
-	dmalloc_touch_svalue(&sval);
-	yylval->n = mksvaluenode(&sval);
-	free_svalue(&sval);
-	return TOK_NUMBER;
-      }
-    }
-    /* FALLTHRU */
+        ptrdiff_t l = 0;
+        p_wchar2 c;
+        int maybe_bad = 0;
 
+        while (((c = INDEX_CHARP(lex->pos, l, SHIFT)) <= '9') && (c >= '0')) {
+          if (c >= '8') maybe_bad = 1;
+          l++;
+        }
+        if (maybe_bad && (c != '.') && (c != 'e') && (c != 'E')) {
+          /* Not a float, and found a digit out of the octal range. */
+          l = 0;
+          while(((c = INDEX_CHARP(lex->pos, l, SHIFT)) <= '9') && (c >= '0')) {
+            if (c >= '8') my_yyerror("Illegal octal digit '%c'.", c);
+            l++;
+          }
+        }
+      }
+      /* FALLTHRU */
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
       char *p1, *p2;
       FLOAT_TYPE f;
-      long l;
       struct svalue sval;
 
       lex->pos -= (1<<SHIFT);
-      if(INDEX_CHARP(lex->pos, 0, SHIFT)=='0')
-	for(l=1;INDEX_CHARP(lex->pos, l, SHIFT)<='9' &&
-	      INDEX_CHARP(lex->pos, l, SHIFT)>='0';l++)
-	  if(INDEX_CHARP(lex->pos, l, SHIFT)>='8')
-	    my_yyerror("Illegal octal digit '%c'.",
-		       INDEX_CHARP(lex->pos, l, SHIFT));
 
     read_float:
       f=lex_strtod(lex->pos, &p1);
@@ -1119,6 +1175,7 @@ unknown_directive:
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
+            long l;
             for (l=0; wide_isspace(INDEX_CHARP(p3, l, SHIFT)); l++)
 	      ;
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&

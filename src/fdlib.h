@@ -616,6 +616,8 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #define fd_shutdown_write 1
 #define fd_shutdown_both 2
 
+/* Note: The following flags are documented in modules/files/file.c. */
+
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
 #ifndef __amigaos__
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)

@@ -156,9 +156,11 @@ protected function(string:string)|zero get_attr_encoder (string attr)
   return 0;
 }
 
+//! Type of attribute values in results.
 typedef string|Charset.DecodeError|
   array(string|Charset.DecodeError) ResultAttributeValue;
 
+//! Type of result entries.
 typedef mapping(string:ResultAttributeValue) ResultEntry;
 
   //! Contains the result of a LDAP search.
@@ -647,7 +649,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   //! @param url
   //!  LDAP server URL on the form
   //!  @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}. See @rfc{2255@}.
-  //!  It can also be a mapping as returned by @[Protocol.LDAP.parse_ldap_url].
+  //!  It can also be a mapping as returned by @[Protocols.LDAP.parse_ldap_url].
   //!
   //! @param context
   //!  TLS context of connection

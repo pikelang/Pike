@@ -11,6 +11,24 @@
  *! This is the header packing system that is used in HTTP/2 (@rfc{7540@}).
  */
 
+/*! @endmodule
+ */
+
+/*! @module ___HPack
+ *!
+ *! Low-level implementation of the HPACK (@rfc{7541@})
+ *! header packing standard.
+ *!
+ *! This is the header packing system that is used in HTTP/2 (@rfc{7540@}).
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly.
+ *!   Use the @[HPack] module instead.
+ *!
+ *! @seealso
+ *!   @[HPack]
+ */
+
 #include "module.h"
 #include "interpret.h"
 

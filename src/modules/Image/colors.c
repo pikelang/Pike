@@ -158,9 +158,6 @@
 **!
 **! </execute>
 **!
-**!
-**! see also: Image.Color.Color->name, Image.Color.Color->rgb, colors
-**!
 **! added:
 **!	pike 0.7
 **!
@@ -180,7 +177,7 @@
 **!	and subtract with a space (lower_case(x)-" ") to make
 **!	sure you get all variants.
 **!
-**! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
+**! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable, Image.Color.Color->name, Image.Color.Color->rgb
 **!
 **! class Color
 **!	This is the color object. It has six readable variables,

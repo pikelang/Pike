@@ -506,11 +506,12 @@ class Connection {
     }
 
     //! Connect to the remote @[endpoint] with optional request
-    //! headers specified in @[headers]. This method will send the
+    //! headers specified in @[extra_headers]. This method will send the
     //! actual HTTP request to switch protocols to the server and once
     //! a HTTP 101 response is returned, switch the connection to
     //! WebSockets and call the @[onopen] callback.
-    int connect(string|Standards.URI endpoint, void|mapping(string:string) extra_headers,
+    int connect(string|Standards.URI endpoint,
+                void|mapping(string:string) extra_headers,
                 void|array extensions) {
         if (stringp(endpoint)) endpoint = Standards.URI(endpoint);
         this_program::endpoint = endpoint;

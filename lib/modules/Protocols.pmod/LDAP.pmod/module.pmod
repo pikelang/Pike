@@ -54,9 +54,16 @@ constant LDAP_NO_OBJECT_CLASS_MODS       = 0x45;    /* 69 */
 constant LDAP_RESULTS_TOO_LARGE          = 0x46;    /* 70 - CLDAP */
 constant LDAP_AFFECTS_MULTIPLE_DSAS      = 0x47;    /* 71 */
 constant LDAP_OTHER                      = 0x50;    /* 80 */
-// 81-90 are reserved for (client) APIs (c.f.
-// http://www.iana.org/assignments/ldap-parameters). These are not
-// standardized but are common among many client APIs.
+
+//! LDAP result codes.
+//!
+//! @expr{81@}-@expr{90@} are reserved for (client) APIs (c.f.
+//! @url{http://www.iana.org/assignments/ldap-parameters@}). These are not
+//! standardized but are common among many client APIs.
+//!
+//! @seealso
+//!   @[Protocols.LDAP.client.error_number],
+//!   @[Protocols.LDAP.client.result.error_number]
 constant LDAP_SERVER_DOWN                = 0x51;    /* 81 */
 constant LDAP_LOCAL_ERROR                = 0x52;    /* 82 */
 constant LDAP_ENCODING_ERROR             = 0x53;    /* 83 */
@@ -67,7 +74,15 @@ constant LDAP_FILTER_ERROR               = 0x57;    /* 87 */
 constant LDAP_USER_CANCELLED             = 0x58;    /* 88 */
 constant LDAP_PARAM_ERROR                = 0x59;    /* 89 */
 constant LDAP_NO_MEMORY                  = 0x5a;    /* 90 */
-// 91-112 are reserved for "LDAP APIs" - see above.
+
+//! LDAP result codes.
+//!
+//! @expr{91@}-@expr{112@} are reserved for "LDAP APIs" - see
+//! @[LDAP_SERVER_DOWN] et al.
+//!
+//! @seealso
+//!   @[Protocols.LDAP.client.error_number],
+//!   @[Protocols.LDAP.client.result.error_number]
 constant LDAP_CONNECT_ERROR              = 0x5b;    /* 91 */
 constant LDAP_NOT_SUPPORTED              = 0x5c;    /* 92 */
 constant LDAP_CONTROL_NOT_FOUND          = 0x5d;    /* 93 */
@@ -1299,7 +1314,7 @@ protected constant supported_extensions = (<"bindname">);
 //!   @endmapping
 //!
 //! @seealso
-//!   @[get_parsed_url]
+//!   @[client.get_parsed_url]
 mapping(string:mixed) parse_ldap_url (string ldap_url)
 {
   array ar;
@@ -1372,7 +1387,7 @@ class FilterError
 
 object make_filter (string filter, void|int ldap_version)
 //! Parses an LDAP filter string into an ASN1 object tree that can be
-//! given to @[Protocols.LDAP.search].
+//! given to @[Protocols.LDAP.client.search].
 //!
 //! Using this function instead of giving the filter string directly
 //! to the search function has two advantages: This function provides

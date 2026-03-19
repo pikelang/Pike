@@ -172,7 +172,7 @@ static void set_default_master(const char *bin_name)
       char tmp[MAXPATHLEN * 2];
       char *p = strrchr (exepath, '\\');
       if (p) *p = 0;
-      snprintf (tmp, sizeof (tmp), "%s/master.pike", exepath);
+      snprintf (tmp, sizeof (tmp), "%s/%s", exepath, mp);
       set_master( tmp );
     }
   }

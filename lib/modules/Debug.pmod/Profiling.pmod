@@ -296,7 +296,7 @@ private void output_result( array rows, int percentage_column )
 //!
 //! The function will print to stderr using werror.
 //!
-//! This is mainly here for use from the @[Debug.Watchdog] class, if
+//! This is mainly here for use from the @[Pike.Watchdog] class, if
 //! you want to do your own formatting or output to some other channel
 //! use @[get_prof_info] instead.
 void display(int|void num,

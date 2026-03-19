@@ -277,6 +277,7 @@ class State {
   // --- PKCS methods
   //
 
+  //! @decl import Standards.ASN1.Types
 #define Sequence Standards.ASN1.Types.Sequence
 #define Integer Standards.ASN1.Types.Integer
 #define BitString Standards.ASN1.Types.BitString

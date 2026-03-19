@@ -3,9 +3,11 @@
 //! AutoDoc XML to HTML converter.
 //!
 //! @seealso
-//!    @[tree_split]
+//!    @[autodoc_to_split_html]
 
 constant description = "AutoDoc XML to HTML converter.";
+
+//! @decl import Parser.XML.Tree
 
 #define Node Parser.XML.Tree.SimpleNode
 #define XML_COMMENT Parser.XML.Tree.XML_COMMENT
@@ -799,8 +801,8 @@ string parse_text(Node n, void|String.Buffer ret,
       rows = ({});
       foreach(c->get_elements("group"), Node d)
 	rows += ({ ({
-	  ({ parse_type(get_first_element(d->get_first_element("type"))) }),
-	  parse_text(d->get_first_element("text"))
+          map(map(d->get_elements("type"), get_first_element), parse_type),
+          parse_text(d->get_first_element("text")),
 	}) });
       nicebox(rows, ret);
       break;
@@ -1056,10 +1058,19 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "type":
-    ret += "<code class='type'>type</code>";
+    ret += "<code class='datatype'>type</code>";
     if (n->count_children() && (c = get_first_element(n)) &&
 	(c->get_any_name() != "mixed")) {
       ret += "(" + parse_type(c) + ")";
+    }
+    break;
+
+  case "typeof":
+    if (c) {
+      ret += "<code class='datatype'>typeof</code>";
+      ret += "(" + parse_type(c) + ")";
+    } else {
+      ret += "<code class='datatype'>mixed</code>";
     }
     break;
 
@@ -1207,6 +1218,15 @@ string parse_type(Node n, void|string debug) {
     break;
   case "variant": // Not in XSLT
     ret += "<code class='modifier'>variant</code> ";
+    break;
+  case "__async__": // Not in XSLT
+    ret += "<code class='modifier'>__async__</code> ";
+    break;
+  case "__generator__": // Not in XSLT
+    ret += "<code class='modifier'>__generator__</code> ";
+    break;
+  case "__weak__": // Not in XSLT
+    ret += "<code class='modifier'>__weak__</code> ";
     break;
 
   default:

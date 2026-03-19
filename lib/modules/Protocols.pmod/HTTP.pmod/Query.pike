@@ -89,17 +89,22 @@ string host;
 string real_host; // the hostname passed during the call to *_request()
 int port;
 
-object con;
+//! Connection to HTTP(s) server.
+object(Stdio.File)|SSL.File|Stdio.UDP con;
+
 string request;
 protected Stdio.Buffer send_buffer;
 
+//! Input buffers.
 string buf="",headerbuf="";
+
 int datapos, discarded_bytes, cpos;
 
 #if constant(thread_create)
 object conthread;
 #endif
 
+//! Callbacks and arguments set by @[set_callbacks()].
 local function|zero request_ok,request_fail;
 array extra_args;
 
@@ -300,8 +305,8 @@ protected void close_connection(int|void terminate_now)
   con->close();
 }
 
-object/*SSL.Context*/ context;
-object/*SSL.Session*/ ssl_session;
+SSL.Context context;
+SSL.Session ssl_session;
 
 void start_tls(int|void blocking, int|void async)
 {
@@ -309,17 +314,17 @@ void start_tls(int|void blocking, int|void async)
 
   if( !context )
   {
-    context = RUNTIME_RESOLVE(SSL.Context)();
+    context = SSL.Context();
     if(!context)
       error("Can not handle HTTPs queries, pike compiled without crypto support\n");
-    context->trusted_issuers_cache = RUNTIME_RESOLVE(Standards.X509.load_authorities)(0,1);
+    context->trusted_issuers_cache = Standards.X509.load_authorities(0, 1);
   }
 
-  object read_callback=con->query_read_callback();
-  object write_callback=con->query_write_callback();
-  object close_callback=con->query_close_callback();
+  function read_callback = con->query_read_callback();
+  function write_callback = con->query_write_callback();
+  function close_callback = con->query_close_callback();
 
-  object/*SSL.File*/ ssl = RUNTIME_RESOLVE(SSL.File)(con, context);
+  SSL.File ssl = SSL.File(con, context);
   if (blocking) {
     ssl->set_blocking();
   }
@@ -348,15 +353,7 @@ protected void connect(array(string) server,int port,int blocking)
 
    int count;
    while(1) {
-     int success;
-     if(con->_fd)
-       success = con->connect(server[0], port);
-     else
-       // What is this supposed to do? /mast
-       // SSL.File?
-       success = con->connect(server[0], port, blocking);
-
-     if (success) {
+     if (con->connect(server[0], port)) {
        if (count) DBG("<- (connect success)\n");
        break;
      }
@@ -940,7 +937,7 @@ this_program sync_request(string server, int port, string query,
   {
     DBG("<- %O\n",request);
     if (con->write( request ) != sizeof (request)) {
-      errno = con->errno;
+      errno = con->errno();
       DBG ("-> (write error: %s)\n", strerror (errno));
     }
     else

@@ -1292,11 +1292,13 @@ PIKECLASS Buffer
     ref_push_object( io->this );
   }
 
+  /*! @decl private typedef System.Memory|Stdio.Buffer|String.Buffer BufferObject
+   */
+
+  /*! @decl private typedef BufferObject|string(8bit)|int(8bit)|array AddArgument
+   */
+
   /*! @decl Buffer add( AddArgument ... data )
-   *! @code
-   *!  private typedef @[System.Memory]|@[Stdio.Buffer]|@[String.Buffer] BufferObject;
-   *!  private typedef BufferObject|string(8bit)|int(8bit)|array(AddArgument) AddArgument;
-   *! @endcode
    *!
    *! Add the items in data to the end of the buffer.
    *!
@@ -1902,7 +1904,7 @@ PIKECLASS Buffer
 
   /*! @decl string(8bit) read_hstring( int(0..) n, void|int offset )
    *!
-   *! Identical in functionality to @[read](@[read_number](@[n])) but
+   *! Identical in functionality to @[read](@[read_int](@[n])) but
    *! faster.
    *!
    *! Read a network byte order number of size n*8 bits, then return the

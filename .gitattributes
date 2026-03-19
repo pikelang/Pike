@@ -175,7 +175,6 @@ Makefile.rl -space_indent tab_indent
 /lib/modules/Filesystem.pmod/Tar.pmod mixed_indent
 /lib/modules/Filesystem.pmod/Zip.pmod mixed_indent
 /lib/modules/Filesystem.pmod/module.pmod mixed_indent
-/lib/modules/Filesystem.pmod/testsuite.in mixed_indent
 /lib/modules/Function.pmod mixed_indent
 /lib/modules/GL.pmod/GLSLUtils.pmod mixed_indent
 /lib/modules/GLU.pmod mixed_indent
@@ -568,7 +567,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/HTTPLoop/accept_and_parse.c mixed_indent
 /src/modules/HTTPLoop/cache.c mixed_indent
 /src/modules/HTTPLoop/cache.h mixed_indent
-/src/modules/HTTPLoop/configure.in mixed_indent
 /src/modules/HTTPLoop/log.c mixed_indent
 /src/modules/HTTPLoop/requestobject.c mixed_indent
 /src/modules/HTTPLoop/timeout.c mixed_indent
@@ -745,7 +743,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/system/memory.c mixed_indent
 /src/modules/system/nt.c mixed_indent
 /src/modules/system/passwords.c mixed_indent
-/src/modules/system/system.c mixed_indent
 /src/modules/system/testsuite.in mixed_indent
 /src/multiset.c mixed_indent
 /src/multiset.h mixed_indent

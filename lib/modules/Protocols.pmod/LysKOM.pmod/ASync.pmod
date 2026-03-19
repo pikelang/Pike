@@ -107,6 +107,40 @@ array decode_18(array what)
 	     (int)what[1] });
 }
 
+/* 19 async-new-user-area */
+array decode_19(array what)
+{
+   return ({ (int)what[0],
+             (int)what[1],
+             (int)what[2]});
+}
+
+/* 20 async-new-presentation */
+array decode_20(array what)
+{
+   return ({ (int)what[0],
+             (int)what[1],
+             (int)what[2]});
+}
+
+/* 21 async-new-motd */
+array decode_21(array what)
+{
+   return ({ (int)what[0],
+             (int)what[1],
+             (int)what[2]});
+}
+
+/* 22 async-text-aux-changed */
+array decode_22(array what)
+{
+   return ({ (int)what[0],
+             Array.map(what[2]/15,
+                       lambda(array z) { return AuxItem(@z); }),
+             Array.map(what[4]/15,
+                       lambda(array z) { return AuxItem(@z); })});
+}
+
 mapping name2no=
 ([
    "async-async-logout":13,
@@ -125,4 +159,8 @@ mapping name2no=
    "async-send-message":12,
    "async-sub-recipient":17,
    "async-sync-db":7,
+   "async-new-user-area":19,
+   "async-new-presentation":20,
+   "async-new-motd":21,
+   "async-text-aux-changed":22,
 ]);

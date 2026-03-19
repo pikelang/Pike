@@ -25,7 +25,7 @@
 
 /*! @module Image
  *!
- *! @module XPM
+ *! @module _XPM
  */
 
 extern struct program *image_program;
@@ -230,11 +230,11 @@ unsigned short extract_short( unsigned char *b )
  *!   @array pixels
  *!     @elem string 0
  *!       Size information on the format
- *!         (@expr{sprintf("%d %d %d %d", h, w, ncolors, bpn)@}).
+ *!         (@expr{sprintf("%d %d %d %d", h, w, ncolors, bpc)@}).
  *!     @elem string 1..ncolors
  *!       Same as @[colors].
  *!     @elem string ncolors_plus_one..ncolors_plus_h
- *!       Line information. Strings of length @[bpn]*w with encoded
+ *!       Line information. Strings of length @[bpc]*w with encoded
  *!       pixels for each line.
  *!   @endarray
  */

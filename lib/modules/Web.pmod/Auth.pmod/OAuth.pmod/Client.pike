@@ -53,7 +53,7 @@ Token get_token()
 }
 
 //! @decl void set_token(Token token)
-//! @decl void set_token(string token_key, string token_secret)
+//! @decl void set_token(string key, string secret)
 //!
 //! Set the Token.
 //!

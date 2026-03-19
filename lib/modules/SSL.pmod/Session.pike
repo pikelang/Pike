@@ -717,7 +717,7 @@ array(State) new_server_states(.Connection con,
 
   switch(compression_algorithm) {
   case COMPRESSION_deflate:
-#if constant(Gz)
+#if constant(Gz.inflate)
     read_state->compress = Gz.inflate()->inflate;
     write_state->compress =
       class(function(string(8bit), int:string(8bit)) _deflate) {
@@ -784,7 +784,7 @@ array(State) new_client_states(.Connection con,
 
   switch(compression_algorithm) {
   case COMPRESSION_deflate:
-#if constant(Gz)
+#if constant(Gz.inflate)
     read_state->compress = Gz.inflate()->inflate;
     write_state->compress =
       class(function(string(8bit), int:string(8bit)) _deflate) {

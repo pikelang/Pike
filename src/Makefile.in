@@ -118,8 +118,12 @@ ABI=@ABI@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
-CANDLE=@CANDLE@ -nologo
-LIGHT=@LIGHT@ -nologo
+CANDLE=@CANDLE@ -nologo $(CANDLE_OPTS)
+CANDLE_VERSION=@CANDLE_VERSION@
+CANDLE_OPTS=@CANDLE_OPTS@
+LIGHT=@LIGHT@ -nologo $(LIGHT_OPTS)
+LIGHT_VERSION=@LIGHT_VERSION@
+LIGHT_OPTS=@LIGHT_OPTS@
 RCEXE=@RCEXE@
 WINDRES=@WINDRES@
 
@@ -626,7 +630,7 @@ Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/gather_dlls.pike pike@EXEEXT@ lib/modules; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix-module $$no_autodoc \
-	$(INSTALL_EXPORT_ARGS) \
+	--wix-version=$(CANDLE_VERSION) $(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -639,7 +643,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
-	$(INSTALL_EXPORT_ARGS) \
+	--wix-version=$(CANDLE_VERSION) $(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -648,7 +652,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	cflags="@DYNAMIC_MODULE_FLAGS@" ldflags="" \
 	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
-Pike.msi: Pike.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp UpFldrBtn.ibd NewFldrBtn.ibd
+Pike.msi: Pike.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp UpFldrBtn.ibd NewFldrBtn.ibd pike.ico
 	@test -d cab_cache || mkdir cab_cache
 	@if test -f Pike.msi; then rm Pike.msi; else :; fi # Paranoia
 	$(LIGHT) Pike.wixobj Pike_ui.wixobj -o Pike.msi -cc cab_cache
@@ -1192,8 +1196,9 @@ depend: $(SRC_TARGETS)
 	$(CC) -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(SRCDIR)" /dev/null
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
-	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
-	  arb=37; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; \
+	  sleep 1; arb=`expr $$$$ % 521 + 37`; \
+	  while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
@@ -1366,8 +1371,9 @@ config.status propagated_variables: $(SRCDIR)/configure $(SRCDIR)/make_variables
 modules/common_module_makefile: $(SRCDIR)/modules/common_module_makefile.in config.status
 	-@(while :; do \
 	  echo foo > cfl.common_module_makefile; test "`echo cfl.*`" = cfl.common_module_makefile && break; \
-	  rm cfl.common_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
-	  arb=17; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	  rm cfl.common_module_makefile; echo "Waiting to run config.status serially:" cfl.*; \
+	  sleep 1; arb=`expr $$$$ % 521 + 17`; \
+	  while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=modules/common_module_makefile CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.common_module_makefile; exit $$EXITCODE)
@@ -1376,8 +1382,9 @@ modules/common_module_makefile: $(SRCDIR)/modules/common_module_makefile.in conf
 modules/static_module_makefile post_modules/static_module_makefile: modules/common_module_makefile $(SRCDIR)/modules/static_module_makefile.in config.status
 	-@(while :; do \
 	  echo foo > cfl.static_module_makefile; test "`echo cfl.*`" = cfl.static_module_makefile && break; \
-	  rm cfl.static_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
-	  arb=17; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	  rm cfl.static_module_makefile; echo "Waiting to run config.status serially:" cfl.*; \
+	  sleep 1; arb=`expr $$$$ % 521 + 17`; \
+	  while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES="modules/static_module_makefile post_modules/static_module_makefile:modules/static_module_makefile.in" CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.static_module_makefile; exit $$EXITCODE)
@@ -1386,8 +1393,9 @@ modules/static_module_makefile post_modules/static_module_makefile: modules/comm
 modules/dynamic_module_makefile post_modules/dynamic_module_makefile: modules/common_module_makefile $(SRCDIR)/@dmmsrc@ config.status
 	-@(while :; do \
 	  echo foo > cfl.dynamic_module_makefile; test "`echo cfl.*`" = cfl.dynamic_module_makefile && break; \
-	  rm cfl.dynamic_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
-	  arb=19; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	  rm cfl.dynamic_module_makefile; echo "Waiting to run config.status serially:" cfl.*; \
+	  sleep 1; arb=`expr $$$$ % 521 + 19`; \
+	  while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES="modules/dynamic_module_makefile:@dmmsrc@ post_modules/dynamic_module_makefile:@dmmsrc@" CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.dynamic_module_makefile; exit $$EXITCODE)
@@ -1396,8 +1404,9 @@ modules/dynamic_module_makefile post_modules/dynamic_module_makefile: modules/co
 Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
-	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
-	  arb=23; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*;  \
+	  sleep 1; arb=`expr $$$$ % 521 + 23`; \
+	  while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
@@ -1409,8 +1418,9 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
-	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
-	  arb=29; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; \
+	  sleep 1; arb=`expr $$$$ % 521 + 29`; \
+	  while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=precompile.sh CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
@@ -1447,8 +1457,9 @@ $(CONFIG_HEADERS): stamp-h
 stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
-	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
-	  arb=31; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
+	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; \
+	  sleep 1; arb=`expr $$$$ % 521 + 31`; \
+	  while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES="" CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
@@ -1457,10 +1468,12 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 
 testsuite: $(SRCDIR)/testsuite.in $(TMP_BINDIR)/mktestsuite
 	if test "$$PIKE_PATH_TRANSLATE" = ""; then \
-	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
+	  $(TMP_BINDIR)/mktestsuite \
+	    $(SRCDIR)/testsuite.in >testsuite \
 	    -DSRCDIR="`echo $(SRCDIR)|./posix_to_native.sh`"; \
 	else \
-	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite \
+	  $(TMP_BINDIR)/mktestsuite \
+	    $(SRCDIR)/testsuite.in >testsuite \
 	    -DSRCDIR="`echo $(SRCDIR)|sed -e $$PIKE_PATH_TRANSLATE|./posix_to_native.sh`"; \
 	fi
 

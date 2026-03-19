@@ -561,17 +561,18 @@ class Test
 #endif
   }
 
-  //! This value will be sent to @[MasterObject.set_inhibit_errors]
+  //! This value will be sent to @[MasterObject.set_inhibit_compile_errors()]
   //! before compilation by @[compile()].
   int(0..1)|object inhibit_errors = 1;
 
+  //! Variable that holds any compilation errors.
   Error.Compilation compilation_error;
 
-  //! Set the error mode according to @[inhibi_errors], applies any
+  //! Set the error mode according to @[inhibit_errors], applies any
   //! source code plugins by calling @[prepare_source] and finally
   //! compiles the result. Any resulting compilation errors will be
   //! stored in @[compilation_error]. The error mode will be set to
-  //! @expr{0@} after compiltion is done.
+  //! @expr{0@} after compilation is done.
   variant program compile()
   {
     program ret;
@@ -1066,7 +1067,7 @@ test_equal(max($2,$1,$3), $3)
 
 
 //! Interface for source code plugins, added to a @[Test] by calling
-//! @[add_plugin].
+//! @[Test()->add_plugin()].
 class Plugin
 {
   //! Returns 1 if the plugin is active (i.e. should be called by the

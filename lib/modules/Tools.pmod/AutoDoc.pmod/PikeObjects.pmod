@@ -429,6 +429,28 @@ class TypeType {
   }
 }
 
+//! The class for representing @expr{typeof@} types.
+//!
+//! @seealso
+//!   @[Type]
+class TypeofType {
+  //!
+  inherit Type;
+
+  //! The subtype of the type.
+  Type subtype = MixedType();
+
+  //!
+  protected void create() { ::create("typeof"); }
+
+  string print() {
+    return "typeof(" + subtype->print() + ")";
+  }
+  string xml(.Flags|void flags) {
+    return xmltag("typeof", subtype->xml(flags));
+  }
+}
+
 //! The class for representing the void type.
 //!
 //! @seealso
@@ -587,6 +609,24 @@ class DocGroup {
     objects = objs;
   }
 
+  string normalize_getter_setter(string name)
+  {
+    if (!has_prefix(name, "`") || has_prefix(name, "``")) return name;
+
+    if ((upper_case(name) == lower_case(name)) && !has_value(name, "_")) {
+      // Probably an operator or lfun.
+      return name;
+    }
+
+    name = name[1..];
+
+    if (has_suffix(name, "=")) {
+      name = name[..<1];
+    }
+
+    return name;
+  }
+
   //! Relocation information.
   string appears = 0;
   string belongs = 0;
@@ -604,12 +644,13 @@ class DocGroup {
     foreach(objects, PikeObject obj) {
       types[obj->objtype] = 1;
       if (obj->name)
-        names[obj->name] = 1;
+        names[normalize_getter_setter(obj->name)] = 1;
     }
     if (sizeof(types) == 1) {
       m["homogen-type"] = indices(types)[0];
-      if (sizeof(names) == 1)
-        m["homogen-name"] = objects[0]->name;
+    }
+    if (sizeof(names) == 1) {
+      m["homogen-name"] = normalize_getter_setter(objects[0]->name);
     }
 
     string res = opentag("docgroup", m);
@@ -655,7 +696,7 @@ class Annotation
 	  buf->add(elem);
 	  break;
 	default:
-	  elem = String.trim_all_whites(elem);
+	  elem = String.trim(elem);
 	  if (elem == "") continue;
 	  if ((elem[0] == '"') || (elem[0] == '\'')) {
 	    // String or character literal.
@@ -757,6 +798,7 @@ class PikeObject {
     if (name)    m->name = name;
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
+    if (flags & .FLAG_KEEP_EMPTY) m["keep"] = "";
     return m;
   }
 
@@ -844,6 +886,10 @@ class _Class_or_Module {
 
   string directory = 0;
   string file = 0;
+
+  //! Set to @expr{1@} if this is the top level class or module of a file.
+  //! Ie it indicates that @expr{global::@} refers here.
+  int(1bit) is_global;
 
   //! @note
   //!   The documentation appears as a child of the <class> or <module>
@@ -1030,6 +1076,7 @@ class _Class_or_Module {
     mapping(string:string) m = standardAttributes(flags);
     if (file) m["file"] = file;
     if (directory) m["directory"] = directory;
+    if (is_global) m["is_global"] = "";
     return "\n" + opentag(objtype, m) + contents + standardEnd(flags) + "\n";
   }
 

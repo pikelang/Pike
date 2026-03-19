@@ -90,6 +90,7 @@ class async_request
   }
 }
 
+//! Class that keeps track of X ids.
 class id_manager
 {
   int next_id;

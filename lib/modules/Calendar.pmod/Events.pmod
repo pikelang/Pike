@@ -329,6 +329,29 @@ Event.Namedays find_namedays(string region)
    return res;
 }
 
+// Do for some events present in events/regional (aka all_data) follows below.
+
+//! @decl Event.Event monday
+//!   Weekday Monday.
+
+//! @decl Event.Event tuesday
+//!   Weekday Tuesday.
+
+//! @decl Event.Event wednesday
+//!   Weekday Wednesday.
+
+//! @decl Event.Event thursday
+//!   Weekday Thursday.
+
+//! @decl Event.Event friday
+//!   Weekday Friday.
+
+//! @decl Event.Event saturday
+//!   Weekday Saturday.
+
+//! @decl Event.Event sunday
+//!   Weekday Sunday.
+
 Event.Event find_event(string s)
 {
    Event.Event e=loaded_events[s];

@@ -690,7 +690,7 @@ static void pike_mysql_reconnect (int reconnect)
  *!       this mode non-binary string results are automatically
  *!       converted to (possibly wide) unicode strings. An error is
  *!       thrown if the server doesn't support this. See
- *!       @[set_unicode_decode_mode].
+ *!       @[Sql.mysql.set_unicode_decode_mode()].
  *!
  *!     @member string "ssl_key"
  *!       Path to SSL-key for use in SSL-communication.

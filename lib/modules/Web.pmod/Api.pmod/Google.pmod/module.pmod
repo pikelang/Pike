@@ -151,6 +151,7 @@ class Base
     }
   }
 
+  //! Class representing a resource.
   class resource
   {
     protected mixed `[](string resrc)

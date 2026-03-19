@@ -1867,9 +1867,9 @@ array get_letsencrypt_cert(string host)
 //!     Non-zero if the certificate is self-signed.
 //!   @member int(0..1) "verified"
 //!     Non-zero if the certificate is verified.
-//!   @member Standards.ASN1.Sequence "authority"
+//!   @member Standards.ASN1.Types.Sequence "authority"
 //!     The authority RDN that verified the chain.
-//!   @member Standards.ASN1.Sequence "cn"
+//!   @member Standards.ASN1.Types.Sequence "cn"
 //!     The common name RDN of the leaf certificate.
 //!   @member array(TBSCertificate) "certificates"
 //!     An array with the decoded certificates, ordered from root to leaf.
@@ -1884,25 +1884,28 @@ array get_letsencrypt_cert(string host)
 //! @param require_trust
 //!   Require that the certificate be traced to an authority, even if
 //!   it is self signed.
-//! @param strict
-//!   By default this function only requires that the certificates are
-//!   in order, it ignores extra certificates we didn't need to verify
-//!   the leaf certificate.
-//!
-//!   If you specify @[strict], this will change, each certificate has
-//!   to be signed by the next in the chain.
-//!
-//!   Some https-servers send extraneous intermediate certificates
-//!   that aren't used to validate the leaf certificate. So strict
-//!   mode will be incompatible with such srevers.
 //! @param options
-//!   @mapping
-//!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
-//!       A mapping of verifier algorithm identifier to hash algorithm
-//!       implementation.
-//!     @member int "strict"
-//!       See @[strict] above.
-//!   @endmapping
+//!   @mixed
+//!     @type bool
+//!       By default this function only requires that the certificates are
+//!       in order, it ignores extra certificates we didn't need to verify
+//!       the leaf certificate.
+//!
+//!       If you specify @expr{1@}, this will change, each certificate has
+//!       to be signed by the next in the chain.
+//!
+//!       Some https-servers send extraneous intermediate certificates
+//!       that aren't used to validate the leaf certificate. So strict
+//!       mode will be incompatible with such srevers.
+//!     @type mapping
+//!       @mapping
+//!         @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
+//!           A mapping of verifier algorithm identifier to hash algorithm
+//!           implementation.
+//!         @member int "strict"
+//!           See the @tt{bool@} case above.
+//!       @endmapping
+//!   @endmixed
 //!
 //! @seealso
 //!   @[get_algorithms()]

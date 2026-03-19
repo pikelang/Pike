@@ -2053,9 +2053,10 @@ fi
 
 # test for several buildins
 
+dnl fun, arg, code, special_case, special_case_descr
 define(TEST_BUILTIN, [
-    AC_MSG_CHECKING(for $1)
-    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
+    AC_MSG_CHECKING([for $1]ifelse([$5],,,[ that supports $5]))
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1$4], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2064,19 +2065,20 @@ volatile int foo = 0;
 foo = (int)$1($2);
 return 0;
 ],
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
-      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1$4], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1$4], [A-Z], [a-z])" = "yes"; then
+        AC_DEFINE(translit([HAS_$1$4], [a-z], [A-Z]), 1,
+                  [Whether $1 is available]ifelse([$5],,,[ and supports $5]))
     fi
 ])
 
-
+dnl fun, arg, code, special_case, special_case_descr
 define(TEST_BUILTIN_VOID, [
-    AC_MSG_CHECKING(for $1)
-    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
+    AC_MSG_CHECKING([for $1]ifelse([$5],,,[ that supports $5]))
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1$4], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2084,22 +2086,24 @@ unsigned long lint;
 $1($2);
 return 0;
 ],
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
-      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1$4], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1$4], [A-Z], [a-z])" = "yes"; then
+        AC_DEFINE(translit([HAS_$1$4], [a-z], [A-Z]), 1,
+                  [Whether $1 is available]ifelse([$5],,,[ and supports $5]))
     fi
 ])
 
 # Check for compiler builtins/intrinsics.
 #
+# C23:  <stdbit.h>
 # ECC:  <emmintrin.h>
 # ICC:  <immintrin.h>
 # IBMC: <builtins.h>
 # MSVC: <intrin.h>
-AC_CHECK_HEADERS(intrin.h emmintrin.h immintrin.h builtins.h \
+AC_CHECK_HEADERS(stdbit.h intrin.h emmintrin.h immintrin.h builtins.h \
                  machine/bswap.h sys/endian.h util.h)
 
 # RDRND hardware random support
@@ -2167,6 +2171,12 @@ TEST_BUILTIN(__cnttz4, 23, [
 TEST_BUILTIN(__cnttz8, 23, [
     #include <builtins.h>
 ])
+# C23 intrinsics
+dnl SmartOS/Solaris 5.11/x86_64 apparently has a stdc_leading_zeros()
+dnl that does not support __int128.
+TEST_BUILTIN(stdc_leading_zeros, [(unsigned __int128)0], [
+#include <stdbit.h>
+], [_int128], [__int128])
 
 
 #############################################################################
@@ -2663,14 +2673,61 @@ if test "x${CANDLE-}" = x ; then
   PIKE_NT_PROG(CANDLE, candle, , $PATH:$EXTRA_PATH)
   export CANDLE
 fi
+if test "x${CANDLE-}" = x ; then :; else
+    AC_MSG_CHECKING([Candle version])
+    CANDLE_VERSION="`$CANDLE -\? | head -1 | sed -e 's/.*[[vV]]ersion //'`"
+    export CANDLE_VERSION
+    AC_MSG_RESULT([$CANDLE_VERSION])
+    if test "x${CANDLE_ARCH-}" = x ; then
+        AC_MSG_CHECKING([Candle target architecture])
+        AC_CHECK_DECL([_M_AMD64], [CANDLE_ARCH="x64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_ARM],   [CANDLE_ARCH="arm"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_ARM64], [CANDLE_ARCH="arm64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_IA64],  [CANDLE_ARCH="ia64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_IX86],  [CANDLE_ARCH="x86"],,[#include <windows.h>])
+        export CANDLE_ARCH
+        AC_MSG_RESULT([$CANDLE_ARCH])
+    fi
+
+    case "$CANDLE_VERSION" in
+        2.*)
+            ;;
+        *)
+            # Wix 3 or later.
+            CANDLE_OPTS="-arch $CANDLE_ARCH"
+            ;;
+    esac
+    export CANDLE_OPTS
+fi
 AC_SUBST(CANDLE)
+AC_SUBST(CANDLE_VERSION)
+AC_SUBST(CANDLE_ARCH)
+AC_SUBST(CANDLE_OPTS)
 
 # Wix linker
 if test "x${LIGHT-}" = x ; then
   PIKE_NT_PROG(LIGHT, light, , $PATH:$EXTRA_PATH)
   export LIGHT
 fi
+if test "x${LIGHT-}" = x ; then :; else
+    AC_MSG_CHECKING([Light version])
+    LIGHT_VERSION="`$LIGHT -\? | head -1 | sed -e 's/.*[[vV]]ersion //'`"
+    export LIGHT_VERSION
+    AC_MSG_RESULT([$LIGHT_VERSION])
+
+    case "$LIGHT_VERSION" in
+        2.*)
+            ;;
+        *)
+            # Wix 3 or later.
+            LIGHT_OPTS="-sice:ICE39"
+            ;;
+    esac
+    export LIGHT_OPTS
+fi
 AC_SUBST(LIGHT)
+AC_SUBST(LIGHT_VERSION)
+AC_SUBST(LIGHT_OPTS)
 
 # Wix tool
 # This one doesn't exist any more in WiX 3.x.
@@ -2797,7 +2854,7 @@ esac
 AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
 AC_CACHE_VAL(pike_cv_prog_working_yacc,
 [
-for YACC in pyacc "byacc -s" "bison -y" yacc "None"; do
+for YACC in pyacc "byacc -s" "bison -y -Wno-deprecated -Wno-yacc" "bison -y -Wno-deprecated" "bison -y -Wno-yacc" "bison -y" yacc "None"; do
   set dummy $YACC; ac_word=$2
   has_it=no
   IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
@@ -2815,7 +2872,7 @@ cat >conftest.y<<\EOF
 %pure_parser
 %{
 #include <stdlib.h>
-#define YYSTYPE void
+#define YYSTYPE unsigned char
 int yylex(YYSTYPE *yylval);
 void parse(void);
 void yyerror(char *);
@@ -2882,11 +2939,10 @@ pike_cv_prog_working_yacc="$YACC"
 
 YACC="$pike_cv_prog_working_yacc"
 
+AC_MSG_RESULT($YACC)
 if test "x$YACC" = "xNone" ; then
-  AC_MSG_RESULT([Get bison if you want to do "make export"])
+  AC_MSG_WARN([Get bison if you want to do "make export"])
   YACC="bison -y"
-else
-  AC_MSG_RESULT($YACC)
 fi
 
 #############################################################################
@@ -2897,6 +2953,7 @@ AC_CACHE_VAL(pike_cv_short_use,
   pike_cv_short_use=unknown
   for short_use in CT_SHORT CT_SHORT_INT; do
     cat >conftest.y <<EOF
+%pure_parser
 %{
 #define $short_use
 #ifdef CT_SHORT
@@ -2904,7 +2961,7 @@ AC_CACHE_VAL(pike_cv_short_use,
 #else
 #define short
 #endif
-#define YYSTYPE void
+#define YYSTYPE unsigned char
 int yylex(YYSTYPE *yylval);
 void parse(void);
 void yyerror(char *);
@@ -3112,7 +3169,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 		 sys/priocntl.h sys/sched.h winbase.h \
 		 sys/termio.h termios.h sys/termios.h \
                  sys/sendfile.h utime.h sys/utime.h \
-                 xmath.h ymath.h \
+                 rctl.h xmath.h ymath.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
@@ -4584,6 +4641,7 @@ AC_CHECK_FUNCS( \
  getauxval \
  gethrtime \
  gethrvtime \
+ getrctl \
  getrlimit \
  getrusage \
  gettimeofday \
@@ -4665,6 +4723,7 @@ AC_CHECK_FUNCS( \
  MakeDataExecutable \
  _get_timezone \
  _get_daylight \
+ _get_tzname \
  localtime_s \
  sysconf \
  getpagesize \
@@ -8939,9 +8998,10 @@ if_autoconf(2,50,[
 
   if test "x$enable_binary" = "xno"; then
     # --disable-binary
-    # LIBS contains lots of junk, which is likely to confuse the real
-    # compiler when the sub-configures run AC_PROG_CC.
+    # LIBS and LDFLAGS contain lots of junk, which is likely to confuse
+    # the real compiler when the sub-configures run AC_PROG_CC.
     LIBS=""
+    LDFLAGS=""
   fi
 ])
 

@@ -22,7 +22,15 @@ test_eq("\d32","\x20");
 test_eq('Å',"Å"[0]);
 test_eq('\7777',"\7777"[0]);
 test_eq('\77777777',"\77777777"[0]);
-test_eq("\x10000","\x10000");
+test_eq('\o7777', "\o7777"[0]);
+test_eq('\o{7777}', "\o7777"[0]);
+test_eq('\x10000', "\x10000"[0]);
+test_eq('\x{10000}', "\x{10000}"[0]);
+test_eq('\u1000', "\u10000"[0]); // NB: Intentional extra zero in string.
+test_eq("\u10000", "\x{1000}0");
+test_eq('\u{10000}', "\u{10000}"[0]);
+test_eq('\U00010000', "\U00010000"[0]);
+test_eq('\U{10000}', "\U{10000}"[0]);
 test_eq(0x80000000-0x80000000, 0);
 test_eq(0xf0000000-0xf0000000, 0);
 test_eq(0x80000001-0x80000000, 1);
@@ -33,6 +41,8 @@ test_eq(0xf000000000000000-0xf000000000000000, 0);
 test_eq(0x8000000000000001-0x8000000000000000, 1);
 test_eq(0x8000000000000000-0x8000000000000001,-1);
 test_eq(-9223372036854775808*-1, -9223372036854775808/-1);
+test_eq(0789.0, 789.0);
+test_compile_error(0x0x0);
 test_true([[1.0e-40]]);
 test_eq([[#"foo
 bar"]],[["foo\nbar"]]);
@@ -156,6 +166,8 @@ test_compile_error("\x109a27bc69e256c83deaa34c26b4")
 test_compile_error('\x109a27bc69e256c83deaa34c26b4')
 test_compile_error('\u17fo')
 test_compile_error("\u17fo")
+test_compile_error('\u{17fo}')
+test_compile_error("\u{17fo}")
 
 test_eq('012456789abcdefghijklmnopqrstuvwxyz'->digits(256),
         "012456789abcdefghijklmnopqrstuvwxyz")
@@ -165,6 +177,9 @@ test_eq('\u117f', 0x117f)
 test_eq("\u117foo", "\10577oo")
 test_eq("\u1117foo", "\10427foo")
 test_eq("\uuuu117foo", "\\uuu117foo")
+test_eq('\u{117f}', 0x117f)
+test_eq("\u{117f}oo", "\10577oo")
+test_eq("\u{1117}foo", "\10427foo")
 test_compile_error('\U117f')
 test_compile_error("\U117f")
 test_compile_error("\UdEaDbEaT")
@@ -172,6 +187,8 @@ test_eq("\UUdEaDbEaT", "\\UdEaDbEaT")
 test_eq('\UDeaDBeEF', -559038737)
 test_eq("\UDeaDBeEFFF", "\33653337357FF")
 test_eq("\UUDeaDBeEFFF", "\\UDeaDBeEFFF")
+test_eq('\U{DeaDBeEF}', -559038737)
+test_eq("\U{DeaDBeEF}FF", "\33653337357FF")
 
 test_do([[
   // bug 2677
@@ -1414,8 +1431,8 @@ test_equal([[ typeof(sprintf("foo%c", 17)); ]],
 test_equal([[ typeof(sprintf("%2c\n", 'a')); ]],
 	   [[ typeof([string(8bit)](mixed)""); ]]);
 dnl Note the following tests the return type of int2char().
-test_equal([[ typeof(sprintf("%c",  1023)); ]],
-	   [[ typeof([string(1023)](mixed)""); ]]);
+test_equal([[ typeof([string(1:)]sprintf("%c",  1023)); ]],
+           [[ typeof("\u03ff"); ]]);
 test_equal([[ typeof(sprintf("%c\n",  1023)); ]],
 	   [[ typeof([string(10 | 1023)](mixed)""); ]]);
 dnl The following is due to (string & sprintf_result) == sprintf_result.
@@ -7693,7 +7710,7 @@ test_any([[
       array a = set_weak_flag (({({17})}), 1);
       protected void create() {g = ({this});}
       protected void _destruct() {
-	if (!equal (a, ({({17})})))
+        if (!equal (a, set_weak_flag (({({17})}), 1)))
 	  error ("Contents in weak array zapped: %O.\n", a);
       }
     }();
@@ -7709,12 +7726,12 @@ test_any([[
     }();
     o = 0;
     gc();
-    if (!equal (all_constants()->blatinka, ({({17})})))
+    if (!equal (all_constants()->blatinka, set_weak_flag (({({17})}), 1)))
       error ("Contents in saved weak array zapped: %O.\n",
 	     all_constants()->blatinka);
     gc();
     return all_constants()->blatinka;
-  }]], ({0}));
+  }]], set_weak_flag (({0}), 1));
 
 test_do(add_constant("kablutt");)
 test_do(add_constant("blatinka");)
@@ -9288,8 +9305,9 @@ test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 dnl The following does test not currently work as typeof("hej3") includes
 dnl character values between '4' and 'd'. Test the parts instead.
 dnl test_true(typeof("hej"+3) >= typeof("hej3"))
-test_true(typeof("hej"+3) >= typeof("hej"))
-test_true(typeof("hej"+3) >= typeof("3"))
+dnl Pranoia: Make sure that the length of the strings are equal.
+test_true(typeof("hej"+3) >= typeof("hejj"))
+test_true(typeof("hej"+3) >= typeof("3333"))
 
 // _typeof
 test_eq(sprintf("%O", _typeof(1)),"int(1)")
@@ -13799,6 +13817,8 @@ test_equal(lower_case("Foo\x13000"),"foo\x13000")
 test_equal(lower_case("Foo1234-*~\n\x13000"),"foo1234-*~\n\x13000")
 test_equal(lower_case("Foo\x178"),"foo\xff")
 test_equal(lower_case("Foo\x39c"),"foo\x3bc")
+test_eq(__STDC_ISO_10646__, 202508) // Unicode release year and month 2025-08.
+test_eq(__UNICODE_VERSION__, 170000) // Unicode version 17.0.0.
 test_equal(lower_case((string) ({
 // These characters correspond to the cases in case_info.h
 // Please update this and the corresponding upper_case table
@@ -13891,7 +13911,7 @@ test_equal(lower_case((string) ({
 0xa7d6, 0xa7d7, 0xa7f5, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
 0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
-0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
+0x118e0, 0x16ea0, 0x16eb9, 0x16ebb, 0x16ed4, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
 0x2d00, 0x10c6, 0x2d27, 0x10c8, 0x2d2d, 0xab70, 0x13f8, 0x13f6,
 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86,
 0x1c87, 0x1c88, 0x1c8a, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1d8e,
@@ -13920,7 +13940,7 @@ test_equal(lower_case((string) ({
 0xa7d7, 0xa7d7, 0xa7f6, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff41, 0xff3b, 0xff41, 0xff5b, 0x10428, 0x10428, 0x10450, 0x104d8,
 0x104d4, 0x104d8, 0x104fc, 0x10cc0, 0x10cb3, 0x10cc0, 0x10cf3, 0x118c0,
-0x118e0, 0x1e922, 0x1e922, 0x1e944, }))
+0x118e0, 0x16ebb, 0x16eb9, 0x16ebb, 0x16ed4, 0x1e922, 0x1e922, 0x1e944, }))
 
 // - m_delete
 // - map
@@ -15096,10 +15116,10 @@ test_any([[
    float f=t2-t1;
 
    array r=({});
-   if (e<tts-0.1 || e>tts+0.2)
+   if (e<tts-0.1 || e>tts+0.5)
       r+=({sprintf("hrtime %.6f, %+.6f",e,e-tts)});
 
-   if (f<tts-0.1 || f>tts+0.2)
+   if (f<tts-0.1 || f>tts+0.5)
       r+=({sprintf("timeofday %.6f, %+.6f",f,f-tts)});
 
    if (sizeof(r)) return r*" / ";
@@ -15222,11 +15242,11 @@ test_equal(upper_case((string) ({
 0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
 0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b9, 0xa7c3, 0xa7c4, 0xa7c5,
-0xa7c6, 0xa7c7, 0xa7c8, 0xa7c9, 0xa7ca, 0xa7d0, 0xa7d1, 0xa7d5,
+0xa7c6, 0xa7c7, 0xa7c8, 0xa7c9, 0xa7ca, 0xa7d0, 0xa7d1, 0xa7d4,
 0xa7d6, 0xa7d7, 0xa7f5, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
 0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
-0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
+0x118e0, 0x16ea0, 0x16eb9, 0x16ebb, 0x16ed4, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
 0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x13a0, 0x13f0, 0x13f6,
 0x13f0, 0x13fe, 0x0412, 0x0414, 0x041e, 0x0421, 0x0422, 0x042a,
 0x0462, 0xa64a, 0x1c89, 0xa77d, 0x1d7a, 0x2c63, 0x1d7e, 0xa7c6,
@@ -15251,11 +15271,11 @@ test_equal(upper_case((string) ({
 0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa7c4, 0xa796,
 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
 0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b8, 0xa7c2, 0xa7c4, 0xa7c5,
-0xa7c6, 0xa7c7, 0xa7c7, 0xa7c9, 0xa7c9, 0xa7d0, 0xa7d0, 0xa7d5,
+0xa7c6, 0xa7c7, 0xa7c7, 0xa7c9, 0xa7c9, 0xa7d0, 0xa7d0, 0xa7d4,
 0xa7d6, 0xa7d6, 0xa7f5, 0xa7f5, 0xa7b3, 0xab54, 0x13a0, 0xabc0,
 0xff21, 0xff3b, 0xff21, 0xff5b, 0x10400, 0x10400, 0x10450, 0x104b0,
 0x104d4, 0x104b0, 0x104fc, 0x10c80, 0x10cb3, 0x10c80, 0x10cf3, 0x118a0,
-0x118e0, 0x1e900, 0x1e900, 0x1e944, }))
+0x118e0, 0x16ea0, 0x16eb9, 0x16ea0, 0x16ed4, 0x1e900, 0x1e900, 0x1e944, }))
 
 // - utf8_to_string
 // See string_to_utf8

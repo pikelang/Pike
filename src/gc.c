@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; encoding: utf-8; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -82,7 +82,8 @@ struct svalue gc_done_cb;
  *   in the marker.
  *
  * GC_PASS_CYCLE
- *   Identify cycles in the unmarked objects.
+ *   Identify cycles in the unmarked objects. The unmarked objects
+ *   are the objects that are still on the gc_internal_* lists.
  *
  * GC_PASS_ZAP_WEAK
  *   Zap weak references to unmarked objects.
@@ -258,6 +259,7 @@ static struct gc_rec_frame sentinel_frame = {
 };
 static struct gc_rec_frame *stack_top = &sentinel_frame;
 static struct gc_rec_frame *kill_list = &sentinel_frame;
+static struct gc_rec_frame *kill_list_last = NULL;
 
 /* Cycle checking
  *
@@ -3241,9 +3243,24 @@ static void gc_cycle_pop(void)
 	  popped->cycle_piece = popped->u.last_cycle_piece =
 	    (struct gc_rec_frame *) (ptrdiff_t) -1;
 #endif
+#if 0
+          /* Enqueue elements after any previous elements. */
+          popped->next = &sentinel_frame;
+          /* popped->prev = sentinel_frame.prev; */
+          if (kill_list == &sentinel_frame) {
+            kill_list = popped;
+          } else {
+            kill_list_last->next = popped;
+          }
+          kill_list_last = popped;
+#else
+          /* NB: Elements are enqueued before the previous cycle,
+           * but after the previous elements in the same cycle.
+           */
 	  popped->next = *kill_list_ptr;
 	  *kill_list_ptr = popped;
 	  kill_list_ptr = &popped->next;
+#endif
 	  popped->rf_flags |= GC_ON_KILL_LIST;
 
 	  /* Ensure that the frames on the kill list have a valid
@@ -3594,7 +3611,7 @@ size_t do_gc(int explicit_call)
   Pike_in_gc=GC_PASS_MARK;
 
   /* Anything after and including gc_internal_* in the linked lists
-   * are considered to lack external references. The mark pass move
+   * are considered to lack external references. The mark pass moves
    * externally referenced things in front of these pointers. */
   gc_internal_array = first_array;
   gc_internal_multiset = first_multiset;

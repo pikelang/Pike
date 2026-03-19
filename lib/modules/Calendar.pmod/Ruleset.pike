@@ -32,7 +32,7 @@ mapping(string:string) abbr2zone=
    "MESZ":"CEST",
 ]);
 
-//!
+//! Set the timezone to use.
 this_program set_timezone(string|Calendar.Rule.Timezone t)
 {
    if (stringp(t)) {

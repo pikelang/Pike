@@ -435,6 +435,18 @@ void *get_semidynamic_exit_fun(const struct static_module *sm)
  *!
  *! If the Pike binary lacks support for dynamic modules, all C-modules
  *! will show up here.
+ *!
+ *! @seealso
+ *!   @[Builtin], @[Gmp], @[_Stdio], @[_math], @[_system]
+ */
+
+/*! @namespace predef::
+ */
+
+/*! @decl inherit _static_modules
+ */
+
+/*! @endnamespace
  */
 
 void init_modules(void)

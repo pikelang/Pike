@@ -111,6 +111,8 @@
 #define ERR_FUNC_SAVE_ID(VAR, NAME, FUNC, TYPE, FLAGS)
 #endif
 
+/* NOTE: AutoDoc for these are in error.c! */
+
 DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_VAR(struct pike_string *,tStr,PIKE_T_STRING,error_message)
   ERR_VAR(struct array *,tArray,PIKE_T_ARRAY,error_backtrace)

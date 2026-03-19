@@ -72,5 +72,5 @@ int yylex(YYSTYPE *yylval)
   fprintf(stderr, "YYLEX: Calling lexer at 0x%08lx\n",
 	  (long)lex->current_lexer);
 #endif /* LEXDEBUG > 8 */
-  return(lex->current_lexer(lex, yylval));
+  return(lex->prev_token = lex->current_lexer(lex, yylval));
 }

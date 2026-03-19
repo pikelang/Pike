@@ -25,6 +25,7 @@ protected private array ctrlcharsto =
        lambda(int z) { return sprintf("%c",z); });
 
 
+//! Base class for outputting terminal codes.
 protected private class TermMachine {
 
   mapping(string:string|int) map = ([]);

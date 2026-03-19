@@ -153,6 +153,15 @@ DECLARATIONS;
  * }
  */
 
+/* FIXME:
+ *
+ *  * Support comment tokens broken up by escaped newlines.
+ *    Cf C23 6.4.9.3:
+ *
+ *      /\
+ *      / j();			// part of a two-line comment
+ */
+
 EXTRA {
   /*! @enum CppFlags
    *!
@@ -718,13 +727,13 @@ PIKEFUN string decode_charset(string data, string charset)
  *! These are typically the macros defined via the @tt{-D@} option
  *! when starting Pike.
  *!
- *! After @[_take_over_initial_predefines()] has been called, it
+ *! After @[Builtin._take_over_initial_predefines()] has been called, it
  *! instead calls @[master()->get_predefines()] and returns
  *! its result.
  *!
  *! @seealso
  *!   @[cpp()], @[CompilationHandler->get_predefines()],
- *!   @[_take_over_initial_predefines()]
+ *!   @[Builtin._take_over_initial_predefines()]
  */
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
@@ -767,8 +776,25 @@ PIKECLASS CPP
   PIKEVAR object handler;
   PIKEVAR object compat_handler;
 #endif
+
+  /*! @decl int compat_major
+   *!
+   *! Compatibility major version.
+   *!
+   *! @seealso
+   *!   @[change_cpp_compatibility()], @[__MAJOR__]
+   */
   PIKEVAR int compat_major;
+
+  /*! @decl int compat_minor
+   *!
+   *! Compatibility minor version.
+   *!
+   *! @seealso
+   *!   @[change_cpp_compatibility()], @[__MINOR__]
+   */
   PIKEVAR int compat_minor;
+
   PIKEVAR string prefix;
   PIKEVAR int picky_cpp;
   PIKEVAR int keep_comments;
@@ -867,7 +893,7 @@ static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
    *!   Extra arguments to @[sprintf()].
    *!
    *!   The default implementation just calls
-   *!   @[CompilerEnviroment::report()] in the parent with the
+   *!   @[CompilerEnvironment::report()] in the parent with the
    *!   same arguments.
    *!
    *! @seealso
@@ -992,7 +1018,7 @@ static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
    *!   @mixed
    *!     @type zero
    *!       Generate a cpp error using the default format (ie call
-   *!       @[master()->describe_error()], and replace any newlines
+   *!       @[MasterObject()->describe_error()], and replace any newlines
    *!       with spaces).
    *!     @type string
    *!       Cpp error message to @[report()]. The empty string
@@ -1062,6 +1088,13 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 }
 
 /*! @namespace predef::
+ */
+
+/*! @decl optional constant int(1bit) __pragma_save_parent__
+ *!
+ *! Set this constant to @expr{1@} with eg @[add_constant()]
+ *! to cause the @[#pragma] @tt{save_parent@} behaviour to
+ *! be default.
  */
 
 /*! @decl import cpp:: */
@@ -1426,7 +1459,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   default set of preprocessor macros are described here.
  *!
  *!   The preprocessor is usually accessed via
- *!   @[MasterObject->compile_file()] or @[MasterObject->compile_string()],
+ *!   @[compile_file()] or @[compile_string()],
  *!   but may be accessed directly by calling @[cpp()].
  *!
  *! @seealso
@@ -1841,7 +1874,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!
    *!   Include a file as a list of items.
    *!
-   *!   By default the items are @epxr{int(8bit@}.
+   *!   By default the items are @expr{int(8bit)@}.
    *!
    *! @seealso
    *!   @[#include], @[#string]
@@ -5371,6 +5404,21 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 goto unknown_preprocessor_directive;
               }
             }
+            if ((DATA(pos) < '0') || (DATA(pos) > '9')) {
+              /* FIXME: C23 6.10.5.6:
+               *        A preprocessing directive of the form
+               *            # line pp-tokens new-line
+               *        (that does not match one of the two previous forms)
+               *        is permitted. The preprocessing tokens after
+               *        line on the directive are processed just as in normal
+               *        text (each identifier currently defined as a
+               *        macro name is replaced by its replacement list of
+               *        preprocessing tokens). The directive resulting after
+               *        all replacements shall match one of the two previous
+               *        forms and is then processed as appropriate.
+               */
+              cpp_warning(this, "Unsupported #line directive.");
+            }
 	    /* FALLTHRU */
           case '0': case '1': case '2': case '3': case '4':
           case '5': case '6': case '7': case '8': case '9':
@@ -6230,8 +6278,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!   This macro expands to the year and date (6 digits) of the Unicode
    *!   standard that the Pike runtime supports.
    *!
-   *!   Note that this differs slightly from the corresponding macro
-   *!   in the C23 standard in that it does NOT have an ending @expr{'L'@}.
+   *!   Note that this differs slightly from the corresponding macro in
+   *!   the C11 standard in that it does NOT have an ending @expr{'L'@}.
    *!
    *! @seealso
    *!   @[__UNICODE_VERSION__]
@@ -6335,7 +6383,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
  *!   to @[#include] or not.
  *!
  *! @returns
- *!   @[__has_include] returns @expr{1} if the symbol given as argument
+ *!   @[__has_include] returns @expr{1@} if the symbol given as argument
  *!   is valid as an argument to @[#include] and @expr{0@} otherwise.
  *!
  *! @note
@@ -6383,7 +6431,7 @@ PIKEFUN string macro___has_include(string arg)
  *!   to @[#embed] or not.
  *!
  *! @returns
- *!   @[__has_embed] returns @expr{1} if the set of identifiers given as
+ *!   @[__has_embed] returns @expr{1@} if the set of identifiers given as
  *!   argument is valid as an argument to @[#embed] and @expr{0@} otherwise.
  *!   Note that the set of identifiers may contain preprocessor parameters.
  *!
@@ -7033,7 +7081,7 @@ PIKEFUN string macro___has_embed(string arg)
    *!
    *! @seealso
    *!   @[define_macro()], @[CompilationHandler()->get_predefines()],
-   *!   @[_take_over_initial_predefines()]
+   *!   @[Builtin._take_over_initial_predefines()]
    */
   PIKEFUN void define_multiple_macros(mapping(string:
                  string|function|object|array(string|int(24bit)))|void predefs)
@@ -7068,7 +7116,7 @@ PIKEFUN string macro___has_embed(string arg)
    *!   retrieve the set of macros to define at initialization.
    *!
    *!   The default implementation returns the internal set of
-   *!   predefined macros unless @[_take_over_initial_predefines()]
+   *!   predefined macros unless @[Builtin._take_over_initial_predefines()]
    *!   has been called, in which case it instead calls the
    *!   corresponding function in the master.
    *!
@@ -7078,7 +7126,7 @@ PIKEFUN string macro___has_embed(string arg)
    *!
    *! @seealso
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
-   *!   @[_take_over_initial_predefines()], @[defines]
+   *!   @[Builtin._take_over_initial_predefines()], @[defines]
    */
 PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_predefines()
   {
@@ -7194,7 +7242,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_pred
  *! 		processed, @expr{#ifdef COND@} and @expr{__LINE__@} would not.
  *!     @member mapping(string:mixed) "predefines"
  *!             Mapping of predefined macros in addition to those
- *!             returned by @[CPP()->get_predefines()].
+ *!             returned by @[CompilerEnvironment()->CPP()->get_predefines()].
  *! @endmapping
  *!
  *! @seealso
@@ -7314,7 +7362,7 @@ void add_predefine(const char *s)
 {
   struct pike_predef_s *tmp=ALLOC_STRUCT(pike_predef_s);
   size_t len = strlen(s);
-  char *pos=strchr(s,'=');
+  const char *pos=strchr(s,'=');
 
   if(pos)
   {

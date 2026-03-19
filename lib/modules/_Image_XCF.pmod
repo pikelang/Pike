@@ -563,7 +563,7 @@ string translate_mode( int mode )
 //! @mapping
 //! @member int "image_xres"
 //! @member int "image_yres"
-//! @member Image.Colormap "image_colormap"
+//! @member Image.Colortable "image_colormap"
 //! @member array(Guide) "image_guides"
 //! @member array(Parasite) "image_parasites"
 //!  Values, global to all layers, copied from the GimpImage.

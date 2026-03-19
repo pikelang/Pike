@@ -119,6 +119,7 @@ class Parameters
     Gmp.mpz get_q();
   }
 
+  //! @decl protected variant void create(DSA.State dsa)
   //! Initialize the set of Diffie-Hellman parameters.
   //!
   //! @param dsa

@@ -4074,25 +4074,25 @@ PIKECLASS PollDeviceBackend
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
 
 #ifdef BACKEND_USES_CFRUNLOOP
-    if(pdb->go_cf)
-    {
-      cf_timeout = next_timeout->tv_sec + (next_timeout->tv_usec / 1000000.0);
+      if(pdb->go_cf)
+      {
+        cf_timeout = next_timeout->tv_sec + (next_timeout->tv_usec / 1000000.0);
 
-      pdb->event_count = 0;
-      pdb->poll_fds = (poll_fds);
+        pdb->event_count = 0;
+        pdb->poll_fds = (poll_fds);
 
-      CFFileDescriptorEnableCallBacks(pdb->fdref,
-				      kCFFileDescriptorReadCallBack);
-      CFRunLoopAddSource(CFRunLoopGetCurrent(), pdb->source,
-			 kCFRunLoopDefaultMode);
-      CFRunLoopRunInMode(kCFRunLoopDefaultMode, cf_timeout, true);
+        CFFileDescriptorEnableCallBacks(pdb->fdref,
+                                        kCFFileDescriptorReadCallBack);
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), pdb->source,
+                           kCFRunLoopDefaultMode);
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, cf_timeout, true);
 
-      i = pdb->event_count;
-      pdb->poll_fds = NULL;
-}
-else
+        i = pdb->event_count;
+        pdb->poll_fds = NULL;
+      }
+      else
 #endif /* BACKEND_USES_CFRUNLOOP */
-      i = PDB_POLL(pdb->set, poll_timeout);
+        i = PDB_POLL(pdb->set, poll_timeout);
 
 #ifdef TIMEOUT_IS_MILLISECONDS
       PDWERR(" => %d (timeout was: %dms)\n", i, poll_timeout);

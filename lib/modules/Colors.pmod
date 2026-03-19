@@ -108,12 +108,20 @@ array(3:int(0..255)) parse_color(string|zero name,
   return def;
 }
 
-//! Tries to find a name to color described by  the provided RGB
+//! Attempts to find a name for the color described by the provided RGB
 //! values. Partially an inverse function to @[Colors.parse_color()],
 //! although it can not find all the names that @[Colors.parse_color()]
-//! can find RGB values for. Returns the colors rgb hex value prepended
-//! with "#" upon failure.
+//! can find RGB values for.
 //!
+//! @returns
+//!   Returns the name of the specified RGB color triple if known and
+//!   otherwise the 8-bit RGB hex value prepended with @expr{"#"@}.
+//!
+//! @note
+//!   Returns @expr{"-"@} for most invalid arguments.
+//!
+//! @seealso
+//!   @[parse_color()], @[Image.Color]
 string color_name(array(3:int(0..255))|zero rgb)
 {
   if(!arrayp(rgb) || sizeof(rgb)!=3) return "-";

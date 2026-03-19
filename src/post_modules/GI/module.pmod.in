@@ -1,10 +1,37 @@
 #pike __REAL_VERSION__
 
+//! @namespace predef::
+
+//! @module GI
+//!
+//!   This module provides an interface to GObject Introspection.
+//!
+//!   You probably want to look at @[repository].
+
 inherit @module@ : GI;
 
 #if constant(@module@.Repository)
 
+//! @module repository
+//!
+//!   This module provides dynamic lookup of modules provided
+//!   via GObject Introspection. Such modules are loaded via
+//!   @tt{*.typelib@} description files typically located in
+//!   the directory @tt{/usr/lib64/girepository-1.0/@} (or
+//!   similar).
+//!
+//!   Typical such modules include @[GI.repository.Gtk],
+//!   @[GI.repository.Gdk] and @[GI.repository.Pango].
+//!
+//!   Several GI-compatible APIs are documented at
+//!   @url{https://www.gtk.org/docs/apis/@}.
+//!
+//! @seealso
+//!   @[Cairo], @[GDK], @[GTK], @[Pango]
+
+//! @ignore
 class DynamicImporter {
+//! @endignore
 
   constant magic_remaps = ([
     "cairo" : ([ "Context" : "Cairo.Context" ])
@@ -103,7 +130,10 @@ class DynamicImporter {
           array(FunctionInfo) methods = oi->get_methods();
           attrs = mkmapping(methods->get_name(), map(methods, Method))
             + attrs;
-          oi = oi->get_parent();
+          ObjectInfo poi = oi->get_parent();
+          if (poi == oi)
+            break;
+          oi = poi;
         }
         foreach(info->get_interfaces(); ; InterfaceInfo ii) {
           array(FunctionInfo) methods = ii->get_methods();
@@ -413,8 +443,16 @@ class DynamicImporter {
 
   protected array(string) _indices() { return indices(cache); }
   protected array(mixed) _values() { return values(cache); }
+//! @ignore
 }
 
 DynamicImporter repository = DynamicImporter();
+//! @endignore
+
+//! @endmodule
 
 #endif
+
+//! @endmodule
+
+//! @endnamespace

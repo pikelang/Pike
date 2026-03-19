@@ -215,11 +215,11 @@ protected program find_dbm(string program_name) {
 //! @item mysqls
 //!   libmysql based mysql connection, using SSL
 //! @item dsn
-//!   @[ODBC] based connection
+//!   @[Odbc] based connection
 //! @item msql
 //!   @[Msql]
 //! @item odbc
-//!   @[ODBC] based connection
+//!   @[Odbc] based connection
 //! @item oracle
 //!  @[Oracle] using oracle libraries
 //! @item pgsql

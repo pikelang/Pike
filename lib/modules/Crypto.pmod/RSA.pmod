@@ -357,6 +357,7 @@ protected class LowState {
   this_program `PKCS1_5();
 }
 
+//! @decl import Standards.ASN1.Types
 #define Sequence Standards.ASN1.Types.Sequence
 
 private class PKCS_RSA_class {
@@ -496,8 +497,20 @@ class PSSState {
       return 0;
     }
 
+    //! Get the current salt size.
+    //!
+    //! The default salt size is @expr{20@}.
+    //!
+    //! @seealso
+    //!   @[pkcs_signature_algorithm_id()], @[pkcs_sign()], @[set_salt_size()]
     optional int(0..) salt_size() { return default_salt_size; }
 
+    //! Set the default salt size.
+    //!
+    //! The initial default salt size is @expr{20@}.
+    //!
+    //! @seealso
+    //!   @[pkcs_signature_algorithm_id()], @[pkcs_sign()], @[salt_size()]
     optional void set_salt_size(int(0..) salt_size)
     {
       default_salt_size = salt_size;
@@ -1050,7 +1063,7 @@ class PKCS1_5State
   }
 }
 
-//!
+//! Convenience class for @[PKCS1_5State].
 class State
 {
   inherit PKCS1_5State;

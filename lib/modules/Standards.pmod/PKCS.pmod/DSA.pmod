@@ -96,7 +96,7 @@ Sequence build_public_key(Crypto.DSA dsa)
                   }));
 }
 
-//! Creates a PrivateKeyInfo ASN.1 sequence for the given @[rsa]
+//! Creates a PrivateKeyInfo ASN.1 sequence for the given @[dsa]
 //! object. See @rfc{5208:5@}.
 Sequence build_private_key(Crypto.DSA dsa)
 {
@@ -108,7 +108,7 @@ Sequence build_private_key(Crypto.DSA dsa)
 }
 
 //! Returns the PKCS-1 algorithm identifier for DSA and the provided
-//! hash algorithm. One of @[SHA1], @[SHA224] or @[SHA256].
+//! hash algorithm. One of @[Crypto.SHA1], @[Crypto.SHA224] or @[Crypto.SHA256].
 object(Sequence)|zero signature_algorithm_id(Crypto.Hash hash)
 {
   switch(hash->name())

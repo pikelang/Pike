@@ -26,7 +26,7 @@
 
 #pike __REAL_VERSION__
 
-//!
+//! Base class for X requests.
 class request
 {
   constant reqType = 0;

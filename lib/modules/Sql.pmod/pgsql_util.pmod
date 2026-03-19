@@ -1963,6 +1963,7 @@ class Result {
 
 };
 
+//! pgsql connection proxy.
 class proxy {
   final int _fetchlimit = FETCHLIMIT;
   final MUTEX unnamedportalmux;

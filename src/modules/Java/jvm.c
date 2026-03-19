@@ -87,6 +87,18 @@ static struct program *natives_program = NULL, *attachment_program = NULL;
 static struct program *monitor_program = NULL;
 static size_t jarray_stor_offs = 0;
 
+/*! @module ___Java
+ *!
+ *!   Low-level interface to the Java Virtual Machine (JVM).
+ *!
+ *! @note
+ *!   You typically do not want to access this module directly.
+ *!   Use the @[Java] module instead.
+ *!
+ *! @seealso
+ *!   @[Java], @[Java.jvm]
+ */
+
 struct jvm_storage {
   JavaVM *jvm;			/* Denotes a Java VM */
   JNIEnv *env;			/* pointer to native method interface */
@@ -1680,7 +1692,7 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
   if(*signature) signature++;
   rtype = get_ffi_type(*signature);
 
-#if defined (_WIN32) || defined (__WIN32__) || defined (WIN32)
+#if (defined (_WIN32) || defined (__WIN32__) || defined (WIN32)) && !defined(__WIN64__)
   abi = FFI_STDCALL;
 #else
   abi = FFI_DEFAULT_ABI;
@@ -3448,7 +3460,12 @@ static void f_monitor_create(INT32 args)
 
 /* JVM */
 
+/*! @class jvm
+ *!   Interface to a single jvm and jni environment.
+ */
 
+/*! @decl protected void create(string(8bit)|void classpath)
+ */
 static void f_create(INT32 args)
 {
   struct jvm_storage *j = THIS_JVM;
@@ -3542,7 +3559,7 @@ static void f_create(INT32 args)
          */
         throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
                            "Failed to create virtual machine: %s (%d)\n",
-                           pike_jni_error(errcode), errcode);
+                           pike_jni_error(errcode), (int)errcode);
       }
     }
     j->env = vp;
@@ -3692,7 +3709,8 @@ static void jvm_gc_recurse(struct object *PIKE_UNUSED(o))
 }
 #endif /* _REENTRANT */
 
-
+/*! @decl int get_version()
+ */
 static void f_get_version(INT32 args)
 {
   JNIEnv *env;
@@ -3704,6 +3722,8 @@ static void f_get_version(INT32 args)
     push_int(0);
 }
 
+/*! @decl object find_class(string(8bit) class_name)
+ */
 static void f_find_class(INT32 args)
 {
   JNIEnv *env;
@@ -3722,6 +3742,9 @@ static void f_find_class(INT32 args)
   }
 }
 
+/*! @decl object define_class(string(8bit) class_name, object loader, @
+ *!                           string(8bit) class_data)
+ */
 static void f_define_class(INT32 args)
 {
   JNIEnv *env;
@@ -3745,6 +3768,8 @@ static void f_define_class(INT32 args)
   }
 }
 
+/*! @decl int(1bit) exception_check()
+ */
 static void f_exception_check(INT32 args)
 {
   JNIEnv *env;
@@ -3757,6 +3782,8 @@ static void f_exception_check(INT32 args)
     push_int(0);
 }
 
+/*! @decl object exception_occurred()
+ */
 static void f_exception_occurred(INT32 args)
 {
   JNIEnv *env;
@@ -3770,6 +3797,8 @@ static void f_exception_occurred(INT32 args)
     push_int(0);
 }
 
+/*! @decl void exception_describe()
+ */
 static void f_exception_describe(INT32 PIKE_UNUSED(args))
 {
   JNIEnv *env;
@@ -3780,6 +3809,8 @@ static void f_exception_describe(INT32 PIKE_UNUSED(args))
   }
 }
 
+/*! @decl void exception_clear()
+ */
 static void f_exception_clear(INT32 args)
 {
   JNIEnv *env;
@@ -3792,6 +3823,8 @@ static void f_exception_clear(INT32 args)
   push_int(0);
 }
 
+/*! @decl void fatal(string msg)
+ */
 static void f_javafatal(INT32 args)
 {
   JNIEnv *env;
@@ -3931,6 +3964,9 @@ static void f_new_double_array(INT32 args)
   } else
     push_int(0);
 }
+
+/*! @endclass
+ */
 
 #endif /* HAVE_JAVA */
 
@@ -4157,6 +4193,13 @@ PIKE_MODULE_INIT
       push_text("CLASSPATH");
       SAFE_APPLY_MASTER("getenv", 1);
       machine = clone_object(jvm_program, 1);
+      /*! @decl optional constant jvm __machine
+       *!   The default JVM instance.
+       *!
+       *! @note
+       *!   The presence of this symbol indicates that the @[Java]
+       *!   runtime appears to work.
+       */
       add_object_constant("__machine", machine, ID_PROTECTED);
       free_object(machine);
     }
@@ -4221,3 +4264,6 @@ PIKE_MODULE_EXIT
 #endif /* __NT __ */
 #endif /* HAVE_JAVA */
 }
+
+/*! @endmodule
+ */

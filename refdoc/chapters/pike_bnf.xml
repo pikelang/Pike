@@ -1,5 +1,9 @@
 <chapter title="Pike BNF">
-<contents><pre>
+  <contents>
+    <p><b>Caveat lector:</b> This is a simplified BNF and is <b>NOT</b>
+      the normative grammar for Pike.
+    </p>
+    <pre>
  program              ::=   definition+
  definition           ::=   import | inheritance | function_declaration | function_definition | variables | constant | class_def
  import               ::=   modifiers+ "import" ( constant_identifier | string ) ";" 
@@ -89,6 +93,7 @@
                             "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="
  letter               ::=   ["a"-"z"] | ["A"-"Z"] | "_"
  digit                ::=   ["0"-"9"]
-</pre></contents>
+    </pre>
+  </contents>
 </chapter>
 

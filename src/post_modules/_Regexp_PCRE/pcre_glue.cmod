@@ -501,7 +501,7 @@ PIKECLASS _pcre
 /*! @decl array(string) split_subject(string subject, @
  *!                        array(int) previous_result)
  *! Convenience function that
- *! splits a subject string on the result from _pcre->exec()
+ *! splits a subject string on the result from @[_pcre()->exec()]
  *!
  *! equal to
  *! map(previous_result/2,
@@ -789,7 +789,7 @@ PIKE_MODULE_INIT
     *! @decl constant NOSUBSTRING
     *! @decl constant MATCHLIMIT
     *! @decl constant CALLOUT
-    *!   Documented in @[exec].
+    *!   Documented in @[_pcre()->exec()].
     */
 
    start_new_program();

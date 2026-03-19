@@ -8,6 +8,8 @@
 
 constant description = "Extracts autodoc from Pike or C code.";
 
+//! Standalone program for extracting autodoc from Pike or C code.
+
 string imgsrc;
 string imgdir;
 
@@ -342,11 +344,18 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
       if(stat->size<1) continue;
 
+      if (has_suffix(fn, ".c") && file_stat(srcdir + fn[..<2] + ".yacc")) {
+        rm(builddir + fn + ".xml");
+        rm(builddir + fn + ".xml.stamp");
+        continue;
+      }
+
       if(!has_suffix(fn, ".pike") && !has_suffix(fn, ".pike.in") &&
 	 !has_suffix(fn, ".pmod") && !has_suffix(fn, ".pmod.in") &&
 	 //       !has_suffix(fn, ".cmod") && !has_suffix(fn, ".cmod.in") &&
 	 !has_suffix(fn, ".c") && !has_suffix(fn, ".cc") &&
          !has_suffix(fn, ".m") && !has_suffix(fn, ".bmml") &&
+         !has_suffix(fn, ".yacc") &&
 	 has_value(fn, ".")) continue;
 
       Stdio.Stat dstat = file_stat(builddir+fn+".xml") &&
@@ -394,7 +403,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	string orig = Stdio.read_bytes(builddir + fn + ".xml");
 	if (res != orig) {
 	  num_updated_files++;
-      Stdio.mkdirhier( builddir );
+          Stdio.mkdirhier( builddir );
 	  Stdio.write_file(builddir+fn+".xml", res);
 	  rm(builddir + fn + ".brokenxml");
 	}
@@ -592,16 +601,16 @@ string|zero extract(string filename, string imgdest,
 		    "**""! class image\n"
 		    "**\n",
 		    "Calendar.pmod/Gregorian.pmod":
-		    "//! module Calendar\n"
+                    "//""! module Calendar\n"
 		    "//\n",
 		    "Calendar.pmod/Stardate.pmod":
-		    "//! module Calendar\n"
+                    "//""! module Calendar\n"
 		    "//\n",
 		    "Calendar_I.pmod/Gregorian.pmod":
-		    "//! module Calendar_I\n"
+                    "//""! module Calendar_I\n"
 		    "//\n",
 		    "Calendar_I.pmod/Stardate.pmod":
-		    "//! module Calendar_I\n"
+                    "//""! module Calendar_I\n"
 		    "//\n",
 		  ]); string suffix; string lines) {
 	    if (has_suffix(filename, suffix) &&
@@ -703,16 +712,18 @@ string|zero extract(string filename, string imgdest,
   if(!has_value(name_sans_suffix, "."))
     error("No suffix in file %O.\n", name_sans_suffix);
   suffix = ((name_sans_suffix/"/")[-1]/".")[-1];
-  if( !(< "c", "cc", "cpp", "m", /* "cmod", */ "pike", "pmod", >)[suffix] )
+  if( !(< "c", "cc", "cpp", "m", /* "cmod", */ "pike", "pmod", "yacc", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
   name_sans_suffix =
     name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
 
   string result;
   mixed err = catch {
-    if( suffix == "c" || suffix == "cc" || suffix == "cpp"
+    if( suffix == "c" || suffix == "cc" || suffix == "cpp" || suffix == "yacc"
 	/* || suffix == "cmod" */)
-      result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root,flags);
+      result =
+        Tools.AutoDoc.ProcessXML.extractXML(filename, 0, 0, 0, root, flags |
+                                            Tools.AutoDoc.FLAG_KEEP_EMPTY);
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];

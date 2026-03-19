@@ -1,4 +1,4 @@
-/* -*- c -*-
+/* -*- mode: C; c-basic.offset: 4; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -164,7 +164,7 @@ PIKECLASS _Instance {
      *! Callback function that is called when an event is triggered.
      *!
      *! @seealso
-     *!   @[set_event_callback()], @[query_event_callback()]
+     *!   @[set_event_callback()], @[get_event_callback()]
      */
     PIKEVAR function(int, int, int, string:void) event_callback
       flags ID_PRIVATE;

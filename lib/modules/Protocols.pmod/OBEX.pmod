@@ -5,7 +5,7 @@
 //! OBEX is a protocol for sending and receiving binary objects
 //! to mobile devices using transports such as IR and Bluetooth.
 
-//! A request opcode, for use with the @[client.do_request()] function.
+//! A request opcode, for use with the @[Client.do_request()] function.
 enum Request {
   REQ_CONNECT = 0x80,		//! Establish a new OBEX connection
   REQ_DISCONNECT = 0x81,	//! Terminate an OBEX connection
@@ -180,7 +180,7 @@ array(string) split_headers(string h, int chunklen)
 //! An OBEX client
 //!
 //! @seealso
-//!   @[ATclient]
+//!   @[ATClient]
 //!
 class Client
 {
@@ -496,7 +496,7 @@ class Client
 }
 
 
-//! An extension of the @[client] which uses the AT*EOBEX modem command
+//! An extension of the @[Client] which uses the AT*EOBEX modem command
 //! to enter OBEX mode.  Use together with Sony Ericsson data cables.
 //!
 class ATClient

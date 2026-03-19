@@ -1,7 +1,16 @@
 #pike __REAL_VERSION__
-#require constant(GTK2.PangoLayout)
+//! Pango wrapper module.
+//!
+//! This is a convenience module that is identical to the latest
+//! supported Pango version, if available.
+//!
+//! @seealso
+//!   @[GTK2], @[GI.repository]
 
-/* //! @decl import GTK2 */
+#if constant(GI.repository.Pango)
+constant _module_value = GI.repository.Pango;
+#else
+#require constant(GTK2.PangoLayout)
 
 protected mixed `[](string what)
 {
@@ -21,3 +30,4 @@ protected array _values()
 {
   return map(_indices(), `[]);
 }
+#endif

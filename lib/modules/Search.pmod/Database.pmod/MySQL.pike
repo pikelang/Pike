@@ -2,7 +2,7 @@
 
 inherit .Base;
 
-// Creates the SQL tables we need.
+//! Creates the SQL tables we need.
 
 //#define SEARCH_DEBUG
 

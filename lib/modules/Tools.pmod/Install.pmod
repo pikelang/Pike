@@ -48,7 +48,7 @@ array(string) features()
   a += ({ "profiling" });
 #endif
 
-#if constant(_debug)
+#if constant(Debug.debug)
   a += ({ "rtl_debug" });
 #endif
 
@@ -67,7 +67,7 @@ array(string) features()
 	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
 	     "PDF.PDFlib", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
-	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
+             "X", "Bz2", "COM", "Fuse", "GI", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
 	     "Protocols.DNS_SD", "Gnome2", "MIME", "Standards.JSON",
 	     "Web.Sass", "VCDiff", "ZXID", "System.FSEvents.EventStream",

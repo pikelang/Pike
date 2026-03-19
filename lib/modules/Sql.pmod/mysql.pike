@@ -742,7 +742,7 @@ variant Result big_query (string query,
 //!   which is returned as @[UNDEFINED].
 //!
 //! @seealso
-//!   @[Sql.big_query()], @[big_typed_query()], @[streaming_query()]
+//!   @[Connection()->big_query()], @[big_typed_query()], @[streaming_query()]
 {
   QUERY_BODY (big_query);
 }

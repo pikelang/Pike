@@ -11,6 +11,7 @@
    S=string
    Q=int/float
    Z=(byte/)double/float/int/short
+   &=void *
 
    +XXXX = 3/4/array(3/4)
    +XXX  = 2/3/4/array(2/3/4)

@@ -720,7 +720,7 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
 /*! @class MasterObject
  */
 
-/*! @decl void thread_quanta_exceeded(Thread.Thread thread, int ns)
+/*! @decl optional void thread_quanta_exceeded(Thread.Thread thread, int ns)
  *!
  *! Function called when a thread has exceeded the thread quanta.
  *!
@@ -739,7 +739,7 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
  *!   avoid handling of mutexes, etc.
  *!
  *! @seealso
- *!   @[get_thread_quanta()], @[set_thread_quanta()]
+ *!   @[Thread.get_thread_quanta()], @[Thread.set_thread_quanta()]
  */
 
 /*! @endclass
@@ -1264,7 +1264,7 @@ static inline void CALL_WITH_ERROR_HANDLING(struct thread_state *state,
        * not succeed in waking up the other threads.
        *
        * Note that in the case that the threads do wake up
-       * there is a risk of the also calling pike_do_exit().
+       * there is a risk of them also calling pike_do_exit().
        */
       pike_do_exit(throw_value.u.integer);
 #endif /* UNIX_THREADS || POSIX_THREADS */
@@ -1871,7 +1871,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
        * not succeed in waking up the other threads.
        *
        * Note that in the case that the threads do wake up
-       * there is a risk of the also calling pike_do_exit().
+       * there is a risk of them also calling pike_do_exit().
        */
       pike_do_exit(throw_value.u.integer);
 #endif /* UNIX_THREADS || POSIX_THREADS */
@@ -4028,7 +4028,7 @@ void exit_cond_obj(struct object *UNUSED(o))
  *!   Currently a single flag is defined:
  *!   @int
  *!     @value 1
- *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       Return @[Pike.LiveBacktraceFrame]s. This flag causes the frame
  *!       objects to track changes (as long as they are in use), and
  *!       makes eg local variables for functions available for
  *!       inspection or change.

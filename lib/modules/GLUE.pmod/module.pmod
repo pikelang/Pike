@@ -264,8 +264,8 @@ void mirror_screen( string how )
 //! If a driver fails to load or initialize, the next driver
 //! is tried.
 //! @throws
-//! @[driver_names] not listed in the result from @[get_drivers]
-//! will cause an error to be thrown.
+//!   If none of the @tt{"driver_names"@} is listed in the result
+//!   from @[get_drivers] an error will be thrown.
 //! @param options
 //!   @mapping
 //!     @member string|array(string) "driver_names"
@@ -296,8 +296,8 @@ void mirror_screen( string how )
 //!     @member string "icon_title"
 //!       Sets the icon title to this string.
 //!     @member int(0..1) "fast_mipmap"
-//!       Use GL_NEAREST_MIMAP_NEAREST instead of GL_LINEAR_MIPMAP_LINEAR,
-//!       which also is the default.
+//!       Use @[GL_NEAREST_MIPMAP_NEAREST] instead of
+//!       the default @[GL_LINEAR_MIPMAP_LINEAR].
 //!     @member float "rotation"
 //!       The rotation in z-axis of the drawing field.
 //!     @member string "mirror"

@@ -23,12 +23,19 @@ struct expect_result {
   TYPE_T got;               /* What type did we actually receive */
 };
 
-/* This should be used in module_init */
+/* These should be used in module_init */
+#define PIKE_MODULE_EXPORT_SYMBOL(KEY, SYM) \
+  pike_module_export_symbol(KEY, CONSTANT_STRLEN(KEY), (void *)(SYM))
+
+#define PIKE_MODULE_IMPORT_SYMBOL(KEY, MOD_NAME)                       \
+  pike_module_import_symbol(KEY, CONSTANT_STRLEN(KEY),                 \
+                            MOD_NAME, CONSTANT_STRLEN(MOD_NAME))
+
 #define PIKE_MODULE_EXPORT(MOD, SYM) \
-  pike_module_export_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), (void *)SYM)
+  PIKE_MODULE_EXPORT_SYMBOL(#MOD "." #SYM, SYM)
 
 #define PIKE_MODULE_IMPORT(MOD, SYM) \
-  pike_module_import_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), #MOD, CONSTANT_STRLEN(#MOD))
+  PIKE_MODULE_IMPORT_SYMBOL(#MOD "." #SYM, #MOD)
 
 #define HIDE_MODULE() ADD_INT_CONSTANT("this_program_does_not_exist",1,0)
 

@@ -17,6 +17,7 @@ protected string _sprintf(int t)
   if (t == 'O') return sprintf("SSL.ServerConnection(%s)", describe_state());
 }
 
+//! Generate a @[HANDSHAKE_hello_request] @[Packet].
 protected Packet hello_request()
 {
   return handshake_packet(HANDSHAKE_hello_request, "");

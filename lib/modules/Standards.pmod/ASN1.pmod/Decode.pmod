@@ -100,7 +100,7 @@ protected array(int) read_identifier(Stdio.Buffer data,
 //! @returns
 //!   An object from @[Standards.ASN1.Types] or, either
 //!   @[Standards.ASN1.Decode.Primitive] or
-//!   @[Standards.ASN1.Decode.constructed], if the type is unknown.
+//!   @[Standards.ASN1.Decode.Constructed], if the type is unknown.
 //!   Throws an exception if the data could not be decoded.
 //!
 //! @fixme
@@ -201,6 +201,7 @@ protected array(int) read_identifier(Stdio.Buffer data,
 
 #define U(x) .Types.make_combined_tag(0, (x))
 
+//! Mapping from standard ASN.1 tag numbers to corresponding object types.
 mapping(int:program(.Types.Object)) universal_types =
 ([ U(1) : .Types.Boolean,
    U(2) : .Types.Integer,

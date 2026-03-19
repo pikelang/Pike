@@ -448,6 +448,12 @@ constant itemname_to_tag = ([ "content-type":		1,
 			      "notify-comments":	27,
 			      "faq-for-conf":		28,
 			      "recommended-conf":	29,
+                              "allowed-content-type":	30,
+                              "canonical-name":		31,
+                              "mx-list-name":		32,
+                              "send-comments-to":	33,
+                              "world-readable":		34,
+                              "mx-refuse-import":	35,
 			      "mx-mime-belongs-to":	10100,
 			      "mx-mime-part-in":	10101,
 			      "mx-mime-misc":		10102,
@@ -1188,10 +1194,7 @@ this_program logout()
 //!
 //! @note
 //!	The items above marked with '*' are only available on protocol 10
-//!	servers. A LysKOM error will be thrown if the call fails.
-//!
-//! @seealso
-//!   @[Conference.create_text()], @[Text.comment()], @[Text.footnote()]
+//!	or later servers. A LysKOM error will be thrown if the call fails.
 object|void create_text(string subject,string body,
 			mapping options = ([]),
 			void|function callback,

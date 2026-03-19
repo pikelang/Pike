@@ -55,6 +55,10 @@ int main(int n, array(string) args)
     verbosity++;
   }
 
+  if (getenv("PIKE_XENOFARM_DEFAULTS") == "yes") {
+    verbosity = Tools.AutoDoc.FLAG_NORMAL;
+  }
+
   flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK)|verbosity;
 
   if (options->help) {

@@ -281,7 +281,7 @@ constant response_codes =
 //!   Data payload to be transmitted in the request.
 //!
 //! @seealso
-//!   @[do_sync_method()]
+//!   @[do_async_method()]
 object(.Query)|zero
   do_method(string method,
             string|Standards.URI url,

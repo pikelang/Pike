@@ -225,7 +225,7 @@ PIKECLASS TM
      *!
      *! @seealso
      *!  @[strptime()], @[predef::strftime()], @[predef::strptime()],
-     *!  @[Gettext.setlocale()]
+     *!  @[Locale.Gettext.setlocale()]
      */
     PIKEFUN string(1..255) strftime(string(1..255) format)
     {
@@ -317,7 +317,7 @@ PIKECLASS TM
      *!
      *! @note
      *!   In versions of Pike prior to Pike 8.0.1866 the exact format
-     *!   was very locale (see @[Gettext.setlocale]) and OS dependent.
+     *!   was very locale (see @[Locale.Gettext.setlocale]) and OS dependent.
      */
     PIKEFUN string asctime()
     {
@@ -559,7 +559,7 @@ PIKECLASS TM
 /*! @endmodule
  */
 
-/*! @decl array(array(int|string|type)) describe_program(program p)
+/*! @decl array(array(7..:int|string|type)) describe_program(program p)
  *! @belongs Debug
  *!
  *! Debug function for showing the symbol table of a program.
@@ -593,7 +593,7 @@ PIKECLASS TM
  *!   symbols might be added.
  */
 PMOD_EXPORT
-PIKEFUN array(array(int|string)) _describe_program(mixed x)
+PIKEFUN array(array(7..:int|string)) _describe_program(mixed x)
      efun;
 {
   struct program *p;
@@ -997,15 +997,15 @@ PIKEFUN string(0..255) hex2string(string(8bit) hex, int(0..2)|void strict_mode)
   Pike_error("Illegal hex format.\n");
 }
 
-/*! @decl array(int) range(string s)
+/*! @decl array(2: int) range(string s)
  *! @appears String.range
  *!
- *! Returns the character range of a string in an array of two
+ *! Returns the character range of a string as an array of two
  *! elements. The first element contains the lower bound and the
- *! second the upper. The precision is only 8 bits, so for wide
- *! strings only character blocks are known.
+ *! second the upper (both inclusive). The precision is only 8 bits,
+ *! so for wide strings only character blocks are known.
  */
-PIKEFUN array(int) string_range(string s)
+PIKEFUN array(2: int) string_range(string s)
   errname range;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -1456,6 +1456,9 @@ PIKEFUN int string_count(string haystack, string needle)
  *! @belongs String
  *!
  *! Trim leading and trailing spaces and tabs from the string @[s].
+ *!
+ *! @seealso
+ *!   @[String.trim()], @[String.trim_all_whites()]
  */
 PMOD_EXPORT
 PIKEFUN string string_trim_whites (string s)
@@ -1633,12 +1636,33 @@ skip##TYPE:;								\
   RETURN finish_string_builder (&sb);
 }
 
+/*! @decl __deprecated__ string trim_all_whites(string s)
+ *! @belongs String
+ *!
+ *!   Trim leading and trailing white spaces characters (space, tab,
+ *!   newline, carriage return, form feed, vertical tab and all the
+ *!   white spaces defined in Unicode) from the string @[s].
+ *!
+ *! @deprecated String.trim()
+ *!   This function was renamed to @[String.trim()] in Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[String.trim()], @[String.trim_whites()]
+ */
+
 /*! @decl string trim (string s)
  *! @belongs String
  *!
  *! Trim leading and trailing white spaces characters (space, tab,
  *! newline, carriage return, form feed, vertical tab and all the
  *! white spaces defined in Unicode) from the string @[s].
+ *!
+ *! @note
+ *!   This function was called @[String.trim_all_whites()] before
+ *!   Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[String.trim_all_whites()], @[String.trim_whites()]
  */
 PMOD_EXPORT
 PIKEFUN string string_trim (string s)
@@ -1883,7 +1907,7 @@ static void f_proxy_getter(INT32 args)
     wrong_number_of_args_error(NULL, args, 0);
   }
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
@@ -1922,7 +1946,7 @@ static void f_proxy_setter(INT32 args)
     wrong_number_of_args_error(NULL, args, 1);
   }
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       &Pike_fp->context->prog->constants[1].sval);
   }
@@ -1955,7 +1979,7 @@ static void f_proxy_fun(INT32 args)
   struct inherit *inh;
   struct identifier *id;
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
@@ -1986,7 +2010,7 @@ static void f_proxy__sprintf(INT32 args)
   struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
   struct object *obj;
 
-  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+  if (!storage || (TYPEOF(*storage) != PIKE_T_OBJECT)) {
     Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
@@ -2016,6 +2040,7 @@ static void f_proxy__sprintf(INT32 args)
 
 static struct mapping *proxy_lookup = NULL;
 /*! @decl program ProxyFactory(program p)
+ *! @belongs Pike
  *!
  *! Create a class that acts as a proxy for the specified program.
  *!
@@ -2497,7 +2522,7 @@ PIKEFUN void m_clear(mapping|multiset|object map)
  *!   Returns the previous value for @[key]. If @[map] is a mapping and
  *!   there was no previous value @[UNDEFINED] is returned.
  *!
- *!   If @[map] is an object @[lfun::_m_replace()] will be called
+ *!   If @[map] is an object @[lfun::_atomic_get_set()] will be called
  *!   in it.
  *!
  *! @seealso
@@ -2694,10 +2719,11 @@ PIKEFUN int get_weak_flag(multiset m)
  *!
  *! @returns
  *!   Returns a virgin (ie empty) program suitable as the target
- *!   argument to @[PikeCompiler()].
+ *!   argument to @[CompilerEnvironment.PikeCompiler()].
  *!
  *! @seealso
- *!   @[__null_program], @[PikeCompiler], @[compile_string()]
+ *!   @[__null_program], @[CompilerEnvironment.PikeCompiler],
+ *!   @[compile_string()]
  */
 PIKEFUN program __empty_program(int|zero|void line, string|void file)
   efun;
@@ -2912,6 +2938,14 @@ PIKEFUN program|zero function_program(program|function func)
 }
 
 #ifdef PIKE_DEBUG
+/*! @decl void __dump_program_tables(program p)
+ *!
+ *!   Dump program symbol tables to @[Stdio.stderr].
+ *!
+ *! @note
+ *!   Only available if the pike runtime has been compiled
+ *!   @tt{--with-rtl-debug@}.
+ */
 PIKEFUN void __dump_program_tables(program p)
   efun;
 {
@@ -2921,6 +2955,7 @@ PIKEFUN void __dump_program_tables(program p)
 #endif
 
 /*! @class RandomInterface
+ *! @belongs Builtin
  */
 PIKECLASS RandomInterface
 {
@@ -3144,6 +3179,7 @@ static HCRYPTPROV crypto_handle;
 static int random_fd = -1;
 #endif
 /*! @class RandomSystem
+ *! @belongs Builtin
  */
 PIKECLASS RandomSystem
 {
@@ -3235,9 +3271,16 @@ PIKECLASS RandomSystem
 static struct mapping *env_allocs = NULL;
 #endif
 
-/* Works exactly like the getenv efun defined in the master, but only
- * accesses the real environment. Everyone should use the caching
- * version in the master instead. */
+/*! @decl string|zero _getenv(string var)
+ *! @decl mapping(string:string) _getenv()
+ *!
+ *! Works exactly like the @[getenv()] defined in the master, but only
+ *! accesses the real environment. Everyone should use the caching
+ *! version in the master instead.
+ *!
+ *! @seealso
+ *!   @[getenv()], @[_putenv()]
+ */
 PIKEFUN string|mapping|zero _getenv (void|string var)
   rawtype tOr(tFunc(tStr, tOr(tString, tZero)),
 	      tFunc(tNone, tMap (tStr, tStr)));
@@ -3320,9 +3363,15 @@ PIKEFUN string|mapping|zero _getenv (void|string var)
   }
 }
 
-/* Works exactly like the putenv efun defined in the master, but only
- * updates the real environment. Everyone should use the version in
- * the master instead so that the cache doesn't get stale. */
+/*! @decl void _putenv(string var, void|string val)
+ *!
+ *! Works exactly like the @[putenv()] defined in the master, but only
+ *! updates the real environment. Everyone should use the version in
+ *! the master instead so that the cache doesn't get stale.
+ *!
+ *! @seealso
+ *!   @[_getenv()], @[putenv()]
+ */
 PIKEFUN void _putenv (string var, void|string val)
 {
 #ifndef USE_SETENV
@@ -3550,6 +3599,7 @@ PIKECLASS InhibitDestruct
  */
 
 /*! @class FakeObject
+ *! @belongs Builtin
  *!
  *! Used as a place holder in eg backtraces for objects that
  *! are unsuitable to have references to in backtraces.
@@ -4507,6 +4557,18 @@ PIKEFUN int(0..1) signal_contextp()
 /*! @module Builtin
  */
 
+/*! @decl inherit _static_modules.Builtin
+ */
+
+/*! @endmodule
+ */
+
+/*! @module _static_modules
+ */
+
+/*! @module Builtin
+ */
+
 /*! @class Future(<ValueType>)
  *!
  *! Prototype class for @[Concurrent.Future].
@@ -4517,14 +4579,14 @@ PIKEFUN int(0..1) signal_contextp()
 PIKECLASS Future
   num_generics 1;
 {
-  /*! @decl void set_backend(Backend backend)
+  /*! @decl void set_backend(Pike.Backend backend)
    */
   PIKEFUN void set_backend(Backend backend)
     prototype;
   {
   }
 
-  /*! @decl Backend get_backend()
+  /*! @decl Pike.Backend get_backend()
    */
   PIKEFUN Backend get_backend()
     prototype;
@@ -4813,6 +4875,9 @@ PIKECLASS Promise
   }
 }
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 /*! @endmodule
@@ -5143,7 +5208,7 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
  *!   Currently a single flag is defined:
  *!   @int
  *!     @value 1
- *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       Return @[Pike.LiveBacktraceFrame]s. This flag causes the frame
  *!       objects to track changes (as long as they are in use), and
  *!       makes eg local variables for functions available for
  *!       inspection or change.
@@ -6206,7 +6271,7 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
   return res;
 }
 
-/*! @decl function(mixed_void)|zero _get_setter(object o, string varname)
+/*! @decl function(mixed:void)|zero _get_setter(object o, string varname)
  *!
  *! Get a setter for the variable named @[varname] in object @[o].
  *!
@@ -6363,9 +6428,10 @@ PIKECLASS Pointer
   {
     pop_n_elems(args);
     if (fmt == 'O') {
-      char buf[32 + (sizeof(void *)*CHAR_BIT)/4];
-      snprintf(buf, sizeof(buf), "Val.Pointer(%p)", THIS->ptr);
-      push_text(buf);
+      push_text("%O(0x%08x)");
+      ref_push_program(Pike_fp->current_object->prog);
+      push_int64((INT64)(ptrdiff_t)THIS->ptr);
+      f_sprintf(3);
     } else {
       push_undefined();
     }
@@ -6421,6 +6487,16 @@ PMOD_EXPORT void *get_pointer_from_pointer_object(struct object *o)
 {
     struct Pointer_struct *pointer = get_storage(o, Pointer_program);
     return (pointer? pointer->ptr : NULL);
+}
+
+PMOD_EXPORT void set_pointer_in_pointer_object(struct object *o,
+                                               void *ptr)
+{
+  struct Pointer_struct *pointer =
+    get_storage(o?o:Pike_fp->current_object, Pointer_program);
+  if (pointer) {
+    pointer->ptr = ptr;
+  }
 }
 
 
@@ -8401,16 +8477,33 @@ PMOD_EXPORT struct program *get_sql_null_prog(void)
   return Null_program;
 }
 
+/*! @module Builtin
+ */
+
+/*! @class __Backtrace_Tester__
+ *!
+ *!   Class that throws an error during early initialization.
+ *!
+ *!   This class is only intended to be used by the Pike
+ *!   testsuite to test that errors triggered in that phase
+ *!   do not trigger bugs in the runtime.
+ */
 PIKECLASS __Backtrace_Tester__
 {
   INIT {
     Pike_error("__Backtrace_Tester__\n");
   }
 }
+/*! @endclass
+ */
 
 #undef DEFAULT_CMOD_STORAGE
 #define DEFAULT_CMOD_STORAGE	static
 
+/*! @class pike_trampoline
+ *!
+ *!   Internal class used to implement trampoline functions.
+ */
 PIKECLASS pike_trampoline
 {
   CVAR struct pike_trampoline trampoline;
@@ -8478,6 +8571,12 @@ PIKECLASS pike_trampoline
     push_string(buffer_finish_pike_string(&buf));
   }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 void init_builtin(void)
 {

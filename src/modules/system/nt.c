@@ -848,6 +848,11 @@ static void f_sid_account(INT32 args)
  */
 
 /*! @class UserToken
+ *!
+ *! Class for objects representing a logged in user.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
  */
 
 /*! @endclass

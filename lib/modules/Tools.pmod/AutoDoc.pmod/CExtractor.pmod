@@ -1,10 +1,13 @@
 #pike __REAL_VERSION__
 
-// Extraction of C files.
-//
-// NOTE that a C file always produces a full module tree with
-// a root node. Use the functions in ProcessXML.pmod to merge
-// the module trees extracted from the different C files.
+//! AutoDoc extraction for C files.
+//!
+//! NOTE that a C file always produces a full module tree with
+//! a root node. Use the functions in ProcessXML.pmod to merge
+//! the module trees extracted from the different C files.
+//!
+//! @seealso
+//!   @[PikeExtractor]
 
 // #pragma strict_types
 

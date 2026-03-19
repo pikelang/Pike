@@ -38,7 +38,6 @@
 #endif /* HAVE_OPENGL_GL_H */
 
 
-
 /* Restore INT64, INT32, INT16 and INT8. */
 #include "pike_int_types.h"
 
@@ -395,7 +394,7 @@ PIKE_MODULE_INIT
 
   add_function_constant("glGet", f_glGet,
 			"function(int:int|float|array(int)|array(float))",
-			OPT_SIDE_EFFECT);
+                        OPT_EXTERNAL_DEPEND);
   GL_add_auto_funcs();
 
 #ifdef HAVE_GLSL

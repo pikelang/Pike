@@ -104,7 +104,7 @@ protected Stdio.write_callback_t|zero d_write_callback;
 protected function(void|mixed:int)|zero d_close_callback;
 
 protected Pike.Backend real_backend;
-// The real backend for the stream.
+//! The real backend for the stream.
 
 protected Pike.Backend local_backend;
 // Internally all I/O is done using callbacks. This backend is used
@@ -1817,7 +1817,7 @@ mixed query_id()
 }
 
 void set_backend (Pike.Backend backend)
-//! Set the backend used for the file callbacks.
+//! Set the @[real_backend] used for the file callbacks.
 //!
 //! @seealso
 //!   @[query_backend]
@@ -1842,7 +1842,7 @@ void set_backend (Pike.Backend backend)
 }
 
 Pike.Backend query_backend()
-//! Return the backend used for the file callbacks.
+//! Return the @[real_backend] used for the file callbacks.
 //!
 //! @seealso
 //!   @[set_backend]
@@ -1936,7 +1936,7 @@ Stdio.File query_stream()
 .Connection query_connection()
 //! Return the SSL connection object.
 //!
-//! This returns the low-level @[SSL.connection] object.
+//! This returns the low-level @[SSL.Connection] object.
 {
   SSL3_DEBUG_MSG ("SSL.File->query_connection(): Called from %s:%d\n",
 		  backtrace()[-2][0], backtrace()[-2][1]);

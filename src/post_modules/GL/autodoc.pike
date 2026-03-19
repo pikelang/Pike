@@ -53,7 +53,24 @@ string fix_xml_row(string in) {
 array(string) not_documented = ({});
 array(string) not_implemented = ({});
 mapping(string:array(array(string)|string)) docs = ([]);
-mapping(string:string) ref_alias = ([]);
+mapping(string:string) ref_alias = ([
+  "glColor3": "glColor",
+  "glColor4": "glColor",
+  "glDrawElement": "glDrawElements",	// Typo in enableclientstate.3gl.
+  "glEvalCoord1": "glEvalCoord",
+  "glEvalCoord2": "glEvalCoord",
+  "glEvalPoint1": "glEvalPoint",
+  "glEvalPoint2": "glEvalPoint",
+  "glRasterPos2": "glRasterPos",
+  "glRasterPos3": "glRasterPos",
+  "glRasterPos4": "glRasterPos",
+  "glMapGrid1": "glMapGrid",
+  "glMapGrid2": "glMapGrid",
+  "glTexCoord1": "glTexCoord",
+  "glTexCoord2": "glTexCoord",
+  "glTexCoord3": "glTexCoord",
+  "glTexCoord4": "glTexCoord",
+]);
 
 string preprocess_man(array(string) rows, string fn)
 {
@@ -119,8 +136,10 @@ string preprocess_man(array(string) rows, string fn)
       if(has_value(_args, "(") && has_value(_args, ")")) {
         sscanf(_args, "%*s\\f3%s\\fP(%s)", string spec_name, _args);
 	array args = ({});
-        while( sscanf(_args, "%*s\\fI%s\\fP%s", string arg, _args)==3 )
+        while( sscanf(_args, "%*s\\fI%s\\fP%s", string arg, _args)==3 ) {
+          if (has_prefix(arg, "*")) arg = arg[1..];
           args += ({ arg });
+        }
 	prots[spec_name] = args;
 	_args = "";
       }
@@ -200,10 +219,25 @@ string preprocess_man(array(string) rows, string fn)
     }
   }
 
+  if (fn == "evalmesh") {
+    werror("Raw prots: %O\n", prots);
+  }
+
   mapping names = mkmapping(map(indices(prots), lower_case), indices(prots));
   fn = "gl" + fn;
   string name, new_name;
-  if(name = names[fn+"4f"]) new_name = name[..sizeof(name)-3];
+  if (name = ([
+        "glget": "glGet",
+        // "glevalmesh": "glEvalMesh",	// Documents EvalMesh1 and EvalMesh2.
+        "gledgeflag": "glEdgeFlag",
+      ])[fn]) {
+    // glGetFloatv et al ==> glGet (cf top.c).
+    new_name = name;
+    name = sort(indices(prots))[0];
+  } else if ((< "glevalmesh" >)[fn]) {
+    // Keep as glEvalMesh1() and glEvalMesh2().
+    werror("Skip canonicalization for %O.\n", fn);
+  } else if(name = names[fn+"4f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"3f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"2f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"f"])  new_name = name[..sizeof(name)-2];
@@ -211,9 +245,15 @@ string preprocess_man(array(string) rows, string fn)
   else if(name = names[fn+"fv"]) new_name = name[..sizeof(name)-3];
 
   if(new_name) {
-    foreach(indices(prots), string name)
-      ref_alias[name] = new_name;
+    foreach(indices(prots), string name) {
+      if (name != new_name) {
+        ref_alias[name] = new_name;
+      }
+    }
     prots = ([ new_name : prots[name] ]);
+  } else if (sizeof(prots) > 1) {
+    werror("Warning: New canonical name for %O not found.\n"
+           "Known names: %O\n", fn, names);
   }
 
   // Assemble result
@@ -237,8 +277,29 @@ string process_man(string name, string prot_ret, array(string) prot_types) {
   [ args, doc ] = m_delete(docs, name);
 
 
-  if( sizeof(prot_types) != sizeof(args) )
-    error("Prototype argument types and names mismatch in size. %O %O\n", prot_types, args);
+  if( sizeof(prot_types) != sizeof(args) ) {
+    if (name == "glClipPlane") {
+      doc = "@decl " + prot_ret + " glClipPlane(" +
+        prot_types[0] + " " + args[0] + ", "
+        "float equation_0, float equation_1, float equation_2, "
+        "float equation_3)\n\n" + doc;
+      prot_types = ({ prot_types[0], "array(4:float)" });
+    } else {
+      error("Prototype argument types and names mismatch in size. %O %O\n",
+            prot_types, args);
+    }
+  }
+
+  // Zap arguments not used by Pike.
+  foreach(prot_types; int i; string prot_type) {
+    if (prot_type == "void") {
+      prot_types[i] = "";
+      args[i] = "";
+    }
+  }
+  prot_types -= ({ "" });
+  args -= ({ "" });
+
   prot_types = (prot_types[*] + " ")[*] + args[*];
 
   return "@decl " + prot_ret + " " + name + "(" + (prot_types*", ") + ")\n\n" + doc;
@@ -310,6 +371,21 @@ string document(string name, string features)
   case 'S':
     ret="string";
     break;
+  case ']':
+    if (features[1] == 'I') {
+      ret = "array(int)";
+    } else {
+      ret = "array";
+    }
+    features = features[1..];
+    break;
+  case '+':
+    if (has_prefix(features, "+Z") || has_prefix(features, "+Q")) {
+      ret = "int|float|array(int)|array(float)";
+      features = features[1..];	// Make later code happy.
+      break;
+    }
+    // FALL_THRU
   default:
     error("%s: Unknown return type '%c'.", name, features[0]);
   }
@@ -329,8 +405,11 @@ string document(string name, string features)
     case 'F':
       args += ({"float"});
       break;
-    case 'Z':
+    case 'Q': case 'Z':
       args += ({"float|int"});
+      break;
+    case 'V':
+      args += ({ "void" });	// Argument ignored in Pike.
       break;
     case '+':
       int mi, mx;
@@ -349,6 +428,9 @@ string document(string name, string features)
       args += special_234(mi, mx, features[i+1..]);
       i=sizeof(features);
       break;
+    case '-':
+      args[-1] += " ...";
+      break;
     case '#':
     case '!':
     case '=':
@@ -359,6 +441,14 @@ string document(string name, string features)
     case '@':
       args += special_234(1, 1, features[i+1..]);
       i=sizeof(features);
+      break;
+    case ']':
+      if (features[i+1] == 'I') {
+        args += ({ "array(int)" });
+      } else {
+        args += ({ "array" });
+      }
+      i++;
       break;
     case '[':
       sscanf(features[i+1..], "%d%s", int nn, string rst);
@@ -373,8 +463,12 @@ string document(string name, string features)
       args += ({"object|mapping(string:object)"});
       break;
 
+    case '&':
+      args += ({ "System.Memory" });
+      break;
+
     default:
-      error("%s: Unknown parameter type '%c'.", name, features[i]);
+      error("%s: Unknown parameter type '%c'.\n", name, features[i]);
     }
   }
 
@@ -388,7 +482,10 @@ void prefetch()
   if( !file_stat( "release/xc/doc/man/GL/gl/" ) )
   {
     werror( "Need OpenGL man pages unpacked in present working directory.\n"
-	    "Download ftp://ftp.sgi.com/sgi/opengl/doc/mangl.tar.Z first.\n" );
+            "Download ftp://ftp.sgi.com/sgi/opengl/doc/mangl.tar.Z first.\n"
+            "sgi.com is defunct there is still (2026-01-10) a mirror at\n"
+            "https://ftp.jurassic.nl/mirrors/ftp.sgi.com/opengl/doc/\n"
+            );
     exit( 1 );
   }
   foreach(glob("*.3gl", get_dir("release/xc/doc/man/GL/gl/")), string fn) {
@@ -405,23 +502,44 @@ OpenGL glue. All method and constant names have been kept close to their low
 level counterparts for easy adoption of OpenGL code from other languages and
 examples off the web. Superfluous suffixes specifying the number and types of
 arguments have been dropped, though.
-
-OpenGL methods still missing in the Pike API:
-
-@xml{<matrix>
 ";
-  foreach( sort( (array)not_implemented ), string name )
-    ret += "<r><c>" + name + "</c></r>\n";
-  ret += #"</matrix>@}
-
+  if (sizeof(not_documented)) {
+    ret += #"
 @fixme
 Methods available, but lacking documentation:
+
 @xml{<matrix>
 ";
-  foreach( sort( not_documented ), string name )
-    ret += "<r><c>" + name + "</c></r>\n";
-  ret += "</matrix>@}";
-  return comment(ret);
+    foreach( sort( not_documented ), string name )
+      ret += "<r><c>" + name + "</c></r>\n";
+    ret += "</matrix>@}";
+  }
+
+  if (sizeof(not_implemented)) {
+    ret += #"
+@note
+All OpenGL methods have not been implemented. For a list of unimplemented
+methods, see @[glUnimplemented].
+";
+  }
+
+  ret = comment(ret);
+
+  if (sizeof(not_implemented)) {
+    string trailer = "@decl private void glUnimplemented()\n";
+    foreach( sort( (array)not_implemented ), string name ) {
+      trailer += "@decl private void " + name + "()\n";
+    }
+    trailer += #"
+These OpenGL methods are still missing in the Pike @[GL] API.
+
+@seealso
+@[GL]
+";
+    ret += comment(trailer);
+  }
+
+  return ret;
 }
 
 mapping(string:array(string)) refs = ([]);
@@ -443,11 +561,44 @@ void fix_refs() {
     jox[1] = out + in;
   }
 
+  foreach(docs; string func; array jox) {
+    string out = "";
+    string in = jox[1];
+    while( sscanf(in, "%s<ref>%s</ref>%s", string a, string b, string c)==3 ) {
+      if(ref_alias[b]) {
+        werror("Remapped %s (to %s)\n", b, func);
+        b = ref_alias[b];
+      }
+      // else if( !GL[b] ) werror( "Maybe not %s?\n", b );
+      out += a + "<ref>" + b + "</ref>";
+      in = c;
+    }
+    jox[1] = out + in;
+  }
+
   werror("Finding constant references.\n");
   foreach(indices(constants), string name) {
     array r = ({});
-    foreach(docs; string func; array jox)
+    foreach(docs; string func; array jox) {
       if(has_value(jox[1], name)) r += ({ func });
+      foreach(({({ "GL_", "_BIAS", "GL_c_BIAS" }),
+                ({ "GL_", "_SCALE", "GL_c_SCALE" }),
+                ({ "GL_AUX", "", "GL_AUX" }),
+                ({ "GL_CLIP_PLANE", "", "GL_CLIP_PLANE" }),
+                ({ "GL_LIGHT", "", "GL_LIGHT" }),
+                ({ "GL_MAP1_", "", "GL_MAP1_" }),
+                ({ "GL_MAP2_", "", "GL_MAP2_" }),
+                ({ "GL_PIXEL_MAP_", "", "GL_PIXEL_MAP_c_TO_c" }),
+                ({ "GL_POLYGON_OFFSET", "", "GL_POLYGON_OFFSET" }),
+                ({ "GL_TEXTURE_GEN_", "", "GL_TEXTURE_GEN_" }),
+                ({ "glEvalMesh", "", "glEvalMesh" }),
+              }), [string prefix, string suffix, string alt_name]) {
+        if (has_prefix(name, prefix) && has_suffix(name, suffix) &&
+            has_value(jox[1], alt_name)) {
+          r += ({ func });
+        }
+      }
+    }
     if(sizeof(r))
       refs[name] = r;
   }
@@ -462,7 +613,15 @@ void main()
   werror("Building documentation.\n");
   string doc = "";
 
-  foreach( func_misc + ({ ({"glFrustum", "VDDDDDD"}) }), array func)
+  foreach( func_misc + ({
+             ({"glCallLists", "VVVI-"}),
+             ({"glDeleteTextures", "VVI-"}),
+             ({"glFrustum", "VDDDDDD"}),
+             ({"glGenTextures", "]IIV"}),
+             ({"glDrawElements", "VEVV]I"}),
+             ({"glMapGrid", "VIFFIFF"}),
+             ({"glGet", "+QIV" }),
+           }), array func)
   {
     if(catch { doc += document(func[0], func[1]) + "\n"; })
     {
@@ -480,12 +639,17 @@ void main()
   not_implemented = indices(docs) - not_documented;
   foreach( sort(indices(constants)), string name )
   {
-    array relevant = refs[name];
-    if( relevant && sizeof( relevant -= not_implemented ) )
+    array relevant = refs[name] || ({});
+    relevant -= not_implemented;
+    // if( sizeof(relevant) )
     {
-      array r = map(relevant, lambda(string in) { return "@[" + in + "]"; });
-      doc += sprintf( "/*!@decl constant %s %d\n *! Used in %s\n */\n\n",
-		      name, constants[name], String.implode_nicely( r ) );
+      array r = sort(map(relevant,
+                         lambda(string in) { return "@[" + in + "]"; }));
+      doc += sprintf("/*!@decl constant %s = %d\n", name, constants[name]);
+      if (sizeof(r)) {
+        doc += sprintf(" *! Used in %s\n", String.implode_nicely(r));
+      }
+      doc += " */\n\n";
     }
   }
 
@@ -496,6 +660,38 @@ void main()
 */\n\n/* AutoDoc generated from OpenGL man pages */"
     "\n\n" + first_page() + "\n\n" + doc +
     "\n/*! @endmodule\n */\n\n";
+
+  // Get rid of white space at end of line.
+  doc = replace(doc, "        \n", "\n");
+  doc = replace(doc, "    \n", "\n");
+  doc = replace(doc, "  \n", "\n");
+  doc = replace(doc, " \n", "\n");
+  doc = replace(doc, "\t\n", "\n");
+  while (has_suffix(doc, "\n\n")) {
+    doc = doc[..<1];
+  }
+
+  // Fixup various references.
+  doc = replace(doc, ([
+                  "@[glEvalMesh]": "@[glEvalMesh1] and @[glEvalMesh2]",
+                  "@[GL_AUX]": "@[GL_AUX0] through @[GL_AUX3]",
+                  "<ref>GL_AUX</ref>":
+                  "<ref>GL_AUX0</ref> through <ref>GL_AUX3</ref>",
+                  "@[GL_MAP1_]@i{x@}": "@tt{GL_MAP1_@i{x@}@}",
+                  "@[GL_MAP2_]@i{x@}": "@tt{GL_MAP2_@i{x@}@}",
+                  "@[GL_CLIP_PLANE]@i{i@}": "@tt{GL_CLIP_PLANE@i{i@}@}",
+                  "<ref>GL_CLIP_PLANE</ref><i>i</i>":
+                  "<tt>GL_CLIP_PLANE<i>i</i></tt>",
+                  "@[GL_LIGHT]@i{i@}": "@tt{GL_LIGHT@i{i@}@}",
+                  "<ref>GL_LIGHT</ref><i>i</i>": "<tt>GL_LIGHT<i>i</i></tt>",
+                  "@[GL_LIGHT]i": "@tt{GL_LIGHT@i{i@}@}",
+                  "@[GL_POLYGON_OFFSET]": "@tt{GL_POLYGON_OFFSET@}",
+                  "@[GL_TEXTURE_GEN_]@i{x@}": "@tt{GL_TEXTURE_GEN_@i{x@}@}",
+                  "<ref>GL_PIXEL_MAP_c_TO_c</ref>":
+                  "<tt>GL_PIXEL_MAP_<i>c</i>_TO_<i>c</i></tt>",
+                  "<ref>GL_c_BIAS</ref>": "<tt>GL_<i>c</i>_BIAS</tt>",
+                  "<ref>GL_c_SCALE</ref>": "<tt>GL_<i>c</i>_SCALE</tt>",
+                ]));
 
   werror("Writing result file.\n");
   Stdio.write_file("autodoc.c", doc);

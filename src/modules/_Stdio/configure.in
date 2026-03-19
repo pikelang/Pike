@@ -11,7 +11,7 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h pty.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock2.h ws2tcpip.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h unistd.h sys/termios.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
-  sys/sendfile.h sys/ioctl.h linux/if.h linux/magic.h sys/xattr.h libzfs.h \
+  sys/ioctl.h linux/if.h linux/magic.h sys/xattr.h libzfs.h \
   AvailabilityMacros.h sys/stropts.h libutil.h,,,[
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
 #include <sys/types.h>
@@ -58,7 +58,7 @@ AC_CHECK_LIB(gmp, main)
 AC_CHECK_LIB(util, openpty)
 
 AC_HAVE_FUNCS(readdir_r statvfs statfs ustat lseek64 lstat fsync \
- grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
+ grantpt unlockpt ptsname posix_openpt socketpair writev munmap \
  openpty tcgetattr fchdir \
  madvise poll setsockopt getprotobyname inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
@@ -81,12 +81,6 @@ AC_CACHE_VAL(pike_cv_have_IPPROTO_IPV6, [
 #include <winsock2.h>
 #endif
 #include <sys/types.h>
-#ifdef __APPLE__
-/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
- * for the sendfile() declaration.
- */
-#undef _POSIX_C_SOURCE
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -211,12 +205,6 @@ AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
 AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
 	AC_TRY_COMPILE([
 #include <sys/types.h>
-#ifdef __APPLE__
-/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
- * for the sendfile() declaration.
- */
-#undef _POSIX_C_SOURCE
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -1030,12 +1018,6 @@ AC_TRY_RUN([
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
-#ifdef __APPLE__
-/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
- * for the sendfile() declaration.
- */
-#undef _POSIX_C_SOURCE
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -1190,12 +1172,6 @@ AC_TRY_RUN([
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
-#ifdef __APPLE__
-/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
- * for the sendfile() declaration.
- */
-#undef _POSIX_C_SOURCE
-#endif
 #include <sys/socket.h>
 
 int main()

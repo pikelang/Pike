@@ -1,7 +1,7 @@
 # Haiku/BeOS error codes and error base offsets.
 B_ALREADY_RUNNING			Already running
 B_AMBIGUOUS_APP_LAUNCH			Ambiguous app launch
-B_APP_ERROR_BASE			# Base for application errors
+B_APP_ERROR_BASE			Base for application errors
 B_BAD_ADDRESS				Bad address
 B_BAD_DATA				Bad data
 B_BAD_HANDLER				Bad handler
@@ -25,7 +25,7 @@ B_BUSY					Device/File/Resource busy
 B_CANCELED				Operation canceled
 B_CROSS_DEVICE_LINK			Cross-device link
 B_DEBUGGER_ALREADY_INSTALLED		Debugger already installed for this team
-B_DEVICE_ERROR_BASE			# Base for device driver errors
+B_DEVICE_ERROR_BASE			Base for device driver errors
 B_DEVICE_FULL				No space left on device
 B_DEVICE_NOT_FOUND			No such device
 B_DEV_BAD_DRIVE_NUM			Bad drive number
@@ -64,14 +64,14 @@ B_DONT_DO_THAT				No, really don't do that
 B_DUPLICATE_REPLY			Duplicate reply
 B_ENTRY_NOT_FOUND			No such file or directory
 B_ERROR					General system error
-B_ERRORS_END				# End marker for errors
+B_ERRORS_END				End marker for errors
 B_FILE_ERROR				Bad file descriptor
 B_FILE_EXISTS				File or Directory already exists
 B_FILE_NOT_FOUND			No such file or directory
 B_FILE_TOO_LARGE			File too large
-B_GENERAL_ERROR_BASE			# Base for general (and all) errors
+B_GENERAL_ERROR_BASE			Base for general (and all) errors
 B_ILLEGAL_DATA				Illegal data
-B_INTERFACE_ERROR_BASE			# Base for user interface errors
+B_INTERFACE_ERROR_BASE			Base for user interface errors
 B_INTERRUPTED				Interrupted system call
 B_IO_ERROR				I/O error
 B_IS_A_DIRECTORY			Is a directory
@@ -86,7 +86,7 @@ B_LAUNCH_FAILED_NO_RESOLVE_LINK		Could not resolve a link
 B_LEGACY_EXECUTABLE			Unsupported legacy executable
 B_LINK_LIMIT				Too many symbolic links
 B_MAIL_ACCESS_ERROR			Mail access error
-B_MAIL_ERROR_BASE			# Base for mail errors
+B_MAIL_ERROR_BASE			Base for mail errors
 B_MAIL_INVALID_MAIL			Invalid mail
 B_MAIL_NO_DAEMON			No mail daemon
 B_MAIL_NO_RECIPIENT			No mail recipient
@@ -113,7 +113,7 @@ B_MEDIA_CANNOT_RECLAIM_BUFFERS		Cannot reclaim buffers
 B_MEDIA_CANNOT_SEEK			Cannot seek
 B_MEDIA_CHANGE_IN_PROGRESS		Change in progress
 B_MEDIA_DUPLICATE_FORMAT		Duplicate format
-B_MEDIA_ERROR_BASE			# Base for media errors
+B_MEDIA_ERROR_BASE			Base for media errors
 B_MEDIA_NODE_ALREADY_EXISTS		Media node already exists
 B_MEDIA_NODE_BUSY			Media node busy
 B_MEDIA_NOT_CONNECTED			Not connected
@@ -127,7 +127,7 @@ B_MEDIA_TIME_SOURCE_STOPPED		Time source stopped
 B_MEDIA_TOO_MANY_BUFFERS		Too many buffers
 B_MEDIA_TOO_MANY_NODES			Too many nodes
 B_MESSAGE_TO_SELF			Can't send message to self
-B_MIDI_ERROR_BASE			# Base for MIDI errors
+B_MIDI_ERROR_BASE			Base for MIDI errors
 B_MISMATCHED_VALUES			Mismatched values passed to function
 B_MISSING_LIBRARY			Missing library
 B_MISSING_SYMBOL			Symbol not found
@@ -156,8 +156,8 @@ B_PARTIAL_READ				Data read partially
 B_PARTIAL_WRITE				Data written partially
 B_PARTITION_TOO_SMALL			Partition too small to contain filesystem
 B_PERMISSION_DENIED			Permission denied
-B_POSIX_ERROR_BASE			# Base for POSIX errors
-B_PRINT_ERROR_BASE			# Base for printer errors
+B_POSIX_ERROR_BASE			Base for POSIX errors
+B_PRINT_ERROR_BASE			Base for printer errors
 B_READ_ONLY_DEVICE			Read-only file system
 B_RESOURCE_NOT_FOUND			Resource not found
 B_RESOURCE_UNAVAILABLE			Resource unavailable
@@ -165,13 +165,13 @@ B_RESULT_NOT_REPRESENTABLE		Range Error
 B_SERVER_NOT_FOUND			Server not found
 B_SHUTDOWN_CANCELLED			System shutdown cancelled
 B_SHUTTING_DOWN				System shutting down
-B_STORAGE_ERROR_BASE			# Base for filesystem errors
+B_STORAGE_ERROR_BASE			Base for filesystem errors
 B_STREAM_NOT_FOUND			Stream not found
 B_SUBSCRIBER_NOT_ENTERED		Subscriber not entered
 B_TIMED_OUT				Operation timed out
 B_TOO_MANY_ARGS				Argument too big
-B_TRANSLATION_BASE_ERROR		# Base for locale errors (alt name)
-B_TRANSLATION_ERROR_BASE		# Base for locale errors
+B_TRANSLATION_BASE_ERROR		Base for locale errors (alt name)
+B_TRANSLATION_ERROR_BASE		Base for locale errors
 B_UNKNOWN_EXECUTABLE			Unknown executable format
 B_UNKNOWN_MIME_TYPE			Unknown MIME type
 B_UNSUPPORTED				Operation not supported
@@ -544,5 +544,5 @@ EXDEV				Cross-device link
 EXFULL				Exchange full
 
 # Endmarkers:
-ELAST				# Must be equal to largest errno
-LASTERRNO			# Must be equal to largest errno
+ELAST				Equal to the largest errno
+LASTERRNO			Equal to the largest errno

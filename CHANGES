@@ -9,6 +9,11 @@ o Unlimited character constant size.
   There is no longer any limit to the size of character constants,
   e.g. 'acdefghijk' creates the bignum 0x61636465666768696a6b.
 
+o Support for \u{xxx} and \U{xxx} style Unicode escapes in strings
+  and character literals.
+
+  Eg "\u{10000}" is equivalent to "\U00010000".
+
 o Syntax for annotating classes and symbols added.
 
 o Syntax for specifying default values for function arguments added.
@@ -35,6 +40,10 @@ o Syntax for using multi-assign in function calls.
   will result in a function that may be called as
 
     add(({ 1, 2 }), 3);
+
+o Support for sub-modules with names with an initial digit.
+
+  This allows for module names like Standards.X.509.
 
 o Major changes to the compiler type checker.
 
@@ -225,6 +234,9 @@ o The preprocessor (aka cpp()) has several new features:
 
     It is now possible to turn off the strict types mode for a section
     of code.
+
+  - Some macros regarding the version of Unicode used by Pike have
+    been added: __STDC_ISO_10646__ and __UNICODE_VERSION__.
 
 o Complain about redundant backslash escapes.
 
@@ -430,6 +442,12 @@ o predef::{en,de}code_value()
 
   Several fixes related to encoding and decoding of programs.
 
+o Charset
+
+  - Updated Unicode translation table for ISO IR-181 to follow n1818.
+
+  - The encoders now support encoding of characters outside the BMP.
+
 o Cpp
 
   Fixed line numbering issue when handling multi-line comments
@@ -573,6 +591,10 @@ o Sql.Sql is no longer a wrapper class, but a function.
   The wrapper class has been obsoleted by introduction of the
   new base class __builtin.Sql.Connection. Note that it is
   still possible to use Sql.Sql as the type of connection objects.
+
+o Standards.XML.Wix now generates XML intended for Wix 3.x.
+
+  Generation of XML for Wix 2.x is available in 8.0::Standards.XML.Wix.
 
 o Stdio.File has had some name space cleanups.
 
@@ -809,6 +831,12 @@ o Command-line options
 
       $ pike '-DFOO(X)=X'
 
+o Runtime support for C11-threads
+
+  - The runtime will now use C11 threads on non NT if pthreads
+    are not available. This is mostly relevant for platforms
+    that are both not NT and not POSIX-based.
+
 o predef::backtrace()
 
   predef::backtrace() now takes an optional argument that causes it
@@ -856,6 +884,10 @@ o ADT.Heap
     possible to optimize several heap operations.
 
   - Added low_pop().
+
+o Backend.PollDeviceBackend
+
+  - Support using port_create() on recent Solaris.
 
 o Calendar
 
@@ -1298,6 +1330,17 @@ o The GC marker hash table has been removed. For types which require
   This change significantly improves GC performance (up to a factor
   of 2 in some situations).
 
+o Several header files have been renamed to avoid conflicts with
+  system header files:
+
+  - port.h renamed to pike_port.h
+
+    Conflicted with <port.h> on Solaris.
+
+  - threads.h renamed to pike_threads.h.
+
+    Conflicted with <threads.h> from C11.
+
 
 Documentation
 -------------
@@ -1325,22 +1368,26 @@ o C99 assumed
   The configure tests will not check for functions defined in C99
   anymore and C99 compiler support is assumed.
 
+o GCC 15.2.1 supported.
+
 
 Issues fixed
 ------------
 
-Github pikelang/pike: #16, #25, #40
+Github pikelang/pike: #16, #25, #40, #49
 
 Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3681, #4312, #4934,
   #5466, #7363, #7831, #8042, #10003, #10004, #10006, #10012, #10017,
   #10018, #10021, #10022, #10023, #10026, #10027, #10028, #10029, #10033,
   #10035, #10037, #10039, #10040, #10041, #10042, #10043, #10045, #10046,
-  #10047, #10048, #10050, #10055, #10059, #10065, #10072, #10077, #10083,
-  #10085, #10086, #10089, #10090, #10094, #10096, #10097, #10098, #10104,
-  #10105, #10107, #10109, #10111, #10112, #10113, #10114, #10117, #10118,
-  #10119, #10122, #10125, #10127, #10128, #10129, #10130, #10131, #10133,
-  #10134, #10135, #10136, #10137, #10139, #10142, #10143, #10144, #10146,
-  #10147, #10150, #10151, #10154, #10155, #10156, #10158, #10160, #10161,
-  #10162, #10163, #10164, #10170, #10171, #10173, #10175, #10177, #10178,
-  #10179, #10180, #10181, #10183, #10187, #10188, #10191, #10192, #10195,
-  #10196, #10197, #10198, #10202, #10203, #10204
+  #10047, #10048, #10050, #10055, #10059, #10065, #10072, #10076, #10077,
+  #10083, #10084, #10085, #10086, #10089, #10090, #10094, #10096, #10097,
+  #10098, #10104, #10105, #10107, #10109, #10111, #10112, #10113, #10114,
+  #10117, #10118, #10119, #10121, #10122, #10125, #10128, #10129, #10130,
+  #10131, #10132, #10133, #10134, #10135, #10136, #10137, #10139, #10142,
+  #10143, #10144, #10146, #10147, #10150, #10151, #10154, #10155, #10156,
+  #10158, #10159, #10160, #10161, #10162, #10163, #10164, #10165, #10167,
+  #10170, #10171, #10173, #10174, #10175, #10176, #10177, #10178, #10179,
+  #10180, #10181, #10182, #10183, #10185, #10187, #10188, #10191, #10192,
+  #10195, #10196, #10197, #10198, #10200, #10202, #10203, #10204, #10205,
+  #10206, #10207, #10208, #10209, #10213

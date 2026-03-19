@@ -3,6 +3,8 @@
 
 #pragma no_deprecation_warnings
 
+//! @[8.0::Sql.sql_result] wrapper for arrays.
+
 inherit .sql_result;
 
 array master_res;

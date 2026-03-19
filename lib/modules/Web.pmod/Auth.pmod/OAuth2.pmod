@@ -735,6 +735,7 @@ class Base
   protected constant Params      = Web.Auth.Params;
   protected constant Param       = Web.Auth.Param;
 
+  //! Mapping with internal state.
   protected mapping gettable = ([ "access_token"  : 0,
                                   "refresh_token" : 0,
                                   "expires"       : 0,

@@ -162,7 +162,7 @@ static volatile int aap_time_to_die = 0;
 
 static COND_T aap_timeout_thread_is_dead;
 
-static void *handle_timeouts(void *UNUSED(ignored))
+static TH_RETURN_TYPE handle_timeouts(void *UNUSED(ignored))
 {
   while(1)
   {
@@ -199,7 +199,7 @@ static void *handle_timeouts(void *UNUSED(ignored))
    * Now we're dead...
    */
   DWERROR("AAP: handle_timeout() is now dead.\n");
-  return(NULL);
+  return (TH_RETURN_TYPE)0;
 }
 
 static THREAD_T aap_timeout_thread;

@@ -137,7 +137,12 @@ array(array(string)) get_trusted_issuers()
   return trusted_issuers;
 }
 
+//! The set of trusted certificate issuers.
+//!
+//! This is set by @[set_trusted_issuers()] and retrieved
+//! by @[get_trusted_issuers()].
 protected array(array(string)) trusted_issuers = ({});
+
 array(array(Tools.X509.TBSCertificate)) trusted_issuers_cache = ({});
 
 //! Determines whether certificates presented by the peer are verified, or

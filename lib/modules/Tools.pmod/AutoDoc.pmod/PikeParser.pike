@@ -213,6 +213,11 @@ string peekToken(int | void with_newlines) {
   return tokens[at];
 }
 
+array(string) remainingTokens()
+{
+  return tokens[tokenPtr..];
+}
+
 protected int nReadDocComments = 0;
 
 //! @returns
@@ -260,7 +265,9 @@ string eat(multiset(string) | string token) {
                  " , got " + quoteString(s));
     }
   }
-  else {
+  else if ((s == "...") && (token == "..")) {
+    // Do not complain.
+  } else {
     if (s != token)
       parseError("expected " + quoteString(token) +
                  ", got " + quoteString(s));
@@ -439,7 +446,7 @@ StringType|IntType lowParseRange(StringType|IntType s)
     eat("zero");
     s->min = s->max = "0";
     return s;
-  case "..":
+  case "..": case "...":
     break;
   default:
     s->min = eatLiteral();
@@ -452,6 +459,12 @@ StringType|IntType lowParseRange(StringType|IntType s)
       s->min = "0";
       return s;
     }
+  }
+
+  if ((<")", ",", ":">)[peekToken()]) {
+    // Short-hand for int(Val..Val).
+    s->max = s->min;
+    return s;
   }
 
   eat("..");
@@ -645,6 +658,18 @@ TypeType parseTypeType()
   return t;
 }
 
+TypeofType parseTypeofType()
+{
+  eat("typeof");
+  TypeType t = TypeofType();
+  if (peekToken() == "(") {
+    readToken();
+    t->subtype = parseType();
+    eat(")");
+  }
+  return t;
+}
+
 AttributeType parseAttributeType()
 {
   eat("__attribute__");
@@ -746,6 +771,8 @@ object(Type)|zero parseType() {
       return parseProgram();
     case "type":
       return parseTypeType();
+    case "typeof":
+      return parseTypeofType();
     case "__attribute__":
       return parseAttributeType();
     case "__deprecated__":
@@ -1032,9 +1059,14 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     } else {
       if (i->classname[0] != '"') {
 	// Keep just the last part.
-	i->name = (replace(i->classname,
-			   ({ "::", "->", "()" }),
-			   ({ ".", ".", "" }))/".")[-1];
+        if (has_suffix(i->classname, "::")) {
+          // Eg @decl inherit predef::
+          i->name = i->classname[..<2];
+        } else {
+          i->name = (replace(i->classname,
+                             ({ "::", "->", "()" }),
+                             ({ ".", ".", "" }))/".")[-1];
+        }
       }
     }
     i->bindings = parseOptionalBindings();

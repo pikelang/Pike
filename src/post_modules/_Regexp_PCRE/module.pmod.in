@@ -5,7 +5,9 @@
 #charset iso-8859-1
 #pike __REAL_VERSION__
 
+//! @ignore
 inherit @module@; // C-module
+//! @endignore
 
 // there are other maybe useful stuff in _Regexp_PCRE
 // so don't stop compiling because it's not complete:

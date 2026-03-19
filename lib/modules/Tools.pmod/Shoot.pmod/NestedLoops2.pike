@@ -1,3 +1,4 @@
+// -*- mode: C; c-basic-offset: 3; -*-
 #pike __REAL_VERSION__
 inherit Tools.Shoot.Test;
 

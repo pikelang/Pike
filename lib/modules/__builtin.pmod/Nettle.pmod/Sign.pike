@@ -35,6 +35,7 @@ int(0..1) public_key_equal(this_program other);
 protected int(0..1) _equal(mixed x);
 
 // PKCS-1
+//! @decl import Standards.ASN1.Types
 #define Sequence Standards.ASN1.Types.Sequence
 
 //! Signs the @[message] with a PKCS-1 signature using hash algorithm

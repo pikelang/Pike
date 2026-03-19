@@ -7,12 +7,16 @@
 final constant PCRE=_Regexp_PCRE; // Regexp.PCRE
 #endif
 
+//! @ignore
 inherit @module@;
+//! @endignore
 
 //!
 class SimpleRegexp
 {
+  //! @ignore
   inherit _SimpleRegexp; // Most autodoc in here.
+  //! @endignore
 
   protected private object repreg;
   protected private string regexp_string;

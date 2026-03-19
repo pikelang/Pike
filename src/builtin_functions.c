@@ -61,7 +61,7 @@
 /* #define DIFF_DEBUG */
 /* #define ENABLE_DYN_DIFF */
 
-/*! @decl int equal(mixed a, mixed b)
+/*! @decl int(0..1) equal(mixed a, mixed b)
  *!
  *!   This function checks if the values @[a] and @[b] are equivalent.
  *!
@@ -86,17 +86,21 @@
  *!     @type multiset
  *!     @type object
  *!       The contents of @[a] and @[b] are checked recursively, and
- *!       if all their contents are @[equal] and in the same place,
+ *!       if all their contents are @[equal] and in the same place
+ *!       and have the same @[set_weak_flag()] flags,
  *!       they are considered equal.
  *!
  *!       Note that for objects this case is only reached if neither
  *!       @[a] nor @[b] implements @[lfun::_equal()].
+ *!     @type function
+ *!       Two functions are equal if they refer to the same identifier
+ *!       in the same class and their objects are equal.
  *!     @type type
  *!       Returns @expr{(a <= b) && (b <= a)@}.
  *!  @endmixed
  *!
  *! @seealso
- *!   @[copy_value()], @[`==()]
+ *!   @[copy_value()], @[get_weak_flag()], @[set_weak_flag()], @[`==()]
  */
 PMOD_EXPORT void f_equal(INT32 args)
 {
@@ -258,7 +262,7 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[hash_7_6()], @[hash_7_0]
+ *!   @[hash_8_0()], @[hash_7_0]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -368,7 +372,7 @@ static void f_hash_7_0( INT32 args )
  *! @deprecated
  *!
  *!  Use @[hash_value()] for in-process hashing (eg, for implementing
- *!    @[lfun::_hash()]) or one of the cryptographic hash functions.
+ *!  @[lfun::__hash()]) or one of the cryptographic hash functions.
  *!
  *! @note
  *!  This function is really bad at hashing strings. Similar string
@@ -454,7 +458,7 @@ static void f_hash_8_0(INT32 args)
  *!
  *! @note
  *!   This hash function differs from the one provided by @[hash_value()],
- *!   in that @[hash_value()] returns a process specific value.
+ *!   in that @[hash_value()] returns a process-specific value.
  *!
  *! @seealso
  *!   @[hash_7_0()], @[hash_7_4()], @[hash_8_0()], @[hash_value]
@@ -935,11 +939,11 @@ void f_query_num_arg(INT32 args)
  *!
  *!       If @[haystack] is an object that doesn't implement @[lfun::_search()]
  *!       it is assumed to be an @[Iterator], and implement
- *!       @[Iterator()->index()], @[Iterator()->value()], and
- *!       @[Iterator()->next()]. @[search()] will then start comparing
- *!       elements with @[`==()] until a match with @[needle] is found.
- *!       If @[needle] is found @[haystack] will be advanced to the element,
- *!       and the iterator index will be returned. If @[needle] is not
+ *!       @[Iterator()->_iterator_index()], @[Iterator()->_iterator_value()],
+ *!       and @[Iterator()->_iterator_next()]. @[search()] will then start
+ *!       comparing elements with @[`==()] until a match with @[needle] is
+ *!       found. If @[needle] is found @[haystack] will be advanced to the
+ *!       element, and the iterator index will be returned. If @[needle] is not
  *!       found, @[haystack] will be advanced to the end.
  *!   @endmixed
  *!
@@ -3623,7 +3627,7 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   The first syntax crypts the string @[password] into something that
  *!   is hopefully hard to decrypt.
  *!
- *!   The second syntax is used to verify @[typed_password] against
+ *!   The second syntax is used to verify @[input_password] against
  *!   @[crypted_password], and returns @expr{1@} if they match, and
  *!   @expr{0@} (zero) otherwise.
  *!
@@ -3631,8 +3635,8 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   creating a string useful as a password.
  *!
  *! @note
- *!   Note that strings containing null characters will only be
- *!   processed up until the null character.
+ *!   Note that strings containing nul characters will only be
+ *!   processed up until the first nul character.
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {
@@ -5935,6 +5939,41 @@ static void encode_tm_tz(const struct tm*tm)
                                  );
 }
 
+/*! @decl array(2:string) tzname()
+ *!
+ *!   Get the name of the local timezone.
+ *!
+ *! @returns
+ *!   Returns an array with two elements:
+ *!   @array
+ *!     @elem string(7bit) 0
+ *!       Timezone name when not DST.
+ *!     @elem string(7bit) 1
+ *!       Timezone name when DST.
+ *!   @endarray
+ */
+static void f_tzname(INT32 args)
+{
+  int index;
+  pop_n_elems(args);
+  for (index = 0; index < 2; index ++) {
+#ifdef HAVE__GET_TZNAME
+    size_t bufsize;
+    if (!_get_tzname(&bufsize, NULL, 0, index)) {
+      char* buf = alloca(bufsize);
+      if (!_get_tzname(&bufsize, buf, bufsize, index))
+        push_text(buf);
+      else
+        push_int(0);
+    } else
+      push_int(0);
+#else
+    push_text(tzname[index]);
+#endif
+  }
+  f_aggregate(2);
+}
+
 /*! @decl mapping(string:int) gmtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, Jan 1, 1970 into components.
@@ -5948,7 +5987,7 @@ static void encode_tm_tz(const struct tm*tm)
  *!
  *! @seealso
  *!   @[localtime()], @[time()], @[ctime()], @[mktime()],
- *!   @[strptime()]
+ *!   @[strftime()], @[strptime()]
  */
 PMOD_EXPORT void f_gmtime(INT32 args)
 {
@@ -6085,7 +6124,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!
  *! @seealso
  *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()],
- *!   @[strptime()]
+ *!   @[strftime()], @[strptime()]
  */
 PMOD_EXPORT void f_localtime(INT32 args)
 {
@@ -6402,12 +6441,17 @@ static int get_tm(const char *fname, int args, struct tm *date)
   date->tm_mon = mon;
   date->tm_year = year;
   date->tm_isdst = isdst;
+
 #ifdef STRUCT_TM_HAS_GMTOFF
   date->tm_gmtoff = -tz;
-#endif
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
   date->__tm_gmtoff = -tz;
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+  /* FIXME: Global timezone state. */
+#else
+  /* FIXME */
 #endif
+
 #ifdef NULL_IS_SPECIAL
   date->tm_zone = NULL;
 #endif
@@ -6601,135 +6645,197 @@ PMOD_EXPORT void f_strptime (INT32 args)
       push_int(0);
 }
 
-/*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
+/*! @decl string(1..255) strftime(string(1..255) format, mapping(string:int) tm)
  *!
- *! Convert the structure to a string.
+ *! Convert a timestamp mapping into a string.
  *!
- *! @dl
- *!   @item %a
- *!     The abbreviated weekday name according to the current locale
+ *! This function is similar to @[sprintf()], but formats
+ *! a single timestamp mapping.
  *!
- *!   @item %A
- *!     The full weekday name according to the current locale.
+ *! @param format
+ *!   Formatting string. This is similar to a @[sprintf_format] string,
+ *!   but the @expr{%@}-escapes are different, see below.
  *!
- *!   @item %b
- *!     The abbreviated month name according to the current locale.
+ *! @param tm
+ *!   Timestamp mapping to format. See @[localtime()] for a description
+ *!   of the fields.
  *!
- *!   @item %B
- *!     The full month name according to the current locale.
+ *! @section Escaped characters:
+ *!   @string
+ *!     @value "%%"
+ *!       An escaped @expr{%@} character.
  *!
- *!   @item %c
- *!     The preferred date and time representation for the current locale.
+ *!     @value "%n"
+ *!       A newline character. (SU)
  *!
- *!   @item %C
- *!     The century number (year/100) as a 2-digit integer.
+ *!     @value "%t"
+ *!       A tab character. (SU)
+ *!   @endstring
+ *! @endsection
  *!
- *!   @item %d
- *!     The day of the month as a decimal number (range 01 to 31).
+ *! @section Modifiers:
+ *!   @string
+ *!     @value "%E"
+ *!       Modifier: use alternative format, see below.
  *!
- *!   @item %D
- *!     Equivalent to @expr{%m/%d/%y@}. (for Americans only.
- *!     Americans should note that in other countries @expr{%d/%m/%y@}
- *!     is rather common. This means that in international context
- *!     this format is ambiguous and should not be used.)
+ *!     @value "%O"
+ *!       Modifier: use alternative format, see below. (SU)
+ *!   @endstring
+ *! @endsection
  *!
- *!   @item %e
- *!     Like @expr{%d@}, the day of the month as a decimal number,
- *!     but a leading zero is replaced by a space.
+ *! @section Formats:
+ *!   @string
+ *!     @value "%a"
+ *!       The abbreviated weekday name according to the current locale
  *!
- *!   @item %E
- *!     Modifier: use alternative format, see below.
+ *!     @value "%A"
+ *!       The full weekday name according to the current locale.
  *!
- *!   @item %F
- *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+ *!     @value "%b"
+ *!       The abbreviated month name according to the current locale.
  *!
- *!   @item %G
- *!     The ISO 8601 week-based year (see NOTES) with century as a
- *!     decimal number. The 4-digit year corresponding to the ISO
- *!     week number (see @expr{%V@}). This has the same format and
- *!     value as @expr{%Y@}, except that if the ISO week number
- *!     belongs to the previous or next year, that year is used instead.
+ *!     @value "%B"
+ *!       The full month name according to the current locale.
  *!
- *!   @item %g
- *!     Like @expr{%G@}, but without century, that is,
- *!     with a 2-digit year (00-99). (TZ)
+ *!     @value "%c"
+ *!       The preferred date and time representation for the current locale.
  *!
- *!   @item %h
- *!     Equivalent to %b.
+ *!     @value "%C"
+ *!       The century number (year/100) as a 2-digit integer (range 00 to 99).
  *!
- *!   @item %H
- *!     The hour as a decimal number using a 24-hour clock (range 00 to 23).
+ *!     @value "%d"
+ *!       The day of the month as a decimal number (range 01 to 31).
  *!
- *!   @item %I
- *!     The hour as a decimal number using a 12-hour clock (range 01 to 12).
+ *!     @value "%D"
+ *!       Equivalent to @expr{%m/%d/%y@}. (for Americans only.
+ *!       Americans should note that in other countries @expr{%d/%m/%y@}
+ *!       is rather common. This means that in international context
+ *!       this format is ambiguous and should not be used.)
  *!
- *!   @item %j
- *!     The day of the year as a decimal number (range 001 to 366).
+ *!     @value "%e"
+ *!       Like @expr{%d@}, the day of the month as a decimal number,
+ *!       but a leading zero is replaced by a space.
  *!
- *!   @item %m
- *!     The month as a decimal number (range 01 to 12).
+ *!     @value "%F"
+ *!       Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
  *!
- *!   @item %M
- *!     The minute as a decimal number (range 00 to 59).
+ *!     @value "%g"
+ *!       Like @expr{%G@}, but without century, that is,
+ *!       with a 2-digit year (00-99). (TZ)
  *!
- *!   @item %n
- *!     A newline character. (SU)
+ *!     @value "%G"
+ *!       The ISO 8601 week-based year (see NOTES) with century as a
+ *!       decimal number. The 4-digit year corresponding to the ISO
+ *!       week number (see @expr{%V@}). This has the same format and
+ *!       value as @expr{%Y@}, except that if the ISO week number
+ *!       belongs to the previous or next year, that year is used instead.
  *!
- *!   @item %O
- *!     Modifier: use alternative format, see below. (SU)
+ *!     @value "%h"
+ *!       Equivalent to %b.
  *!
- *!   @item %p
- *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
- *!     value, or the corresponding strings for the current locale.
- *!     Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
+ *!     @value "%H"
+ *!       The hour as a decimal number using a 24-hour clock (range 00 to 23).
  *!
- *!   @item %P
- *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
- *!     or a corresponding string for the current locale.
+ *!     @value "%I"
+ *!       The hour as a decimal number using a 12-hour clock (range 01 to 12).
  *!
- *!   @item %r
- *!     The time in a.m. or p.m. notation. In the POSIX locale this is
- *!     equivalent to @expr{%I:%M:%S %p@}.
+ *!     @value "%j"
+ *!       The day of the year as a decimal number (range 001 to 366).
  *!
- *!   @item %R
- *!     The time in 24-hour notation (@expr{%H:%M@}). (SU)
- *!     For a version including the seconds, see @expr{%T@} below.
+ *!     @value "%k"
+ *!       The hour as a decimal number using a 24-hour clock (range 0 to 23);
+ *!       single digits are prefixed by a space. See also @expr{%H@}.
  *!
- *!   @item %s
- *!     The number of seconds since the Epoch,
- *!     1970-01-01 00:00:00 +0000 (UTC). (TZ)
+ *!     @value "%l"
+ *!       The hour as a decimal number using a 12-hour clock (range 1 to 12).
+ *!       single digits are prefixed by a space. See also @expr{%I@}.
  *!
- *!   @item %S
- *!     The second as a decimal number (range 00 to 60).
- *!     (The range is up to 60 to allow for occasional leap seconds.)
+ *!     @value "%m"
+ *!       The month as a decimal number (range 01 to 12).
  *!
- *!   @item %t
- *!     A tab character. (SU)
+ *!     @value "%M"
+ *!       The minute as a decimal number (range 00 to 59).
  *!
- *!   @item %T
- *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
+ *!     @value "%p"
+ *!       Either @expr{"AM"@} or @expr{"PM"@} according to the given time
+ *!       value, or the corresponding strings for the current locale.
+ *!       Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
  *!
- *!   @item %u
- *!     The day of the week as a decimal, range 1 to 7, Monday being 1.
- *!     See also @expr{%w@}. (SU)
+ *!     @value "%P"
+ *!       Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
+ *!       or a corresponding string for the current locale.
  *!
- *!   @item %U
- *!     The week number of the current year as a decimal number,
- *!     range 00 to 53, starting with the first Sunday as the first
- *!     day of week 01. See also @expr{%V@} and @expr{%W@}.
+ *!     @value "%q"
+ *!       Quarter number (Roxen-style).
  *!
- *!   @item %V
- *!     The ISO 8601 week number of the current year as a decimal number,
- *!     range 01 to 53, where week 1 is the first week that has at least
- *!     4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+ *!     @value "%r"
+ *!       The time in a.m. or p.m. notation. In the POSIX locale this is
+ *!       equivalent to @expr{%I:%M:%S %p@}.
  *!
- *!   @item %w
- *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
- *!     See also @expr{%u@}.
- *! @enddl
+ *!     @value "%R"
+ *!       The time in 24-hour notation (@expr{%H:%M@}). (SU)
+ *!       For a version including the seconds, see @expr{%T@} below.
+ *!
+ *!     @value "%s"
+ *!       The number of seconds since the Epoch,
+ *!       1970-01-01 00:00:00 +0000 (UTC). (TZ)
+ *!
+ *!     @value "%S"
+ *!       The second as a decimal number (range 00 to 60).
+ *!       (The range is up to 60 to allow for occasional leap seconds.)
+ *!
+ *!     @value "%T"
+ *!       The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
+ *!
+ *!     @value "%u"
+ *!       The day of the week as a decimal, range 1 to 7, Monday being 1.
+ *!       See also @expr{%w@}. (SU)
+ *!
+ *!     @value "%U"
+ *!       The week number of the current year as a decimal number,
+ *!       range 00 to 53, starting with the first Sunday as the first
+ *!       day of week 01. See also @expr{%V@} and @expr{%W@}.
+ *!
+ *!     @value "%V"
+ *!       The ISO 8601 week number of the current year as a decimal number,
+ *!       range 01 to 53, where week 1 is the first week that has at least
+ *!       4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+ *!
+ *!     @value "%w"
+ *!       The day of the week as a decimal, range 0 to 6, Sunday being 0.
+ *!       See also @expr{%u@}.
+ *!
+ *!     @value "%W"
+ *!       The week number of year as a decimal number (range 00 to 53),
+ *!       with Monday as the the first day of week 1.
+ *!
+ *!     @value "%x"
+ *!       Date in locale preferred format.
+ *!
+ *!     @value "%X"
+ *!       Time in locale preferred format.
+ *!
+ *!     @value "%y"
+ *!       Year with two digits (range 00 to 99).
+ *!
+ *!     @value "%Y"
+ *!       Year with four digits (range 0000 to 9999).
+ *!
+ *!     @value "%z"
+ *!       Time zone as hour offset from UTC.
+ *!
+ *!     @value "%Z"
+ *!       Time zone name abbreviation, or empty if unknown.
+ *!   @endstring
+ *! @endsection
+ *!
+ *! @fixme
+ *!   This function does not support @[format] strings containing wide
+ *!   characters or the @tt{NUL@} character.
  *!
  *! @seealso
- *!  @[ctime()], @[mktime()], @[strptime()], @[Gettext.setlocale]
+ *!   @[ctime()], @[gmtime()], @[localtime()], @[mktime()], @[strptime()],
+ *!   @[Locale.Gettext.setlocale()]
  */
 PMOD_EXPORT void f_strftime (INT32 args)
 {
@@ -8051,7 +8157,7 @@ PMOD_EXPORT void f_permute( INT32 args )
   }
 }
 
-/*! @decl array(array(array)) diff(array a, array b)
+/*! @decl array(2:array(array)) diff(array a, array b)
  *!
  *!   Calculates which parts of the arrays that are common to both, and
  *!   which parts that are not.
@@ -8229,7 +8335,7 @@ struct callback *add_memory_usage_callback(callback_func call,
  *!   Exactly what fields this function returns is version dependant.
  *!
  *! @seealso
- *!   @[_verify_internals()]
+ *!   @[Debug.verify_internals()]
  */
 PMOD_EXPORT void f__memory_usage(INT32 args)
 {
@@ -8637,7 +8743,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl object master();
+/*! @decl MasterObject|zero master();
  *!
  *!   Return the current master object.
  *!
@@ -10731,6 +10837,9 @@ void init_builtin_efuns(void)
 	   tFunc(tType(tMix), tArr(tString)),
 	   OPT_TRY_OPTIMIZE);
 
+  ADD_EFUN("tzname", f_tzname, tFunc(tNone, tLArr(tInt2, tStr7)),
+           OPT_EXTERNAL_DEPEND);
+
   /* function(int:mapping(string:int)) */
   ADD_EFUN("localtime",f_localtime,
 	   tFunc(tInt,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
@@ -10801,7 +10910,7 @@ void init_builtin_efuns(void)
   /* function(array(0=mixed),array(1=mixed):array(array(array(0)|array(1))) */
   ADD_FUNCTION2("diff", f_diff,
 		tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
-		      tArr(tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))), 0,
+                      tLArr(tInt2, tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))), 0,
 		OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION2("permute", f_permute, tFunc(tArray tIntPos,tArray), 0,

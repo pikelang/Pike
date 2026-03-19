@@ -12,7 +12,7 @@ inherit Stdio.Port : socket;
 //!
 inherit .context;
 
-//!
+//! Queue of new @[SSL.sslfile]s that have been negotiated.
 inherit ADT.Queue : accept_queue;
 
 constant sslfile = SSL.sslfile;
@@ -29,11 +29,11 @@ function(object, mixed|void:void) accept_callback;
 //!
 //! This function is installed as the @[SSL.sslfile] accept
 //! callback by @[ssl_callback()], and enqueues the newly
-//! negotiated @[SSL.sslfile] on the @[accept_queue].
+//! negotiated @[SSL.sslfile] on the @[accept_queue::].
 //!
 //! If there has been an @[accept_callback] installed by
 //! @[bind()] or @[listen_fd()], it will be called with
-//! all pending @[SSL.sslfile]s on the @[accept_queue].
+//! all pending @[SSL.sslfile]s on the @[accept_queue::].
 //!
 //! If there's no @[accept_callback], then the @[SSL.sslfile]
 //! will have to be retrieved from the queue by calling @[accept()].
@@ -141,7 +141,7 @@ Stdio.File socket_accept()
 
 //! @decl SSL.sslfile accept()
 //!
-//! Get the next pending @[SSL.sslfile] from the @[accept_queue].
+//! Get the next pending @[SSL.sslfile] from the @[accept_queue::].
 //!
 //! @returns
 //!   Returns the next pending @[SSL.sslfile] if any,

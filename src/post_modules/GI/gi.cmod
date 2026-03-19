@@ -19,19 +19,83 @@ DECLARATIONS
 
 #ifdef HAVE_GI
 
+#ifdef HAVE_GIREPOSITORY_GIREPOSITORY_H
+/* girepository-2.0 */
+#include <girepository/girepository.h>
+#include <girepository/girffi.h>
+#else
+/* girepository-1.0 (aka gobject-introspection-1.0) */
 #include <girepository.h>
 #include <girffi.h>
-#include <ffi.h>
 
+/* Various forward-compat. */
 
 #if GLIB_CHECK_VERSION(2, 54, 0)
 #define USE_G_OBJECT_NEW_WITH_PROPERTIES 1
 #endif
 
+#ifndef G_VALUE_INIT
+/* Added in glib 2.30 */
+#define G_VALUE_INIT  { 0, { { 0 } } }
+#endif
+
+#ifndef HAVE_G_VALUE_GET_SCHAR
+/* Renamed in glib 2.32 */
+#define g_value_get_schar g_value_get_char
+#endif
+
+#ifndef HAVE_G_VALUE_SET_SCHAR
+/* Renamed in glib 2.32 */
+#define g_value_set_schar g_value_set_char
+#endif
+
+#ifndef HAVE_G_CONSTANT_INFO_FREE_VALUE
+/* Added in gobject-introspection 1.30.1 to fix memory leak */
+#define g_constant_info_free_value(info, value) do{}while(0)
+#endif
+
+#ifndef HAVE_G_INTERFACE_INFO_FIND_SIGNAL
+/* Added in gobject-introspection 1.34 */
+static GISignalInfo *g_interface_info_find_signal (GIInterfaceInfo *info,
+                                                   const gchar  *name)
+{
+  gint i, n_signals = g_interface_info_get_n_signals (info);
+  for (i = 0; i < n_signals; i++) {
+    GISignalInfo *siginfo = g_interface_info_get_signal (info, i);
+    if (g_strcmp0 (g_base_info_get_name (siginfo), name) == 0)
+      return siginfo;
+    g_base_info_unref ((GIBaseInfo*)siginfo);
+  }
+  return NULL;
+}
+#endif
+
+#ifndef HAVE_G_OBJECT_INFO_FIND_SIGNAL
+/* Added in gobject-introspection 1.39 */
+static GISignalInfo *g_object_info_find_signal (GIObjectInfo *info,
+                                                const gchar  *name)
+{
+  gint i, n_signals = g_object_info_get_n_signals (info);
+  for (i = 0; i < n_signals; i++) {
+    GISignalInfo *siginfo = g_object_info_get_signal (info, i);
+    if (g_strcmp0 (g_base_info_get_name (siginfo), name) == 0)
+      return siginfo;
+    g_base_info_unref ((GIBaseInfo*)siginfo);
+  }
+  return NULL;
+}
+#endif
+
+#endif
+#include <ffi.h>
+
 static GQuark object_quark;
 static struct mapping *magic_mapping = NULL;
 
-/*! @module GI
+/*! @namespace predef::
+ */
+
+/*! @module ___GI
  */
 
 static void throw_gerror(GError *error)
@@ -39,9 +103,9 @@ static void throw_gerror(GError *error)
   Pike_error("%s\n", error->message);
 }
 
-static void free_glist_full_free(void *p)
+static void free_glist_full_g_free(void *p)
 {
-  g_list_free_full(p, free);
+  g_list_free_full(p, g_free);
 }
 
 struct GI_GBoxed_struct;
@@ -62,7 +126,7 @@ struct signal_data {
   GISignalInfo *siginfo;
 };
 
-static void free_signal_data(struct signal_data *s, GClosure *gcl)
+static void free_signal_data(struct signal_data *s, GClosure *UNUSED(gcl))
 {
   free_svalue(&s->cb);
   free_svalue(&s->extra_args);
@@ -75,7 +139,7 @@ static void marshaller(GClosure *closure,
                        GValue *return_value,
                        guint n_params,
                        const GValue *param_values,
-                       gpointer invocation_hint,
+                       gpointer UNUSED(invocation_hint),
                        gpointer marshal_data)
 {
   typedef void (*marshal_func)(gpointer data1,
@@ -165,7 +229,7 @@ static void invoke_signal_func(void *arg)
 }
 
 static void signal_func_wrapper(struct signal_data *d,
-                                gpointer go,
+                                gpointer UNUSED(go),
                                 guint n_params,
                                 const GValue *param_values,
                                 GValue *return_value)
@@ -562,7 +626,9 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     push_int(arg->v_int32);
     break;
   case GI_TYPE_TAG_UINT32:
+#if HAVE_DECL_GI_TYPE_TAG_UNICHAR
   case GI_TYPE_TAG_UNICHAR:	/* Cf girepository/girffi.c */
+#endif
     push_int64(arg->v_uint32);
     break;
   case GI_TYPE_TAG_INT64:
@@ -582,12 +648,18 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     break;
 
   case GI_TYPE_TAG_UTF8:
-    push_text(arg->v_pointer);
-    f_utf8_to_string(1);
+    if (arg->v_pointer) {
+      push_text(arg->v_pointer);
+      f_utf8_to_string(1);
+    } else
+      push_undefined();
     break;
 
   case GI_TYPE_TAG_FILENAME:
-    push_text(arg->v_pointer);
+    if (arg->v_pointer)
+      push_text(arg->v_pointer);
+    else
+      push_undefined();
     break;
 
   case GI_TYPE_TAG_INTERFACE:
@@ -990,9 +1062,11 @@ static void push_ffi_argument_type(void *arg, GITypeInfo *ti)
   case GI_TYPE_TAG_UTF8:
     giarg.v_string = *(gchar **)arg;
     break;
+#if HAVE_DECL_GI_TYPE_TAG_UNICHAR
   case GI_TYPE_TAG_UNICHAR:
     giarg.v_uint32 = *(guint32 *)arg;
     break;
+#endif
   case GI_TYPE_TAG_ERROR:
   case GI_TYPE_TAG_GHASH:
   case GI_TYPE_TAG_GLIST:
@@ -1033,7 +1107,7 @@ static void push_ffi_argument(void *arg, GIArgInfo *ai)
   push_ffi_argument_type(arg, &ti);
 }
 
-static void cb_closure_handler(ffi_cif *cif, void *result,
+static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
                                void **args, void *data)
 {
   struct gi_callback_context *cbc = (struct gi_callback_context *)data;
@@ -1270,7 +1344,7 @@ static void low_invoke(GIBaseInfo *callable,
           cinfo = iinfo;
         }
         cbc->callable = cinfo;
-#if GI_CHECK_VERSION (1, 72, 0)
+#ifdef HAVE_G_CALLABLE_INFO_CREATE_CLOSURE
         cbc->closure =
           g_callable_info_create_closure(cinfo, &cbc->cif, cb_closure_handler, cbc);
         in_args[num_in_args++].v_pointer = (cbc->closure? g_callable_info_get_closure_native_address(cinfo, cbc->closure) : NULL);
@@ -1324,13 +1398,6 @@ static void low_invoke(GIBaseInfo *callable,
 
   if(!ok)
     Pike_error("Function not invoked\n");
-
-  while ((cbc = cbclist)) {
-    cbclist = cbc->next;
-    cbc->next = NULL;
-    if (cbc->scope == GI_SCOPE_TYPE_CALL)
-      cb_destroy_notify((gpointer)cbc);
-  }
 
   pop_n_elems(Pike_sp - mark);
 
@@ -1836,9 +1903,11 @@ static GIArgument gvalue_to_giargument(const GValue *value, GITypeInfo *info)
     else
       arg.v_uint64 = g_value_get_uint64(value);
     break;
+#if HAVE_DECL_GI_TYPE_TAG_UNICHAR
   case GI_TYPE_TAG_UNICHAR:
     arg.v_uint32 = g_value_get_schar(value);
     break;
+#endif
   case GI_TYPE_TAG_FLOAT:
     arg.v_float = g_value_get_float(value);
     break;
@@ -2216,7 +2285,7 @@ PIKECLASS Repository
       THIS->repository = NULL;
     }
 
-  /*! @decl array(string) enumerate_versions(strig namespace)
+  /*! @decl array(string) enumerate_versions(string namespace)
    */
   PIKEFUN array(string) enumerate_versions(string namespace)
   {
@@ -2230,7 +2299,7 @@ PIKECLASS Repository
       push_int(0);
       return;
     }
-    SET_ONERROR(onerror, free_glist_full_free, versions);
+    SET_ONERROR(onerror, free_glist_full_g_free, versions);
     pop_n_elems(args);
     for (item = versions; item; item = item->next) {
         char *version = item->data;
@@ -2331,6 +2400,9 @@ PIKEFUN Repository get_default_repository()
 }
 
 /*! @endmodule
+ */
+
+/*! @endnamespace
  */
 
 #endif

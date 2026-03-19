@@ -190,6 +190,7 @@ protected class _HMAC
       return hash(okey + hash(ikey + text));
     }
 
+    //! Update state with @[data].
     this_program update(string(8bit) data)
     {
       if( !h )
@@ -208,6 +209,7 @@ protected class _HMAC
       return this;
     }
 
+    //! Generate the digest for the current state.
     string digest(int(0..)|void length)
     {
       string res = hash(okey + h->digest());
@@ -294,7 +296,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
   }
 }
 
-//!   Password hashing function in @[crypt_md5()]-style.
+//!   Password hashing function in @[Nettle.crypt_md5()]-style.
 //!
 //!   Implements the algorithm described in
 //!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}.
@@ -308,7 +310,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //!   hashes for passwords that had a length that was a power of 2.
 //!
 //! @seealso
-//!   @[crypt_md5()], @[crypt_hash_pike()]
+//!   @[Nettle.crypt_md5()], @[crypt_hash_pike()]
 string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
                         int(0..) rounds)
 {
@@ -439,7 +441,7 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
   return (string(7bit))ret;
 }
 
-//!   Password hashing function in @[crypt_md5()]-style.
+//!   Password hashing function in @[Nettle.crypt_md5()]-style.
 //!
 //!   Almost implements the algorithm described in
 //!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}.
@@ -454,7 +456,7 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
 //!   Do not use unless you know what you are doing!
 //!
 //! @seealso
-//!   @[crypt_md5()], @[crypt_hash()]
+//!   @[Nettle.crypt_md5()], @[crypt_hash()]
 string(7bit) crypt_hash_pike(string(8bit) password, string(8bit) salt,
                              int(0..) rounds)
 {
@@ -677,7 +679,7 @@ string(7bit) crypt_php(string(8bit) password, string(7bit) salt,
 //!   in the length of the generated keys.
 //!
 //! @seealso
-//!   @[hkdf()], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
+//!   @[HKDF], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_hash()]
 string(8bit) pbkdf1(string(8bit) password, string(8bit) salt, int rounds, int bytes)
 {
   if( bytes>digest_size() )
@@ -714,7 +716,7 @@ string(8bit) pbkdf1(string(8bit) password, string(8bit) salt, int rounds, int by
 //!   Returns the derived key.
 //!
 //! @seealso
-//!   @[hkdf()], @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
+//!   @[HKDF], @[pbkdf1()], @[openssl_pbkdf()], @[crypt_hash()]
 string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
 		    int rounds, int bytes)
 {
@@ -824,7 +826,7 @@ class HKDF
 //!   It seems to be related to PBKDF1 from @rfc{2898@}.
 //!
 //! @seealso
-//!   @[pbkdf1()], @[pbkdf2()], @[crypt_password()]
+//!   @[pbkdf1()], @[pbkdf2()], @[crypt_hash()]
 string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
 			   int rounds, int bytes)
 {
@@ -848,7 +850,7 @@ string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
 //! Make a PKCS-1 digest info block with the message @[s].
 //!
 //! @seealso
-//!   @[Standards.PKCS.build_digestinfo()]
+//!   @[Standards.PKCS.Signature.build_digestinfo()]
 string(8bit) pkcs_digest(object|string(8bit) s)
 {
   return [string(8bit)]
@@ -1315,8 +1317,8 @@ final void SCRAM_set_salted_password(string(8bit) SaltedPassword, string key) {
 //! @[server_3] -> @[client_3]
 //!
 //! @note
-//! If you are a client, you must use the @ref{client_*@} methods; if you are
-//! a server, you must use the @ref{server_*@} methods.
+//! If you are a client, you must use the @tt{client_*@} methods; if you are
+//! a server, you must use the @tt{server_*@} methods.
 //! You cannot mix both client and server methods in a single object.
 //!
 //! @note

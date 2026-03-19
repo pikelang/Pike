@@ -8,6 +8,7 @@
 
 constant client_connection_preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
 
+//! Frame types.
 enum FrameType {
   FRAME_data			= 0,
   FRAME_headers			= 1,
@@ -21,6 +22,7 @@ enum FrameType {
   FRAME_continuation		= 9,
 };
 
+//! Frame flags.
 enum Flag {
   FLAG_end_stream		= 0x01,
   FLAG_ack			= 0x01,	// SETTINGS and PING only.
@@ -29,6 +31,7 @@ enum Flag {
   FLAG_priority			= 0x20,
 };
 
+//! Errors.
 enum Error {
   ERROR_no_error		= 0x00,
   ERROR_protocol_error		= 0x01,
@@ -46,6 +49,7 @@ enum Error {
   ERROR_http_1_1_required	= 0x0d,
 };
 
+//! Configuration settings.
 enum Setting {
   SETTING_header_table_size		= 1,
   SETTING_enable_push			= 2,
@@ -354,7 +358,7 @@ protected class Frame(FrameType frame_type,
 		      //! and payload for packets to send.
 		      //!
 		      //! NB: To avoid frame reordering issues with HPack,
-		      //!     this is the set of headers for @[FRAME_header]
+                      //!     this is the set of headers for @[FRAME_headers]
 		      //!     and @[FRAME_push_promise].
 		      int|Stdio.Buffer|array(array(string(8bit))) payload,
 

@@ -645,7 +645,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *!   @array
  *!     @elem string msg
  *!       Error message.
- *!     @elem array(backtrace_frame|array(mixed)) backtrace
+ *!     @elem array(Pike.BacktraceFrame|array(mixed)) backtrace
  *!       Backtrace to the point where the exception occurred.
  *!   @endarray
  *!
@@ -679,7 +679,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *! error information.
  */
 
-/*! @decl array(backtrace_frame|array(mixed)) error_backtrace
+/*! @decl array(Pike.BacktraceFrame|array(mixed)) error_backtrace
  *!
  *! The backtrace as returned by @[backtrace] where the error
  *! occurred.
@@ -891,7 +891,7 @@ static void f_error__is_type(INT32 args)
 }
 
 /*! @decl void create(string message, @
- *!                   void|array(backtrace_frame|array(mixed)) backtrace)
+ *!                   void|array(Pike.BacktraceFrame|array(mixed)) backtrace)
  */
 static void f_error_create(INT32 args)
 {
@@ -919,6 +919,128 @@ static void f_error_create(INT32 args)
 
   pop_n_elems(args);
 }
+
+/*! @endclass
+ */
+
+/*! @class Index
+ *!
+ *!   This error is thrown by various indexing operations when
+ *!   the index is invalid for the value being indexed.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class BadArgument
+ *!
+ *!   This error is thrown by many functions when they get
+ *!   called with invalid arguments.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Math
+ *!
+ *!   This error typically indicates an attempt to divide by zero.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Resource
+ *!
+ *!   This error indicates that the system has run out of a limited
+ *!   resource (typically memory).
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Permission
+ *!
+ *!   Error that used to be thrown by the internal security system.
+ *!
+ *!   The internal security system was removed in Pike 8.1.3.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Decode
+ *!
+ *!   Error thrown by @[decode_value()] for invalid input.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Cpp
+ *!
+ *!   Error thrown by @[cpp()] for invalid input.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @decl constant int is_cpp_or_compilation_error
+ */
+
+/*! @endclass
+ */
+
+/*! @class Compilation
+ *!
+ *!   This error is thrown on failure by @[compile()] et al.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @decl constant int is_cpp_or_compilation_error
+ */
+
+/*! @endclass
+ */
+
+/*! @class MasterLoad
+ *!
+ *!   This error is thrown when the @[MasterObject] fails to load.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class ModuleLoad
+ *!
+ *!   This error is thrown when a dynamically loaded binary module
+ *!   fails to load.
+ */
+
+/*! @decl inherit Generic
+ */
 
 /*! @endclass
  */

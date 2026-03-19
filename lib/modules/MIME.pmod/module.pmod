@@ -642,7 +642,7 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
 //!   The @[repcb] argument to use when calling @[Charset.encoder]
 //!
 //! @seealso
-//! @[MIME.encode_words_tokenized_remapped]
+//! @[MIME.encode_words_quoted_remapped]
 //!
 string encode_words_text_remapped(string text, string encoding,
 				  string|function(string:string) charset,
@@ -1110,7 +1110,7 @@ class Message {
   //! Do not use this method unless you know what you are doing.
   //!
   //! @seealso
-  //! @[getdata()], @[setencoded], @[data]
+  //! @[getdata()], @[setencoding()], @[data]
   //!
   void setdata( string data )
   {
@@ -1145,7 +1145,7 @@ class Message {
   //! be interpreted.
   //!
   //! @seealso
-  //! @[setdata()], @[getencoded()], @[data]
+  //! @[setdata()], @[setencoding()], @[data]
   //!
   string getdata( )
   {

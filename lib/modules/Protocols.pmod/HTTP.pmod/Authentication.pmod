@@ -9,9 +9,9 @@
 //!
 //! Server code should create an authentication class and inherit the
 //! concrete authentication scheme implementation. To add an actual
-//! user lookup, overload @[get_password] or
-//! @[get_hashed_password]. Hashed passwords must be hashed with the
-//! scheme appropriate digest.
+//! user lookup, overload @[DigestServer()->get_password] or
+//! @[DigestServer()->get_hashed_password]. Hashed passwords must be
+//! hashed with the scheme appropriate digest.
 //!
 //! @example
 //! class Auth {
@@ -47,7 +47,7 @@
 mapping(string:string) split_header(string hdr) {
   mapping parts = ([]);
   while( sizeof(hdr) ) {
-    hdr = String.trim_all_whites(hdr);
+    hdr = String.trim(hdr);
 
     string name;
     if( sscanf(hdr, "%s=%s", name, hdr)!=2 ) {
@@ -58,14 +58,14 @@ mapping(string:string) split_header(string hdr) {
 
       return parts;
     }
-    hdr = String.trim_all_whites(hdr);
+    hdr = String.trim(hdr);
 
     string value;
     if( !sizeof(hdr) ) return parts;
     if( hdr[0]=='\"' ) {
       if( sscanf(hdr, "\"%s\"%s", value, hdr)!=2 )
         return parts;
-      hdr = String.trim_all_whites(hdr);
+      hdr = String.trim(hdr);
       if( sizeof(hdr) && hdr[0]==',' )
         hdr = hdr[1..];
     }
@@ -74,7 +74,7 @@ mapping(string:string) split_header(string hdr) {
         value = hdr;
         hdr = "";
       }
-      value = String.trim_all_whites(value);
+      value = String.trim(value);
     }
 
     // Warn on overwrite?
@@ -83,27 +83,34 @@ mapping(string:string) split_header(string hdr) {
   return parts;
 }
 
-// Abstract class for hash algorithm.
+//! Abstract class for hash algorithm.
 class Digest {
   protected extern function(string(8bit):string(8bit)) hash_function;
 
-  // Perform hashing of the given strings.
+  //! Perform hash of the given strings.
+  //!
+  //! @returns
+  //!   Returns a hexadecimal string of at least 32 digits
+  //!   representing the hash.
   string(7bit) hash(string(8bit) ... args) {
     return sprintf("%032x", hash_function( args * ":" ));
   }
 }
 
+//! Digest mix-in using @[Crypto.MD5.hash()].
 class DigestMD5 {
   protected function(string(8bit):string(8bit)) hash_function=Crypto.MD5.hash;
   constant algorithm = "MD5";
 }
 
+//! Digest mix-in using @[Crypto.SHA256.hash()].
 class DigestSHA256 {
   protected function(string(8bit):string(8bit))
     hash_function=Crypto.SHA256.hash;
   constant algorithm = "SHA-256";
 }
 
+//! Digest mix-in using @[Crypto.SHA512.hash()].
 class DigestSHA512256 {
   protected string(8bit) hash_function(string(8bit) data) {
     return Crypto.SHA512.hash(data)[..31];
