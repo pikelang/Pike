@@ -3532,6 +3532,10 @@ PIKECLASS Repository
     }
 #endif
 
+    push_text(g_irepository_get_version(repository, (gchar *)STR0(name)));
+    add_constant(MK_STRING("__GI_API_VERSION__"), Pike_sp-1, 0);
+    pop_stack();
+
     push_int(num);
     push_undefined();
     f_allocate(2);
