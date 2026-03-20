@@ -319,7 +319,7 @@ PMOD_EXPORT void call_prog_event(struct object *o, int event)
  *
  * First call __INIT(), and then create(@args).
  */
-void call_pike_initializers(struct object *o, int args)
+PMOD_EXPORT void call_pike_initializers(struct object *o, int args)
 {
   ptrdiff_t fun;
   struct program *p=o->prog;
