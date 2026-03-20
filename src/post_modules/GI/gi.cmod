@@ -14,6 +14,8 @@
 #include "pike_threads.h"
 #include "sprintf.h"
 #include "gimod_config.h"
+#include "pike_compiler.h"
+#include "pike_types.h"
 
 DECLARATIONS
 
@@ -240,6 +242,243 @@ static void signal_func_wrapper(struct signal_data *d,
   call_with_interpreter(invoke_signal_func, &ctx);
 }
 
+/*
+ * Implementation notes
+ * ====================
+ *
+ *   Base classes
+ *   ------------
+ *
+ *   * Namespace
+ *
+ *     Base class for a GI Namespace.
+ *
+ *   * GObject
+ *
+ *     Wrapper for the corresponding C GObject.
+ *
+ *   * GBoxed
+ *
+ *     Wrapper for boxed C pointers. Typically structs or unions.
+ *
+ *   * BaseInfo
+ *
+ *     Wrapper for GIBaseInfo. Typically present in
+ *     constant #-2 in the current inherit in derived classes.
+ *
+ *   * (Interface)
+ *
+ *     Empty class used for mixin interfaces.
+ *
+ *   * Repository
+ *
+ *     Wrapper class for GI Repositorys.
+ *
+ *   Derived classes
+ *   ---------------
+ *
+ *   * GObjects
+ *
+ *     These inherit the corresponding classes following
+ *     the g_object_info_get_parent() relation, with the
+ *     root classes inheriting the GObject base class.
+ *     They also inherit the mixin classes for the
+ *     interfaces that they implement (as per
+ *     g_object_info_get_interface() et al).
+ *
+ *   * GBoxed
+ *
+ *     These are similar to GObjects, but use a different
+ *     base class, and have no support for properties
+ *     (aka getters/setters) and no parent or interface
+ *     relations.
+ *
+ *   * Interfaces
+ *
+ *     These inherit the classes corresponding to their
+ *     g_interface_info_get_prerequisite()s, and are
+ *     intended to be used as mixin in GObject classes.
+ *     NOTE: They receive the name suffix Mixin to avoid
+ *           a name clash with the Interface Objects below.
+ *
+ *   * Interface Objects
+ *
+ *     These inherit GObject and the corresponsing Interface class.
+ *     They are used when an interface object is returned from
+ *     some method.
+ *
+ *   * Namespaces
+ *
+ *     GIObjectInfo, GIStructInfo, GIUnionInfo compile
+ *     to getters that compile the corresponding class
+ *     on demand, cacheing their result in constant #-2.
+ *     Other symbols are stored directly in the class.
+ *     Namespace objects are singletons and are present
+ *     as placeholder objects during their compilation.
+ *
+ *   Program fields (where p is Pike_fp->context->prog)
+ *   --------------------------------------------------
+ *
+ *   * p->strings[1]
+ *
+ *     Contains the name of the namespace (Namespace only).
+ *
+ *   * p->constants[p->num_constants-1]
+ *
+ *     An array of integers indexed on Pike_fp->fun
+ *     giving the relevant GI number for the corresponding
+ *     symbol.
+ *
+ *   * p->constants[p->num_constants-2]
+ *
+ *     * The BaseInfo object that p has been derived from
+ *       (ie GIObjectInfo* for GObjects, GIInterfaceInfo*
+ *       for Interfaces, etc).
+ *
+ *     * The lookup array for resolved symbols (Namespaces only).
+ *       Symbols for classes either map to their corresponding
+ *       Pike program (if compiled or being compiled), or to
+ *       their program_id (not yet compiled).
+ *
+ *   Compilation on demand
+ *   ---------------------
+ *
+ *   * A global lookup mapping from program_id to the
+ *     corresponding getter in a Namespace object is
+ *     used by a C function that has been registered
+ *     with add_program_id_callback() to compile
+ *     classes on demand. The getter will remove the
+ *     entry from the mapping as soon as it has
+ *     started compilation of the class (at the same
+ *     time as it updates the corresponding cache entry).
+ *
+ *   Lookup tables
+ *   -------------
+ *
+ *   * mapping(string:Namespace) namespace_lookup
+ *     Lookup from namespace name to Namespace object.
+ *
+ *   * mapping(int:function(:program)|object(BaseInfo)) program_lookup
+ *     Lookup from preallocated program_id to either
+ *     the corresponding getter in a Namespace (preferred),
+ *     or the BaseInfo object to be compiled (if no symbol
+ *     known for it in the Namespace).
+ *
+ *   * mapping(string:int|program|function(:program) Namespace->__symbol_lookup__
+ *     Lookup from GI BaseInfo name to program_id or compiled program
+ *     or getter for the symbol. This table is needed in case there
+ *     are GI BaseInfos used by types that do not have corresponding
+ *     symbols in the namespace.
+ *
+ *   * array(program) Namespace->__symbol_cache__
+ *     Array indexed on namespace symbol number containing
+ *     the corresponding compiled symbol.
+ */
+
+
+/*! @class BaseInfo
+ */
+
+PIKECLASS BaseInfo
+{
+  CVAR GIBaseInfo *info;
+
+  INIT
+    {
+      THIS->info = NULL;
+    }
+
+  EXIT
+    {
+      if (THIS->info != NULL) {
+        g_base_info_unref(THIS->info);
+        THIS->info = NULL;
+      }
+    }
+
+  /*! @decl string get_name()
+   */
+  PIKEFUN string get_name()
+  {
+    pop_n_elems(args);
+    push_text(g_base_info_get_name(THIS->info));
+  }
+
+  /*! @decl string get_namespace()
+   */
+  PIKEFUN string get_namespace()
+  {
+    pop_n_elems(args);
+    push_text(g_base_info_get_namespace(THIS->info));
+  }
+
+  /*! @decl BaseInfo get_container()
+   */
+  PIKEFUN BaseInfo get_container()
+  {
+    GIBaseInfo *container = g_base_info_get_container(THIS->info);
+    pop_n_elems(args);
+    if (container)
+      push_gi_info(container);
+    else
+      push_int(0);
+  }
+
+  PIKEFUN string _sprintf (int flag, ...)
+    flags ID_STATIC;
+  {
+    pop_n_elems(args);
+
+    if (flag != 'O' || THIS->info == NULL)
+      push_int(0);
+    else {
+      push_constant_text("%O(%s)");
+      ref_push_program(Pike_fp->current_program);
+      push_text(g_base_info_get_name(THIS->info));
+      f_sprintf(3);
+    }
+  }
+
+  ATTRIBUTE((const)) static inline size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
+  {
+    size_t ret,c;
+
+    if(!(ret=str++[0]))
+      return ret;
+    for(; maxn>=0; maxn--) {
+      c=str++[0];
+      if(!c) break;
+      ret ^= ( ret << 4 ) + c ;
+      ret &= 0x7fffffff;
+    }
+
+    return ret;
+  }
+
+  PIKEFUN int __hash()
+    flags ID_PROTECTED;
+  {
+    const gchar *name = g_base_info_get_name(THIS->info);
+    if (name)
+      RETURN hashstr((const unsigned char *)name, 8);
+    else
+      RETURN 0;
+  }
+
+  PIKEFUN int `==(mixed x)
+    flags ID_PROTECTED;
+  {
+    struct GI_BaseInfo_struct *other;
+    if (!x || (TYPEOF(*x) != PIKE_T_OBJECT) ||
+        !x->u.object || !x->u.object->prog ||
+        !(other = get_storage(x->u.object, GI_BaseInfo_program)))
+      RETURN 0;
+    RETURN g_base_info_equal(THIS->info, other->info);
+  }
+}
+
+/*! @endclass
+ */
 
 /*! @class GObject
  */
@@ -247,6 +486,19 @@ static void signal_func_wrapper(struct signal_data *d,
 PIKECLASS GObject
 {
   CVAR GObject *obj;
+
+  static int gi_gobject_base_info_fun_num;
+
+  EXTRA
+  {
+    push_object(fast_clone_object(GI_BaseInfo_program));
+    OBJ2_GI_BASEINFO(Pike_sp[-1].u.object)->info = NULL;
+    /* NB: Protected but not private, so that it can be overloaded. */
+    gi_gobject_base_info_fun_num =
+      add_constant(MK_STRING("__pike_gi_base_info__"), Pike_sp-1,
+                   ID_PROTECTED);
+    pop_stack();
+  }
 
   INIT
     {
@@ -267,17 +519,41 @@ PIKECLASS GObject
 #define tObjImpl_OBJECTINFO tObj
 #endif
 
-  /*! @decl void create(ObjectInfo info, mapping(string:mixed)|void props)
+  /*! @decl protected void create(mapping(string:mixed)|void props)
    */
-  PIKEFUN void create(ObjectInfo info, mapping(string:mixed)|void props)
+  PIKEFUN void create(mapping(string:mixed)|void props)
     flags ID_PROTECTED;
   {
+    if (props == magic_mapping) return;
+
     if (THIS->obj != NULL)
       Pike_error("GObject.create called twice!\n");
-    if (props != magic_mapping) {
-      THIS->obj = make_gobject_from_props(info, props);
+
+    low_object_index_no_free(Pike_sp,
+                             Pike_fp->current_object,
+                             gi_gobject_base_info_fun_num +
+                             Pike_fp->context->identifier_level);
+    Pike_sp++;
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+      struct GI_GObject_struct *self;
+      THIS->obj = make_gobject_from_props(Pike_sp[-1].u.object, props);
       g_object_set_qdata(THIS->obj, object_quark, Pike_fp->current_object);
+      ref_push_object(Pike_fp->current_object);
+      self = get_storage(Pike_fp->current_object, GI_GObject_program);
+    } else {
+      Pike_error("Invalid Base Info!\n");
     }
+  }
+
+  /*! @decl protected void _destruct(int reason)
+   *!
+   *! @note
+   *!   This function currently does not do anything. It is here to inhibit
+   *!   potential warnings about @expr{destroy()@}.
+   */
+  PIKEFUN void _destruct(int reason)
+    flags ID_PROTECTED;
+  {
   }
 
   /*! @decl int connect(string signal_spec, function callback, mixed ... extra_args)
@@ -391,23 +667,38 @@ PIKECLASS GObject
 
 PIKECLASS GBoxed
 {
-  CVAR gpointer box;
   CVAR GType type;
   CVAR gsize allocated_size;
 
+  /*! @decl inherit Val.Pointer
+   */
+  INHERIT Pointer;	/* Holds the gbox pointer. */
+
+  static int gi_gboxed_base_info_fun_num;
+
+  EXTRA
+  {
+    push_object(fast_clone_object(GI_BaseInfo_program));
+    OBJ2_GI_BASEINFO(Pike_sp[-1].u.object)->info = NULL;
+    /* NB: Protected, so that it can be overloaded. */
+    gi_gboxed_base_info_fun_num =
+      add_constant(MK_STRING("__pike_gi_base_info__"), Pike_sp-1, ID_PROTECTED);
+    pop_stack();
+  }
+
   INIT
     {
-      THIS->box = NULL;
       THIS->type = G_TYPE_INVALID;
       THIS->allocated_size = 0;
     }
 
   EXIT
     {
-      if (THIS->box != NULL) {
+      gpointer box = get_pointer_from_pointer_object(Pike_fp->current_object);
+      if (box) {
         if (THIS->allocated_size)
-          g_slice_free1(THIS->allocated_size, THIS->box);
-        THIS->box = NULL;
+          g_slice_free1(THIS->allocated_size, box);
+        set_pointer_in_pointer_object(NULL, NULL);
       }
     }
 
@@ -416,15 +707,26 @@ PIKECLASS GBoxed
 #define tObjImpl_STRUCTINFO tObj
 #endif
 
-  /*! @decl void create(StructInfo info, mapping(string:mixed)|void props)
+  /*! @decl void create(mapping(string:mixed)|void props)
    */
-  PIKEFUN void create(StructInfo info, mapping(string:mixed)|void props)
+  PIKEFUN void create(mapping(string:mixed)|void props)
     flags ID_PROTECTED;
   {
-    if (THIS->box != NULL)
+    gpointer box = get_pointer_from_pointer_object(Pike_fp->current_object);
+
+    if (box && (props != magic_mapping))
       Pike_error("GBoxed.create called twice!\n");
-    make_gboxed(THIS, info, props != magic_mapping);
-    if (THIS->box != NULL && props != NULL && m_sizeof(props) > 0) {
+
+    low_object_index_no_free(Pike_sp,
+                             Pike_fp->current_object,
+                             gi_gboxed_base_info_fun_num +
+                             Pike_fp->context->identifier_level);
+    Pike_sp++;
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+      make_gboxed(THIS, Pike_sp[-1].u.object, props != magic_mapping);
+      box = get_pointer_from_pointer_object(Pike_fp->current_object);
+    }
+    if (box && props != NULL && m_sizeof(props) > 0) {
       INT32 e;
       struct keypair *k;
       NEW_MAPPING_LOOP(props->data)
@@ -436,14 +738,31 @@ PIKECLASS GBoxed
 /*! @endclass
  */
 
-
 static void push_wrapper_name_from_info(GIBaseInfo *info)
 {
   push_constant_text("GI.repository.");
   push_text(g_base_info_get_namespace(info));
   push_constant_text(".");
   push_text(g_base_info_get_name(info));
+  if (GI_IS_INTERFACE_INFO(info)) {
+    push_text("Wrapper");
+    f_add(5);
+    return;
+  }
   f_add(4);
+}
+
+static void init_gi_gobject(struct object *obj, gpointer gobj)
+{
+  struct GI_GObject_struct *that =
+    (struct GI_GObject_struct *)get_storage(obj, GI_GObject_program);
+  if (!that) {
+    Pike_error("No storage for GObject!\n");
+  }
+  if (that->obj)
+    Pike_error("GObject already initialized!\n");
+  g_object_ref((that->obj = gobj));
+  g_object_set_qdata(that->obj, object_quark, obj);
 }
 
 static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
@@ -463,25 +782,45 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
         push_wrapper_name_from_info(info);
       else
         Pike_error("Received an object of an unregistered type!\n");
-      APPLY_MASTER ("resolv", 1);
-      if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
-        Pike_error("Failed to resolve GI object class.\n");
+      APPLY_MASTER("resolv", 1);
+
       ref_push_mapping(magic_mapping);
-      apply(Pike_sp[-2].u.object, "Instance", 1);
+
+      if (callablep(Pike_sp - 2)) {
+        struct program *p = program_from_svalue(Pike_sp - 2);
+        if (p) {
+          struct object *parent = NULL;
+          INT32 parent_identifier = -1;
+          struct GI_GObject_struct *that;
+          if (TYPEOF(Pike_sp[-2]) == T_FUNCTION) {
+            parent = Pike_sp[-2].u.object;
+            parent_identifier = SUBTYPEOF(Pike_sp[-2]);
+          }
+          obj = low_clone(p);
+          push_object(obj);
+          call_c_initializers(obj);
+          stack_swap();
+          init_gi_gobject(obj, gobj);
+          if (p->flags & PROGRAM_USES_PARENT) {
+            add_ref(PARENT_INFO(obj)->parent = parent);
+            PARENT_INFO(obj)->parent_identifier = parent_identifier;
+          }
+          call_pike_initializers(obj, 1);
+          stack_pop_keep_top();
+          return;
+        }
+        f_call_function(2);
+      } else {
+        if (TYPEOF(Pike_sp[-2]) != T_OBJECT)
+          Pike_error("Failed to resolve GI object class.\n");
+        apply(Pike_sp[-2].u.object, "Instance", 1);
+      }
       stack_pop_keep_top();
+
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
         Pike_error("Failed to instantiate GI object class.\n");
-      {
-        struct GI_GObject_struct *that =
-          (struct GI_GObject_struct *)get_storage ((obj = Pike_sp[-1].u.object),
-                                                GI_GObject_program);
-        if (that == NULL)
-          Pike_error("No storage for GObject!\n");
-        if (that->obj != NULL)
-          Pike_error("GObject already initialized!\n");
-        g_object_ref ((that->obj = gobj));
-        g_object_set_qdata(that->obj, object_quark, obj);
-      }
+
+      init_gi_gobject(obj, gobj);
     } else
       ref_push_object(obj);
   }
@@ -503,28 +842,50 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
         Pike_error("Received a box of an unregistered type!\n");
     }
     APPLY_MASTER ("resolv", 1);
-    if (TYPEOF(Pike_sp[-1]) == T_PROGRAM) {
-      push_object(make_pointer_object(gbox, NULL));
-      mega_apply(APPLY_STACK, 2, 0, 0);
-      return;
-    }
-    if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
-      Pike_error("Failed to resolve GI box class.\n");
+
     ref_push_mapping(magic_mapping);
-    apply(Pike_sp[-2].u.object, "Instance", 1);
+
+    if (callablep(Pike_sp - 2)) {
+      struct program *p = program_from_svalue(Pike_sp - 2);
+      if (p) {
+        if (find_inherited_prog(p, Pointer_program) >= 0) {
+          struct object *parent = NULL;
+          INT32 parent_identifier = -1;
+          struct object *obj;
+          struct GI_GBoxed_struct *that;
+          if (TYPEOF(Pike_sp[-2]) == T_FUNCTION) {
+            parent = Pike_sp[-2].u.object;
+            parent_identifier = SUBTYPEOF(Pike_sp[-2]);
+          }
+          obj = low_clone(p);
+          push_object(obj);
+          call_c_initializers(obj);
+          stack_swap();
+          set_pointer_in_pointer_object(obj, gbox);
+          if (p->flags & PROGRAM_USES_PARENT) {
+            add_ref(PARENT_INFO(obj)->parent = parent);
+            PARENT_INFO(obj)->parent_identifier = parent_identifier;
+          }
+          if (find_inherited_prog(p, GI_GBoxed_program) >= 0) {
+            call_pike_initializers(obj, 1);
+          } else {
+            pop_stack();
+            call_pike_initializers(obj, 0);
+          }
+          stack_pop_keep_top();
+          return;
+        }
+      }
+      f_call_function(2);
+    } else {
+      if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
+        Pike_error("Failed to resolve GI box class.\n");
+      apply(Pike_sp[-2].u.object, "Instance", 1);
+    }
     stack_pop_keep_top();
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
       Pike_error("Failed to instantiate GI box class.\n");
-    {
-      struct GI_GBoxed_struct *that =
-        (struct GI_GBoxed_struct *)get_storage (Pike_sp[-1].u.object,
-                                             GI_GBoxed_program);
-      if (that == NULL)
-        Pike_error("No storage for GBoxed!\n");
-      if (that->box != NULL)
-        Pike_error("GBoxed already initialized!\n");
-      that->box = gbox;
-    }
+    /* init_gi_gboxed(Pike_sp[-1].u.object, gbox); */
   }
 }
 
@@ -605,7 +966,7 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
 {
   switch (g_type_info_get_tag(info)) {
   case GI_TYPE_TAG_VOID:
-    push_int(0);
+    push_undefined();
     break;
   case GI_TYPE_TAG_BOOLEAN:
     push_int(arg->v_boolean);
@@ -647,6 +1008,8 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     push_float(arg->v_double);
     break;
 
+    /* GI_TYPE_TAG_GTYPE */
+
   case GI_TYPE_TAG_UTF8:
     if (arg->v_pointer) {
       push_text(arg->v_pointer);
@@ -657,10 +1020,13 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
 
   case GI_TYPE_TAG_FILENAME:
     if (arg->v_pointer)
+      /* FIXME: UTF16 ==> UTF8 on NT. */
       push_text(arg->v_pointer);
     else
       push_undefined();
     break;
+
+    /* GI_TYPE_TAG_ARRAY */
 
   case GI_TYPE_TAG_INTERFACE:
     {
@@ -690,6 +1056,9 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     }
     break;
 
+    /* GI_TYPE_TAG_GHASH */
+    /* GI_TYPE_TAG_ERROR */
+
   default:
     Pike_error("Don't know how to push a %d\n", g_type_info_get_tag(info));
   }
@@ -715,16 +1084,21 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
     if (TYPEOF(*s) != T_OBJECT)
       Pike_error("object expected\n");
     else {
-      struct GI_GObject_struct *that =
-        (struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
-      if (that == NULL)
-        Pike_error("argument is not a GObject\n");
-      if (that->obj == NULL ||
-          !g_type_is_a(G_OBJECT_TYPE(that->obj),
-                       g_registered_type_info_get_g_type(info)))
-        Pike_error("Object is not a %s\n",
-                   g_base_info_get_name(info));
-      arg->v_pointer = that->obj;
+      struct GI_GObject_struct *gobj =
+        get_sub_storage(s->u.object, SUBTYPEOF(*s), GI_GObject_program);
+      if (!gobj) {
+        Pike_error("Argument is not a GObject: %pO.\n", s);
+      }
+      if (!gobj->obj) {
+        Pike_error("Argument is not an initialized GObject: %pO.\n", s);
+      }
+      if (!g_type_is_a(G_OBJECT_TYPE(gobj->obj),
+                       g_registered_type_info_get_g_type(info))) {
+        Pike_error("Object is not a %s (got %ld (expected: %ld))\n",
+                   g_base_info_get_name(info), G_OBJECT_TYPE(gobj->obj),
+                   g_registered_type_info_get_g_type(info));
+      }
+      arg->v_pointer = gobj->obj;
     }
     break;
 
@@ -743,7 +1117,8 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
       push_object(box);
       that->type = G_TYPE_VALUE;
       that->allocated_size = sizeof(GValue);
-      that->box = gv = g_slice_alloc0(sizeof(GValue)); 
+      gv = g_slice_alloc0(sizeof(GValue));
+      set_pointer_in_pointer_object(box, gv);
       g_value_init(gv, get_gtype_from_svalue(s));
       set_gvalue_from_svalue(gv, s);
       s = Pike_sp - 1;
@@ -753,14 +1128,15 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
     else {
       struct GI_GBoxed_struct *that =
         (struct GI_GBoxed_struct *)get_storage (s->u.object, GI_GBoxed_program);
+      void *box = get_pointer_from_pointer_object(s->u.object);
       if (that == NULL)
         Pike_error("argument is not a GBoxed\n");
-      if (that->box == NULL ||
+      if (!box ||
           !g_type_is_a(that->type,
                        g_registered_type_info_get_g_type(info)))
         Pike_error("Object is not a %s\n",
                    g_base_info_get_name(info));
-      arg->v_pointer = that->box;
+      arg->v_pointer = box;
     }
     break;
 
@@ -904,8 +1280,9 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
     break;
 
   default:
-    Pike_error("Don't know how to get a %d\n", g_type_info_get_tag(ti));
-  }  
+    Pike_error("Don't know how to get a %d (%s)\n",
+               g_type_info_get_tag(ti), g_base_info_get_name(ti));
+  }
 }
 
 static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
@@ -1139,136 +1516,64 @@ static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
     cb_destroy_deferred(cbc);
 }
 
-/*! @class BaseInfo
+/**
+ *  Invoke a callable function or method.
+ *
+ *  @arg callable
+ *
+ *    One of GIFunctionInfo, GIVFuncInfo, GISignalInfo or GICallbackInfo.
+ *    GISignalInfo and GICallbackInfo are not supported (yet).
+ *    Support for GIVFuncInfo is experimental.
+ *
+ *  @arg self
+ *
+ *    Pike object containing the GI.GObject or GI.GBoxed
+ *    that the method operates on.
+ *
+ *  @arg args
+ *
+ *    Number of arguments on the Pike stack.
+ *
+ *  Returns the first OUT or IN/OUT parameter of the function (if any)
+ *  or otherwise the return value of the function on the Pike stack.
  */
-
-PIKECLASS BaseInfo
-{
-  CVAR GIBaseInfo *info;
-
-  INIT
-    {
-      THIS->info = NULL;
-    }
-
-  EXIT
-    {
-      if (THIS->info != NULL) {
-        g_base_info_unref(THIS->info);
-        THIS->info = NULL;
-      }
-    }
-
-  /*! @decl string get_name()
-   */
-  PIKEFUN string get_name()
-  {
-    pop_n_elems(args);
-    push_text(g_base_info_get_name(THIS->info));
-  }
-
-  /*! @decl string get_namespace()
-   */
-  PIKEFUN string get_namespace()
-  {
-    pop_n_elems(args);
-    push_text(g_base_info_get_namespace(THIS->info));
-  }
-
-  /*! @decl BaseInfo get_container()
-   */
-  PIKEFUN BaseInfo get_container()
-  {
-    GIBaseInfo *container = g_base_info_get_container(THIS->info);
-    pop_n_elems(args);
-    if (container)
-      push_gi_info(container);
-    else
-      push_int(0);
-  }
-
-  PIKEFUN string _sprintf (int flag, ...)
-    flags ID_STATIC;
-  {
-    pop_n_elems(args);
-
-    if (flag != 'O' || THIS->info == NULL)
-      push_int(0);
-    else {
-      push_constant_text("%O(%s)");
-      ref_push_program(Pike_fp->current_program);
-      push_text(g_base_info_get_name(THIS->info));
-      f_sprintf(3);
-    }
-  }
-
-  ATTRIBUTE((const)) static inline size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
-  {
-    size_t ret,c;
-
-    if(!(ret=str++[0]))
-      return ret;
-    for(; maxn>=0; maxn--) {
-      c=str++[0];
-      if(!c) break;
-      ret ^= ( ret << 4 ) + c ;
-      ret &= 0x7fffffff;
-    }
-
-    return ret;
-  }
-
-  PIKEFUN int __hash()
-    flags ID_PROTECTED;
-  {
-    const gchar *name = g_base_info_get_name(THIS->info);
-    if (name)
-      RETURN hashstr((const unsigned char *)name, 8);
-    else
-      RETURN 0;
-  }
-
-  PIKEFUN int `==(mixed x)
-    flags ID_PROTECTED;
-  {
-    struct GI_BaseInfo_struct *other;
-    if (!x || (TYPEOF(*x) != PIKE_T_OBJECT) ||
-        !x->u.object || !x->u.object->prog ||
-        !(other = get_storage(x->u.object, GI_BaseInfo_program)))
-      RETURN 0;
-    RETURN g_base_info_equal(THIS->info, other->info);
-  }
-}
-
-/*! @endclass
- */
-
 static void low_invoke(GIBaseInfo *callable,
                        struct object *self,
                        INT32 args)
 {
-  ONERROR onerror, onerror_cbc;
+  ONERROR onerror, onerror_cbc, onerror_funcinfo;
   gboolean ok;
   GError *error = NULL;
   GIArgument retval;
   GITypeInfo *ti;
   struct svalue *mark = Pike_sp-args;
   int i = 0, arg_num, num_in_args = 0, num_out_args = 0, out_arg_0_num;
+  GIFunctionInfo *funcinfo =
+    GI_IS_FUNCTION_INFO(callable) ? callable :
+    GI_IS_VFUNC_INFO(callable) ? g_vfunc_info_get_invoker(callable) : NULL;
   gint num_args = g_callable_info_get_n_args(callable);
-  GIFunctionInfoFlags flags = g_function_info_get_flags(callable);
-  GIArgument *in_args = (num_args || (flags & GI_FUNCTION_IS_METHOD)?
-                         xalloc((2 * num_args + 1) * sizeof(GIArgument)) :
-                         NULL);
+  GIFunctionInfoFlags flags = g_function_info_get_flags(funcinfo);
+  GIArgument *in_args;
   GIArgument out_arg_0, *out_args = (num_args? in_args+num_args+1 : NULL);
   struct gi_callback_context *cbc, *cbclist = NULL;
 
+  if (funcinfo == callable) {
+    g_base_info_ref(funcinfo);
+  }
+  SET_ONERROR(onerror_funcinfo, g_base_info_unref, funcinfo);
+
+  in_args = (num_args || (flags & GI_FUNCTION_IS_METHOD)?
+             xalloc((2 * num_args + 1) * sizeof(GIArgument)) :
+             NULL);
   SET_ONERROR(onerror, free, in_args);
+
   SET_ONERROR(onerror_cbc, cb_destroy_list, &cbclist);
 
   if (flags & GI_FUNCTION_IS_METHOD) {
     if (!self)
       Pike_error("Missing object for method call\n");
     else {
+      /* FIXME: Should this be funcinfo? */
       GIBaseInfo *cont = g_base_info_get_container(callable);
       if (g_base_info_get_type(cont) == GI_INFO_TYPE_OBJECT ||
           g_base_info_get_type(cont) == GI_INFO_TYPE_INTERFACE) {
@@ -1285,14 +1590,15 @@ static void low_invoke(GIBaseInfo *callable,
       } else {
         struct GI_GBoxed_struct *that =
           (struct GI_GBoxed_struct *)get_storage(self, GI_GBoxed_program);
+        void *box = get_pointer_from_pointer_object(self);
         if (that == NULL)
           Pike_error("Instance argument is not a GBoxed\n");
-        if (that->box == NULL ||
+        if (!box ||
             !g_type_is_a(that->type,
                          g_registered_type_info_get_g_type(cont)))
           Pike_error("Boxed is not a %s\n",
                      g_base_info_get_name(cont));
-        in_args[0].v_pointer = that->box;
+        in_args[0].v_pointer = box;
       }
       num_in_args++;
     }
@@ -1353,8 +1659,9 @@ static void low_invoke(GIBaseInfo *callable,
           g_callable_info_prepare_closure(cinfo, &cbc->cif, cb_closure_handler, cbc);
         in_args[num_in_args++].v_pointer = cbc->closure;
 #endif
-      } else
+      } else {
         get_gi_argument(mark+i, &in_args[num_in_args++], ai);
+      }
       if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
         out_args[num_out_args] = in_args[num_in_args-1];
         in_args[num_in_args-1].v_pointer = &out_args[num_out_args];
@@ -1372,7 +1679,7 @@ static void low_invoke(GIBaseInfo *callable,
     Pike_error("Too many arguments to function %s\n",
                g_base_info_get_name(callable));
 
-  ok = g_function_info_invoke(callable, in_args, num_in_args,
+  ok = g_function_info_invoke(funcinfo, in_args, num_in_args,
                               out_args, num_out_args, &retval, &error);
 
   process_deferred_cb_destroys();
@@ -1392,6 +1699,8 @@ static void low_invoke(GIBaseInfo *callable,
 
   CALL_AND_UNSET_ONERROR(onerror_cbc);
   CALL_AND_UNSET_ONERROR(onerror);
+  CALL_AND_UNSET_ONERROR(onerror_funcinfo);
+  funcinfo = NULL;
 
   if(error)
     throw_gerror(error);
@@ -1420,440 +1729,913 @@ static void low_invoke(GIBaseInfo *callable,
   }
 }
 
-/*! @class FunctionInfo
+/* Returns the symbol number corresponding to Pike_fp->fun.
+ *
+ * The lookup table is assumed to be in constant #-1
+ * in Pike_fp->current_program.
+ *
+ * The function is assumed to be in the current context.
+ *
+ * This is compatible with all of GObject, GBoxed and Namespace.
  */
-
-PIKECLASS FunctionInfo
+static int get_gi_symbol_n(void)
 {
-  INHERIT BaseInfo;
+  struct program *p = Pike_fp->context->prog;
+  struct array *id_to_n =
+    p->num_constants ? p->constants[p->num_constants - 1].sval.u.array : NULL;
+  int f = Pike_fp->fun;
+  int id = PTR_FROM_INT(Pike_fp->current_object->prog, f)->identifier_offset;
+  if (!id_to_n ||
+      (TYPEOF(p->constants[p->num_constants - 1].sval) != PIKE_T_ARRAY) ||
+      (id_to_n->size <= id) ||
+      SUBTYPEOF(ITEM(id_to_n)[id])) return -1;	/* Invalid. */
+  return ITEM(id_to_n)[id].u.integer;
+}
 
-  /*! @decl mixed invoke(mixed ... args)
-   */
-  PIKEFUN mixed invoke(mixed ... a)
-  {
-    GIBaseInfo *callable = THIS->info;
-    GIFunctionInfoFlags flags = g_function_info_get_flags(callable);
-    struct object *self = NULL;
-    if (flags & GI_FUNCTION_IS_METHOD) {
-      if (args < 1 || TYPEOF(Pike_sp[-args]) != T_OBJECT)
-        Pike_error("Missing object for method call\n");
-      else {
-        self = Pike_sp[-args].u.object;
-        args--;
+/* Returns the GIBaseInfo for the current inherit.
+ *
+ * The GIBaseInfo is assumed to be in constant #-2
+ * in Pike_fp->context->prog.
+ *
+ * This is compatible with GObject, GBoxed and GInterface.
+ */
+static GIBaseInfo *get_gi_bi(void)
+{
+  struct object *self = Pike_fp->current_object;
+  struct program *p = Pike_fp->context->prog;
+  struct svalue *gibasesval = (p->num_constants > 1)?
+    (&p->constants[p->num_constants - 2].sval): NULL;
+  struct object *gibaseobj =
+    (gibasesval && (TYPEOF(*gibasesval) == PIKE_T_OBJECT))?
+    gibasesval->u.object : NULL;
+  GIBaseInfo *bi = gibaseobj ? OBJ2_GI_BASEINFO(gibaseobj)->info : NULL;
+  return bi;
+}
+
+static void f_call_gi_method(INT32 args)
+{
+  struct object *self = Pike_fp->current_object;
+  GIBaseInfo *info = get_gi_bi();
+  int n = get_gi_symbol_n();
+  GIFunctionInfo *callable;
+  ONERROR err;
+
+  if (!info) {
+    Pike_error("Program contains no object information.\n");
+  }
+  if (n < 0) {
+    Pike_error("Method number lookup failed for ident %d.\n", Pike_fp->fun);
+  }
+
+  callable =
+    GI_IS_OBJECT_INFO(info) ? g_object_info_get_method(info, n) :
+    GI_IS_STRUCT_INFO(info) ? g_struct_info_get_method(info, n) :
+    g_interface_info_get_method(info, n);
+  if (!callable) {
+    Pike_error("Failed to find method #%d.\n", n);
+  }
+
+
+  SET_ONERROR(err, g_base_info_unref, callable);
+  low_invoke(callable, self, args);
+  CALL_AND_UNSET_ONERROR(err);
+}
+
+/* Getter for GObjectInfo and GStructInfo fields. */
+static void f_get_gi_field(INT32 args)
+{
+  struct object *self = Pike_fp->current_object;
+  GIBaseInfo *info = get_gi_bi();
+  int n = get_gi_symbol_n();
+  GIFieldInfo *fieldinfo;
+  GITypeInfo *ti;
+  GIArgument value;
+  void *ptr = GI_IS_OBJECT_INFO(info) ? THIS_GI_GOBJECT->obj :
+    get_pointer_from_pointer_object(self);
+  ONERROR err;
+
+  if (!info) {
+    Pike_error("Program contains no object information.\n");
+  }
+  if (n < 0) {
+    Pike_error("Field number lookup failed for ident %d.\n", Pike_fp->fun);
+  }
+
+  fieldinfo =
+    GI_IS_OBJECT_INFO(info) ? g_object_info_get_field(info, n) :
+    g_struct_info_get_field(info, n);
+
+  if (!fieldinfo) {
+    Pike_error("Failed to find field #%d.\n", n);
+  }
+
+  SET_ONERROR(err, g_base_info_unref, fieldinfo);
+  ti = g_field_info_get_type(fieldinfo);
+  if (!g_field_info_get_field(fieldinfo, ptr, &value)) {
+    Pike_error("Failed to read field.\n");
+  }
+  push_gi_argument(&value, ti);
+  CALL_AND_UNSET_ONERROR(err);
+}
+
+/* Setter for GObject and GStructInfo fields. */
+static void f_set_gi_field(INT32 args)
+{
+  struct object *self = Pike_fp->current_object;
+  GIBaseInfo *info = get_gi_bi();
+  int n = get_gi_symbol_n();
+  GIFieldInfo *fieldinfo;
+  GITypeInfo *ti;
+  GIArgument value;
+  void *ptr = GI_IS_OBJECT_INFO(info) ? THIS_GI_GOBJECT->obj :
+    get_pointer_from_pointer_object(self);
+  ONERROR err;
+
+  if (!info) {
+    Pike_error("Program contains no object information.\n");
+  }
+  if (n < 0) {
+    Pike_error("Field number lookup failed for ident %d.\n", Pike_fp->fun);
+  }
+
+  fieldinfo =
+    GI_IS_OBJECT_INFO(info) ? g_object_info_get_field(info, n) :
+    g_struct_info_get_field(info, n);
+
+  if (!fieldinfo) {
+    Pike_error("Failed to find field #%d.\n", n);
+  }
+
+  SET_ONERROR(err, g_base_info_unref, fieldinfo);
+  ti = g_field_info_get_type(fieldinfo);
+  get_gi_argument_type(Pike_sp-args, &value, ti);
+  if (!g_field_info_set_field(fieldinfo, ptr, &value)) {
+    Pike_error("Failed to write field.\n");
+  }
+  CALL_AND_UNSET_ONERROR(err);
+}
+
+static void f_get_gi_property(INT32 args)
+{
+  struct object *self = Pike_fp->current_object;
+  GIBaseInfo *info = get_gi_bi();
+  int n = get_gi_symbol_n();
+  GIPropertyInfo *prop =
+    GI_IS_OBJECT_INFO(info) ? g_object_info_get_property(info, n) :
+    g_interface_info_get_property(info, n);
+  GIFunctionInfo *getter;
+  ONERROR err, err2;
+
+  if (!info) {
+    Pike_error("Program contains no object information.\n");
+  }
+  if (n < 0) {
+    Pike_error("Property number lookup failed for ident %d.\n", Pike_fp->fun);
+  }
+
+  prop =
+    GI_IS_OBJECT_INFO(info) ? g_object_info_get_property(info, n) :
+    g_interface_info_get_property(info, n);
+
+  if (!prop) {
+    Pike_error("Failed to find property #%d.\n", n);
+  }
+
+  getter = g_property_info_get_getter(prop);
+  g_base_info_unref(prop);
+
+  if (!getter) {
+    Pike_error("No getter for property #%d.\n", n);
+  }
+
+  SET_ONERROR(err, g_base_info_unref, getter);
+  low_invoke(getter, self, args);
+  CALL_AND_UNSET_ONERROR(err);
+}
+
+static void f_set_gi_property(INT32 args)
+{
+  struct object *self = Pike_fp->current_object;
+  GIBaseInfo *info = get_gi_bi();
+  int n = get_gi_symbol_n();
+  GIPropertyInfo *prop;
+  GIFunctionInfo *setter;
+  ONERROR err;
+
+  if (!info) {
+    Pike_error("Program contains no object information.\n");
+  }
+  if (n < 0) {
+    Pike_error("Property number lookup failed for ident %d.\n", Pike_fp->fun);
+  }
+
+  prop =
+    GI_IS_OBJECT_INFO(info) ? g_object_info_get_property(info, n) :
+    g_interface_info_get_property(info, n);
+
+  if (!prop) {
+    Pike_error("Failed to find property #%d.\n", n);
+  }
+
+  setter = g_property_info_get_setter(prop);
+  g_base_info_unref(prop);
+
+  if (!setter) {
+    Pike_error("No setter for property #%d.\n", n);
+  }
+
+  SET_ONERROR(err, g_base_info_unref, setter);
+  low_invoke(setter, self, args);
+  CALL_AND_UNSET_ONERROR(err);
+}
+
+static void push_gi_interface_type(struct mapping *namespace, GIBaseInfo *info)
+{
+  switch(g_base_info_get_type(info)) {
+  case GI_INFO_TYPE_ENUM:
+    {
+      INT32 min = 0x7fffffff;
+      INT32 max = -0x80000000;
+      gint n = g_enum_info_get_n_values(info);
+      int i;
+      if (!n) {
+        push_type(PIKE_T_ZERO);
+        break;
+      }
+      for (i = 0; i < n; i++) {
+        GIValueInfo *valinfo = g_enum_info_get_value(info, i);
+        gint64 val = g_value_info_get_value(valinfo);
+        if (val > max) {
+          if (val > 0x7fffffff) val = 0x7fffffff;
+          max = val;
+        }
+        if (val < min) {
+          if (val < -0x80000000) val = -0x80000000;
+          min = val;
+        }
+        g_base_info_unref(valinfo);
+      }
+      push_int_type(min, max);
+    }
+    break;
+
+  case GI_INFO_TYPE_FLAGS:	/* Bitfield enum. */
+    {
+      INT32 bits = 0;
+      gint n = g_enum_info_get_n_values(info);
+      int i;
+      if (!n) {
+        push_type(PIKE_T_ZERO);
+        break;
+      }
+      for (i = 0; i < n; i++) {
+        GIValueInfo *valinfo = g_enum_info_get_value(info, i);
+        gint64 val = g_value_info_get_value(valinfo);
+
+        if (val > 0x7fffffff) val = 0x7fffffff;
+        else if (val < 0) val = ~0;
+
+        bits |= val;
+
+        g_base_info_unref(valinfo);
+      }
+      if (bits >= 0) {
+        push_int_type(0, bits);
+      } else {
+        push_finished_type(int_type_string);
+      }
+    }
+    break;
+
+  case GI_INFO_TYPE_OBJECT:
+    {
+      const gchar *type_name = g_object_info_get_type_name(info);
+      struct svalue *cached =
+        simple_mapping_string_lookup(namespace, type_name);
+      int program_id = 0;
+
+      if (cached) {
+        if (TYPEOF(*cached) == PIKE_T_PROGRAM) {
+          program_id = cached->u.program->id;
+        } else if (TYPEOF(*cached) == PIKE_T_INT) {
+          program_id = cached->u.integer;
+        }
+      }
+
+      if (!program_id) {
+        program_id = allocate_program_id();
+        push_text(type_name);
+        push_int(program_id);
+        mapping_insert(namespace, Pike_sp-2, Pike_sp-1);
+        pop_stack();
+        pop_stack();
+      }
+
+      push_object_type(0, program_id);
+    }
+    break;
+
+  case GI_INFO_TYPE_STRUCT:
+    {
+      /* FIXME: Same as GI_INFO_TYPE_OBJECT above? */
+      push_object_type(0, 0);
+    }
+    break;
+
+  default:
+    push_type(PIKE_T_MIXED);
+    break;
+  }
+
+  push_text(g_base_info_get_name(info));
+  push_type_name(Pike_sp[-1].u.string);
+  pop_stack();
+}
+
+static void push_gi_arginfo_type(struct mapping *namespace, GIArgInfo *arginfo);
+
+static void push_gi_typeinfo_type(struct mapping *namespace, GITypeInfo *ti)
+{
+  if (!ti) {
+    push_type(PIKE_T_VOID);
+    return;
+  }
+  switch (g_type_info_get_tag(ti)) {
+  case GI_TYPE_TAG_VOID:
+    push_type(PIKE_T_VOID);
+    break;
+
+  case GI_TYPE_TAG_BOOLEAN:
+    push_int_type(0, 1);
+    break;
+
+  case GI_TYPE_TAG_INT8:
+    push_int_type(-128, 127);
+    break;
+  case GI_TYPE_TAG_UINT8:
+    push_int_type(0, 255);
+    break;
+  case GI_TYPE_TAG_INT16:
+    push_int_type(-32768, 32767);
+    break;
+  case GI_TYPE_TAG_UINT16:
+    push_int_type(0, 65535);
+    break;
+  case GI_TYPE_TAG_UNICHAR:
+  case GI_TYPE_TAG_INT32:
+  case GI_TYPE_TAG_UINT32:
+  case GI_TYPE_TAG_INT64:
+  case GI_TYPE_TAG_UINT64:
+    push_finished_type(int_type_string);
+    break;
+
+  case GI_TYPE_TAG_FLOAT:
+  case GI_TYPE_TAG_DOUBLE:
+    push_type(PIKE_T_FLOAT);
+    push_finished_type(int_type_string);
+    push_type(PIKE_T_OR);
+    break;
+
+  case GI_TYPE_TAG_UTF8:
+    push_finished_type(string_type_string);
+    break;
+
+  case GI_TYPE_TAG_FILENAME:
+    push_finished_type(utf8_type_string);
+    break;
+
+  case GI_TYPE_TAG_ARRAY:
+    {
+      GITypeInfo *itemti = g_type_info_get_param_type(ti, 0);
+
+      push_gi_typeinfo_type(namespace, itemti);
+      push_finished_type(int_type_string);
+      push_type(PIKE_T_ARRAY);
+      if (g_type_info_get_tag(itemti) == GI_TYPE_TAG_UINT8) {
+        push_int_type(0, 255);
+        push_finished_type(int_type_string);
+        push_type(PIKE_T_STRING);
+        push_type(PIKE_T_OR);
+      }
+
+      g_base_info_unref(itemti);
+    }
+    break;
+
+  case GI_TYPE_TAG_GLIST:
+  case GI_TYPE_TAG_GSLIST:
+    push_finished_type(array_type_string);
+    break;
+
+  case GI_TYPE_TAG_INTERFACE:
+    {
+      GIBaseInfo *info = g_type_info_get_interface(ti);
+      push_gi_interface_type(namespace, info);
+      g_base_info_unref(info);
+    }
+    break;
+
+  case GI_TYPE_TAG_GTYPE:
+  case GI_TYPE_TAG_GHASH:
+  case GI_TYPE_TAG_ERROR:
+    push_finished_type(object_type_string);
+    break;
+
+  default:
+    Pike_error("Don't know how to get a %d\n", g_type_info_get_tag(ti));
+  }
+}
+
+static void push_gi_arginfo_type(struct mapping *namespace, GIArgInfo *arginfo)
+{
+  if (!arginfo) {
+    push_type(PIKE_T_VOID);
+  } else {
+    GITypeInfo *ti = g_arg_info_get_type(arginfo);
+    size_t val;
+    val = g_type_info_get_tag(ti);
+    push_gi_typeinfo_type(namespace, ti);
+    g_base_info_unref(ti);
+  }
+}
+
+/**
+ *  Record the GI value that corresponds to a pike reference number.
+ *
+ *  @arg ident_to_n_sval
+ *    Svalue containing the ident_to_n array.
+ *
+ *  @arg fun
+ *    Reference number for the function that corresponds to the GI value n.
+ *
+ *  @arg n
+ *    GI lookup table index.
+ *
+ *  NOTE: fun is a reference number, NOT an identifier number!
+ */
+static void update_ident_to_n(struct svalue *ident_to_n_sval, int fun, int n)
+{
+  struct array *ident_to_n = ident_to_n_sval->u.array;
+  int id;
+
+  if (fun < 0) return;	/* Invalid/not used identifier. */
+
+  /* Convert fun into an identifier number. */
+  id = PTR_FROM_INT(Pike_compiler->new_program, fun)->identifier_offset;
+  if (ident_to_n->size <= id) {
+    ident_to_n = ident_to_n_sval->u.array = resize_array(ident_to_n, id+1);
+  }
+  SET_SVAL(ITEM(ident_to_n)[id], PIKE_T_INT, NUMBER_NUMBER, integer, n);
+}
+
+struct const_value_context
+{
+  GIConstantInfo *info;
+  GIArgument     *value;
+};
+
+static void free_const_value_context(void *ptr)
+{
+  struct const_value_context *ctx = ptr;
+  g_constant_info_free_value(ctx->info, ctx->value);
+}
+
+static void add_giconstant(GIConstantInfo *info)
+{
+  ONERROR onerror, onerror2;
+  GIArgument arg;
+  struct const_value_context ctx = { info, &arg };
+  GITypeInfo *tinfo = g_constant_info_get_type(info);
+
+  SET_ONERROR(onerror, g_base_info_unref, tinfo);
+  g_constant_info_get_value(ctx.info, &arg);
+  SET_ONERROR(onerror2, free_const_value_context, &ctx);
+  push_gi_argument(&arg, info);
+  UNSET_ONERROR(onerror2);
+  g_constant_info_free_value(ctx.info, &arg);
+  CALL_AND_UNSET_ONERROR(onerror);
+
+  simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
+  pop_stack();
+}
+
+/**
+ *  Add a function to the current class.
+ *
+ *  @arg name
+ *    Symbol name.
+ *
+ *  @arg func
+ *    C function to add.
+ *
+ *  NOTE: The type for the function is on the type stack
+ *        and gets popped.
+ */
+static int low_add_gifunction(struct pike_string *name,
+                              void (*func)(INT32 args))
+{
+  struct pike_type *t = pop_unfinished_type();
+  union idptr tmp;
+  int fun;
+  add_ref(name);
+  tmp.c_fun = func;
+  fun = define_function(name, t, 0, IDENTIFIER_C_FUNCTION, &tmp,
+                        OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  free_type(t);
+
+  return fun;
+}
+
+static int add_gifunction(struct mapping *namespace,
+                          struct pike_string *name,
+                          GIFunctionInfo *funcinfo,
+                          void (*func)(INT32 args))
+{
+  gint num_args = g_callable_info_get_n_args(funcinfo);
+  gint num_in_args = 0, num_out_args = 0;
+  gint n = -1;
+  GITypeInfo *rettypeinfo = NULL;
+  gboolean ret_nullable = 0;
+
+  for (n = 0; n < num_args; n++) {
+    GIArgInfo *arginfo = g_callable_info_get_arg(funcinfo, n);
+    switch(g_arg_info_get_direction(arginfo)) {
+    case GI_DIRECTION_INOUT:
+      num_in_args++;
+      /* FALLTHRU */
+    case GI_DIRECTION_OUT:
+      num_out_args++;
+      if (!rettypeinfo) {
+        rettypeinfo = g_arg_info_get_type(arginfo);
+      }
+      break;
+    default:	/* GI_DIRECTION_IN */
+      num_in_args++;
+      break;
+    }
+    g_base_info_unref(arginfo);
+  }
+
+  if (!rettypeinfo && !g_callable_info_skip_return(funcinfo)) {
+    rettypeinfo = g_callable_info_get_return_type(funcinfo);
+    ret_nullable = g_callable_info_may_return_null(funcinfo);
+  }
+
+  type_stack_mark();
+
+  push_gi_typeinfo_type(namespace, rettypeinfo);
+  if (rettypeinfo) {
+    g_base_info_unref(rettypeinfo);
+  }
+  if (ret_nullable) {
+    push_type(PIKE_T_ZERO);
+    push_type(PIKE_T_OR);
+  }
+  push_type(PIKE_T_VOID);
+  push_type(PIKE_T_MANY);
+
+  for (n = num_args; n--;) {
+    GIArgInfo *arginfo;
+    arginfo = g_callable_info_get_arg(funcinfo, n);
+
+    if (g_arg_info_get_direction(arginfo) != GI_DIRECTION_OUT) {
+      push_gi_arginfo_type(namespace, arginfo);
+      push_type(PIKE_T_FUNCTION);
+    }
+
+    g_base_info_unref(arginfo);
+  }
+
+  return low_add_gifunction(name, func);
+}
+
+/**
+ *  Compile a GIBaseInfo into a Pike program.
+ *
+ *  The GIBaseInfo may be one of:
+ *
+ *  * GIObjectInfo
+ *
+ *  * GIStructInfo
+ *
+ *  * GIInterfaceInfo
+ */
+static struct program *program_from_info(struct mapping *namespace,
+                                         GIBaseInfo *info)
+{
+  const gchar *type_name;
+  struct svalue *cached;
+  int program_id = 0;
+  int instance_program_id = 0;
+  struct program *parent_prog = NULL;
+  struct program *p = NULL;
+  gint i, n;
+  struct svalue *ident_to_n_sval;
+
+  if (GI_IS_OBJECT_INFO(info)) {
+    type_name = g_object_info_get_type_name(info);
+  } else {
+    type_name = g_base_info_get_name(info);
+  }
+
+  cached = simple_mapping_string_lookup(namespace, type_name);
+
+  if (cached) {
+    if (TYPEOF(*cached) == PIKE_T_PROGRAM) {
+      add_ref(cached->u.program);
+      return cached->u.program;
+    }
+    if (TYPEOF(*cached) == PIKE_T_INT) {
+      program_id = cached->u.integer;
+    }
+  }
+
+  if (!program_id) {
+    program_id = allocate_program_id();
+    push_text(type_name);
+    push_int(program_id);
+    mapping_insert(namespace, Pike_sp-2, Pike_sp-1);
+    pop_stack();
+    pop_stack();
+  }
+
+  switch(g_base_info_get_type(info)) {
+  case GI_INFO_TYPE_OBJECT:
+    {
+      GIObjectInfo *parentinfo = g_object_info_get_parent(info);
+
+      if (parentinfo && (parentinfo != info)) {
+        parent_prog = program_from_info(namespace, parentinfo);
+        push_text(g_object_info_get_type_name(parentinfo));
+      } else {
+        parent_prog = GI_GObject_program;
+        push_text("GObject");
+      }
+    }
+    break;
+  case GI_INFO_TYPE_STRUCT:
+  case GI_INFO_TYPE_UNION:
+  case GI_INFO_TYPE_BOXED:
+    parent_prog = GI_GBoxed_program;
+    push_text("GBoxed");
+    break;
+  case GI_INFO_TYPE_INTERFACE:
+  case GI_INFO_TYPE_ENUM:
+  case GI_INFO_TYPE_FLAGS:
+    /* No base class for interfaces, enums or flags. */
+    break;
+  default:
+    /* Unsupported info type. */
+    fprintf(stderr, "UNSUPPORTED INFO TYPE: %d\n", g_base_info_get_type(info));
+    return NULL;
+  }
+
+  enter_compiler(NULL, 0);
+
+  push_text("GI.repository.");
+  push_text(g_base_info_get_namespace(info));
+  push_text(".");
+  push_text(g_base_info_get_name(info));
+  f_add(4);
+
+  debug_start_new_program_id(0, Pike_sp[-1].u.string->str, program_id);
+
+  pop_stack();
+
+  if (parent_prog) {
+    /* Inherit the parent class. */
+    low_inherit(parent_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+    pop_stack();
+  }
+
+  /* Update the cache. */
+  push_text(type_name);
+  ref_push_program(Pike_compiler->new_program);
+  mapping_insert(namespace, Pike_sp-2, Pike_sp-1);
+  pop_n_elems(2);
+
+  if (GI_IS_ENUM_INFO(info)) {	/* NB: True for both ENUM and FLAGS. */
+    gint n = g_enum_info_get_n_values(info);
+    int i;
+    for (i = 0; i < n; i++) {
+      GIValueInfo *valinfo = g_enum_info_get_value(info, i);
+      push_text(g_base_info_get_name(valinfo));
+      f_upper_case(1);
+      push_int64(g_value_info_get_value(valinfo));
+      simple_add_constant(Pike_sp[-2].u.string->str, Pike_sp-1, 0);
+      pop_stack();
+      pop_stack();
+      g_base_info_unref(valinfo);
+    }
+
+    p = end_program();
+
+    exit_compiler();
+
+    return p;
+  }
+
+  push_array(low_allocate_array(0, 10));
+  ident_to_n_sval = Pike_sp-1;
+
+  if (GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info)) {
+    if (GI_IS_INTERFACE_INFO(info)) {
+      /* Inherit any mixin classes for interfaces.
+       *
+       * NOTE: Objects should already have all the symbols in
+       *       the interfaces, and an object may be an interface,
+       *       leading to GObject being inherited multiple times.
+       */
+      n = g_interface_info_get_n_prerequisites(info);
+      for (i = 0; i < n; i++) {
+        GIBaseInfo *iinfo =
+          g_interface_info_get_prerequisite(info, i);
+        struct program *interface_prog = program_from_info(namespace, iinfo);
+        /* NB: g_interface_info_get_prerequisite() returns GIBaseInfo:s
+         *     (ie not necessarily GIInterfaceInfos). Does it return
+         *     anything else in practice?
+         *
+         * FIXME: Yes! It may apparently return ObjectInfo:s, in which
+         *        case we MUST only copy the prototypes!
+         */
+        if (interface_prog) {
+          push_text(g_base_info_get_name(iinfo));
+          low_inherit(interface_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+          pop_stack();
+        }
       }
     }
 
-    low_invoke(callable, self, args);
-  }
-}
+    n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_constants(info) :
+      g_interface_info_get_n_constants(info);
+    for (i = 0; i < n; i++) {
+      GIConstantInfo *constinfo =
+        GI_IS_OBJECT_INFO(info) ? g_object_info_get_constant(info, n) :
+        g_interface_info_get_constant(info, n);
+      add_giconstant(constinfo);
+      g_base_info_unref(constinfo);
+    }
 
-/*! @endclass
- */
-
-
-/*! @class CallbackInfo
- */
-
-PIKECLASS CallbackInfo
-{
-  INHERIT BaseInfo;
-}
-
-/*! @endclass
- */
-
-
-/*! @class FieldInfo
- */
-
-PIKECLASS FieldInfo
-{
-  INHERIT BaseInfo;
-
-  /*! @decl mixed get_field(GBoxed box)
-   */
-  PIKEFUN mixed get_field(GBoxed box)
-  {
-    ONERROR onerror;
-    GIArgument value;
-    GITypeInfo *ti;
-    GIBaseInfo *sinfo = g_base_info_get_container(THIS->info);
-    struct GI_GBoxed_struct *that =
-      (struct GI_GBoxed_struct *)get_storage (box, GI_GBoxed_program);
-    if (that == NULL)
-      Pike_error("argument is not a GBoxed\n");
-    if (that->box == NULL ||
-        !g_type_is_a(that->type,
-                     g_registered_type_info_get_g_type(sinfo)))
-      Pike_error("Boxed is not a %s\n",
-                 g_base_info_get_name(sinfo));
-    ti = g_field_info_get_type((GIFieldInfo *)THIS->info);
-    SET_ONERROR(onerror, g_base_info_unref, ti);
-    if (!g_field_info_get_field((GIFieldInfo *)THIS->info, that->box, &value))
-      Pike_error("Field can not be read\n");
-    push_gi_argument(&value, ti);
-    CALL_AND_UNSET_ONERROR(onerror);
-    stack_pop_n_elems_keep_top(args);
-  }
-
-  /*! @decl void set_field(GBoxed box, mixed value)
-   */
-  PIKEFUN void set_field(GBoxed box, mixed value)
-  {
-    ONERROR onerror;
-    GIArgument val;
-    GITypeInfo *ti;
-    GIBaseInfo *sinfo = g_base_info_get_container(THIS->info);
-    struct GI_GBoxed_struct *that =
-      (struct GI_GBoxed_struct *)get_storage (box, GI_GBoxed_program);
-    if (that == NULL)
-      Pike_error("argument is not a GBoxed\n");
-    if (that->box == NULL ||
-        !g_type_is_a(that->type,
-                     g_registered_type_info_get_g_type(sinfo)))
-      Pike_error("Boxed is not a %s\n",
-                 g_base_info_get_name(sinfo));
-    ti = g_field_info_get_type((GIFieldInfo *)THIS->info);
-    SET_ONERROR(onerror, g_base_info_unref, ti);
-    get_gi_argument_type(value, &val, ti);
-    if (!g_field_info_set_field((GIFieldInfo *)THIS->info, that->box, &val))
-      Pike_error("Field can not be written\n");
-    CALL_AND_UNSET_ONERROR(onerror);
-    stack_pop_n_elems_keep_top(args);
-  }
-}
-
-/*! @endclass
- */
-
-
-/*! @class StructInfo
- */
-
-PIKECLASS StructInfo
-{
-  INHERIT BaseInfo;
-
-  /*! @decl array(FunctionInfo) get_methods()
-   */
-  PIKEFUN array(FunctionInfo) get_methods()
-  {
-    ONERROR onerror, onerror2;
-    struct array *arr;
-    gssize i, num;
-    num = g_struct_info_get_n_methods((GIStructInfo *)THIS->info);
-    arr = allocate_array(num);
-    SET_ONERROR(onerror, do_free_array, arr);
-    for(i=0; i<num; i++) {
-      GIBaseInfo *info;
-      info =
-        (GIBaseInfo *)g_struct_info_get_method((GIStructInfo *)THIS->info, i);
-      SET_ONERROR(onerror2, g_base_info_unref, info);
-      push_gi_info(info);
-      CALL_AND_UNSET_ONERROR(onerror2);
-      array_set_index_no_free(arr, i, Pike_sp-1);
+    n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_properties(info) :
+      g_interface_info_get_n_properties(info);
+    for (i = 0; i < n; i++) {
+      GIPropertyInfo *propinfo =
+        GI_IS_OBJECT_INFO(info) ? g_object_info_get_property(info, i) :
+        g_interface_info_get_property(info, i);
+      GIFunctionInfo *funcinfo = g_property_info_get_getter(propinfo);
+      push_text("`");
+      push_text(g_base_info_get_name(propinfo));
+      f_add(2);
+      if (funcinfo) {
+        update_ident_to_n(ident_to_n_sval,
+                          add_gifunction(namespace, Pike_sp[-1].u.string,
+                                         funcinfo, f_get_gi_property), i);
+        g_base_info_unref(funcinfo);
+      }
+      funcinfo = g_property_info_get_setter(propinfo);
+      if (funcinfo) {
+        push_text("=");
+        f_add(2);
+        update_ident_to_n(ident_to_n_sval,
+                          add_gifunction(namespace, Pike_sp[-1].u.string,
+                                         funcinfo, f_set_gi_property), i);
+        g_base_info_unref(funcinfo);
+      }
       pop_stack();
+      g_base_info_unref(propinfo);
     }
-    UNSET_ONERROR(onerror);
-    RETURN arr;
-  }
 
-  /*! @decl array(FieldInfo) get_fields()
-   */
-  PIKEFUN array(FieldInfo) get_fields()
-  {
-    ONERROR onerror, onerror2;
-    struct array *arr;
-    gssize i, num;
-    num = g_struct_info_get_n_fields((GIStructInfo *)THIS->info);
-    arr = allocate_array(num);
-    SET_ONERROR(onerror, do_free_array, arr);
-    for(i=0; i<num; i++) {
-      GIBaseInfo *info;
-      info =
-        (GIBaseInfo *)g_struct_info_get_field((GIStructInfo *)THIS->info, i);
-      SET_ONERROR(onerror2, g_base_info_unref, info);
-      push_gi_info(info);
-      CALL_AND_UNSET_ONERROR(onerror2);
-      array_set_index_no_free(arr, i, Pike_sp-1);
-      pop_stack();
+#if 0
+    n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_signals(info) :
+      g_interface_info_get_n_signals(info);
+    for (i = 0; i < n; i++) {
+      GISignalInfo *siginfo =
+        GI_IS_OBJECT_INFO(info) ? g_object_info_get_signal(info, n) :
+        g_interface_info_get_signal(info, n);
+      add_gisignal(siginfo);
+      g_base_info_unref(siginfo);
     }
-    UNSET_ONERROR(onerror);
-    RETURN arr;
-  }
-}
+#endif
 
-/*! @endclass
- */
-
-
-/*! @class ValueInfo
- */
-
-PIKECLASS ValueInfo
-{
-  INHERIT BaseInfo;
-
-  /*! @decl int get_value()
-   */
-  PIKEFUN int get_value()
-  {
-    RETURN g_value_info_get_value((GIValueInfo *)THIS->info);
-  }
-}
-
-/*! @endclass
- */
-
-
-/*! @class EnumInfo
- */
-
-PIKECLASS EnumInfo
-{
-  INHERIT BaseInfo;
-
-  /*! @decl array(ValueInfo) get_values()
-   */
-  PIKEFUN array(ValueInfo) get_values()
-  {
-    ONERROR onerror, onerror2;
-    struct array *arr;
-    gssize i, num;
-    num = g_enum_info_get_n_values((GIEnumInfo *)THIS->info);
-    arr = allocate_array(num);
-    SET_ONERROR(onerror, do_free_array, arr);
-    for(i=0; i<num; i++) {
-      GIBaseInfo *info;
-      info =
-        (GIBaseInfo *)g_enum_info_get_value((GIEnumInfo *)THIS->info, i);
-      SET_ONERROR(onerror2, g_base_info_unref, info);
-      push_gi_info(info);
-      CALL_AND_UNSET_ONERROR(onerror2);
-      array_set_index_no_free(arr, i, Pike_sp-1);
-      pop_stack();
+#if 0
+    /* low_invoke() does not support VFuncInfo properly yet. */
+    n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_vfuncs(info) :
+      g_interface_info_get_n_vfuncs(info);
+    for (i = 0; i < n; i++) {
+      GIVFuncInfo *vfuncinfo =
+        GI_IS_OBJECT_INFO(info) ? g_object_info_get_vfunc(info, i) :
+        g_interface_info_get_vfunc(info, i);
+      add_givfunc(namespace, vfuncinfo, ident_to_n_sval);
+      g_base_info_unref(vfuncinfo);
     }
-    UNSET_ONERROR(onerror);
-    RETURN arr;
+#endif
   }
-}
 
-/*! @endclass
- */
+  if (GI_IS_OBJECT_INFO(info) || GI_IS_STRUCT_INFO(info)) {
+    n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_fields(info) :
+      g_struct_info_get_n_fields(info);
+    for (i = 0; i < n; i++) {
+      GIFieldInfo *fieldinfo =
+        GI_IS_OBJECT_INFO(info) ? g_object_info_get_field(info, i) :
+        g_struct_info_get_field(info, i);
+      GITypeInfo *ti = g_field_info_get_type(fieldinfo);
+      GITypeTag ttag = g_type_info_get_tag(ti);
 
+      if (GI_TYPE_TAG_IS_BASIC(ttag)) {
+        GIFieldInfoFlags fieldflags = g_field_info_get_flags(fieldinfo);
 
-/*! @class InterfaceInfo
- */
+        push_text("`");
+        push_text(g_base_info_get_name(fieldinfo));
+        f_add(2);
+        if (fieldflags & GI_FIELD_IS_READABLE) {
+          type_stack_mark();
+          push_gi_typeinfo_type(namespace, ti);
+          push_type(PIKE_T_VOID);
+          push_type(PIKE_T_MANY);
+          update_ident_to_n(ident_to_n_sval,
+                            low_add_gifunction(Pike_sp[-1].u.string,
+                                               f_get_gi_field), i);
+        }
 
-PIKECLASS InterfaceInfo
-{
-  INHERIT BaseInfo;
+        push_text("=");
+        f_add(2);
+        if (fieldflags & GI_FIELD_IS_WRITABLE) {
+          type_stack_mark();
+          push_type(PIKE_T_VOID);
+          push_type(PIKE_T_VOID);
+          push_type(PIKE_T_MANY);
+          push_gi_typeinfo_type(namespace, ti);
+          push_type(PIKE_T_FUNCTION);
+          update_ident_to_n(ident_to_n_sval,
+                            low_add_gifunction(Pike_sp[-1].u.string,
+                                               f_set_gi_field), i);
+        }
 
-  /*! @decl array(FunctionInfo) get_methods()
-   */
-  PIKEFUN array(FunctionInfo) get_methods()
-  {
-    ONERROR onerror, onerror2;
-    struct array *arr;
-    gssize i, num;
-    num = g_interface_info_get_n_methods((GIInterfaceInfo *)THIS->info);
-    arr = allocate_array(num);
-    SET_ONERROR(onerror, do_free_array, arr);
-    for(i=0; i<num; i++) {
-      GIBaseInfo *info;
-      info =
-        (GIBaseInfo *)g_interface_info_get_method((GIInterfaceInfo *)THIS->info, i);
-      SET_ONERROR(onerror2, g_base_info_unref, info);
-      push_gi_info(info);
-      CALL_AND_UNSET_ONERROR(onerror2);
-      array_set_index_no_free(arr, i, Pike_sp-1);
-      pop_stack();
+        pop_stack();
+      }
+
+      g_base_info_unref(ti);
+      g_base_info_unref(fieldinfo);
     }
-    UNSET_ONERROR(onerror);
-    RETURN arr;
   }
-}
 
-/*! @endclass
- */
-
-
-/*! @class ObjectInfo
- */
-
-PIKECLASS ObjectInfo
-{
-  INHERIT BaseInfo;
-
-  /*! @decl array(FunctionInfo) get_methods()
-   */
-  PIKEFUN array(FunctionInfo) get_methods()
-  {
-    ONERROR onerror, onerror2;
-    struct array *arr;
-    gssize i, num;
-    num = g_object_info_get_n_methods((GIObjectInfo *)THIS->info);
-    arr = allocate_array(num);
-    SET_ONERROR(onerror, do_free_array, arr);
-    for(i=0; i<num; i++) {
-      GIBaseInfo *info;
-      info =
-        (GIBaseInfo *)g_object_info_get_method((GIObjectInfo *)THIS->info, i);
-      SET_ONERROR(onerror2, g_base_info_unref, info);
-      push_gi_info(info);
-      CALL_AND_UNSET_ONERROR(onerror2);
-      array_set_index_no_free(arr, i, Pike_sp-1);
-      pop_stack();
+  n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_methods(info) :
+    GI_IS_STRUCT_INFO(info) ? g_struct_info_get_n_methods(info) :
+    GI_IS_INTERFACE_INFO(info) ? g_interface_info_get_n_methods(info) : 0;
+  for (i = 0; i < n; i++) {
+    GIFunctionInfo *funcinfo = NULL;
+    if (GI_IS_OBJECT_INFO(info)) {
+      funcinfo = g_object_info_get_method(info, i);
+    } else if (GI_IS_STRUCT_INFO(info)) {
+      funcinfo = g_struct_info_get_method(info, i);
+    } else {
+      funcinfo = g_interface_info_get_method(info, i);
     }
-    UNSET_ONERROR(onerror);
-    RETURN arr;
-  }
-
-  /*! @decl array(InterfaceInfo) get_interfaces()
-   */
-  PIKEFUN array(InterfaceInfo) get_interfaces()
-  {
-    ONERROR onerror, onerror2;
-    struct array *arr;
-    gssize i, num;
-    num = g_object_info_get_n_interfaces((GIObjectInfo *)THIS->info);
-    arr = allocate_array(num);
-    SET_ONERROR(onerror, do_free_array, arr);
-    for(i=0; i<num; i++) {
-      GIBaseInfo *info;
-      info =
-        (GIBaseInfo *)g_object_info_get_interface((GIObjectInfo *)THIS->info, i);
-      SET_ONERROR(onerror2, g_base_info_unref, info);
-      push_gi_info(info);
-      CALL_AND_UNSET_ONERROR(onerror2);
-      array_set_index_no_free(arr, i, Pike_sp-1);
-      pop_stack();
+    if (!strcmp(g_base_info_get_name(funcinfo), "create")) {
+      // Conflicts with the efun.
+      // Triggered by eg Gio.File()->create().
+      push_text("creat");
+    } else {
+      push_text(g_base_info_get_name(funcinfo));
     }
-    UNSET_ONERROR(onerror);
-    RETURN arr;
+    update_ident_to_n(ident_to_n_sval,
+                      add_gifunction(namespace, Pike_sp[-1].u.string,
+                                     funcinfo, f_call_gi_method), i);
+    pop_stack();
+    g_base_info_unref(funcinfo);
   }
 
-  /*! @decl ObjectInfo get_parent()
+  /*
+   * Save the info for use by call_gifunction() et al.
+   *
+   * These will always be the last constants in the program.
    */
-  PIKEFUN ObjectInfo get_parent()
-  {
-    ONERROR onerror;
-    GIBaseInfo *info =
-      (GIBaseInfo *)g_object_info_get_parent((GIObjectInfo *)THIS->info);
-    if (info == NULL) {
-      pop_n_elems(args);
-      push_undefined();
-      return;
-    }
-    SET_ONERROR(onerror, g_base_info_unref, info);
-    pop_n_elems(args);
-    push_gi_info(info);
-    CALL_AND_UNSET_ONERROR(onerror);
-  }
+
+  /* -2: info */
+  push_object(fast_clone_object(GI_BaseInfo_program));
+  OBJ2_GI_BASEINFO(Pike_sp[-1].u.object)->info = g_base_info_ref(info);
+  /* NB: Protected, so that GObject::create() can find the latest value. */
+  add_constant(MK_STRING("__pike_gi_base_info__"), Pike_sp-1, ID_PROTECTED);
+  pop_stack();
+
+  /* -1: ident_to_n */
+  add_constant(MK_STRING("__pike_gi_symbol_lookup__"), Pike_sp-1,
+               ID_PRIVATE|ID_USED);
+  pop_stack();
+
+  p = end_program();
+
+  exit_compiler();
+
+  return p;
 }
-
-/*! @endclass
- */
-
-
-/*! @class ConstantInfo
- */
-
-PIKECLASS ConstantInfo
-{
-  INHERIT BaseInfo;
-
-  struct const_value_context
-  {
-    GIConstantInfo *info;
-    GIArgument     *value;
-  };
-
-  static void free_const_value_context(void *ptr)
-  {
-    struct const_value_context *ctx = ptr;
-    g_constant_info_free_value(ctx->info, ctx->value);
-  }
-
-  /*! @decl mixed get()
-   */
-  PIKEFUN mixed get()
-  {
-    ONERROR onerror, onerror2;
-    GIArgument arg;
-    struct const_value_context ctx = { (GIConstantInfo *)THIS->info, &arg };
-    GITypeInfo *info = g_constant_info_get_type(ctx.info);
-    SET_ONERROR(onerror, g_base_info_unref, info);
-    g_constant_info_get_value(ctx.info, &arg);
-    SET_ONERROR(onerror2, free_const_value_context, &ctx);
-    push_gi_argument(&arg, info);
-    UNSET_ONERROR(onerror2);
-    g_constant_info_free_value(ctx.info, &arg);
-    CALL_AND_UNSET_ONERROR(onerror);
-    if (args)
-      stack_pop_n_elems_keep_top(args);
-  }
-}
-
-/*! @endclass
- */
-
-
-/*! @class UnionInfo
- */
-
-PIKECLASS UnionInfo
-{
-  INHERIT BaseInfo;
-}
-
-/*! @endclass
- */
-
-
-/*! @class BoxedInfo
- */
-
-PIKECLASS BoxedInfo
-{
-  INHERIT BaseInfo;
-}
-
-/*! @endclass
- */
 
 static void push_gi_info(GIBaseInfo *info)
 {
   struct program *p;
   if (info == NULL)
     Pike_error("Missing info\n");
-  switch(g_base_info_get_type(info)) {
-  case GI_INFO_TYPE_FUNCTION:
-    p = GI_FunctionInfo_program; break;
-  case GI_INFO_TYPE_CALLBACK:
-    p = GI_CallbackInfo_program; break;
-  case GI_INFO_TYPE_STRUCT:
-    p = GI_StructInfo_program; break;
-  case GI_INFO_TYPE_ENUM:
-  case GI_INFO_TYPE_FLAGS:
-    p = GI_EnumInfo_program; break;
-  case GI_INFO_TYPE_OBJECT:
-    p = GI_ObjectInfo_program; break;
-  case GI_INFO_TYPE_INTERFACE:
-    p = GI_InterfaceInfo_program; break;
-  case GI_INFO_TYPE_CONSTANT:
-    p = GI_ConstantInfo_program; break;
-  case GI_INFO_TYPE_UNION:
-    p = GI_UnionInfo_program; break;
-  case GI_INFO_TYPE_VALUE:
-    p = GI_ValueInfo_program; break;
-  case GI_INFO_TYPE_FIELD:
-    p = GI_FieldInfo_program; break;
-  case GI_INFO_TYPE_BOXED:
-    p = GI_BoxedInfo_program; break;
-  default:
-    Pike_error("No class for %d\n", g_base_info_get_type(info));
-  }
+  p = GI_BaseInfo_program;
   {
     struct object *o = clone_object(p, 0);
     struct GI_BaseInfo_struct *that =
@@ -2212,21 +2994,14 @@ static void low_free_gparams(struct gparams_list *gpl)
 #endif
 }
 
-static GObject *make_gobject_from_props(struct object *info, struct mapping *props)
+static GObject *low_make_gobject_from_props(GIObjectInfo *ginfo,
+                                            struct mapping *props)
 {
   ONERROR onerror;
-  GIObjectInfo *ginfo;
-  struct GI_BaseInfo_struct *that;
   GType gt;
   GObject *obj;
   struct gparams_list params = { 0, };
   int free_params = 0;
-  if (info == NULL ||
-      (that =
-       (struct GI_BaseInfo_struct *)get_storage (info, GI_BaseInfo_program))
-      == NULL || that->info == NULL)
-    Pike_error("ObjectInfo missing\n");
-  ginfo = (GIObjectInfo *)that->info;
   gt = g_registered_type_info_get_g_type((GIRegisteredTypeInfo *)ginfo);
   if (gt == G_TYPE_NONE)
     Pike_error("Failed to get GType\n");
@@ -2257,21 +3032,46 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
   return obj;
 }
 
-static void make_gboxed(struct GI_GBoxed_struct *this, struct object *info, gboolean allocate)
+static GObject *make_gobject_from_props(struct object *info, struct mapping *props)
+{
+  struct GI_BaseInfo_struct *that;
+  GIObjectInfo *ginfo;
+  if (info == NULL ||
+      (that =
+       (struct GI_BaseInfo_struct *)get_storage (info, GI_BaseInfo_program))
+      == NULL || that->info == NULL)
+    Pike_error("ObjectInfo missing\n");
+  ginfo = that->info;
+  return low_make_gobject_from_props(ginfo, props);
+}
+
+static void make_gboxed(struct GI_GBoxed_struct *this,
+                        struct object *info,
+                        gboolean allocate)
 {
   struct GI_BaseInfo_struct *that;
   if (info == NULL ||
       (that =
        (struct GI_BaseInfo_struct *)get_storage (info, GI_BaseInfo_program))
       == NULL || that->info == NULL)
-    Pike_error("StructInfo missing\n");
+    Pike_fatal("StructInfo missing\n");
   this->type = g_registered_type_info_get_g_type(that->info);
   if (allocate) {
     if ((this->allocated_size = get_interface_size(that->info)))
-      this->box = g_slice_alloc0(this->allocated_size);
+      set_pointer_in_pointer_object(NULL, g_slice_alloc0(this->allocated_size));
   }
 }
 
+/* Mapping from program_id to triple of repo, namespace and name.
+ *
+ * Only contains preallocated program ids that have not yet been compiled.
+ */
+PIKEVAR mapping(int: array(object|string)) program_rev_lookup
+  flags ID_PRIVATE;
+
+/* Namespace lookup for the default (and only) repository.
+ */
+static struct mapping *global_namespace_lookup = NULL;
 
 /*! @class Repository
  */
@@ -2280,9 +3080,22 @@ PIKECLASS Repository
 {
   CVAR GIRepository *repository;
 
+  /* Mapping from namespace name to Namespace object. */
+  PIKEVAR mapping(string:object) namespace_lookup
+    flags ID_PRIVATE;
+
+  DECLARE_STORAGE;
+
   INIT
     {
       THIS->repository = NULL;
+      THIS->namespace_lookup = allocate_mapping(5);
+
+      if (!global_namespace_lookup) {
+        /* Initialize the global lookup. */
+        global_namespace_lookup = THIS->namespace_lookup;
+        add_ref(global_namespace_lookup);
+      }
     }
 
   /*! @decl array(string) enumerate_versions(string namespace)
@@ -2315,16 +3128,37 @@ PIKECLASS Repository
    */
   PIKEFUN BaseInfo find_by_name(string namespace, string name)
   {
+    struct svalue *cached;
     ONERROR onerror;
-    GIBaseInfo *info =
-      g_irepository_find_by_name(THIS->repository,
-                                 (gchar *)STR0(namespace),
-                                 (gchar *)STR0(name));
+    GIBaseInfo *info;
+
+#if 0
+    if ((cached = mapping_string_lookup(THIS->namespace_lookup,
+                                        namespace, 0))) {
+      pop_n_elems(args);
+      push_svalue(cached);
+      ref_push_string(name);
+      f_index(2);
+      return;
+    }
+#endif
+
+    /* FIXME: UTF-8 encode? */
+
+    info = g_irepository_find_by_name(THIS->repository,
+                                      (gchar *)STR0(namespace),
+                                      (gchar *)STR0(name));
     if (info) {
       SET_ONERROR(onerror, g_base_info_unref, info);
       pop_n_elems(args);
       push_gi_info(info);
       CALL_AND_UNSET_ONERROR(onerror);
+
+#if 0
+      assign_svalue(mapping_mapping_string_lookup(THIS->symbol_lookup,
+                                                  namespace, name, 1),
+                    Pike_sp-1);
+#endif
     } else {
       pop_n_elems(args);
       push_int(0);
@@ -2377,6 +3211,360 @@ PIKECLASS Repository
 
     pop_n_elems(args);  /* Should be "RETURN;", but that is broken... */
   }
+
+  /* Namespace class notes:
+   *
+   * The parent object is the Repository. NB: Not used as the low-level
+   * GI library only supports a single repository (ie the default repo).
+   *
+   * String #0 is the namespace name.
+   *
+   * Constant #-1 is the lookup array from identifier number
+   * to irepo info number. This is needed since getters and
+   * setters may generate more than one identifier.
+   *
+   * Constant #-2 is the symbol lookup cache array
+   * indexed on irepo info number and containing
+   * the corresponding value.
+   * The array is initialized to all UNDEFINED.
+   *
+   * * For functions, the symbol is mapped directly.
+   *
+   * * For enums and flags, the symbol maps to the type of
+   *   the enum, with the values mapped after all the direct
+   *   symbols (this is needed in order to avoid constant #-2
+   *   having lots of unused space and having it be linear in
+   *   size with respect to n_info).
+   *
+   * * For most other symbols the value is mapped
+   *   indirectly via a getter.
+   */
+
+  static void f_namespace_call_function(INT32 args)
+  {
+    struct program *p = Pike_fp->context->prog;
+    struct pike_string *namespace = p->strings[1];
+    int n = get_gi_symbol_n();
+    GIRepository *repo = NULL;
+    GIBaseInfo *info = NULL;
+    ONERROR err;
+
+#if 0
+    /* Overkill; the low-level code only supports a single
+     * GIRepository (ie the default repository), which can
+     * be referred to by NULL everywhere.
+     * Cf https://gnome.pages.gitlab.gnome.org/gobject-introspection/girepository/GIRepository.html#g-irepository-get-default
+     */
+    struct external_variable_context loc = {
+      Pike_fp->current_object,	/* o */
+      Pike_fp->context,		/* inherit */
+      -1,			/* parent_identifier */
+    };
+    struct GI_Repository_struct *repo_struct = NULL;
+    find_external_context(&loc, 1);
+    repo_struct = (struct GI_Repository_struct *)
+      (PIKE_OBJ_STORAGE(loc.o) + loc.inherit->storage_offset);
+    repo = repo_struct->repository;
+#endif
+
+    info = g_irepository_get_info(repo, (gchar *)STR0(namespace), n);
+
+    SET_ONERROR(err, g_base_info_unref, info);
+    low_invoke(info, NULL, args);
+    CALL_AND_UNSET_ONERROR(err);
+  }
+
+  static void f_namespace_get_symbol(INT32 args)
+  {
+    struct program *p = Pike_fp->context->prog;
+    struct pike_string *namespace_name = p->strings[0];
+    int n = get_gi_symbol_n();
+    GIRepository *repo = NULL;
+    GIBaseInfo *info = NULL;
+    struct program *sym_prog;
+    ONERROR err;
+
+    if (n < 0) {
+      Pike_error("Unknown symbol in namespace %pq.\n", namespace_name);
+    }
+
+    push_svalue(&p->constants[p->num_constants-2].sval);
+    push_int(n);
+    f_index(2);
+    if (!IS_UNDEFINED(Pike_sp-1)) {
+      /* Cached. */
+      return;
+    }
+    pop_stack();
+
+    info = g_irepository_get_info(repo, (gchar *)STR0(namespace_name), n);
+    if (!info) {
+      Pike_error("Unknown symbol %d.\n", n);
+    }
+
+    SET_ONERROR(err, g_base_info_unref, info);
+    sym_prog = program_from_info(global_namespace_lookup, info);
+    if (!sym_prog) {
+      Pike_error("No program for symbol.\n");
+    }
+    push_program(sym_prog);
+    CALL_AND_UNSET_ONERROR(err);
+  }
+
+  /* Note: Returns reference number.
+   *
+   * Returns -1 if the ident to n table will not be needed.
+   */
+  static int add_namespace_symbol(struct mapping *namespace,
+                                  GIBaseInfo *info)
+  {
+    int ret = -1;
+    struct program *p = NULL;
+    switch(g_base_info_get_type(info)) {
+    case GI_INFO_TYPE_ENUM:
+    case GI_INFO_TYPE_FLAGS:
+      /* Register the type for the enum with the "Type" suffix. */
+      type_stack_mark();
+      push_gi_interface_type(namespace, info);
+      push_type_value(pop_unfinished_type());
+
+      push_text(g_base_info_get_name(info));
+      push_text("Type");
+      f_add(2);
+
+      simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
+      pop_stack();
+      pop_stack();
+
+      /* Register the values of the enum as constants in a program. */
+      /* FALLTHRU */
+    case GI_INFO_TYPE_OBJECT:
+    case GI_INFO_TYPE_STRUCT:
+    case GI_INFO_TYPE_UNION:
+    case GI_INFO_TYPE_BOXED:
+    case GI_INFO_TYPE_INTERFACE:
+      /* FIXME: Defer compilation by using the f_namespace_get_symbol() getter. */
+      p = program_from_info(namespace, info);
+      if (p) {
+        push_program(p);
+      } else {
+        push_undefined();
+      }
+      simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
+      pop_stack();
+
+      if (GI_IS_INTERFACE_INFO(info)) {
+        push_wrapper_name_from_info(info);
+        debug_start_new_program_id(0, Pike_sp[-1].u.string->str, 0);
+        pop_stack();
+
+        low_inherit(GI_GObject_program, NULL, -1, 0, 0,
+                    MK_STRING("GObject"), NULL);
+
+        push_text(g_base_info_get_name(info));
+        low_inherit(p, NULL, -1, 0, 0,
+                    Pike_sp[-1].u.string, NULL);
+
+        push_text("Wrapper");
+        f_add(2);
+
+        p = end_program();
+        if (p) {
+          push_program(p);
+        } else {
+          push_undefined();
+        }
+
+        add_constant(Pike_sp[-2].u.string, Pike_sp-1, 0);
+        pop_n_elems(2);
+      }
+      break;
+
+    case GI_INFO_TYPE_FUNCTION:
+      push_text(g_base_info_get_name(info));
+      ret = add_gifunction(namespace, Pike_sp[-1].u.string, info,
+                           f_namespace_call_function);
+      pop_stack();
+      break;
+
+    case GI_INFO_TYPE_VALUE:
+      push_int64(g_value_info_get_value(info));
+      simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
+      pop_stack();
+      break;
+
+    case GI_INFO_TYPE_CONSTANT:
+    case GI_INFO_TYPE_FIELD:
+    case GI_INFO_TYPE_CALLBACK:
+    default:
+      /* Unsupported info type. */
+      break;
+    }
+
+    return ret;
+  }
+
+  /*! @decl object namespace(string name, string|void version, @
+   *!                        int(0..1)|void lazy)
+   *!
+   *!   Loads and compiles a @[Namespace], like eg @expr{GI.repository.GLib@}.
+   *!
+   *! @param name
+   *!   Namespace name (eg @expr{"GLib"@}).
+   *!
+   *! @param version
+   *!   Version to load (eg @expr{"2.0"@}).
+   *!
+   *! @param lazy
+   *!   Lazy load the namespace.
+   */
+  PIKEFUN object namespace(string name, string|void version,
+                           int(0..1)|void lazy)
+  {
+    GError *error = NULL;
+    GTypelib *typelib;
+    gssize i, num;
+    struct program *p;
+    struct mapping *namespace_lookup = THIS->namespace_lookup;
+    struct compilation *c;
+    GIRepository *repository = THIS->repository;
+    struct svalue *tmp;
+    struct svalue *ident_to_n_sval;
+    struct object *res;
+    int namespace_is_cairo = 0;
+
+    typelib = g_irepository_require(repository,
+                                    (gchar *)STR0(name),
+                                    (version? (gchar *)STR0(version) : NULL),
+                                    ((lazy != NULL && !UNSAFE_IS_ZERO(lazy))?
+                                     G_IREPOSITORY_LOAD_FLAG_LAZY : 0),
+                                    &error);
+
+    if(error)
+      throw_gerror(error);
+
+    tmp = low_mapping_string_lookup(THIS->namespace_lookup, name);
+    if (tmp) {
+      push_svalue(tmp);
+      return;
+    }
+
+    /* NB: Entering the compiler pushes a pike_frame and thus invalidates
+     *     any use of THIS.
+     */
+    enter_compiler(name, 0);
+
+    c = THIS_COMPILATION;
+    c->placeholder = res = fast_clone_object(null_program);
+    ref_push_object(c->placeholder);
+    mapping_string_insert(namespace_lookup, name, Pike_sp-1);
+    /* NB: The above is kept on the stack as it will be the return value. */
+
+    start_new_program();
+
+#if 0
+    Pike_compiler->new_program->flags |=
+      PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+#endif
+
+    store_prog_string(name);	/* String #0 */
+
+    num = g_irepository_get_n_infos(repository, (gchar *)STR0(name));
+    if (num < 0)
+      Pike_error("Namespace %pq not loaded.\n", name);
+
+    namespace_is_cairo = !strcmp(STR0(name), "cairo");
+
+    /* NB: Maximum growth is for getters (which add two identifiers). */
+    push_undefined();
+    push_int(num * 2);
+    f_allocate(2);
+    ident_to_n_sval = Pike_sp-1;
+
+    /* First direct symbols ie those that typically need
+     * to map to identifier numbers.
+     */
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info =
+        g_irepository_get_info(repository, (gchar *)STR0(name), i);
+      if (namespace_is_cairo &&
+          !strcmp(g_base_info_get_name(info), "Context")) {
+        push_text("Cairo.Context");
+        APPLY_MASTER("resolv", 1);
+        add_constant(MK_STRING("Context"), Pike_sp-1, 0);
+        pop_stack();
+        continue;
+      }
+      c->lex.current_line = i;
+      update_ident_to_n(ident_to_n_sval,
+                        add_namespace_symbol(namespace_lookup, info), i);
+      g_base_info_unref(info);
+    }
+
+#if 0
+    /* Then indirect symbols (eg enum values).
+     * These typically do not need to map to identifier numbers,
+     * but we support it if they would.
+     */
+    for(i=0; i<num; i++) {
+      GIBaseInfo *info;
+      info = g_irepository_get_info(repository, (gchar *)STR0(name), i);
+      switch(g_base_info_get_type(info)) {
+      case GI_INFO_TYPE_ENUM:
+      case GI_INFO_TYPE_FLAGS:
+        {
+          gint n = g_enum_info_get_n_values(info);
+          gint i;
+          for (i = 0; i < n; i++) {
+            GIValueInfo *enumval = g_enum_info_get_value(info, i);
+            c->lex.current_line = i;
+            update_ident_to_n(ident_to_n_sval,
+                              add_namespace_symbol(namespace_lookup,
+                                                   enumval), i);
+            g_base_info_unref(enumval);
+          }
+        }
+        break;
+      default:
+        break;
+      }
+      g_base_info_unref(info);
+    }
+#endif
+
+    push_int(num);
+    push_undefined();
+    f_allocate(2);
+    store_constant(Pike_sp - 1, 0, NULL);
+    pop_stack();
+
+    store_constant(ident_to_n_sval, 0, NULL);
+    pop_stack();
+
+    p = end_program();
+
+    free_program(res->prog);
+    res->prog = p;
+#ifdef PIKE_DEBUG
+    res->program_id = p->id;
+#endif
+    /* Make gc_check_object() avoid this object for now
+     * as it has no storage.
+     */
+    p->flags |= PROGRAM_AVOID_CHECK;
+    res->storage=p->storage_needed ?
+      (char *)xcalloc(p->storage_needed, 1) :
+      (char *)NULL;
+    call_c_initializers(res);
+    /* gc_check_object() should now be happy about the object
+     * cf above.
+     */
+    p->flags &= ~PROGRAM_AVOID_CHECK;
+
+    exit_compiler();
+
+    /* NB: The placeholder object is on the stack since earlier. */
+  }
 }
 
 /*! @endclass
@@ -2407,6 +3595,19 @@ PIKEFUN Repository get_default_repository()
 
 #endif
 
+INIT
+{
+  THIS->program_rev_lookup = allocate_mapping(10);
+}
+
+EXIT
+{
+  if (THIS->program_rev_lookup) {
+    free_mapping(THIS->program_rev_lookup);
+    THIS->program_rev_lookup = NULL;
+  }
+}
+
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_GI
@@ -2430,4 +3631,8 @@ PIKE_MODULE_EXIT
     magic_mapping = NULL;
   }
 #endif
+  if (global_namespace_lookup) {
+    free_mapping(global_namespace_lookup);
+    global_namespace_lookup = NULL;
+  }
 }
