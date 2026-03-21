@@ -1178,6 +1178,7 @@ string data(int|void max_length)
      if(headers->server == "WebSTAR")
      { // Some servers reporting this name exhibit some really hideous behaviour:
        DBG ("<- data() read 4\n");
+       TOUCH_TIMEOUT_WATCHDOG();
        string s = con->read();
        TOUCH_TIMEOUT_WATCHDOG();
        if (timeout_co) {
@@ -1197,6 +1198,7 @@ string data(int|void max_length)
      {
        DBG ("<- data() read 5\n");
        while ((l > 0) && con) {
+         TOUCH_TIMEOUT_WATCHDOG();
          string s = con->read(l, 1);
          TOUCH_TIMEOUT_WATCHDOG();
          if (!s || !sizeof(s)) {
