@@ -298,14 +298,14 @@ static void signal_func_wrapper(struct signal_data *d,
  *     These inherit the classes corresponding to their
  *     g_interface_info_get_prerequisite()s, and are
  *     intended to be used as mixin in GObject classes.
- *     NOTE: They receive the name suffix Mixin to avoid
- *           a name clash with the Interface Objects below.
  *
  *   * Interface Objects
  *
  *     These inherit GObject and the corresponsing Interface class.
  *     They are used when an interface object is returned from
  *     some method.
+ *     NOTE: They receive the name suffix Wrapper to avoid
+ *           a name clash with the plain Interfaces above.
  *
  *   * Namespaces
  *
@@ -3532,9 +3532,29 @@ PIKECLASS Repository
     }
 #endif
 
+    push_text("__GI_API_VERSION_");
+    /* Add symbol containing the version string for the namespace.
+     *
+     *   constant __GI_API_VERSION__ = "<ver>";
+     */
     push_text(g_irepository_get_version(repository, (gchar *)STR0(name)));
     add_constant(MK_STRING("__GI_API_VERSION__"), Pike_sp-1, 0);
-    pop_stack();
+    push_text(".");
+    push_text("-");
+    f_aggregate(2);
+    push_text("_");
+    push_text("_");
+    f_aggregate(2);
+    f_replace(3);
+    push_text("__");
+    f_add(3);
+    push_int(1);
+    /* Add a symbol that is easier to use from cpp().
+     *
+     *   constant __GI_API_VERSION_<ver>__ = 1;
+     */
+    add_constant(Pike_sp[-2].u.string, Pike_sp-1, 0);
+    pop_n_elems(2);
 
     push_int(num);
     push_undefined();
