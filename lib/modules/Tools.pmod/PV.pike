@@ -8,6 +8,12 @@ import GI.repository;
 inherit Gtk.Window;
 #define USE_GI
 
+#if constant(GI.repository.Gtk.__GI_API_VERSION_3_0__)
+#define USE_GTK3
+#elif constant(GI.repository.Gtk.__GI_API_VERSION_4_0__)
+#define USE_GTK4
+#endif
+
 #else
 
 #require constant(GTK2.Window)
@@ -142,13 +148,16 @@ protected {
       area->connect("draw", lambda(Gtk.DrawingArea area, Cairo.Context ctx) {
          draw(area, ctx, area->get_allocated_width(), area->get_allocated_height());
       });
-   if (::set_child)
-      ::set_child(area);
-   else {
-      area->show();
-      ::add(area);
-   }
-   ::set_title("PV");
+
+#ifdef USE_GTK4
+   set_child(area);
+#elif defined(USE_GTK3)
+   area->show();
+   add(area);
+#endif
+
+   set_title("PV");
+
 #else
    catch(GTK.setup_gtk());
    ::create( GTK.WindowToplevel );
@@ -227,10 +236,13 @@ void set_image( PVImage i )
     squares_pattern->set_extend(Cairo.EXTEND_REPEAT);
   } else
     squares_pattern = 0;
+
   area->set_size_request((int) (i->xsize() * scale_factor),
                          (int) (i->ysize() * scale_factor));
   area->queue_draw();
-  ::set_visible(1);
+
+  set_visible(1);
+
 #else
   i = get_as_image( i );
   if( scale_factor != 1.0 )
