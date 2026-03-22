@@ -15,7 +15,11 @@ inherit Gtk.Window;
 #if constant(GTK2.Window)
 // Toplevel compat for GTK2
 constant GTK = GTK2;
-class GDK { constant Pixmap = GTK2.GdkPixmap; }
+class GDK {
+  constant Pixmap = GTK2.GdkPixmap;
+  constant Event = GDK2.Event;
+}
+
 #define USE_GTK2
 #endif
 
@@ -154,6 +158,11 @@ protected {
    ::create( GTK.WindowToplevel );
    set_policy( 0,0,1 );
    show_now();
+
+   signal_connect("key_press_event",
+                  lambda(GTK.Window win, GDK.Event e) {
+                    return key_pressed(e->data);
+                  });
 #endif
    if( i )
      set_image( i );
@@ -260,6 +269,43 @@ void scale( float factor )
 {
   scale_factor = factor;
   set_image( old_image );
+}
+
+int(1bit) key_pressed(string key)
+{
+  switch(key)
+  {
+  case "-": case "<": scale( scale_factor * 0.5 );  break;
+  case "+": case ">": scale( scale_factor * 2.0 );  break;
+  case ",": scale( scale_factor * 0.9 );  break;
+  case ".": scale( scale_factor * 1.1 );  break;
+  case "n": scale( 1.0 );  break;
+  case "s":
+    break;
+#if 0
+  case "D":
+    rm( images[ current_image ] );
+    break;
+#endif
+  case "q":
+    _exit(0);
+#if 0
+  case "c":
+    if( copy_to )
+      doCopy( images[ current_image ] );
+    break;
+#endif
+#if 0
+  case " ":
+    current_image+=2;
+    // FALLTHRU
+  case "\b":
+    current_image--;
+    current_image = current_image % sizeof( images );
+    w->load_image( images[ current_image ] );
+    break;
+#endif
+  }
 }
 
 void save( string filename, string|void format )
