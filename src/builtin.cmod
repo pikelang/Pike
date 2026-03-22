@@ -4463,13 +4463,19 @@ PIKECLASS LiveBacktraceFrame
  *!     @member int(1..1) "auto_bignum"
  *!       Integers larger than the native size are now always
  *!       automatically converted into bignums.
+ *!     @member int(1..1) "cleanup_on_exit"
+ *!       The runtime has been compiled @tt{--with-cleanup-on-exit@} or equivalent.
+ *!       The runtime destructs all objects on @[exit()].
  *!     @member int(1..1) "rtl_debug"
- *!       The runtime has been compiled --with-rtldebug.
+ *!       The runtime has been compiled @tt{--with-rtldebug@} or equivalent.
  *!     @member int(1..1) "debug_malloc"
- *!       The runtime has been compiled --with-debug-malloc.
+ *!       The runtime has been compiled @tt{--with-debug-malloc@}.
  *!     @member int(0..) "running_on_valgrind"
  *!       The number of nested valgrinds the runtime is running under.
  *!   @endmapping
+ *!
+ *! @note
+ *!   Several of the above fields were added in Pike 9.0.
  */
 PIKEFUN mapping(string:int|string) get_runtime_info()
   optflags OPT_TRY_OPTIMIZE;
@@ -4495,6 +4501,10 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_text(get_cpu_time_impl);
   push_static_text("real_time_method");
   push_text(get_real_time_impl);
+#ifdef DO_PIKE_CLEANUP
+  push_static_text("cleanup_on_exit");
+  push_int(1);
+#endif
 #ifdef PIKE_DEBUG
   push_static_text("rtl_debug");
   push_int(1);
