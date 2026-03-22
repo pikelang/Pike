@@ -2108,9 +2108,7 @@ static void internal_parse_typeA(const char **_s)
 	  push_type(T_VOID);
 	  push_type(T_MIXED);
 	  push_type(T_OR);
-	  push_type(T_VOID);
-	  push_type(T_ZERO);
-	  push_type(T_OR);
+          push_type(PIKE_T_UNKNOWN);
 	  push_type(T_MANY);
 	}
 	break;
@@ -15775,6 +15773,11 @@ int pike_type_allow_premature_toss(struct pike_type *type)
 static void low_type_to_string(struct byte_buffer *buf, struct pike_type *t)
 {
   /* FIXME: PIKE_T_OPERATOR */
+
+  if (!t) {
+    buffer_add_u8(buf, PIKE_T_UNKNOWN);
+    return;
+  }
 
  recurse:
   switch(t->type) {
