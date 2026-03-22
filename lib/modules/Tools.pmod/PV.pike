@@ -161,6 +161,11 @@ protected {
 #elif defined(USE_GTK3)
    area->show();
    add(area);
+
+   connect("key-press-event",
+           lambda(GTK.Window win, Gdk.EventKey e) {
+             return key_pressed(e["string"]);
+           });
 #endif
 
    set_title("PV");
