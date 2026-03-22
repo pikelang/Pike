@@ -6,6 +6,9 @@
 
 import GI.repository;
 inherit Gtk.Window;
+
+@Pike.Annotations.Implements(Gtk.Window);
+
 #define USE_GI
 
 #if constant(GI.repository.Gtk.__GI_API_VERSION_3_0__)
@@ -109,7 +112,7 @@ protected {
  }
 
 #ifdef USE_GI
- void draw(Gtk.DrawingArea area, Cairo.Context ctx, int w, int h)
+ void area_draw(Gtk.DrawingArea area, Cairo.Context ctx, int w, int h)
  {
    if (!w || !h || !image_pattern) return;
    ctx->set_operator(Cairo.OPERATOR_SOURCE);
@@ -147,10 +150,10 @@ protected {
    ::create();
    area = Gtk.DrawingArea();
    if (area->set_draw_func)
-      area->set_draw_func(draw);
+      area->set_draw_func(area_draw);
    else
       area->connect("draw", lambda(Gtk.DrawingArea area, Cairo.Context ctx) {
-         draw(area, ctx, area->get_allocated_width(), area->get_allocated_height());
+         area_draw(area, ctx, area->get_allocated_width(), area->get_allocated_height());
       });
 
 #ifdef USE_GTK4
