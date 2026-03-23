@@ -665,6 +665,7 @@ PIKECLASS GObject
 /*! @class GBoxed
  */
 
+/* FIXME: Large overlap with GObject above. Consider inheriting it or a common base class. */
 PIKECLASS GBoxed
 {
   CVAR GType type;
@@ -732,6 +733,17 @@ PIKECLASS GBoxed
       NEW_MAPPING_LOOP(props->data)
         object_set_index(Pike_fp->current_object, 0, &k->ind, &k->val);
     }
+  }
+
+  /*! @decl protected void _destruct(int reason)
+   *!
+   *! @note
+   *!   This function currently does not do anything. It is here to inhibit
+   *!   potential warnings about @expr{destroy()@}.
+   */
+  PIKEFUN void _destruct(int reason)
+    flags ID_PROTECTED;
+  {
   }
 }
 
