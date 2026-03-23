@@ -2249,7 +2249,6 @@ static int low_add_gifunction(struct pike_string *name,
   struct pike_type *t = pop_unfinished_type();
   union idptr tmp;
   int fun;
-  add_ref(name);
   tmp.c_fun = func;
   fun = define_function(name, t, 0, IDENTIFIER_C_FUNCTION, &tmp,
                         OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
@@ -3610,9 +3609,9 @@ PIKECLASS Repository
 /*! @decl Repository get_default_repository()
  */
 
+static struct object *default_repository = NULL;
 PIKEFUN Repository get_default_repository()
 {
-  static struct object *default_repository = NULL;
   if (default_repository == NULL) {
     struct object *o = clone_object(GI_Repository_program, 0);
     struct GI_Repository_struct *that =
@@ -3667,6 +3666,10 @@ PIKE_MODULE_EXIT
     magic_mapping = NULL;
   }
 #endif
+  if (default_repository) {
+    free_object(default_repository);
+    default_repository = NULL;
+  }
   if (global_namespace_lookup) {
     free_mapping(global_namespace_lookup);
     global_namespace_lookup = NULL;
