@@ -100,6 +100,11 @@ class Type(string name) {
   //! @returns
   //!   Returns a string with an XML representation of the type.
   string xml(.Flags|void flags) { return xmltag(name);}
+
+  protected string _sprintf(int c, mixed ... ignored)
+  {
+    return (c == 'O') && sprintf("%O(%s)", this_program, print());
+  }
 }
 
 //! The class for representing array types.
@@ -814,6 +819,11 @@ class PikeObject {
   //! @returns
   //!   Returns a string with a Pike syntax representation of the entity.
   string print() { return printModifiers() + objtype; }
+
+  protected string _sprintf(int c, mixed ... ignored)
+  {
+    return (c == 'O') && sprintf("%O(%s)", this_program, print());
+  }
 }
 
 //! Representation of an inherit.

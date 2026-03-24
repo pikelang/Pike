@@ -787,6 +787,19 @@ protected object(SimpleNode)|zero findNode(SimpleNode root,
 protected class ReOrganizeTask(SimpleNode n, SimpleNode parent) {
   array(string) belongsRef;
   string newName;
+
+  protected string _sprintf(int c, mixed|void ignored) {
+    if (c == 'O') {
+      return sprintf("%O(n: %O[%O], parent: %O): belongs: %O, name: %O",
+                     this_program,
+                     n->get_any_name(),
+                     n->get_attributes()->name ||
+                     n->get_attributes()["homogen-name"],
+                     parent->get_any_name(),
+                     belongsRef * ".", newName);
+    }
+    return UNDEFINED;
+  }
 }
 
 protected array(ReOrganizeTask) tasks;
