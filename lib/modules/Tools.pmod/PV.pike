@@ -157,8 +157,20 @@ protected {
       });
 
 #ifdef USE_GTK4
+
    set_child(area);
+
+   object key_controller = Gtk.EventControllerKey();
+   key_controller->connect("key-pressed", lambda(object controller,
+                                                 int(16bit) keyval,
+                                                 int(256bit) keycode,
+                                                 Gdk.ModifierType modifier) {
+     return key_pressed(sprintf("%c", keyval));
+   });
+   add_controller(key_controller);
+
 #elif defined(USE_GTK3)
+
    area->show();
    add(area);
 
