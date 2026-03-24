@@ -1077,7 +1077,7 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
 }
 
 static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
-                                      GIBaseInfo *info)
+                                      GIArgInfo *ai, GIBaseInfo *info)
 {
   switch(g_base_info_get_type(info)) {
 
@@ -1111,6 +1111,13 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
                    g_registered_type_info_get_g_type(info));
       }
       arg->v_pointer = gobj->obj;
+      if (gobj->obj && ai &&
+          (g_arg_info_get_ownership_transfer(ai) != GI_TRANSFER_NOTHING)) {
+        /* NB: The call steals our reference, so we need add one
+         *     in order not to destruct the gobject prematurely.
+         */
+        g_object_ref(gobj->obj);
+      }
     }
     break;
 
@@ -1158,7 +1165,7 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
 }
 
 static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
-                                 GITypeInfo *ti)
+                                 GIArgInfo *ai, GITypeInfo *ti)
 {
   switch (g_type_info_get_tag(ti)) {
   case GI_TYPE_TAG_VOID:
@@ -1272,7 +1279,7 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
                               s->u.array->size);
       for (i=0; i<s->u.array->size; i++) {
         GIArgument a;
-        get_gi_argument_type(&ITEM(s->u.array)[i], &a, itemti);
+        get_gi_argument_type(&ITEM(s->u.array)[i], &a, NULL, itemti);
         g_array_insert_val(arr, i, a);
       }
       CALL_AND_UNSET_ONERROR(onerror);
@@ -1286,7 +1293,7 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
       GIBaseInfo *info;
       info = g_type_info_get_interface(ti);
       SET_ONERROR(onerror, g_base_info_unref, info);
-      get_gi_argument_interface(s, arg, info);
+      get_gi_argument_interface(s, arg, ai, info);
       CALL_AND_UNSET_ONERROR(onerror);
     }
     break;
@@ -1302,7 +1309,7 @@ static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
   GITypeInfo ti;
 
   g_arg_info_load_type(ai, &ti);
-  get_gi_argument_type(s, arg, &ti);
+  get_gi_argument_type(s, arg, ai, &ti);
 }
 
 static gsize get_interface_size(GIBaseInfo *info)
@@ -1599,6 +1606,14 @@ static void low_invoke(GIBaseInfo *callable,
           Pike_error("Object is not a %s\n",
                      g_base_info_get_name(cont));
         in_args[0].v_pointer = that->obj;
+        if (that->obj &&
+            (g_callable_info_get_instance_ownership_transfer(callable) !=
+             GI_TRANSFER_NOTHING)) {
+          /* NB: The call steals our reference, so we need add one
+           *     in order not to destruct the gobject prematurely.
+           */
+          g_object_ref(that->obj);
+        }
       } else {
         struct GI_GBoxed_struct *that =
           (struct GI_GBoxed_struct *)get_storage(self, GI_GBoxed_program);
@@ -1880,7 +1895,7 @@ static void f_set_gi_field(INT32 args)
 
   SET_ONERROR(err, g_base_info_unref, fieldinfo);
   ti = g_field_info_get_type(fieldinfo);
-  get_gi_argument_type(Pike_sp-args, &value, ti);
+  get_gi_argument_type(Pike_sp-args, &value, NULL, ti);
   if (!g_field_info_set_field(fieldinfo, ptr, &value)) {
     Pike_error("Failed to write field.\n");
   }
