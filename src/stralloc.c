@@ -721,6 +721,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
 #endif
   dmalloc_register(t, sizeof(struct pike_string), DMALLOC_LOCATION());
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  t->string_is_utf8 = 0;
   t->alloc_type = STRING_ALLOC_STATIC;
   t->struct_type = STRING_STRUCT_STRING;
   SET_ONERROR(fe,free_unlinked_pike_string,t);
