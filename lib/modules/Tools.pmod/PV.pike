@@ -163,9 +163,9 @@ protected {
    object key_controller = Gtk.EventControllerKey();
    key_controller->connect("key-pressed", lambda(object controller,
                                                  int(16bit) keyval,
-                                                 int(256bit) keycode,
+                                                 int keycode,
                                                  Gdk.ModifierType modifier) {
-     return key_pressed(sprintf("%c", keyval));
+     return key_pressed(keyval);
    });
    add_controller(key_controller);
 
@@ -176,8 +176,9 @@ protected {
 
    connect("key-press-event",
            lambda(GTK.Window win, Gdk.EventKey e) {
-             return key_pressed(e["string"]);
+             return key_pressed(e["string"][0]);
            });
+
 #endif
 
    set_title("PV");
@@ -190,7 +191,7 @@ protected {
 
    signal_connect("key_press_event",
                   lambda(GTK.Window win, GDK.Event e) {
-                    return key_pressed(e->data);
+                    return key_pressed(e->data[0]);
                   });
 #endif
    if( i )
@@ -303,35 +304,35 @@ void scale( float factor )
   set_image( old_image );
 }
 
-int(1bit) key_pressed(string key)
+int(1bit) key_pressed(int unicode_key)
 {
-  switch(key)
+  switch(unicode_key)
   {
-  case "-": case "<": scale( scale_factor * 0.5 );  break;
-  case "+": case ">": scale( scale_factor * 2.0 );  break;
-  case ",": scale( scale_factor * 0.9 );  break;
-  case ".": scale( scale_factor * 1.1 );  break;
-  case "n": scale( 1.0 );  break;
-  case "s":
+  case '-': case '<': scale( scale_factor * 0.5 );  break;
+  case '+': case '>': scale( scale_factor * 2.0 );  break;
+  case ',': scale( scale_factor * 0.9 );  break;
+  case '.': scale( scale_factor * 1.1 );  break;
+  case 'n': scale( 1.0 );  break;
+  case 's':
     break;
 #if 0
-  case "D":
+  case 'D':
     rm( images[ current_image ] );
     break;
 #endif
-  case "q":
-    _exit(0);
+  case 'q':
+    close();
 #if 0
-  case "c":
+  case 'c':
     if( copy_to )
       doCopy( images[ current_image ] );
     break;
 #endif
 #if 0
-  case " ":
+  case ' ':
     current_image+=2;
     // FALLTHRU
-  case "\b":
+  case '\b':
     current_image--;
     current_image = current_image % sizeof( images );
     w->load_image( images[ current_image ] );
