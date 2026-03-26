@@ -155,7 +155,9 @@ static node *optimize_f_aggregate(node *n)
   args->parent = NULL;
   for (count = 0; args->token == F_ARG_LIST; args = CAR(args)) {
     if (CDR(args) && CDR(args)->token == F_PUSH_ARRAY) {
-      /* Splices have a weight of 16. */
+      /* Splices have a weight of 16.
+       * FIXME: Consider length of pushed array type.
+       */
       count += 16;
     } else {
       count++;
