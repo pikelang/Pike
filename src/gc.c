@@ -1044,7 +1044,7 @@ static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBU
     Pike_in_gc = 0;
     if (type == PIKE_T_UNKNOWN)
       type = attempt_to_identify (a, &inblock);
-    describe_something (a, type, 0, 0, 0, inblock);
+    describe_something (a, type, 0, 1, 0, inblock);
     if (flags & 1) locate_references(a);
     Pike_in_gc = orig_gc_pass;
   }
@@ -1055,7 +1055,7 @@ static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBU
 #endif
   {
     d_flag = 0; /* The instruction backlog is never of any use here. */
-    debug_fatal (NULL);
+    debug_fatal("Fatal during GC.\n");
   }
 }
 
