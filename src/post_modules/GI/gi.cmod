@@ -3649,15 +3649,19 @@ PIKEFUN Repository get_default_repository()
 
 INIT
 {
+#ifdef HAVE_GI
   THIS->program_rev_lookup = allocate_mapping(10);
+#endif
 }
 
 EXIT
 {
+#ifdef HAVE_GI
   if (THIS->program_rev_lookup) {
     free_mapping(THIS->program_rev_lookup);
     THIS->program_rev_lookup = NULL;
   }
+#endif
 }
 
 PIKE_MODULE_INIT
