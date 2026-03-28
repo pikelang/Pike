@@ -3300,6 +3300,7 @@ PIKECLASS Repository
     CALL_AND_UNSET_ONERROR(err);
   }
 
+#if 0
   static void f_namespace_get_symbol(INT32 args)
   {
     struct program *p = Pike_fp->context->prog;
@@ -3336,6 +3337,7 @@ PIKECLASS Repository
     push_program(sym_prog);
     CALL_AND_UNSET_ONERROR(err);
   }
+#endif
 
   /* Note: Returns reference number.
    *
@@ -3499,7 +3501,7 @@ PIKECLASS Repository
     if (num < 0)
       Pike_error("Namespace %pq not loaded.\n", name);
 
-    namespace_is_cairo = !strcmp(STR0(name), "cairo");
+    namespace_is_cairo = (name == MK_STRING("cairo"));
 
     /* NB: Maximum growth is for getters (which add two identifiers). */
     push_undefined();
