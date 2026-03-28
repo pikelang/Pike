@@ -41,6 +41,13 @@ DECLARATIONS
 #define G_VALUE_INIT  { 0, { { 0 } } }
 #endif
 
+#if !defined(GI_TYPE_TAG_IS_BASIC) && defined(G_TYPE_TAG_IS_BASIC)
+/* Old gobject-introspection has a different name for this macro...
+ * Observed on Solaris 11.4/x86_64.
+ */
+#define GI_TYPE_TAG_IS_BASIC(X) G_TYPE_TAG_IS_BASIC(X)
+#endif
+
 #ifndef HAVE_G_VALUE_GET_SCHAR
 /* Renamed in glib 2.32 */
 #define g_value_get_schar g_value_get_char
@@ -1573,7 +1580,7 @@ static void low_invoke(GIBaseInfo *callable,
   gint num_args = g_callable_info_get_n_args(callable);
   GIFunctionInfoFlags flags = g_function_info_get_flags(funcinfo);
   GIArgument *in_args;
-  GIArgument out_arg_0, *out_args = (num_args? in_args+num_args+1 : NULL);
+  GIArgument out_arg_0, *out_args;
   struct gi_callback_context *cbc, *cbclist = NULL;
 
   if (funcinfo == callable) {
@@ -1585,6 +1592,7 @@ static void low_invoke(GIBaseInfo *callable,
              xalloc((2 * num_args + 1) * sizeof(GIArgument)) :
              NULL);
   SET_ONERROR(onerror, free, in_args);
+  out_args = (num_args? in_args+num_args+1 : NULL);
 
   SET_ONERROR(onerror_cbc, cb_destroy_list, &cbclist);
 
@@ -1861,6 +1869,7 @@ static void f_get_gi_field(INT32 args)
   if (!g_field_info_get_field(fieldinfo, ptr, &value)) {
     Pike_error("Failed to read field.\n");
   }
+  pop_n_elems(args);
   push_gi_argument(&value, ti);
   CALL_AND_UNSET_ONERROR(err);
 }
@@ -1902,6 +1911,7 @@ static void f_set_gi_field(INT32 args)
   CALL_AND_UNSET_ONERROR(err);
 }
 
+#ifdef HAVE_G_PROPERTY_INFO_GET_GETTER
 static void f_get_gi_property(INT32 args)
 {
   struct object *self = Pike_fp->current_object;
@@ -1975,6 +1985,7 @@ static void f_set_gi_property(INT32 args)
   low_invoke(setter, self, args);
   CALL_AND_UNSET_ONERROR(err);
 }
+#endif
 
 static void push_gi_interface_type(struct mapping *namespace, GIBaseInfo *info)
 {
@@ -2502,6 +2513,7 @@ static struct program *program_from_info(struct mapping *namespace,
       g_base_info_unref(constinfo);
     }
 
+#ifdef HAVE_G_PROPERTY_INFO_GET_GETTER
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_properties(info) :
       g_interface_info_get_n_properties(info);
     for (i = 0; i < n; i++) {
@@ -2530,6 +2542,7 @@ static struct program *program_from_info(struct mapping *namespace,
       pop_stack();
       g_base_info_unref(propinfo);
     }
+#endif
 
 #if 0
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_signals(info) :

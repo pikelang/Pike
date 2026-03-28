@@ -72,7 +72,8 @@ if test x$with_gi = xyes ; then
                          ])
         AC_CHECK_FUNCS(g_callable_info_create_closure g_constant_info_free_value
                        g_object_info_find_signal g_interface_info_find_signal
-                       g_value_get_schar g_value_set_schar)
+                       g_value_get_schar g_value_set_schar
+                       g_property_info_get_getter)
         AC_CHECK_DECLS([GI_TYPE_TAG_UNICHAR],
                        [], [], [[#include <girepository.h>]])
         AC_DEFINE(HAVE_GI, 1, [Define to major version of GI if available and to be built])
