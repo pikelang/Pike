@@ -6,7 +6,16 @@
 
 import GI.repository;
 inherit Gtk.Window;
+
+@Pike.Annotations.Implements(Gtk.Window);
+
 #define USE_GI
+
+#if constant(GI.repository.Gtk.__GI_API_VERSION_3_0__)
+#define USE_GTK3
+#elif constant(GI.repository.Gtk.__GI_API_VERSION_4_0__)
+#define USE_GTK4
+#endif
 
 #else
 
@@ -103,7 +112,7 @@ protected {
  }
 
 #ifdef USE_GI
- void draw(Gtk.DrawingArea area, Cairo.Context ctx, int w, int h)
+ void area_draw(Gtk.DrawingArea area, Cairo.Context ctx, int w, int h)
  {
    if (!w || !h || !image_pattern) return;
    ctx->set_operator(Cairo.OPERATOR_SOURCE);
@@ -141,18 +150,39 @@ protected {
    ::create();
    area = Gtk.DrawingArea();
    if (area->set_draw_func)
-      area->set_draw_func(draw);
+      area->set_draw_func(area_draw);
    else
       area->connect("draw", lambda(Gtk.DrawingArea area, Cairo.Context ctx) {
-         draw(area, ctx, area->get_allocated_width(), area->get_allocated_height());
+         area_draw(area, ctx, area->get_allocated_width(), area->get_allocated_height());
       });
-   if (::set_child)
-      ::set_child(area);
-   else {
-      area->show();
-      ::add(area);
-   }
-   ::set_title("PV");
+
+#ifdef USE_GTK4
+
+   set_child(area);
+
+   object key_controller = Gtk.EventControllerKey();
+   key_controller->connect("key-pressed", lambda(object controller,
+                                                 int(16bit) keyval,
+                                                 int keycode,
+                                                 Gdk.ModifierType modifier) {
+     return key_pressed(keyval);
+   });
+   add_controller(key_controller);
+
+#elif defined(USE_GTK3)
+
+   area->show();
+   add(area);
+
+   connect("key-press-event",
+           lambda(GTK.Window win, Gdk.EventKey e) {
+             return key_pressed(e["string"][0]);
+           });
+
+#endif
+
+   set_title("PV");
+
 #else
    catch(GTK.setup_gtk());
    ::create( GTK.WindowToplevel );
@@ -161,7 +191,7 @@ protected {
 
    signal_connect("key_press_event",
                   lambda(GTK.Window win, GDK.Event e) {
-                    return key_pressed(e->data);
+                    return key_pressed(e->data[0]);
                   });
 #endif
    if( i )
@@ -236,10 +266,13 @@ void set_image( PVImage i )
     squares_pattern->set_extend(Cairo.EXTEND_REPEAT);
   } else
     squares_pattern = 0;
+
   area->set_size_request((int) (i->xsize() * scale_factor),
                          (int) (i->ysize() * scale_factor));
   area->queue_draw();
-  ::set_visible(1);
+
+  set_visible(1);
+
 #else
   i = get_as_image( i );
   if( scale_factor != 1.0 )
@@ -271,35 +304,35 @@ void scale( float factor )
   set_image( old_image );
 }
 
-int(1bit) key_pressed(string key)
+int(1bit) key_pressed(int unicode_key)
 {
-  switch(key)
+  switch(unicode_key)
   {
-  case "-": case "<": scale( scale_factor * 0.5 );  break;
-  case "+": case ">": scale( scale_factor * 2.0 );  break;
-  case ",": scale( scale_factor * 0.9 );  break;
-  case ".": scale( scale_factor * 1.1 );  break;
-  case "n": scale( 1.0 );  break;
-  case "s":
+  case '-': case '<': scale( scale_factor * 0.5 );  break;
+  case '+': case '>': scale( scale_factor * 2.0 );  break;
+  case ',': scale( scale_factor * 0.9 );  break;
+  case '.': scale( scale_factor * 1.1 );  break;
+  case 'n': scale( 1.0 );  break;
+  case 's':
     break;
 #if 0
-  case "D":
+  case 'D':
     rm( images[ current_image ] );
     break;
 #endif
-  case "q":
-    _exit(0);
+  case 'q':
+    close();
 #if 0
-  case "c":
+  case 'c':
     if( copy_to )
       doCopy( images[ current_image ] );
     break;
 #endif
 #if 0
-  case " ":
+  case ' ':
     current_image+=2;
     // FALLTHRU
-  case "\b":
+  case '\b':
     current_image--;
     current_image = current_image % sizeof( images );
     w->load_image( images[ current_image ] );
