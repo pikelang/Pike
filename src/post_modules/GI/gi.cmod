@@ -1573,7 +1573,7 @@ static void low_invoke(GIBaseInfo *callable,
   gint num_args = g_callable_info_get_n_args(callable);
   GIFunctionInfoFlags flags = g_function_info_get_flags(funcinfo);
   GIArgument *in_args;
-  GIArgument out_arg_0, *out_args = (num_args? in_args+num_args+1 : NULL);
+  GIArgument out_arg_0, *out_args;
   struct gi_callback_context *cbc, *cbclist = NULL;
 
   if (funcinfo == callable) {
@@ -1585,6 +1585,7 @@ static void low_invoke(GIBaseInfo *callable,
              xalloc((2 * num_args + 1) * sizeof(GIArgument)) :
              NULL);
   SET_ONERROR(onerror, free, in_args);
+  out_args = (num_args? in_args+num_args+1 : NULL);
 
   SET_ONERROR(onerror_cbc, cb_destroy_list, &cbclist);
 
