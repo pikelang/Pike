@@ -41,6 +41,13 @@ DECLARATIONS
 #define G_VALUE_INIT  { 0, { { 0 } } }
 #endif
 
+#if !defined(GI_TYPE_INFO_TAG_IS_BASIC) && defined(GI_TYPE_INFO_TAG_IS_BASIC)
+/* Old gobject-introspection has a different name for this macro...
+ * Observed on Solaris 11.4/x86_64.
+ */
+#define GI_TYPE_INFO_TAG_IS_BASIC(X) G_TYPE_INFO_TAG_IS_BASIC(X)
+#endif
+
 #ifndef HAVE_G_VALUE_GET_SCHAR
 /* Renamed in glib 2.32 */
 #define g_value_get_schar g_value_get_char
@@ -1904,6 +1911,7 @@ static void f_set_gi_field(INT32 args)
   CALL_AND_UNSET_ONERROR(err);
 }
 
+#ifdef HAVE_G_PROPERTY_INFO_GET_GETTER
 static void f_get_gi_property(INT32 args)
 {
   struct object *self = Pike_fp->current_object;
@@ -1977,6 +1985,7 @@ static void f_set_gi_property(INT32 args)
   low_invoke(setter, self, args);
   CALL_AND_UNSET_ONERROR(err);
 }
+#endif
 
 static void push_gi_interface_type(struct mapping *namespace, GIBaseInfo *info)
 {
@@ -2504,6 +2513,7 @@ static struct program *program_from_info(struct mapping *namespace,
       g_base_info_unref(constinfo);
     }
 
+#ifdef HAVE_G_PROPERTY_INFO_GET_GETTER
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_properties(info) :
       g_interface_info_get_n_properties(info);
     for (i = 0; i < n; i++) {
@@ -2532,6 +2542,7 @@ static struct program *program_from_info(struct mapping *namespace,
       pop_stack();
       g_base_info_unref(propinfo);
     }
+#endif
 
 #if 0
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_signals(info) :
