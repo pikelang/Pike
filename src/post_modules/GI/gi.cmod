@@ -3674,14 +3674,14 @@ PIKE_MODULE_INIT
 #endif
   object_quark = g_quark_from_static_string("PikeGI::object");
   magic_mapping = allocate_mapping(0);
-  INIT
 #endif
+  INIT
 }
 
 PIKE_MODULE_EXIT
 {
-#ifdef HAVE_GI
   EXIT
+#ifdef HAVE_GI
   if(magic_mapping) {
     free_mapping(magic_mapping);
     magic_mapping = NULL;
