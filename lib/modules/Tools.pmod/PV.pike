@@ -321,7 +321,11 @@ int(1bit) key_pressed(int unicode_key)
     break;
 #endif
   case 'q':
+#ifdef USE_GI
     close();
+#else
+    exit(0);
+#endif
 #if 0
   case 'c':
     if( copy_to )
