@@ -1862,6 +1862,7 @@ static void f_get_gi_field(INT32 args)
   if (!g_field_info_get_field(fieldinfo, ptr, &value)) {
     Pike_error("Failed to read field.\n");
   }
+  pop_n_elems(args);
   push_gi_argument(&value, ti);
   CALL_AND_UNSET_ONERROR(err);
 }
