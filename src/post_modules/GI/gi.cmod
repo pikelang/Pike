@@ -41,11 +41,11 @@ DECLARATIONS
 #define G_VALUE_INIT  { 0, { { 0 } } }
 #endif
 
-#if !defined(GI_TYPE_INFO_TAG_IS_BASIC) && defined(GI_TYPE_INFO_TAG_IS_BASIC)
+#if !defined(GI_TYPE_TAG_IS_BASIC) && defined(G_TYPE_TAG_IS_BASIC)
 /* Old gobject-introspection has a different name for this macro...
  * Observed on Solaris 11.4/x86_64.
  */
-#define GI_TYPE_INFO_TAG_IS_BASIC(X) G_TYPE_INFO_TAG_IS_BASIC(X)
+#define GI_TYPE_TAG_IS_BASIC(X) G_TYPE_TAG_IS_BASIC(X)
 #endif
 
 #ifndef HAVE_G_VALUE_GET_SCHAR
