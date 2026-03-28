@@ -3686,7 +3686,6 @@ PIKE_MODULE_EXIT
     free_mapping(magic_mapping);
     magic_mapping = NULL;
   }
-#endif
   if (default_repository) {
     free_object(default_repository);
     default_repository = NULL;
@@ -3695,4 +3694,5 @@ PIKE_MODULE_EXIT
     free_mapping(global_namespace_lookup);
     global_namespace_lookup = NULL;
   }
+#endif
 }
