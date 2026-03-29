@@ -1064,12 +1064,12 @@ PMOD_EXPORT int add_object_constant(const char *name,
 PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32), const char * type, int flags);
 PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags);
 int is_lfun_name(struct pike_string *name);
-INT32 define_function(struct pike_string *name,
-		      struct pike_type *type,
-		      unsigned flags,
-		      unsigned function_flags,
-		      union idptr *func,
-		      unsigned opt_flags);
+PMOD_EXPORT INT32 define_function(struct pike_string *name,
+                                  struct pike_type *type,
+                                  unsigned flags,
+                                  unsigned function_flags,
+                                  union idptr *func,
+                                  unsigned opt_flags);
 PMOD_EXPORT int really_low_find_shared_string_identifier(const struct pike_string *name,
 							 const struct program *prog,
 							 int flags);
@@ -1090,10 +1090,10 @@ PMOD_EXPORT int find_identifier(const char *name,const struct program *prog);
 PMOD_EXPORT int find_identifier_inh(const char *name,
 				    const struct program *prog,
 				    int inh);
-int store_prog_string(struct pike_string *str);
-int store_constant(const struct svalue *foo,
-		   int equal,
-		   struct pike_string *constant_name);
+PMOD_EXPORT int store_prog_string(struct pike_string *str);
+PMOD_EXPORT int store_constant(const struct svalue *foo,
+                               int equal,
+                               struct pike_string *constant_name);
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
 struct array *program_types(struct program *p);

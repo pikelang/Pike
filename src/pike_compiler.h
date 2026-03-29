@@ -179,7 +179,7 @@ struct compilation
 #define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		13
 #define PC_EVAL_TYPE_ATTRIBUTE_FUN_NUM			14
 
-extern struct program *null_program;
+PMOD_EXPORT extern struct program *null_program;
 extern struct program *placeholder_program;
 extern struct object *placeholder_object;
 
