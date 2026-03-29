@@ -1614,6 +1614,10 @@ static void low_invoke(GIBaseInfo *callable,
           Pike_error("Object is not a %s\n",
                      g_base_info_get_name(cont));
         in_args[0].v_pointer = that->obj;
+#ifdef HAVE_G_CALLABLE_INFO_GET_INSTANCE_OWNERSHIP_TRANSFER
+        /* g_callable_info_get_instance_ownership_transfer() is
+         * not present prior to gobject-introspection 1.42.
+         */
         if (that->obj &&
             (g_callable_info_get_instance_ownership_transfer(callable) !=
              GI_TRANSFER_NOTHING)) {
@@ -1622,6 +1626,7 @@ static void low_invoke(GIBaseInfo *callable,
            */
           g_object_ref(that->obj);
         }
+#endif
       } else {
         struct GI_GBoxed_struct *that =
           (struct GI_GBoxed_struct *)get_storage(self, GI_GBoxed_program);
@@ -2313,7 +2318,16 @@ static int add_gifunction(struct mapping *namespace,
     g_base_info_unref(arginfo);
   }
 
-  if (!rettypeinfo && !g_callable_info_skip_return(funcinfo)) {
+  if (!rettypeinfo
+#ifdef HAVE_G_CALLABLE_INFO_SKIP_RETURN
+      /* g_callable_info_skip_return() is supposed to exist
+       * in all versions of gobject-introspection, but some
+       * implementations apparently lack it.
+       * Cf Solaris 11.0/sun4v
+       */
+      && !g_callable_info_skip_return(funcinfo)
+#endif
+      ) {
     rettypeinfo = g_callable_info_get_return_type(funcinfo);
     ret_nullable = g_callable_info_may_return_null(funcinfo);
   }
