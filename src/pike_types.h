@@ -251,7 +251,7 @@ static inline void free_call_state(struct call_state *cs)
  */
 #define SOFT_WEAKER	0x0001	/* Soft cast to a weaker type. */
 
-void debug_free_type(struct pike_type *t);
+PMOD_EXPORT void debug_free_type(struct pike_type *t);
 #define copy_pike_type(D, S)					\
   safe_add_ref(D = (struct pike_type *)debug_malloc_pass(S))
 #define CONSTTYPE(X) make_pike_type(X)
@@ -360,8 +360,8 @@ extern struct pike_type_location *all_pike_type_locations;
 #define exit_type_stack pop_stack_mark
 #endif
 
-void debug_push_type(unsigned int type);
-void debug_push_reverse_type(unsigned int type);
+PMOD_EXPORT void debug_push_type(unsigned int type);
+PMOD_EXPORT void debug_push_reverse_type(unsigned int type);
 #ifdef DEBUG_MALLOC
 #define push_type(T) do { debug_push_type(T); debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_reverse_type(T) do { debug_push_reverse_type(T); debug_malloc_pass(debug_peek_type_stack()); } while(0)
@@ -370,7 +370,7 @@ void debug_push_reverse_type(unsigned int type);
 #define push_reverse_type debug_push_reverse_type
 #endif /* DEBUG_MALLOC */
 
-extern void type_stack_mark(void);
+PMOD_EXPORT void type_stack_mark(void);
 
 #define reset_type_stack() do {			\
    type_stack_pop_to_mark();			\
@@ -387,27 +387,27 @@ ptrdiff_t pop_stack_mark(void);
 int debug_pop_type_stack(unsigned int expected);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
-struct pike_type *debug_peek_type_stack(void);
-void debug_push_int_type(INT_TYPE min, INT_TYPE max);
-void debug_push_unlimited_array_type(enum PIKE_TYPE t);
-void debug_push_object_type(int flag, INT32 id);
-void debug_push_object_type_backwards(int flag, INT32 id);
-void debug_push_concurrent_future_wrapper(void);
-void debug_push_type_attribute(struct pike_string *attr);
-void debug_push_type_name(struct pike_string *name);
-void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg);
+PMOD_EXPORT struct pike_type *debug_peek_type_stack(void);
+PMOD_EXPORT void debug_push_int_type(INT_TYPE min, INT_TYPE max);
+PMOD_EXPORT void debug_push_unlimited_array_type(enum PIKE_TYPE t);
+PMOD_EXPORT void debug_push_object_type(int flag, INT32 id);
+PMOD_EXPORT void debug_push_object_type_backwards(int flag, INT32 id);
+PMOD_EXPORT void debug_push_concurrent_future_wrapper(void);
+PMOD_EXPORT void debug_push_type_attribute(struct pike_string *attr);
+PMOD_EXPORT void debug_push_type_name(struct pike_string *name);
+PMOD_EXPORT void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg);
 INT32 extract_type_int(char *p);
-void debug_push_unfinished_type(char *s);
-void debug_push_assign_type(int marker);
-void debug_push_finished_type(struct pike_type *type);
-void debug_push_finished_type_backwards(struct pike_type *type);
-void debug_push_scope_type(int level);
-struct pike_type *debug_pop_unfinished_type(void);
+PMOD_EXPORT void debug_push_unfinished_type(char *s);
+PMOD_EXPORT void debug_push_assign_type(int marker);
+PMOD_EXPORT void debug_push_finished_type(struct pike_type *type);
+PMOD_EXPORT void debug_push_finished_type_backwards(struct pike_type *type);
+PMOD_EXPORT void debug_push_scope_type(int level);
+PMOD_EXPORT struct pike_type *debug_pop_unfinished_type(void);
 void compiler_discard_top_type (void);
 void compiler_discard_type (void);
-struct pike_type *low_pop_type(void);
-struct pike_type *debug_pop_type(void);
-struct pike_type *debug_compiler_pop_type(void);
+PMOD_EXPORT struct pike_type *low_pop_type(void);
+PMOD_EXPORT struct pike_type *debug_pop_type(void);
+PMOD_EXPORT struct pike_type *debug_compiler_pop_type(void);
 struct pike_type *parse_type(const char *s);
 void stupid_describe_type(char *a, ptrdiff_t len);
 void simple_describe_type(struct pike_type *s);
