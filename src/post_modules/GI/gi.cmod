@@ -2135,7 +2135,9 @@ static void push_gi_typeinfo_type(struct mapping *namespace, GITypeInfo *ti)
   case GI_TYPE_TAG_UINT16:
     push_int_type(0, 65535);
     break;
+#if HAVE_DECL_GI_TYPE_TAG_UNICHAR
   case GI_TYPE_TAG_UNICHAR:
+#endif
   case GI_TYPE_TAG_INT32:
   case GI_TYPE_TAG_UINT32:
   case GI_TYPE_TAG_INT64:
