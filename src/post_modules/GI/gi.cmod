@@ -382,6 +382,17 @@ static void signal_func_wrapper(struct signal_data *d,
  *     the corresponding compiled symbol.
  */
 
+/*! @class Namespace
+ *!
+ *!   Base class for GObject-Introspection namespaces.
+ */
+
+PIKECLASS Namespace
+{
+}
+
+/*! @endclass
+ */
 
 /*! @class BaseInfo
  */
@@ -3270,7 +3281,7 @@ PIKECLASS Repository
    * The parent object is the Repository. NB: Not used as the low-level
    * GI library only supports a single repository (ie the default repo).
    *
-   * String #0 is the namespace name.
+   * String #1 is the namespace name.
    *
    * Constant #-1 is the lookup array from identifier number
    * to irepo info number. This is needed since getters and
@@ -3459,8 +3470,8 @@ PIKECLASS Repository
     return ret;
   }
 
-  /*! @decl object namespace(string name, string|void version, @
-   *!                        int(0..1)|void lazy)
+  /*! @decl Namespace namespace(string name, string|void version, @
+   *!                           int(0..1)|void lazy)
    *!
    *!   Loads and compiles a @[Namespace], like eg @expr{GI.repository.GLib@}.
    *!
@@ -3504,6 +3515,10 @@ PIKECLASS Repository
       return;
     }
 
+    num = g_irepository_get_n_infos(repository, (gchar *)STR0(name));
+    if (num < 0)
+      Pike_error("Namespace %pq not loaded.\n", name);
+
     /* NB: Entering the compiler pushes a pike_frame and thus invalidates
      *     any use of THIS.
      */
@@ -3515,18 +3530,21 @@ PIKECLASS Repository
     mapping_string_insert(namespace_lookup, name, Pike_sp-1);
     /* NB: The above is kept on the stack as it will be the return value. */
 
-    start_new_program();
+    push_text("GI.repository.");
+    ref_push_string(name);
+    f_add(2);
+    debug_start_new_program_id(0, Pike_sp[-1].u.string->str, 0);
+    pop_stack();
 
 #if 0
     Pike_compiler->new_program->flags |=
       PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
 #endif
 
-    store_prog_string(name);	/* String #0 */
+    store_prog_string(name);	/* String #1 */
 
-    num = g_irepository_get_n_infos(repository, (gchar *)STR0(name));
-    if (num < 0)
-      Pike_error("Namespace %pq not loaded.\n", name);
+    low_inherit(GI_Namespace_program, NULL, -1, 0, 0,
+                MK_STRING("Namespace"), NULL);
 
     namespace_is_cairo = (name == MK_STRING("cairo"));
 
