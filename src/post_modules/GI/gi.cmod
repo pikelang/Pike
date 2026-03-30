@@ -2548,6 +2548,7 @@ static struct program *program_from_info(struct mapping *namespace,
         GI_IS_OBJECT_INFO(info) ? g_object_info_get_property(info, i) :
         g_interface_info_get_property(info, i);
       GIFunctionInfo *funcinfo = g_property_info_get_getter(propinfo);
+
       push_text("`");
       push_text(g_base_info_get_name(propinfo));
       f_add(2);
@@ -2610,7 +2611,7 @@ static struct program *program_from_info(struct mapping *namespace,
       if (GI_TYPE_TAG_IS_BASIC(ttag)) {
         GIFieldInfoFlags fieldflags = g_field_info_get_flags(fieldinfo);
 
-        push_text("`");
+        push_text("`_");
         push_text(g_base_info_get_name(fieldinfo));
         f_add(2);
         if (fieldflags & GI_FIELD_IS_READABLE) {
