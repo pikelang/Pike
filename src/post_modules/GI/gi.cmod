@@ -3690,6 +3690,30 @@ PIKEFUN Repository get_default_repository()
 /*! @endmodule
  */
 
+/*! @decl array(utf8_string) get_search_path()
+ */
+PIKEFUN array(utf8_string) get_search_path()
+{
+  struct svalue *save_sp = Pike_sp;
+  GSList *list = g_irepository_get_search_path();
+
+  while (list) {
+#ifndef __NT__
+    push_text((const char *)list->data);
+#else
+    const p_wchar0 *utf8_data =
+      pike_utf16_to_utf8((const p_wchar1 *)list->data);
+    if (utf8_data) {
+      push_text(utf8_data);
+      free(utf8_data);
+    }
+#endif
+    list = g_slist_next(list);
+  }
+
+  f_aggregate(Pike_sp - save_sp);
+}
+
 /*! @endnamespace
  */
 
