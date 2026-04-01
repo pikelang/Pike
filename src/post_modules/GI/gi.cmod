@@ -2749,6 +2749,7 @@ static struct program *program_from_info(struct mapping *namespace,
     GI_IS_INTERFACE_INFO(info) ? g_interface_info_get_n_methods(info) : 0;
   for (i = 0; i < n; i++) {
     GIFunctionInfo *funcinfo = NULL;
+    GIFunctionInfoFlags flags = 0;
     if (GI_IS_OBJECT_INFO(info)) {
       funcinfo = g_object_info_get_method(info, i);
     } else if (GI_IS_STRUCT_INFO(info)) {
@@ -2756,6 +2757,7 @@ static struct program *program_from_info(struct mapping *namespace,
     } else {
       funcinfo = g_interface_info_get_method(info, i);
     }
+    flags = g_function_info_get_flags(funcinfo);
     if (!strcmp(g_base_info_get_name(funcinfo), "create")) {
       // Conflicts with the efun.
       // Triggered by eg Gio.File()->create().
@@ -2763,9 +2765,12 @@ static struct program *program_from_info(struct mapping *namespace,
     } else {
       push_text(g_base_info_get_name(funcinfo));
     }
-    update_ident_to_n(ident_to_n_sval,
-                      add_gifunction(namespace, Pike_sp[-1].u.string,
-                                     funcinfo, f_call_gi_method), i);
+    /* FIXME: Constructors ought to be mapped onto variants of create(). */
+    if (!(flags & GI_FUNCTION_IS_CONSTRUCTOR)) {
+      update_ident_to_n(ident_to_n_sval,
+                        add_gifunction(namespace, Pike_sp[-1].u.string,
+                                       funcinfo, f_call_gi_method), i);
+    }
     pop_stack();
     g_base_info_unref(funcinfo);
   }
