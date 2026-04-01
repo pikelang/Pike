@@ -382,6 +382,17 @@ static void signal_func_wrapper(struct signal_data *d,
  *     the corresponding compiled symbol.
  */
 
+/*! @class Namespace
+ *!
+ *!   Base class for GObject-Introspection namespaces.
+ */
+
+PIKECLASS Namespace
+{
+}
+
+/*! @endclass
+ */
 
 /*! @class BaseInfo
  */
@@ -527,6 +538,12 @@ PIKECLASS GObject
 #endif
 
   /*! @decl protected void create(mapping(string:mixed)|void props)
+   *!
+   *! @param props
+   *!   An mapping with initial values for properties.
+   *!
+   *! @seealso
+   *!   @[list_properties()]
    */
   PIKEFUN void create(mapping(string:mixed)|void props)
     flags ID_PROTECTED;
@@ -563,7 +580,94 @@ PIKECLASS GObject
   {
   }
 
+  /*! @decl array(string(8bit)) list_signals()
+   *!
+   *!   Returns an array with the names of the signals
+   *!   handled by this class.
+   *!
+   *! @seealso
+   *!   @[connect()], @[list_properties()]
+   */
+  PIKEFUN array(string(8bit)) list_signals()
+  {
+    GIBaseInfo *info;
+    int n;
+    struct svalue *save_sp = Pike_sp;
+
+    low_object_index_no_free(Pike_sp,
+                             Pike_fp->current_object,
+                             gi_gobject_base_info_fun_num +
+                             Pike_fp->context->identifier_level);
+    Pike_sp++;
+    info = OBJ2_GI_BASEINFO(Pike_sp[-1].u.object)->info;
+    pop_stack();
+
+    while (info) {
+      fprintf(stderr, "info: %p\n", info);
+
+      for (n = g_object_info_get_n_signals(info); n--; ) {
+        GISignalInfo *si = g_object_info_get_signal(info, n);
+        if (GI_IS_SIGNAL_INFO(si)) {
+          push_text(g_base_info_get_name(si));
+          g_base_info_unref(si);
+        } else {
+          fprintf(stderr, "Signal #%d returned info type %d\n",
+                  n, g_base_info_get_type(si));
+        }
+      }
+
+      info = g_object_info_get_parent(info);
+    }
+
+    f_aggregate(Pike_sp - save_sp);
+  }
+
+  /*! @decl array(string(8bit)) list_properties()
+   *!
+   *!   Returns an array with the names of the properties
+   *!   handled by this class.
+   *!
+   *! @seealso
+   *!   @[create()], @[list_signals()]
+   */
+  PIKEFUN array(string(8bit)) list_properties()
+  {
+    GIBaseInfo *info;
+    int n;
+    struct svalue *save_sp = Pike_sp;
+
+    low_object_index_no_free(Pike_sp,
+                             Pike_fp->current_object,
+                             gi_gobject_base_info_fun_num +
+                             Pike_fp->context->identifier_level);
+    Pike_sp++;
+    info = OBJ2_GI_BASEINFO(Pike_sp[-1].u.object)->info;
+    pop_stack();
+
+    while (info) {
+      fprintf(stderr, "info: %p\n", info);
+
+      for (n = g_object_info_get_n_properties(info); n--; ) {
+        GISignalInfo *si = g_object_info_get_property(info, n);
+        if (GI_IS_PROPERTY_INFO(si)) {
+          push_text(g_base_info_get_name(si));
+          g_base_info_unref(si);
+        } else {
+          fprintf(stderr, "Signal #%d returned info type %d\n",
+                  n, g_base_info_get_type(si));
+        }
+      }
+
+      info = g_object_info_get_parent(info);
+    }
+
+    f_aggregate(Pike_sp - save_sp);
+  }
+
   /*! @decl int connect(string signal_spec, function callback, mixed ... extra_args)
+   *!
+   *! @seealso
+   *!   @[list_signals()]
    */
   PIKEFUN int connect(string signal_spec, function callback, mixed ... extra_args)
   {
@@ -2124,7 +2228,9 @@ static void push_gi_typeinfo_type(struct mapping *namespace, GITypeInfo *ti)
   case GI_TYPE_TAG_UINT16:
     push_int_type(0, 65535);
     break;
+#if HAVE_DECL_GI_TYPE_TAG_UNICHAR
   case GI_TYPE_TAG_UNICHAR:
+#endif
   case GI_TYPE_TAG_INT32:
   case GI_TYPE_TAG_UINT32:
   case GI_TYPE_TAG_INT64:
@@ -2535,6 +2641,7 @@ static struct program *program_from_info(struct mapping *namespace,
         GI_IS_OBJECT_INFO(info) ? g_object_info_get_property(info, i) :
         g_interface_info_get_property(info, i);
       GIFunctionInfo *funcinfo = g_property_info_get_getter(propinfo);
+
       push_text("`");
       push_text(g_base_info_get_name(propinfo));
       f_add(2);
@@ -2597,7 +2704,7 @@ static struct program *program_from_info(struct mapping *namespace,
       if (GI_TYPE_TAG_IS_BASIC(ttag)) {
         GIFieldInfoFlags fieldflags = g_field_info_get_flags(fieldinfo);
 
-        push_text("`");
+        push_text("`_");
         push_text(g_base_info_get_name(fieldinfo));
         f_add(2);
         if (fieldflags & GI_FIELD_IS_READABLE) {
@@ -3270,7 +3377,7 @@ PIKECLASS Repository
    * The parent object is the Repository. NB: Not used as the low-level
    * GI library only supports a single repository (ie the default repo).
    *
-   * String #0 is the namespace name.
+   * String #1 is the namespace name.
    *
    * Constant #-1 is the lookup array from identifier number
    * to irepo info number. This is needed since getters and
@@ -3459,8 +3566,8 @@ PIKECLASS Repository
     return ret;
   }
 
-  /*! @decl object namespace(string name, string|void version, @
-   *!                        int(0..1)|void lazy)
+  /*! @decl Namespace namespace(string name, string|void version, @
+   *!                           int(0..1)|void lazy)
    *!
    *!   Loads and compiles a @[Namespace], like eg @expr{GI.repository.GLib@}.
    *!
@@ -3504,6 +3611,10 @@ PIKECLASS Repository
       return;
     }
 
+    num = g_irepository_get_n_infos(repository, (gchar *)STR0(name));
+    if (num < 0)
+      Pike_error("Namespace %pq not loaded.\n", name);
+
     /* NB: Entering the compiler pushes a pike_frame and thus invalidates
      *     any use of THIS.
      */
@@ -3515,18 +3626,21 @@ PIKECLASS Repository
     mapping_string_insert(namespace_lookup, name, Pike_sp-1);
     /* NB: The above is kept on the stack as it will be the return value. */
 
-    start_new_program();
+    push_text("GI.repository.");
+    ref_push_string(name);
+    f_add(2);
+    debug_start_new_program_id(0, Pike_sp[-1].u.string->str, 0);
+    pop_stack();
 
 #if 0
     Pike_compiler->new_program->flags |=
       PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
 #endif
 
-    store_prog_string(name);	/* String #0 */
+    store_prog_string(name);	/* String #1 */
 
-    num = g_irepository_get_n_infos(repository, (gchar *)STR0(name));
-    if (num < 0)
-      Pike_error("Namespace %pq not loaded.\n", name);
+    low_inherit(GI_Namespace_program, NULL, -1, 0, 0,
+                MK_STRING("Namespace"), NULL);
 
     namespace_is_cairo = (name == MK_STRING("cairo"));
 
@@ -3668,6 +3782,30 @@ PIKEFUN Repository get_default_repository()
 
 /*! @endmodule
  */
+
+/*! @decl array(utf8_string) get_search_path()
+ */
+PIKEFUN array(utf8_string) get_search_path()
+{
+  struct svalue *save_sp = Pike_sp;
+  GSList *list = g_irepository_get_search_path();
+
+  while (list) {
+#ifndef __NT__
+    push_text((const char *)list->data);
+#else
+    const p_wchar0 *utf8_data =
+      pike_utf16_to_utf8((const p_wchar1 *)list->data);
+    if (utf8_data) {
+      push_text(utf8_data);
+      free(utf8_data);
+    }
+#endif
+    list = g_slist_next(list);
+  }
+
+  f_aggregate(Pike_sp - save_sp);
+}
 
 /*! @endnamespace
  */
