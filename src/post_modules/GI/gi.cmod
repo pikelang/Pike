@@ -16,6 +16,7 @@
 #include "gimod_config.h"
 #include "pike_compiler.h"
 #include "pike_types.h"
+#include "fdlib.h"
 
 DECLARATIONS
 
@@ -27,6 +28,9 @@ DECLARATIONS
 #include <girepository/girffi.h>
 #else
 /* girepository-1.0 (aka gobject-introspection-1.0) */
+/* API documented at
+ *   https://gnome.pages.gitlab.gnome.org/gobject-introspection/girepository/
+ */
 #include <girepository.h>
 #include <girffi.h>
 
@@ -1217,9 +1221,10 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
       }
       if (!g_type_is_a(G_OBJECT_TYPE(gobj->obj),
                        g_registered_type_info_get_g_type(info))) {
-        Pike_error("Object is not a %s (got %ld (expected: %ld))\n",
-                   g_base_info_get_name(info), G_OBJECT_TYPE(gobj->obj),
-                   g_registered_type_info_get_g_type(info));
+        Pike_error("Object is not a %s (got %lu (expected: %lu))\n",
+                   g_base_info_get_name(info),
+                   (unsigned long)G_OBJECT_TYPE(gobj->obj),
+                   (unsigned long)g_registered_type_info_get_g_type(info));
       }
       arg->v_pointer = gobj->obj;
       if (gobj->obj && ai &&
@@ -3794,10 +3799,9 @@ PIKEFUN array(utf8_string) get_search_path()
 #ifndef __NT__
     push_text((const char *)list->data);
 #else
-    const p_wchar0 *utf8_data =
-      pike_utf16_to_utf8((const p_wchar1 *)list->data);
+    p_wchar0 *utf8_data = pike_utf16_to_utf8((p_wchar1 *)list->data);
     if (utf8_data) {
-      push_text(utf8_data);
+      push_text((char *)utf8_data);
       free(utf8_data);
     }
 #endif
