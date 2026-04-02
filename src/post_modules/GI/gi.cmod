@@ -3059,6 +3059,30 @@ static void set_gvalue_from_svalue(GValue *v, const struct svalue *s)
     }
     break;
 
+  case G_TYPE_INTERFACE:
+    if (UNSAFE_IS_ZERO(s)) {
+      g_value_set_object(v, NULL);
+      break;
+    }
+    if (TYPEOF(*s) != T_OBJECT)
+      Pike_error("object expected\n");
+    else {
+      struct GI_GObject_struct *that =
+        (struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
+      if (that == NULL)
+        Pike_error("argument is not a GObject\n");
+      if (that->obj == NULL ||
+          !g_type_is_a(G_OBJECT_TYPE(that->obj), gt)) {
+        const gchar *tn = g_type_name(gt);
+        if (tn)
+          Pike_error("Object is not a %s\n", tn);
+        else
+          Pike_error("Object is not of the correct type\n");
+      }
+      g_value_set_instance(v, that->obj);
+    }
+    break;
+
   default:
     Pike_error("Don't know how to set a gvalue type %u\n",
                (unsigned)G_TYPE_FUNDAMENTAL(gt));
