@@ -264,18 +264,22 @@ static void signal_func_wrapper(struct signal_data *d,
  *
  *     Base class for a GI Namespace.
  *
- *   * GObject
- *
- *     Wrapper for the corresponding C GObject.
- *
- *   * GBoxed
- *
- *     Wrapper for boxed C pointers. Typically structs or unions.
- *
  *   * BaseInfo
  *
  *     Wrapper for GIBaseInfo. Typically present in
  *     constant #-2 in the current inherit in derived classes.
+ *
+ *   * GObjectMixin
+ *
+ *     Base class for GObject and for GObjects in mixin mode.
+ *
+ *   * GObject
+ *
+ *     Wrapper for the corresponding C GObject or Interface object.
+ *
+ *   * GBoxed
+ *
+ *     Wrapper for boxed C pointers. Typically structs or unions.
  *
  *   * (Interface)
  *
@@ -296,6 +300,11 @@ static void signal_func_wrapper(struct signal_data *d,
  *     They also inherit the mixin classes for the
  *     interfaces that they implement (as per
  *     g_object_info_get_interface() et al).
+ *
+ *     Note: There is also a parallel class for the corresponding
+ *           interface that does NOT inherit the GObject base class.
+ *           This is needed due to it being possible for interfaces
+ *           to have GObjects as prerequisites.
  *
  *   * GBoxed
  *
@@ -326,6 +335,38 @@ static void signal_func_wrapper(struct signal_data *d,
  *     Other symbols are stored directly in the class.
  *     Namespace objects are singletons and are present
  *     as placeholder objects during their compilation.
+ *
+ *   Naming
+ *   ------
+ *
+ *   * GObject and Interface Object classes
+ *
+ *     Located directly in the Namespace object.
+ *
+ *   * GObject interfaces and Interface classes
+ *
+ *     Suffixed with "Mixin" in the Namespace object.
+ *
+ *   * Methods and functions
+ *
+ *     These appear directly in the class as-is.
+ *
+ *   * Fields
+ *
+ *     Due to fields sometimes having name-clashes with methods
+ *     their names are prefixed with a single underscore.
+ *
+ *   * Properties
+ *
+ *     Currently added as-is. Note that this means that symbols
+ *     may be added that are not valid in Pike code (typically
+ *     due to containing '-'-characters).
+ *
+ *   * Enums
+ *
+ *     Enums are added as constants to a subclass of the
+ *     same name as the enum. The enum type gets the name
+ *     of the enum suffixed with "Type".
  *
  *   Program fields (where p is Pike_fp->context->prog)
  *   --------------------------------------------------
@@ -502,6 +543,76 @@ PIKECLASS BaseInfo
 /*! @endclass
  */
 
+/*! @class GObjectMixin
+ *!
+ *!   Class with prototypes for @[GObject].
+ */
+
+PIKECLASS GObjectMixin
+{
+#ifndef tObjImpl_OBJECTINFO
+/* Break circular class dependency... */
+#define tObjImpl_OBJECTINFO tObj
+#endif
+
+  /*! @decl protected void _destruct(int reason)
+   *!
+   *! @note
+   *!   This function currently does not do anything. It is here to inhibit
+   *!   potential warnings about @expr{destroy()@}.
+   */
+  PIKEFUN void _destruct(int reason)
+    flags ID_PROTECTED;
+  {
+  }
+
+  /*! @decl array(string(8bit)) list_signals()
+   *!
+   *!   Returns an array with the names of the signals
+   *!   handled by this class.
+   *!
+   *! @seealso
+   *!   @[connect()], @[list_properties()]
+   */
+  PIKEFUN array(string(8bit)) list_signals()
+    prototype;
+  {}
+
+  /*! @decl array(string(8bit)) list_properties()
+   *!
+   *!   Returns an array with the names of the properties
+   *!   handled by this class.
+   *!
+   *! @seealso
+   *!   @[create()], @[list_signals()]
+   */
+  PIKEFUN array(string(8bit)) list_properties()
+    prototype;
+  {}
+
+  /*! @decl int connect(string signal_spec, function callback, @
+   *!                   mixed ... extra_args)
+   *!
+   *! @seealso
+   *!   @[list_signals()]
+   */
+  PIKEFUN int connect(string signal_spec, function callback,
+                      mixed ... extra_args)
+    prototype;
+  {}
+
+  /*! @decl int connect_after(string signal_spec, function callback, @
+   *!                         mixed ... extra_args)
+   */
+  PIKEFUN int connect_after(string signal_spec, function callback,
+                            mixed ... extra_args)
+    prototype;
+  {}
+}
+
+/*! @endclass
+ */
+
 /*! @class GObject
  */
 
@@ -510,6 +621,10 @@ PIKECLASS GObject
   CVAR GObject *obj;
 
   static int gi_gobject_base_info_fun_num;
+
+  /*! @decl inherit GObjectMixin
+   */
+  INHERIT GObjectMixin;
 
   EXTRA
   {
@@ -571,17 +686,6 @@ PIKECLASS GObject
     } else {
       Pike_error("Invalid Base Info!\n");
     }
-  }
-
-  /*! @decl protected void _destruct(int reason)
-   *!
-   *! @note
-   *!   This function currently does not do anything. It is here to inhibit
-   *!   potential warnings about @expr{destroy()@}.
-   */
-  PIKEFUN void _destruct(int reason)
-    flags ID_PROTECTED;
-  {
   }
 
   /*! @decl array(string(8bit)) list_signals()
@@ -865,14 +969,14 @@ PIKECLASS GBoxed
 /*! @endclass
  */
 
-static void push_wrapper_name_from_info(GIBaseInfo *info)
+static void push_name_from_info(GIBaseInfo *info, int mixin)
 {
   push_constant_text("GI.repository.");
   push_text(g_base_info_get_namespace(info));
   push_constant_text(".");
   push_text(g_base_info_get_name(info));
-  if (GI_IS_INTERFACE_INFO(info)) {
-    push_text("Wrapper");
+  if (mixin) {
+    push_text("Mixin");
     f_add(5);
     return;
   }
@@ -902,11 +1006,11 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
       GType rttype = G_OBJECT_TYPE((GObject *)gobj);
       GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
       if (rtinfo != NULL) {
-        push_wrapper_name_from_info(rtinfo);
+        push_name_from_info(rtinfo, 0);
         g_base_info_unref(rtinfo);
       }
       else if (info != NULL)
-        push_wrapper_name_from_info(info);
+        push_name_from_info(info, 0);
       else
         Pike_error("Received an object of an unregistered type!\n");
       APPLY_MASTER("resolv", 1);
@@ -959,11 +1063,11 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
     push_int(0);
   } else {
     if (info != NULL) {
-      push_wrapper_name_from_info(info);
+      push_name_from_info(info, 0);
     } else {
       GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
       if (rtinfo != NULL) {
-        push_wrapper_name_from_info(rtinfo);
+        push_name_from_info(rtinfo, 0);
         g_base_info_unref(rtinfo);
       } else
         Pike_error("Received a box of an unregistered type!\n");
@@ -1035,7 +1139,8 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
     break;
 
   default:
-    Pike_error("Don't know how to push a base %d\n", g_base_info_get_type(info));
+    Pike_error("Don't know how to push a base %d\n",
+               g_base_info_get_type(info));
   }
 }
 
@@ -1204,6 +1309,7 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
     break;
 
   case GI_INFO_TYPE_OBJECT:
+  case GI_INFO_TYPE_INTERFACE:
     if (UNSAFE_IS_ZERO(s)) {
       arg->v_pointer = NULL;
       break;
@@ -2481,9 +2587,15 @@ static int add_gifunction(struct mapping *namespace,
  *  * GIStructInfo
  *
  *  * GIInterfaceInfo
+ *
+ *  @param mixin
+ *    Flag that controls whether to generate a Mixin class
+ *    (ie no storage (used for Interfaces)) or a wrapper class
+ *    (is with a GObject or similar root class).
  */
 static struct program *program_from_info(struct mapping *namespace,
-                                         GIBaseInfo *info)
+                                         GIBaseInfo *info,
+                                         int mixin)
 {
   const gchar *type_name;
   struct svalue *cached;
@@ -2500,7 +2612,16 @@ static struct program *program_from_info(struct mapping *namespace,
     type_name = g_base_info_get_name(info);
   }
 
-  cached = simple_mapping_string_lookup(namespace, type_name);
+  if (!mixin) {
+    cached = simple_mapping_string_lookup(namespace, type_name);
+  } else {
+    push_text(type_name);
+    push_text("Mixin");
+    f_add(2);
+
+    cached = simple_mapping_string_lookup(namespace, Pike_sp[-1].u.string->str);
+    pop_stack();
+  }
 
   if (cached) {
     if (TYPEOF(*cached) == PIKE_T_PROGRAM) {
@@ -2515,6 +2636,10 @@ static struct program *program_from_info(struct mapping *namespace,
   if (!program_id) {
     program_id = allocate_program_id();
     push_text(type_name);
+    if (mixin) {
+      push_text("Mixin");
+      f_add(2);
+    }
     push_int(program_id);
     mapping_insert(namespace, Pike_sp-2, Pike_sp-1);
     pop_stack();
@@ -2527,24 +2652,72 @@ static struct program *program_from_info(struct mapping *namespace,
       GIObjectInfo *parentinfo = g_object_info_get_parent(info);
 
       if (parentinfo && (parentinfo != info)) {
-        parent_prog = program_from_info(namespace, parentinfo);
+        parent_prog = program_from_info(namespace, parentinfo, mixin);
         push_text(g_object_info_get_type_name(parentinfo));
+        if (mixin) {
+          push_text("Mixin");
+          f_add(2);
+        }
+      } else if (mixin) {
+        /* FIXME: If mixin the base class is the prototype-only
+         *        variant of GI_GObject_program.
+         */
+        parent_prog = GI_GObjectMixin_program;
+        add_ref(parent_prog);
+        push_text("GObjectMixin");
       } else {
         parent_prog = GI_GObject_program;
+        add_ref(parent_prog);
         push_text("GObject");
       }
+    }
+    break;
+  case GI_INFO_TYPE_INTERFACE:
+    if (!mixin) {
+      parent_prog = program_from_info(namespace, info, 1);
+      if (!parent_prog) return NULL;
+
+      enter_compiler(NULL, 0);
+
+      push_text("GI.repository.");
+      push_text(g_base_info_get_namespace(info));
+      push_text(".");
+      push_text(g_base_info_get_name(info));
+      f_add(4);
+
+      debug_start_new_program_id(0, Pike_sp[-1].u.string->str, program_id);
+
+      pop_stack();
+
+      /* Storage for the GObject. */
+      low_inherit(GI_GObject_program, NULL, -1, 0, 0,
+                  MK_STRING("GObject"), NULL);
+
+      /* Inherit the mixin class. */
+      push_text(g_base_info_get_name(info));
+      push_text("Mixin");
+      f_add(2);
+      low_inherit(parent_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+      free_program(parent_prog);
+      pop_stack();
+
+      p = end_program();
+
+      exit_compiler();
+
+      return p;
     }
     break;
   case GI_INFO_TYPE_STRUCT:
   case GI_INFO_TYPE_UNION:
   case GI_INFO_TYPE_BOXED:
     parent_prog = GI_GBoxed_program;
+    add_ref(parent_prog);
     push_text("GBoxed");
     break;
-  case GI_INFO_TYPE_INTERFACE:
   case GI_INFO_TYPE_ENUM:
   case GI_INFO_TYPE_FLAGS:
-    /* No base class for interfaces, enums or flags. */
+    /* No base class for enums or flags. */
     break;
   default:
     /* Unsupported info type. */
@@ -2558,7 +2731,12 @@ static struct program *program_from_info(struct mapping *namespace,
   push_text(g_base_info_get_namespace(info));
   push_text(".");
   push_text(g_base_info_get_name(info));
-  f_add(4);
+  if (mixin) {
+    push_text("Mixin");
+    f_add(5);
+  } else {
+    f_add(4);
+  }
 
   debug_start_new_program_id(0, Pike_sp[-1].u.string->str, program_id);
 
@@ -2567,15 +2745,23 @@ static struct program *program_from_info(struct mapping *namespace,
   if (parent_prog) {
     /* Inherit the parent class. */
     low_inherit(parent_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+    free_program(parent_prog);
     pop_stack();
   }
 
   /* Update the cache. */
   push_text(type_name);
+  if (mixin) {
+    push_text("Mixin");
+    f_add(2);
+  }
   ref_push_program(Pike_compiler->new_program);
   mapping_insert(namespace, Pike_sp-2, Pike_sp-1);
   pop_n_elems(2);
 
+  /*
+   * Enums and Flags
+   */
   if (GI_IS_ENUM_INFO(info)) {	/* NB: True for both ENUM and FLAGS. */
     gint n = g_enum_info_get_n_values(info);
     int i;
@@ -2600,31 +2786,29 @@ static struct program *program_from_info(struct mapping *namespace,
   push_array(low_allocate_array(0, 10));
   ident_to_n_sval = Pike_sp-1;
 
+  /*
+   * Interfaces
+   */
   if (GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info)) {
-    if (GI_IS_INTERFACE_INFO(info)) {
-      /* Inherit any mixin classes for interfaces.
-       *
-       * NOTE: Objects should already have all the symbols in
-       *       the interfaces, and an object may be an interface,
-       *       leading to GObject being inherited multiple times.
+    /* Inherit any mixin classes for interfaces.
+     */
+    n = GI_IS_INTERFACE_INFO(info) ?
+      g_interface_info_get_n_prerequisites(info) :
+      g_object_info_get_n_interfaces(info);
+    for (i = 0; i < n; i++) {
+      GIBaseInfo *iinfo = GI_IS_INTERFACE_INFO(info) ?
+        g_interface_info_get_prerequisite(info, i) :
+        g_object_info_get_interface(info, i);
+      /* NB: g_interface_info_get_prerequisite() returns GIBaseInfo:s
+       *     (both GIInterfaceInfos and ObjectInfos). We thus MUST
+       *     generate Mixin variants of both. This is in order to
+       *     not get multiple (and conflicting) inherits of GI_GObject.
        */
-      n = g_interface_info_get_n_prerequisites(info);
-      for (i = 0; i < n; i++) {
-        GIBaseInfo *iinfo =
-          g_interface_info_get_prerequisite(info, i);
-        struct program *interface_prog = program_from_info(namespace, iinfo);
-        /* NB: g_interface_info_get_prerequisite() returns GIBaseInfo:s
-         *     (ie not necessarily GIInterfaceInfos). Does it return
-         *     anything else in practice?
-         *
-         * FIXME: Yes! It may apparently return ObjectInfo:s, in which
-         *        case we MUST only copy the prototypes!
-         */
-        if (interface_prog) {
-          push_text(g_base_info_get_name(iinfo));
-          low_inherit(interface_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
-          pop_stack();
-        }
+      struct program *interface_prog = program_from_info(namespace, iinfo, 1);
+      if (interface_prog) {
+        push_text(g_base_info_get_name(iinfo));
+        low_inherit(interface_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+        pop_stack();
       }
     }
 
@@ -2639,6 +2823,9 @@ static struct program *program_from_info(struct mapping *namespace,
     }
 
 #ifdef HAVE_G_PROPERTY_INFO_GET_GETTER
+    /* NB: Old versions of gobject-introspection did not have
+     *     getter/setters for properties.
+     */
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_properties(info) :
       g_interface_info_get_n_properties(info);
     for (i = 0; i < n; i++) {
@@ -2671,6 +2858,7 @@ static struct program *program_from_info(struct mapping *namespace,
 #endif
 
 #if 0
+    /* FIXME: Support binding signals via overloading? */
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_signals(info) :
       g_interface_info_get_n_signals(info);
     for (i = 0; i < n; i++) {
@@ -2696,6 +2884,9 @@ static struct program *program_from_info(struct mapping *namespace,
 #endif
   }
 
+  /*
+   * Fields
+   */
   if (GI_IS_OBJECT_INFO(info) || GI_IS_STRUCT_INFO(info)) {
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_fields(info) :
       g_struct_info_get_n_fields(info);
@@ -2709,6 +2900,12 @@ static struct program *program_from_info(struct mapping *namespace,
       if (GI_TYPE_TAG_IS_BASIC(ttag)) {
         GIFieldInfoFlags fieldflags = g_field_info_get_flags(fieldinfo);
 
+        /* NB: There are classes that have field names that conflict
+         *     with method names (seen eg in Pango). We thus prefix
+         *     the field names with a single underscore.
+         */
+
+        /* Getter */
         push_text("`_");
         push_text(g_base_info_get_name(fieldinfo));
         f_add(2);
@@ -2722,6 +2919,7 @@ static struct program *program_from_info(struct mapping *namespace,
                                                f_get_gi_field), i);
         }
 
+        /* Setter */
         push_text("=");
         f_add(2);
         if (fieldflags & GI_FIELD_IS_WRITABLE) {
@@ -2744,6 +2942,9 @@ static struct program *program_from_info(struct mapping *namespace,
     }
   }
 
+  /*
+   * Methods
+   */
   n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_methods(info) :
     GI_IS_STRUCT_INFO(info) ? g_struct_info_get_n_methods(info) :
     GI_IS_INTERFACE_INFO(info) ? g_interface_info_get_n_methods(info) : 0;
@@ -3478,13 +3679,21 @@ PIKECLASS Repository
     GIBaseInfo *info = NULL;
     struct program *sym_prog;
     ONERROR err;
+    int mixin = 0;
 
     if (n < 0) {
       Pike_error("Unknown symbol in namespace %pq.\n", namespace_name);
     }
 
     push_svalue(&p->constants[p->num_constants-2].sval);
-    push_int(n);
+    if (n < 0) {
+      /* NB: Inverted n indicates mixin. */
+      n = ~n;
+      mixin = 1;
+      push_int(g_irepository_get_n_infos() + n);
+    } else {
+      push_int(n);
+    }
     f_index(2);
     if (!IS_UNDEFINED(Pike_sp-1)) {
       /* Cached. */
@@ -3498,7 +3707,7 @@ PIKECLASS Repository
     }
 
     SET_ONERROR(err, g_base_info_unref, info);
-    sym_prog = program_from_info(global_namespace_lookup, info);
+    sym_prog = program_from_info(global_namespace_lookup, info, mixin);
     if (!sym_prog) {
       Pike_error("No program for symbol.\n");
     }
@@ -3512,10 +3721,17 @@ PIKECLASS Repository
    * Returns -1 if the ident to n table will not be needed.
    */
   static int add_namespace_symbol(struct mapping *namespace,
-                                  GIBaseInfo *info)
+                                  GIBaseInfo *info,
+                                  int mixin)
   {
     int ret = -1;
     struct program *p = NULL;
+    if (mixin &&
+        (g_base_info_get_type(info) != GI_INFO_TYPE_OBJECT) &&
+        (g_base_info_get_type(info) != GI_INFO_TYPE_INTERFACE)) {
+      /* Mixin mode only supported for objects and interfaces. */
+      return -1;
+    }
     switch(g_base_info_get_type(info)) {
     case GI_INFO_TYPE_ENUM:
     case GI_INFO_TYPE_FLAGS:
@@ -3540,40 +3756,22 @@ PIKECLASS Repository
     case GI_INFO_TYPE_BOXED:
     case GI_INFO_TYPE_INTERFACE:
       /* FIXME: Defer compilation by using the f_namespace_get_symbol() getter. */
-      p = program_from_info(namespace, info);
+      p = program_from_info(namespace, info, mixin);
       if (p) {
         push_program(p);
       } else {
         push_undefined();
       }
-      simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
-      pop_stack();
-
-      if (GI_IS_INTERFACE_INFO(info)) {
-        push_wrapper_name_from_info(info);
-        debug_start_new_program_id(0, Pike_sp[-1].u.string->str, 0);
-        pop_stack();
-
-        low_inherit(GI_GObject_program, NULL, -1, 0, 0,
-                    MK_STRING("GObject"), NULL);
-
+      if (mixin) {
         push_text(g_base_info_get_name(info));
-        low_inherit(p, NULL, -1, 0, 0,
-                    Pike_sp[-1].u.string, NULL);
-
-        push_text("Wrapper");
+        push_text("Mixin");
         f_add(2);
-
-        p = end_program();
-        if (p) {
-          push_program(p);
-        } else {
-          push_undefined();
-        }
-
-        add_constant(Pike_sp[-2].u.string, Pike_sp-1, 0);
-        pop_n_elems(2);
+        simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
+        pop_stack();
+      } else {
+        simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
       }
+      pop_stack();
       break;
 
     case GI_INFO_TYPE_FUNCTION:
@@ -3690,17 +3888,20 @@ PIKECLASS Repository
     for(i=0; i<num; i++) {
       GIBaseInfo *info =
         g_irepository_get_info(repository, (gchar *)STR0(name), i);
-      if (namespace_is_cairo &&
-          !strcmp(g_base_info_get_name(info), "Context")) {
+      c->lex.current_line = i;
+      if (namespace_is_cairo && (name == MK_STRING("Context"))) {
         push_text("Cairo.Context");
         APPLY_MASTER("resolv", 1);
         add_constant(MK_STRING("Context"), Pike_sp-1, 0);
         pop_stack();
-        continue;
+      } else {
+        /* Add base symbol. */
+        update_ident_to_n(ident_to_n_sval,
+                          add_namespace_symbol(namespace_lookup, info, 0), i);
       }
-      c->lex.current_line = i;
+      /* Add Mixin class (if any). */
       update_ident_to_n(ident_to_n_sval,
-                        add_namespace_symbol(namespace_lookup, info), i);
+                        add_namespace_symbol(namespace_lookup, info, 1), i);
       g_base_info_unref(info);
     }
 
@@ -3708,6 +3909,11 @@ PIKECLASS Repository
     /* Then indirect symbols (eg enum values).
      * These typically do not need to map to identifier numbers,
      * but we support it if they would.
+     *
+     * NB: Disabled due to name conflicts. The symbols need to
+     *     be prefixed with the enum name if we do this, in which
+     *     case there would be no point as the symbols when used
+     *     would have the same (or longer) length.
      */
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
@@ -3723,7 +3929,7 @@ PIKECLASS Repository
             c->lex.current_line = i;
             update_ident_to_n(ident_to_n_sval,
                               add_namespace_symbol(namespace_lookup,
-                                                   enumval), i);
+                                                   enumval, 0), i);
             g_base_info_unref(enumval);
           }
         }
