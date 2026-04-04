@@ -2808,6 +2808,7 @@ static struct program *program_from_info(struct mapping *namespace,
       if (interface_prog) {
         push_text(g_base_info_get_name(iinfo));
         low_inherit(interface_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+        free_program(interface_prog);
         pop_stack();
       }
     }
