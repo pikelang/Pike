@@ -2808,6 +2808,7 @@ static struct program *program_from_info(struct mapping *namespace,
       if (interface_prog) {
         push_text(g_base_info_get_name(iinfo));
         low_inherit(interface_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+        free_program(interface_prog);
         pop_stack();
       }
     }
@@ -3876,7 +3877,9 @@ PIKECLASS Repository
 
     namespace_is_cairo = (name == MK_STRING("cairo"));
 
-    /* NB: Maximum growth is for getters (which add two identifiers). */
+    /* NB: Maximum growth is for getters (which add two identifiers).
+     *     GObjects and Interfaces also add two identifiers.
+     */
     push_undefined();
     push_int(num * 2);
     f_allocate(2);
@@ -3889,10 +3892,11 @@ PIKECLASS Repository
       GIBaseInfo *info =
         g_irepository_get_info(repository, (gchar *)STR0(name), i);
       c->lex.current_line = i;
-      if (namespace_is_cairo && (name == MK_STRING("Context"))) {
+      if (namespace_is_cairo && !strcmp(g_base_info_get_name(info), "Context")) {
         push_text("Cairo.Context");
         APPLY_MASTER("resolv", 1);
         add_constant(MK_STRING("Context"), Pike_sp-1, 0);
+        mapping_insert(namespace_lookup, MK_STRING_SVALUE("Context"), Pike_sp-1);
         pop_stack();
       } else {
         /* Add base symbol. */
