@@ -584,7 +584,7 @@ PIKECLASS GObjectMixin
    *!   handled by this class.
    *!
    *! @seealso
-   *!   @[create()], @[list_signals()]
+   *!   @[list_signals()]
    */
   PIKEFUN array(string(8bit)) list_properties()
     prototype;

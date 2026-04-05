@@ -1,6 +1,6 @@
 @make_variables@
 VPATH=@srcdir@
-OBJS=system.o syslog.o passwords.o nt.o memory.o
+OBJS=system.o syslog.o passwords.o @SYSTEM_OBJS@ memory.o
 MODULE_LDFLAGS=@LIBS@
 SRC_TARGETS=$(SRCDIR)/add-errnos.h
 
