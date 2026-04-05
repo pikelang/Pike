@@ -11,11 +11,14 @@ AC_CHECK_LIB(net, __get_socket_descriptor)
 dnl For Cygwin
 AC_CHECK_LIB(cygipc, shmget)
 
+SYSTEM_OBJS=""
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   # FIXME: These look suspiciously much like 32bit versions.
   #        We probably want to use 64bit versions on IA64.
-  LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -lole32 $LIBS"
+    LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -lole32 $LIBS"
+    SYSTEM_OBJS="nt.o"
 fi
+AC_SUBST(SYSTEM_OBJS)
 
 AC_CHECK_HEADERS(syslog.h sys/syslog.h sys/types.h unistd.h pwd.h \
 	sys/socket.h netinet/in.h arpa/inet.h netdb.h netgroup.h winsock2.h \
