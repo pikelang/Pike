@@ -1573,6 +1573,7 @@ struct gi_callback_context {
   ffi_closure *closure;
   ffi_cif cif;
   struct svalue func;
+  struct array *extra_args;
 };
 
 static struct gi_callback_context *deferred_destroy_cbs = NULL;
@@ -1603,6 +1604,8 @@ static void cb_destroy_now(struct gi_callback_context *cbc)
   unlink_cb(cbc);
   g_base_info_unref(cbc->callable);
   free_svalue(&cbc->func);
+  free_array(cbc->extra_args);
+  cbc->extra_args = NULL;
   g_free(cbc);
 }
 
@@ -1750,6 +1753,11 @@ static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
     if (g_arg_info_get_direction(ai) != GI_DIRECTION_OUT)
       push_ffi_argument(*argp++, ai);
   }
+  if ((cbc->extra_args) && (cbc->extra_args->size)) {
+    assign_svalues_no_free(Pike_sp, ITEM(cbc->extra_args),
+                           cbc->extra_args->size, cbc->extra_args->type_field);
+    Pike_sp += cbc->extra_args->size;
+  }
   apply_svalue(&cbc->func, Pike_sp-osp);
   pop_stack();
   UNSETJMP(recovery);
@@ -1888,8 +1896,10 @@ static void low_invoke(GIBaseInfo *callable,
     } else if (i<args) {
       GIScopeType scope = g_arg_info_get_scope (ai);
       if (scope != GI_SCOPE_TYPE_INVALID) {
+        /* Callback function argument. */
         cbc = (struct gi_callback_context *)g_malloc0(sizeof(struct gi_callback_context));
         cbc->scope = scope;
+        cbc->extra_args = NULL;
         cbc->closure_arg = g_arg_info_get_closure(ai);
         cbc->destroy_arg = g_arg_info_get_destroy(ai);
         cbc->backlink = &cbclist;
@@ -1898,6 +1908,22 @@ static void low_invoke(GIBaseInfo *callable,
           cbclist->backlink = &cbc->next;
         cbclist = cbc;
         assign_svalue_no_free(&cbc->func, mark+i);
+        if (cbc->closure_arg < num_args-1) {
+          /* Not last arg => array of extra args. */
+          if ((cbc->closure_arg < args) &&
+              (TYPEOF(Pike_sp[cbc->closure_arg-args]) == PIKE_T_ARRAY)) {
+            cbc->extra_args = Pike_sp[cbc->closure_arg-args].u.array;
+            add_ref(cbc->extra_args);
+          }
+        } else if (args >= num_args) {
+          ptrdiff_t nelem = 1 + args - num_args;
+          cbc->extra_args = allocate_array_no_init(nelem, 0);
+          cbc->extra_args->type_field = BIT_UNFINISHED;
+          assign_svalues_no_free(ITEM(cbc->extra_args),
+                                 &Pike_sp[cbc->closure_arg-args],
+                                 nelem, BIT_MIXED);
+          array_fix_type_field(cbc->extra_args);
+        }
         GITypeInfo *cinfo = g_arg_info_get_type(ai);
         if (g_type_info_get_tag(cinfo) == GI_TYPE_TAG_INTERFACE) {
           GIBaseInfo *iinfo = g_type_info_get_interface(cinfo);
@@ -1924,7 +1950,9 @@ static void low_invoke(GIBaseInfo *callable,
       }
       i++;
     } else {
-      /* Too few arguments? */
+      /* FIXME: Too few arguments?
+       * FIXME: Pad with NULL arguments?
+       */
     }
 
     CALL_AND_UNSET_ONERROR(onerror2);
@@ -2515,9 +2543,18 @@ static int add_gifunction(struct mapping *namespace,
   gint n = -1;
   GITypeInfo *rettypeinfo = NULL;
   gboolean ret_nullable = 0;
+  int num_callbacks = 0;
+  unsigned char *callback_args = alloca(num_args);
+
+  memset(callback_args, 0, num_args);
 
   for (n = 0; n < num_args; n++) {
     GIArgInfo *arginfo = g_callable_info_get_arg(funcinfo, n);
+    if (g_arg_info_get_scope(arginfo) != GI_SCOPE_TYPE_INVALID) {
+      num_callbacks++;
+      // Keep track of which arguments are callback extra args.
+      callback_args[g_arg_info_get_closure(arginfo)] = 1;
+    }
     switch(g_arg_info_get_direction(arginfo)) {
     case GI_DIRECTION_INOUT:
       num_in_args++;
@@ -2559,15 +2596,64 @@ static int add_gifunction(struct mapping *namespace,
     push_type(PIKE_T_ZERO);
     push_type(PIKE_T_OR);
   }
-  push_type(PIKE_T_VOID);
+  if (num_callbacks && callback_args[num_args-1]) {
+    push_type(PIKE_T_MIXED);
+  } else {
+    push_type(PIKE_T_VOID);
+  }
   push_type(PIKE_T_MANY);
 
   for (n = num_args; n--;) {
     GIArgInfo *arginfo;
+    if (num_callbacks && callback_args[n]) {
+      /* Extra arguments to callback function. */
+      if (n < num_args-1) {
+        /* NB: n == num_args-1 is handled above. */
+        push_type(PIKE_T_MIXED);
+        push_unlimited_array_type(PIKE_T_ARRAY);
+        push_type(T_ZERO);
+        push_type(T_OR);
+        push_type(PIKE_T_FUNCTION);
+      }
+      continue; /* Handled above. */
+    }
+
     arginfo = g_callable_info_get_arg(funcinfo, n);
 
-    if (g_arg_info_get_direction(arginfo) != GI_DIRECTION_OUT) {
+    if (g_arg_info_get_scope(arginfo) != GI_SCOPE_TYPE_INVALID) {
+      /* FIXME: How to determine the types for the arguments
+       *        to callback functions?
+       */
+      GITypeInfo *cinfo = g_arg_info_get_type(arginfo);
+      push_type(PIKE_T_VOID);
+      push_type(PIKE_T_UNKNOWN);	/* Extra args... */
+      push_type(PIKE_T_MANY);
+      if (g_type_info_get_tag(cinfo) == GI_TYPE_TAG_INTERFACE) {
+        GIBaseInfo *iinfo = g_type_info_get_interface(cinfo);
+        gint ncbargs, i;
+        ncbargs = g_callable_info_get_n_args(iinfo);
+        /* NB: Loop skips last argument (assumed to be data/context). */
+        for (i = ncbargs-1; i-- > 0;) {
+          GIArgInfo *ai = g_callable_info_get_arg(iinfo, i);
+          if (!ai) continue;
+          if (g_arg_info_get_direction(arginfo) == GI_DIRECTION_OUT) continue;
+          push_gi_arginfo_type(namespace, ai);
+          if (g_arg_info_may_be_null(ai)) {
+            push_type(PIKE_T_ZERO);
+            push_type(PIKE_T_OR);
+          }
+          push_type(PIKE_T_FUNCTION);
+        }
+        g_base_info_unref(iinfo);
+      }
+      g_base_info_unref(cinfo);
+      push_type(PIKE_T_FUNCTION);
+    } else if (g_arg_info_get_direction(arginfo) != GI_DIRECTION_OUT) {
       push_gi_arginfo_type(namespace, arginfo);
+      if (g_arg_info_may_be_null(arginfo)) {
+        push_type(PIKE_T_ZERO);
+        push_type(PIKE_T_OR);
+      }
       push_type(PIKE_T_FUNCTION);
     }
 
@@ -2807,7 +2893,8 @@ static struct program *program_from_info(struct mapping *namespace,
       struct program *interface_prog = program_from_info(namespace, iinfo, 1);
       if (interface_prog) {
         push_text(g_base_info_get_name(iinfo));
-        low_inherit(interface_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
+        low_inherit(interface_prog, NULL, -1, 0, 0,
+                    Pike_sp[-1].u.string, NULL);
         free_program(interface_prog);
         pop_stack();
       }
