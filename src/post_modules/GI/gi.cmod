@@ -2737,7 +2737,7 @@ static struct program *program_from_info(struct mapping *namespace,
     {
       GIObjectInfo *parentinfo = g_object_info_get_parent(info);
 
-      if (parentinfo && (parentinfo != info)) {
+      if (parentinfo && !g_base_info_equal(parentinfo, info)) {
         parent_prog = program_from_info(namespace, parentinfo, mixin);
         push_text(g_object_info_get_type_name(parentinfo));
         if (mixin) {
