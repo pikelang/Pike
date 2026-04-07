@@ -2096,8 +2096,9 @@ static void f_get_gi_field(INT32 args)
   GIFieldInfo *fieldinfo;
   GITypeInfo *ti;
   GIArgument value;
-  void *ptr = GI_IS_OBJECT_INFO(info) ? THIS_GI_GOBJECT->obj :
-    get_pointer_from_pointer_object(self);
+  struct GI_GObject_struct *that = (struct GI_GObject_struct *)
+    GI_IS_OBJECT_INFO(info)? get_storage(self, GI_GObject_program): NULL;
+  void *ptr = that? that->obj: get_pointer_from_pointer_object(self);
   ONERROR err;
 
   if (!info) {
@@ -2134,8 +2135,9 @@ static void f_set_gi_field(INT32 args)
   GIFieldInfo *fieldinfo;
   GITypeInfo *ti;
   GIArgument value;
-  void *ptr = GI_IS_OBJECT_INFO(info) ? THIS_GI_GOBJECT->obj :
-    get_pointer_from_pointer_object(self);
+  struct GI_GObject_struct *that = (struct GI_GObject_struct *)
+    GI_IS_OBJECT_INFO(info)? get_storage(self, GI_GObject_program): NULL;
+  void *ptr = that? that->obj: get_pointer_from_pointer_object(self);
   ONERROR err;
 
   if (!info) {
