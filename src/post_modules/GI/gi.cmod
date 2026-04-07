@@ -1604,8 +1604,10 @@ static void cb_destroy_now(struct gi_callback_context *cbc)
   unlink_cb(cbc);
   g_base_info_unref(cbc->callable);
   free_svalue(&cbc->func);
-  free_array(cbc->extra_args);
-  cbc->extra_args = NULL;
+  if (cbc->extra_args) {
+    free_array(cbc->extra_args);
+    cbc->extra_args = NULL;
+  }
   g_free(cbc);
 }
 
@@ -1801,6 +1803,7 @@ static void low_invoke(GIBaseInfo *callable,
     GI_IS_FUNCTION_INFO(callable) ? callable :
     GI_IS_VFUNC_INFO(callable) ? g_vfunc_info_get_invoker(callable) : NULL;
   gint num_args = g_callable_info_get_n_args(callable);
+  int last_arg = num_args-1;
   GIFunctionInfoFlags flags = g_function_info_get_flags(funcinfo);
   GIArgument *in_args;
   GIArgument out_arg_0, *out_args;
@@ -1902,27 +1905,27 @@ static void low_invoke(GIBaseInfo *callable,
         cbc->extra_args = NULL;
         cbc->closure_arg = g_arg_info_get_closure(ai);
         cbc->destroy_arg = g_arg_info_get_destroy(ai);
+        if ((cbc->destroy_arg >= 0) && (cbc->destroy_arg == last_arg)) last_arg--;
         cbc->backlink = &cbclist;
         cbc->next = cbclist;
         if (cbclist)
           cbclist->backlink = &cbc->next;
         cbclist = cbc;
         assign_svalue_no_free(&cbc->func, mark+i);
-        if (cbc->closure_arg < num_args-1) {
+        if (cbc->closure_arg < last_arg) {
           /* Not last arg => array of extra args. */
           if ((cbc->closure_arg < args) &&
               (TYPEOF(Pike_sp[cbc->closure_arg-args]) == PIKE_T_ARRAY)) {
             cbc->extra_args = Pike_sp[cbc->closure_arg-args].u.array;
             add_ref(cbc->extra_args);
           }
-        } else if (args >= num_args) {
-          ptrdiff_t nelem = 1 + args - num_args;
+        } else if (args > last_arg) {
+          ptrdiff_t nelem = args - last_arg;
           cbc->extra_args = allocate_array_no_init(nelem, 0);
-          cbc->extra_args->type_field = BIT_UNFINISHED;
-          assign_svalues_no_free(ITEM(cbc->extra_args),
-                                 &Pike_sp[cbc->closure_arg-args],
-                                 nelem, BIT_MIXED);
+          cbc->extra_args->type_field = BIT_UNFINISHED|BIT_MIXED;
+          assign_svalues_no_free(ITEM(cbc->extra_args), Pike_sp - nelem, nelem, BIT_MIXED);
           array_fix_type_field(cbc->extra_args);
+          args = last_arg;
         }
         GITypeInfo *cinfo = g_arg_info_get_type(ai);
         if (g_type_info_get_tag(cinfo) == GI_TYPE_TAG_INTERFACE) {
@@ -2554,6 +2557,9 @@ static int add_gifunction(struct mapping *namespace,
       num_callbacks++;
       // Keep track of which arguments are callback extra args.
       callback_args[g_arg_info_get_closure(arginfo)] = 1;
+      if (g_arg_info_get_destroy(arginfo) >= 0) {
+        callback_args[g_arg_info_get_destroy(arginfo)] = 2;
+      }
     }
     switch(g_arg_info_get_direction(arginfo)) {
     case GI_DIRECTION_INOUT:
@@ -2596,6 +2602,12 @@ static int add_gifunction(struct mapping *namespace,
     push_type(PIKE_T_ZERO);
     push_type(PIKE_T_OR);
   }
+  if (num_callbacks) {
+    while (callback_args[num_args-1] == 2) {
+      /* Destroy callback skipped. */
+      num_args--;
+    }
+  }
   if (num_callbacks && callback_args[num_args-1]) {
     push_type(PIKE_T_MIXED);
   } else {
@@ -2606,6 +2618,7 @@ static int add_gifunction(struct mapping *namespace,
   for (n = num_args; n--;) {
     GIArgInfo *arginfo;
     if (num_callbacks && callback_args[n]) {
+      if (callback_args[n] == 2) continue;	/* Skip */
       /* Extra arguments to callback function. */
       if (n < num_args-1) {
         /* NB: n == num_args-1 is handled above. */
