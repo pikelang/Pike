@@ -1258,7 +1258,9 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
       push_undefined();
     break;
 
-    /* GI_TYPE_TAG_ARRAY */
+  case GI_TYPE_TAG_ARRAY:
+    push_gi_argument_array(arg->v_pointer, info, NULL);
+    break;
 
   case GI_TYPE_TAG_INTERFACE:
     {
