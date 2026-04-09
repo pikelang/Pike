@@ -25,13 +25,323 @@
 #define USE_GTK
 
 #ifdef USE_GTK
-#if constant(GTK2.parse_rc)
+#if 0 && constant(GI.repository.Gtk.Application)
+#define USE_GI
+#define GTK GI.repository.Gtk
+#define GIO GI.repository.Gio
+#define GTK_FLUSH()
+
+class Hbox {
+  inherit GTK.Box;
+
+  protected void create()
+  {
+    // NB: Horizontal orientation is default.
+    ::create();
+  }
+
+  this_program pack_start(GTK.Widget sub,
+                          int(1bit) expand,
+                          int(1bit) fill,
+                          int padding)
+  {
+    if (expand) {
+      sub->hexpand = 1;
+    }
+    if (fill) {
+      sub->halign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_start(padding);
+    }
+    append(sub);
+    return this;
+  }
+
+  this_program pack_end(GTK.Widget sub,
+                        int(1bit) expand,
+                        int(1bit) fill,
+                        int padding)
+  {
+    if (expand) {
+      sub->hexpand = 1;
+    }
+    if (fill) {
+      sub->halign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_end(padding);
+    }
+    prepend(sub);
+    return this;
+  }
+}
+
+class Vbox {
+  inherit GTK.Box;
+
+  protected void create()
+  {
+    ::create(([ "orientation": GTK.Orientation.VERTICAL ]));
+  }
+
+  this_program pack_start(GTK.Widget sub,
+                          int(1bit) expand,
+                          int(1bit) fill,
+                          int padding)
+  {
+    if (expand) {
+      sub->vexpand = 1;
+    }
+    if (fill) {
+      sub->valign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_top(padding);
+    }
+    append(sub);
+    return this;
+  }
+
+  this_program pack_end(GTK.Widget sub,
+                        int(1bit) expand,
+                        int(1bit) fill,
+                        int padding)
+  {
+    if (expand) {
+      sub->vexpand = 1;
+    }
+    if (fill) {
+      sub->valign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_bottom(padding);
+    }
+    prepend(sub);
+    return this;
+  }
+}
+
+#if constant(GTK.ButtonBox)
+constant ButtonBox = GTK.ButtonBox;
+#else
+constant ButtonBox = GTK.Box;
+#endif
+
+class HbuttonBox {
+  inherit ButtonBox;
+
+  protected void create()
+  {
+    // NB: Horizontal orientation is default.
+    ::create();
+  }
+
+  this_program pack_start(GTK.Widget sub,
+                          int(1bit) expand,
+                          int(1bit) fill,
+                          int padding)
+  {
+    if (expand) {
+      sub->hexpand = 1;
+    }
+    if (fill) {
+      sub->halign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_end(padding);
+    }
+    append(sub);
+    return this;
+  }
+
+  this_program pack_end(GTK.Widget sub,
+                        int(1bit) expand,
+                        int(1bit) fill,
+                        int padding)
+  {
+    if (expand) {
+      sub->hexpand = 1;
+    }
+    if (fill) {
+      sub->halign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_start(padding);
+    }
+    prepend(sub);
+    return this;
+  }
+
+  this_program add(GTK.Widget sub)
+  {
+    append(sub);
+    return this;
+  }
+}
+
+class VbuttonBox {
+  inherit ButtonBox;
+
+  protected void create()
+  {
+    ::create(([ "orientation": GTK.Orientation.VERTICAL ]));
+  }
+
+  this_program pack_start(GTK.Widget sub,
+                          int(1bit) expand,
+                          int(1bit) fill,
+                          int padding)
+  {
+    if (expand) {
+      sub->vexpand = 1;
+    }
+    if (fill) {
+      sub->valign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_top(padding);
+    }
+    append(sub);
+    return this;
+  }
+
+  this_program pack_end(GTK.Widget sub,
+                        int(1bit) expand,
+                        int(1bit) fill,
+                        int padding)
+  {
+    if (expand) {
+      sub->vexpand = 1;
+    }
+    if (fill) {
+      sub->valign = GTK.Align.FILL;
+    }
+    if (padding) {
+      sub->set_margin_bottom(padding);
+    }
+    prepend(sub);
+    return this;
+  }
+
+  this_program add(GTK.Widget sub)
+  {
+    append(sub);
+    return this;
+  }
+}
+
+class Button {
+  inherit GTK.Button;
+
+  protected void create(string label)
+  {
+    ::create(([ "label": label ]));
+  }
+
+  this_program show()
+  {
+    ::show();
+    return this;
+  }
+}
+
+class Label {
+  inherit GTK.Label;
+
+  protected void create(string label)
+  {
+    ::create(([ "label": label ]));
+  }
+
+  this_program set_justify(GTK.JustificationType justify)
+  {
+    ::set_justify(justify);
+    return this;
+  }
+}
+
+class Image {
+  inherit GTK.Image;
+
+  protected void create(string path)
+  {
+    ::create(([ "file": path ]));
+    set_hexpand(1);
+    set_vexpand(1);
+  }
+}
+
+#if constant GTK.Table
+constant Table = GTK.Table;
+#else
+class Table {
+  inherit GTK.Grid;
+
+  protected void create(int cols, int rows, int homogenous)
+  {
+    ::create();
+  }
+
+  this_program attach(GTK.Widget sub, int left, int right, int top, int bottom,
+                      int xoptions, int yoptions,
+                      int xpadding, int ypadding)
+  {
+    ::attach(sub, left, top, right-left, bottom-top);
+    return this;
+  }
+}
+#endif
+
+class Entry
+{
+  inherit GTK.Entry;
+
+  protected void create(string|void text)
+  {
+    if (text) {
+      ::create(([ "text": text,
+               ]));
+    } else {
+      ::create();
+    }
+  }
+}
+
+#elif constant(GTK2.parse_rc)
 #define USE_GTK2
 #define GTK GTK2
+#define GTK_FLUSH()	GTK.flush()
+
+class Hbox {
+  inherit GTK.Hbox;
+
+  protected void create()
+  {
+    ::create(0,0);
+  }
+}
+
+class Vbox {
+  inherit GTK.Vbox;
+
+  protected void create()
+  {
+    ::create(0,0);
+  }
+}
+
+constant Button = GTK.Button;
+constant Label = GTK.Label;
+constant Image = GTK.Image;
+constant HbuttonBox = GTK.HbuttonBox;
+constant VbuttonBox = GTK.VbuttonBox;
+constant Table = GTK.Table;
+constant Entry = GTK.Entry;
 #endif
 #endif
 
-#ifndef USE_GTK2
+#ifndef GTK
 // No suitable GTK found.
 #undef USE_GTK
 #endif
@@ -124,7 +434,7 @@ void status1_impl(string fmt, mixed ... args)
   if(label1)
   {
     label7->set_text(sprintf(fmt,@args)-"\n");
-    GTK.flush();
+    GTK_FLUSH();
     return;
   }
 #endif
@@ -171,7 +481,7 @@ void status_impl(string|void doing, void|string file, string|void msg)
     label2->set_text(dirname(file) || "");
     label5->set_text(basename(file) || "");
     label6->set_text(msg || "");
-    GTK.flush();
+    GTK_FLUSH();
     return;
   }
 #endif
@@ -937,44 +1247,127 @@ void do_abort()
 
 void update_entry2()
 {
+#ifdef USE_GI
+  if (entry1["has-focus"]) return;
+#endif
   entry2->set_text( combine_path( entry1 -> get_text(), "bin/pike") );
 }
 
 void close_fileselector(object button, object selector)
 {
-  selector->hide();
-  destruct(selector);  
+  if (selector->hide) {
+    selector->hide();
+  }
+  destruct(selector);
 }
 
-void set_filename(object button, array ob)
+void set_filename(object button, array ob, mixed... rest)
 {
+#if constant(GTK.FileDialog)
+  GTK.FileDialog selector = button;
+  object entry = rest[0];
+  GIO.File file;
+  if (entry == entry1) {
+    file = selector->select_folder_finish(ob);
+  } else {
+    file = selector->save_finish(ob);
+  }
+  string path = file->get_path();
+  entry->set_text(path);
+#else
   object selector=ob[0];
   object entry=ob[1];
   entry->set_text(selector->get_filename());
+#endif
   if(entry == entry1)
     update_entry2();
   close_fileselector(button,selector);
 }
 
-void selectfile(object button, object entry)
+void selectdir(object button, object entry)
 {
+#ifdef USE_GI
+#if constant(GTK.FileDialog)
+  string initial_path = entry->get_text();
+  GTK.FileDialog selector;
+  selector = GTK.FileDialog(([ "title": "Pike installation prefix",
+                               "initial-name": initial_path,
+                               "initial-folder": GI.repository.Gio.file_new_for_path(initial_path),
+                               "modal": 1,
+                            ]));
+  selector->select_folder(window1, UNDEFINED, set_filename, entry);
+#else
+  GTK.FileChooserDialog selector;
+  selector = GTK.FileChooserDialog(([ "title": "Pike installation prefix",
+                                      "modal": 1,
+                                   ]));
+  selector->set_file(GI.repository.Gio.file_new_for_path(basename(entry->get_text())));
+  selector->add_button("OK", GTK.ResponseType.ACCEPT)->
+    connect("clicked", set_filename, selector, entry);
+  selector->add_button("Cancel", GTK.ResponseType.CANCEL)->
+    connect("clicked", close_fileselector, selector);
+  selector->show();
+#endif
+#else
   object selector;
   selector=GTK.FileSelection("Pike installation prefix");
   selector->set_filename(entry->get_text());
   selector->ok_button()->signal_connect("clicked", set_filename,
-					({ selector, entry }) );
+                                        ({ selector, entry }) );
   selector->cancel_button()->signal_connect("clicked",close_fileselector,selector);
   selector->show();
+#endif
+}
+
+void selectfile(object button, object entry)
+{
+#ifdef USE_GI
+#if constant(GTK.FileDialog)
+  string initial_path = entry->get_text();
+  GTK.FileDialog selector;
+  selector = GTK.FileDialog(([ "title": "Pike binary name",
+                               "initial-name": initial_path,
+                               "initial-folder": GI.repository.Gio.file_new_for_path(basename(initial_path)),
+                               "modal": 1,
+                            ]));
+  selector->save(window1, UNDEFINED, set_filename, entry);
+#else
+  GTK.FileChooserDialog selector;
+  selector = GTK.FileChooserDialog(([ "title": "Pike binary name",
+                                     "modal": 1,
+                                  ]));
+  selector->set_file(GI.repository.Gio.file_new_for_path(basename(entry->get_text())));
+  selector->add_button("OK", GTK.ResponseType.ACCEPT)->
+    connect("clicked", set_filename, selector, entry);
+  selector->add_button("Cancel", GTK.ResponseType.CANCEL)->
+    connect("clicked", close_fileselector, selector);
+  selector->show();
+#endif
+#else
+  object selector;
+  selector=GTK.FileSelection("Pike binary name");
+  selector->set_filename(entry->get_text());
+  selector->ok_button()->signal_connect("clicked", set_filename,
+                                        ({ selector, entry }) );
+  selector->cancel_button()->signal_connect("clicked",close_fileselector,selector);
+  selector->show();
+#endif
 }
 
 void do_exit()
 {
+#ifdef USE_GI
+  window1->close();
+#endif
   exit(0);
 }
 
 void cancel()
 {
   error_msg ("See you another time!\n");
+#ifdef USE_GI
+  window1->close();
+#endif
   exit(0);
 }
 
@@ -982,7 +1375,8 @@ void proceed()
 {
   pre_install(({}));
   label6->set_text("Click Ok to exit installation program.");
-  hbuttonbox1->add(button1=GTK.Button("Ok")->show());
+  hbuttonbox1->add(button1 = Button("Ok"));
+  button1->show();
   button1->signal_connect("pressed",do_exit,0);
 }
 
@@ -994,13 +1388,19 @@ int next()
 
   destruct(table1);
 
-  vbox2->PS(vbox3=GTK.Vbox(0,0)->show(),1,1,0);
+  vbox2->PS(vbox3 = Vbox(),1,1,0);
+  vbox3->show();
 
-  vbox3->PS(label7=GTK.Label("---head---")->show(),0,0,0);
-  vbox3->PS(label1=GTK.Label("---action---")->show(),0,0,0);
-  vbox3->PS(label2=GTK.Label("----dir-----")->show(),0,0,0);
-  vbox3->PS(label5=GTK.Label("----file----")->show(),0,0,0);
-  vbox3->PS(label6=GTK.Label("----msg----")->show(),0,0,0);
+  vbox3->PS(label7 = Label("---head---"),0,0,0);
+  label7->show();
+  vbox3->PS(label1 = Label("---action---"),0,0,0);
+  label1->show();
+  vbox3->PS(label2 = Label("----dir-----"),0,0,0);
+  label2->show();
+  vbox3->PS(label5 = Label("----file----"),0,0,0);
+  label5->show();
+  vbox3->PS(label6 = Label("----msg----"),0,0,0);
+  label6->show();
   destruct(button1);
   destruct(button2);
 
@@ -1008,69 +1408,208 @@ int next()
   return 1;
 }
 
-void begin_wizard(array(string) argv, string prefix)
+class WelcomeBox
 {
+  inherit Vbox;
+
+  protected void create(string prefix)
+  {
+    ::create();
+
+    PS((label4 = Label(version()+" installer"))
+       ->set_justify(GTK.
+#ifdef USE_GI
+                     Justification.CENTER
+#else
+                     JUSTIFY_CENTER
+#endif
+                     ),0,0,10);
+    PS((frame1 = GTK.Frame()), 1, 1, 0);
+
+    frame1
+#if !constant(GTK.__GI_API_VERSION_4_0__)
+           // set_shadow_type() was removed in Gtk 4.
+      ->set_shadow_type(GTK.
+#ifdef USE_GI
+                        ShadowType.
+#endif
+                        SHADOW_IN)
+#endif
+#ifndef USE_GI
+      ->set_border_width(11)
+      ->add
+#else
+      ->set_child
+#endif
+      ((hbox1 = Hbox())
+       ->PS(Image(combine_path(vars->SRCDIR, "install-welcome")),
+            0,0,0)
+       ->PS((vbox2 = Vbox()),1,1,0)
+       );
+
+    PS((hbuttonbox1 = HbuttonBox())
+#ifndef USE_GI
+       ->set_border_width(15)
+#endif
+       ->add(button1 = Button("Cancel"))
+       ->add(button2 = Button("Install Pike >>"))
+       ,0,1,0);
+
+    vbox2->PS((label3 = Label("Welcome to the interactive "+version()+" installer."))
+              ->set_justify(GTK.
+#ifdef USE_GI
+                            Justification.CENTER
+#else
+                            JUSTIFY_CENTER
+#endif
+                            ),1,1,0)
+      ->PS((table1 = Table(3, 2, 0))
+#ifndef USE_GI
+           ->set_border_width(19)
+#endif
+           ->AT((entry1 = Entry(prefix)),
+                1,2,0,1,
+#ifdef USE_GI
+                0 // FIXME
+#else
+                GTK.Fill | GTK.Expand
+#endif
+                ,0,0,0)
+           ->AT((entry2 = Entry(vars->pike_name ||
+                     combine_path(vars->exec_prefix ||
+                                  combine_path(prefix, "bin"),
+                                  "pike"))),
+                1,2,1,2,
+#ifdef USE_GI
+                0 // FIXME
+#else
+                GTK.Fill | GTK.Expand
+#endif
+                ,0,0,0)
+           ->AT((label1 = Label("Install prefix: "))
+                ->set_justify(GTK.
+#ifdef USE_GI
+                              Justification.RIGHT
+#else
+                              JUSTIFY_RIGHT
+#endif
+                              ),
+                0,1,0,1,
+#ifdef USE_GI
+                0 // FIXME
+#else
+                GTK.Expand
+#endif
+                ,0,0,0)
+           ->AT((label2 = Label("Pike binary name: "))
+                ->set_justify(GTK.
+#ifdef USE_GI
+                              Justification.RIGHT
+#else
+                              JUSTIFY_RIGHT
+#endif
+                              ),
+                0,1,1,2,
+#ifdef USE_GI
+                0 // FIXME
+#else
+                GTK.Expand
+#endif
+                ,0,0,0)
+           ->AT((button4 = Button("Browse")),
+                2,3,1,2,0,0,0,0)
+           ->AT((button5 = Button("Browse")),
+                2,3,0,1,0,0,0,0),0,0,0);
+
+#ifndef USE_GI
+    vbox2->show_all();
+#endif
+
+    entry1->set_text(prefix);
+    entry2->set_text(vars->pike_name ||
+                     combine_path(vars->exec_prefix ||
+                                  combine_path(prefix, "bin"),
+                                  "pike"));
+#ifdef USE_GI
+    entry1->connect("move-focus", update_entry2);
+    button1->connect("clicked", cancel);
+    button2->connect("clicked", next);
+    button4->connect("clicked", selectfile, entry2);
+    button5->connect("clicked", selectdir, entry1);
+#else
+    entry1->signal_connect("focus_out_event",update_entry2,0);
+    button1->signal_connect("pressed",cancel,0);
+    button2->signal_connect("pressed",next,0);
+    button4->signal_connect("pressed",selectfile,entry2);
+    button5->signal_connect("pressed",selectdir,entry1);
+#endif
+  }
+}
+
+class WizardWindow
+{
+  inherit GTK.Window;
+
+#ifdef USE_GI
+  this_program add(GTK.Widget sub)
+  {
+    set_child(sub);
+    return this;
+  }
+#endif
+
+  protected void create(string prefix)
+  {
+#ifdef USE_GI
+    ::create();
+#else
+    ::create(GTK.WINDOW_TOPLEVEL);
+#endif
+
+    set_title(version() + " installer");
+
+    add(vbox1 = WelcomeBox(prefix));
+  }
+}
+
+int begin_wizard(array(string) argv, string prefix)
+{
+  int ret = -1;
+
+#ifdef USE_GI
+  GTK.Application app =
+    GTK.Application(([ "application_id": "apps.pike.installer",
+                       "flags": GIO.ApplicationFlags.HANDLES_OPEN ]));
+  app->connect("open",
+               lambda(GTK.Application app, mixed ... args) {
+                 werror("OPEN: %O\n", args);
+                 app->add_window(window1 = WizardWindow(prefix));
+                 window1->set_visible(1);
+               });
+  app->connect("activate",
+               lambda(GTK.Application app) {
+                 if (sizeof(app->get_windows())) return;
+                 werror("No windows.\n");
+                 app->quit();
+               });
+#else
   // FIXME:
   // We should display the GPL licence and make the user
   // click 'agree' first
   //
   GTK.setup_gtk(argv);
-  window1=GTK.Window(GTK.WINDOW_TOPLEVEL)
-    ->set_title(version()+" installer")
-    ->add(vbox1=GTK.Vbox(0,0)
-	  ->PS(label4=GTK.Label(version()+" installer")
-	       ->set_justify(GTK.JUSTIFY_CENTER),0,0,10)
-	  ->PS(frame1=GTK.Frame()
-	       ->set_shadow_type(GTK.SHADOW_IN)
-	       ->set_border_width(11)
-	       ->add(hbox1=GTK.Hbox(0,0)
-#ifdef USE_GTK2
-		     ->PS(GTK.Image(combine_path(vars->SRCDIR, "install-welcome")),0,0,0)
-#else
-		     ->PS(GTK.Pixmap(GTK.Util.load_image(combine_path(vars->SRCDIR,
-								      "install-welcome"))->img),0,0,0)
+  window1 = WizardWindow(prefix);
 #endif
-		     ->PS(vbox2=GTK.Vbox(0,0),1,1,0)
-		       ),1,1,0)
-	  ->PS(hbuttonbox1=GTK.HbuttonBox()
-	       ->set_border_width(15)
-	       ->add(button1=GTK.Button("Cancel"))
-	       ->add(button2=GTK.Button("Install Pike >>"))
-	       ,0,1,0));
 
-  vbox2->PS(label3=GTK.Label("Welcome to the interactive "+version()+" installer.")
-	    ->set_justify(GTK.JUSTIFY_CENTER),1,1,0)
-    ->PS(table1=GTK.Table(3,2,0)
-	 ->set_border_width(19)
-	 ->AT(entry1=GTK.Entry(),
-	      1,2,0,1,GTK.Fill | GTK.Expand,0,0,0)
-	 ->AT(entry2=GTK.Entry(),
-	      1,2,1,2,GTK.Fill | GTK.Expand,0,0,0)
-	 ->AT(label1=GTK.Label("Install prefix: ")
-	      ->set_justify(GTK.JUSTIFY_RIGHT),
-	      0,1,0,1,GTK.Expand,0,0,0)
-	 ->AT(label2=GTK.Label("Pike binary name: ")
-	      ->set_justify(GTK.JUSTIFY_RIGHT),
-	      0,1,1,2,GTK.Expand,0,0,0)
-	 ->AT(button4=GTK.Button("Browse"),
-	      2,3,1,2,0,0,0,0)
-	 ->AT(button5=GTK.Button("Browse"),
-	      2,3,0,1,0,0,0,0),0,0,0);
+#ifdef USE_GI
+  app->run(sizeof(argv), argv);
 
-  vbox2->show_all();
-
-  entry1->set_text(prefix);
-  entry2->set_text(vars->pike_name ||
-		   combine_path(vars->exec_prefix||combine_path(prefix, "bin"),
-				"pike"));
-
-  entry1->signal_connect("focus_out_event",update_entry2,0);
-  button1->signal_connect("pressed",cancel,0);
-  button2->signal_connect("pressed",next,0);
-  button4->signal_connect("pressed",selectfile,entry2);
-  button5->signal_connect("pressed",selectfile,entry1);
-
+  return 0;
+#else
   window1->show_all();
+
+  return -1;
+#endif
 }
 #endif
 
@@ -1249,13 +1788,13 @@ class InstallHandler(mapping vars, string prefix) {
     if(label1)
     {
       status1(fmt,@args);
-      hbuttonbox1->add(button1=GTK.Button("Exit")->show());
+      hbuttonbox1->add(button1 = Button("Exit")->show());
       button1->signal_connect("pressed",do_exit,0);
 
       label6->set_text("Click Exit to exit installation program.");
 
       // UGLY!!! -Hubbe
-      while(1) { sleep(0.1); GTK.flush(); }
+      while(1) { sleep(0.1); GTK_FLUSH(); }
     }
 #endif
 
@@ -3373,8 +3912,7 @@ int pre_install(array(string) argv)
 	  if(getenv("DISPLAY"))
 #endif
 	  {
-	    begin_wizard(argv, prefix);
-	    return -1;
+            return begin_wizard(argv, prefix);
 	  }
 	}
       };
