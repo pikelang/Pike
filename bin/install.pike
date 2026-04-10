@@ -337,7 +337,19 @@ constant Image = GTK.Image;
 constant HbuttonBox = GTK.HbuttonBox;
 constant VbuttonBox = GTK.VbuttonBox;
 constant Table = GTK.Table;
-constant Entry = GTK.Entry;
+
+class Entry
+{
+  inherit GTK.Entry;
+
+  protected void create(string|void text)
+  {
+    ::create();
+    if (text) {
+      set_text(text);
+    }
+  }
+}
 #endif
 #endif
 
