@@ -3058,6 +3058,7 @@ static struct program *program_from_info(struct mapping *namespace,
   for (i = 0; i < n; i++) {
     GIFunctionInfo *funcinfo = NULL;
     GIFunctionInfoFlags flags = 0;
+    struct pike_string *name;
     if (GI_IS_OBJECT_INFO(info)) {
       funcinfo = g_object_info_get_method(info, i);
     } else if (GI_IS_STRUCT_INFO(info)) {
@@ -3066,19 +3067,39 @@ static struct program *program_from_info(struct mapping *namespace,
       funcinfo = g_interface_info_get_method(info, i);
     }
     flags = g_function_info_get_flags(funcinfo);
-    if (!strcmp(g_base_info_get_name(funcinfo), "create")) {
-      // Conflicts with the efun.
-      // Triggered by eg Gio.File()->create().
-      push_text("creat");
-    } else {
-      push_text(g_base_info_get_name(funcinfo));
+
+    push_text(g_base_info_get_name(funcinfo));
+    name = Pike_sp[-1].u.string;
+
+    /* Some special cases for broken function names. */
+    if (name == MK_STRING("create")) {
+      /* Conflicts with the lfun.
+       * Triggered by eg Gio.File()->create().
+       *
+       * We use the traditional name of creat().
+       */
+      name = MK_STRING("creat");
+    } else if (name == MK_STRING("bind_property_full") &&
+               (g_callable_info_get_n_args(funcinfo) == 7) &&
+               !strcmp(g_base_info_get_name(info), "InitiallyUnowned")) {
+      /* KLUDGE: Broken type info seen on Solaris 11.0 where
+       *         GObject.InitiallyUnowned()->bind_property_full() and
+       *         GObject.InitiallyUnowned()->bind_property_with_closures()
+       *         both have the name "bind_property_full()".
+       *
+       * NB: bind_property_full() takes 9 arguments and
+       *     bind_property_with_closures() takes 7.
+       */
+      name = MK_STRING("bind_property_with_closures");
     }
+
     /* FIXME: Constructors ought to be mapped onto variants of create(). */
     if (!(flags & GI_FUNCTION_IS_CONSTRUCTOR)) {
       update_ident_to_n(ident_to_n_sval,
-                        add_gifunction(namespace, Pike_sp[-1].u.string,
+                        add_gifunction(namespace, name,
                                        funcinfo, f_call_gi_method), i);
     }
+
     pop_stack();
     g_base_info_unref(funcinfo);
   }
