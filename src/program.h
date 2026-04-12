@@ -179,8 +179,8 @@ enum LFUN {
 
 extern const char *const lfun_names[];
 
-extern struct pike_string *lfun_strings[];
-extern struct pike_string *lfun_compat_strings[];
+PMOD_EXPORT extern struct pike_string *lfun_strings[];
+PMOD_EXPORT extern struct pike_string *lfun_compat_strings[];
 
 #ifndef STRUCT_NODE_S_DECLARED
 #define STRUCT_NODE_S_DECLARED
