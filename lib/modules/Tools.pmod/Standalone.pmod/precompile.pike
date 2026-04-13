@@ -259,69 +259,110 @@ void warn(string s, mixed ... args)
 array global_declarations=({});
 multiset check_used = (<>);
 
-/* Strings declared with MK_STRING. */
+/* Strings declared with MK_STRING.
+ *
+ * Mapping from constant string to a comma-separated list
+ * of alternatives, where the alternatives have an optional
+ * macro-name + ":" prefix if they are not present in all
+ * versions of Pike 7.8 and later.
+ *
+ * Up to date as of Pike 9.0 2026-04-12.
+ */
 mapping(string:string) strings = ([
   // From stralloc.h:
   "":"empty_pike_string",
 
   // From program.h:
   "this_program":"this_program_string",
-  "this":"this_string",
-  // lfuns:
+  "this":"this_string",		// NB: Static before Pike 8.0.
+  // lfuns in declared order:
   "__INIT":"lfun_strings[LFUN___INIT]",
   "create":"lfun_strings[LFUN_CREATE]",
-  "_destruct":"lfun_strings[LFUN__DESTRUCT]",
+  "_destruct": "LFUN__DESTRUCT:lfun_strings[LFUN__DESTRUCT]",
+  "destroy":
+    "LFUN__DESTRUCT:lfun_compat_strings[LFUN__DESTRUCT],"
+    "LFUN_DESTROY:lfun_strings[LFUN_DESTROY]",
+  "_sprintf": "LFUN__SPRINTF:lfun_strings[LFUN__SPRINTF]",
+  "__create__": "LFUN__CREATE__:lfun_strings[LFUN__CREATE__]",
+  "__generic_types__":
+    "LFUN___GENERIC_TYPES__:lfun_strings[LFUN___GENERIC_TYPES__]",
+  "__generic_bindings__":
+    "LFUN___GENERIC_BINDINGS__:lfun_strings[LFUN___GENERIC_BINDINGS__]",
+
   "`+":"lfun_strings[LFUN_ADD]",
   "`-":"lfun_strings[LFUN_SUBTRACT]",
+  "`*":"lfun_strings[LFUN_MULTIPLY]",
+  "`/":"lfun_strings[LFUN_DIVIDE]",
+  "`%":"lfun_strings[LFUN_MOD]",
   "`&":"lfun_strings[LFUN_AND]",
   "`|":"lfun_strings[LFUN_OR]",
   "`^":"lfun_strings[LFUN_XOR]",
   "`<<":"lfun_strings[LFUN_LSH]",
   "`>>":"lfun_strings[LFUN_RSH]",
-  "`*":"lfun_strings[LFUN_MULTIPLY]",
-  "`/":"lfun_strings[LFUN_DIVIDE]",
-  "`%":"lfun_strings[LFUN_MOD]",
-  "`~":"lfun_strings[LFUN_COMPL]",
-  "`==":"lfun_strings[LFUN_EQ]",
-  "`<":"lfun_strings[LFUN_LT]",
-  "`>":"lfun_strings[FLUN_GT]",
-  "__hash":"lfun_strings[LFUN___HASH]",
-  "cast":"lfun_strings[LFUN_CAST]",
-  "`!":"lfun_strings[LFUN_NOT]",
-  "`[]":"lfun_strings[LFUN_INDEX]",
-  "`[]=":"lfun_strings[LFUN_ASSIGN_INDEX]",
-  "`->":"lfun_strings[LFUN_ARROW]",
-  "`->=":"lfun_strings[LFUN_ASSIGN_ARROW]",
-  "_sizeof":"lfun_strings[LFUN__SIZEOF]",
-  "_indices":"lfun_strings[LFUN__INDICES]",
-  "_values":"lfun_strings[LFUN__VALUES]",
-  "`()":"lfun_strings[LFUN_CALL]",
+  "`**":"LFUN_POW:lfun_strings[LFUN_POW]",
+
   "``+":"lfun_strings[LFUN_RADD]",
   "``-":"lfun_strings[LFUN_RSUBTRACT]",
+  "``*":"lfun_strings[LFUN_RMULTIPLY]",
+  "``/":"lfun_strings[LFUN_RDIVIDE]",
+  "``%":"lfun_strings[LFUN_RMOD]",
   "``&":"lfun_strings[LFUN_RAND]",
   "``|":"lfun_strings[LFUN_ROR]",
   "``^":"lfun_strings[LFUN_RXOR]",
   "``<<":"lfun_strings[LFUN_RLSH]",
   "``>>":"lfun_strings[LFUN_RRSH]",
-  "``*":"lfun_strings[LFUN_RMULTIPLY]",
-  "``/":"lfun_strings[LFUN_RDIVIDE]",
-  "``%":"lfun_strings[LFUN_RMOD]",
-  "`+=":"lfun_strings[LFUN_ADD_EQ]",
-  "_is_type":"lfun_strings[LFUN__IS_TYPE]",
-  "_sprintf":"lfun_strings[LFUN__SPRINTF]",
+  "``**":"LFUN_RPOW:lfun_strings[LFUN_RPOW]",
+
+  "`~":"lfun_strings[LFUN_COMPL]",
+  "`!":"lfun_strings[LFUN_NOT]",
+  "`()":"lfun_strings[LFUN_CALL]",
+  "cast":"lfun_strings[LFUN_CAST]",
+  "__hash":"lfun_strings[LFUN___HASH]",
+  "_sqrt":"LFUN__SQRT:lfun_strings[LFUN__SQRT]",	// Pike 8.0 and later.
+  "_random":"LFUN__RANDOM:lfun_strings[LFUN__RANDOM]",	// Pike 8.0 and later.
+  "_reverse":"LFUN__REVERSE:lfun_strings[LFUN__REVERSE]",
+
+  "`==":"lfun_strings[LFUN_EQ]",
+  "`<":"lfun_strings[LFUN_LT]",
+  "`>":"lfun_strings[FLUN_GT]",
   "_equal":"lfun_strings[LFUN__EQUAL]",
-  "_m_delete":"lfun_strings[LFUN__M_DELETE]",
-  "_get_iterator":"lfun_strings[LFUN__GET_ITERATOR]",
+  "_is_type":"lfun_strings[LFUN__IS_TYPE]",
+
+  "`[]":"lfun_strings[LFUN_INDEX]",
+  "`->":"lfun_strings[LFUN_ARROW]",
   "`[..]":"lfun_strings[LFUN_RANGE]",
   "_search":"lfun_strings[LFUN__SEARCH]",
-  "_types":"lfun_strings[LFUN__TYPES]",
-  "_serialize":"lfun_strings[LFUN__SERIALIZE]",
-  "_deserialize":"lfun_strings[LFUN__DESERIALIZE]",
-  "_size_object":"lfun_strings[LFUN__SIZE_OBJECT]",
-  "_random":"lfun_strings[LFUN__RANDOM]",
-  "`**":"lfun_strings[LFUN_POW]",
-  "``**":"lfun_strings[LFUN_RPOW]",
-  "_sqrt":"lfun_strings[LFUN__SQRT]",
+  "_size_object":
+    "LFUN__SIZE_OBJECT:lfun_strings[LFUN__SIZE_OBJECT]", // Pike 8.0 and later.
+
+  "_sizeof":"lfun_strings[LFUN__SIZEOF]",
+  "_indices":"lfun_strings[LFUN__INDICES]",
+  "_values":"lfun_strings[LFUN__VALUES]",
+  "_types":"LFUN__TYPES:lfun_strings[LFUN__TYPES]",	// Pike 8.0 and later.
+  "_annotations":"LFUN__ANNOTATIONS:lfun_strings[LFUN__ANNOTATIONS]",
+  "_get_iterator":"lfun_strings[LFUN__GET_ITERATOR]",
+
+  "`+=":"lfun_strings[LFUN_ADD_EQ]",
+  "`[]=":"lfun_strings[LFUN_ASSIGN_INDEX]",
+  "`->=":"lfun_strings[LFUN_ASSIGN_ARROW]",
+  "_m_delete":"lfun_strings[LFUN__M_DELETE]",
+  "_m_clear":"LFUN__M_CLEAR:lfun_strings[LFUN__M_CLEAR]",
+  "_m_add":"LFUN__M_ADD:lfun_strings[LFUN__M_ADD]",
+  "_atomic_get_set":"LFUN__ATOMIC_GET_SET:lfun_strings[LFUN__ATOMIC_GET_SET]",
+
+  "_serialize":
+    "LFUN__SERIALIZE:lfun_strings[LFUN__SERIALIZE]",	// Pike 8.0 and later.
+  "_deserialize":
+    "LFUN__DESERIALIZE:lfun_strings[LFUN__DESERIALIZE]", // Pike 8.0 and later.
+
+  "_iterator_next":"LFUN__ITERATOR_NEXT:lfun_strings[LFUN__ITERATOR_NEXT]",
+  "next":"LFUN__ITERATOR_NEXT:lfun_compat_strings[LFUN__ITERATOR_NEXT]",
+  "_iterator_index":"LFUN__ITERATOR_INDEX:lfun_strings[LFUN__ITERATOR_INDEX]",
+  "index":"LFUN__ITERATOR_INDEX:lfun_compat_strings[LFUN__ITERATOR_INDEX]",
+  "_iterator_value":"LFUN__ITERATOR_VALUE:lfun_strings[LFUN__ITERATOR_VALUE]",
+  "value":"LFUN__ITERATOR_VALUE:lfun_compat_strings[LFUN__ITERATOR_VALUE]",
+  "_iterator_prev":"LFUN__ITERATOR_PREV:lfun_strings[LFUN__ITERATOR_PREV]",
+  "prev":"LFUN__ITERATOR_PREV:lfun_compat_strings[LFUN__ITERATOR_PREV]",
 ]);
 int last_str_id = 0;
 array(string) stradd = ({});
@@ -345,19 +386,34 @@ string allocate_string(string orig_str)
   else
     str = orig_str;
   str_sym = strings[str];
-  if (str_sym) return str_sym;
+  if (str_sym && !has_value(str_sym, ":")) return str_sym;
 
   if (String.width(str)>8) {
     error("Automatic allocation of wide strings with MK_STRING() or MK_STRING_SVALUE() not supported yet.\n");
   }
   int str_id = last_str_id++;
-  stradd += ({
+  array(string) stradd_frag = ({
     sprintf("module_strings[%d] =\n"
 	    "  make_shared_binary_string(%s,\n"
 	    "                            CONSTANT_STRLEN(%s));\n",
 	    str_id,
 	    orig_str, orig_str),
   });
+  if (str_sym) {
+    // Use pregenerated strings when available.
+    foreach(str_sym/",", string alt_pair) {
+      [string detect, string expr] = alt_pair/":";
+      stradd_frag = ({
+        sprintf("\n#ifdef %s\n"
+                "copy_shared_string(module_strings[%d], %s);\n"
+                "#else /* !%s */\n",
+                detect, str_id, expr, detect),
+      }) + stradd_frag + ({
+        sprintf("#endif /* %s */\n", detect),
+      });
+    }
+  }
+  stradd += stradd_frag;
   str_sym = strings[str] = sprintf("module_strings[%d] /* %s */",
 				   str_id, orig_str);
   return str_sym;
