@@ -2665,6 +2665,11 @@ static int add_gifunction(struct mapping *namespace,
         }
         g_base_info_unref(iinfo);
       }
+      if (g_base_info_get_name(cinfo)) {
+        push_text(g_base_info_get_name(cinfo));
+        push_type_name(Pike_sp[-1].u.string);
+        pop_stack();
+      }
       g_base_info_unref(cinfo);
       push_type(PIKE_T_FUNCTION);
     } else if (g_arg_info_get_direction(arginfo) != GI_DIRECTION_OUT) {
