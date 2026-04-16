@@ -17,6 +17,7 @@
 #include "pike_compiler.h"
 #include "pike_types.h"
 #include "fdlib.h"
+#include "backend.h"
 
 DECLARATIONS
 
@@ -4185,6 +4186,103 @@ PIKEFUN array(utf8_string) get_search_path()
 /*! @endnamespace
  */
 
+static GMainContext *gi_main_context = NULL;
+
+static struct fd_callback_box *gpoll_fd_boxes = NULL;
+static guint gpoll_allocated_fds = 0;
+static guint gpoll_nfds = 0;
+
+static int gevents_to_pike_events(gushort gevents)
+{
+  int pike_events = 0;
+#define REMAP_EVENT(G_EV, P_EV) do {            \
+    if (gevents & (G_EV)) {                     \
+      pike_events |= (P_EV);                    \
+    }                                           \
+  } while(0)
+
+  REMAP_EVENT(G_IO_IN|G_IO_HUP, PIKE_BIT_FD_READ);
+  REMAP_EVENT(G_IO_OUT, PIKE_BIT_FD_WRITE);
+  /* FIXME: G_IO_ERR? */
+
+  return pike_events;
+}
+
+static void update_gpoll_fd_box(struct fd_callback_box *box,
+                                int fd, int pike_events)
+{
+  if (box->fd != fd) {
+    change_fd_for_box(box, fd);
+  }
+  set_fd_callback_events(box, pike_events, 0);
+}
+
+static int got_gpoll_event(struct fd_callback_box *box, int event)
+{
+  g_main_context_iteration(gi_main_context, FALSE);
+  return 0;
+}
+
+static gint gpoll_interceptor(GPollFD *fds, guint nfds, gint timeout)
+{
+  int ok = 1;
+  if (!gpoll_fd_boxes || (nfds != gpoll_nfds)) {
+    ok = 0;
+  } else {
+    guint n;
+    for (n = 0; n < nfds; n++) {
+      if ((gpoll_fd_boxes[n].fd != fds[n].fd) ||
+          (gpoll_fd_boxes[n].events != gevents_to_pike_events(fds[n].events))) {
+        ok = 0;
+        break;
+      }
+    }
+  }
+
+  if (!ok) {
+    /* Something differs since before. */
+    guint n;
+
+    if (nfds > gpoll_allocated_fds) {
+      /* Need to realloc. */
+      struct fd_callback_box *new_gpoll_fd_boxes = gpoll_fd_boxes;
+      guint alloc_fds = nfds * 2;
+      new_gpoll_fd_boxes = malloc(sizeof(struct fd_callback_box) * alloc_fds);
+      if (!new_gpoll_fd_boxes) {
+        Pike_fatal("Out of memory allocating fd table for GI.\n");
+      }
+      if (gpoll_fd_boxes) {
+        memcpy(new_gpoll_fd_boxes, gpoll_fd_boxes,
+               sizeof(struct fd_callback_box) * gpoll_nfds);
+        for (n = 0; n < gpoll_nfds; n++) {
+          unhook_fd_callback_box(gpoll_fd_boxes + n);
+          hook_fd_callback_box(new_gpoll_fd_boxes + n);
+        }
+        free(gpoll_fd_boxes);
+      }
+      gpoll_fd_boxes = new_gpoll_fd_boxes;
+      gpoll_allocated_fds = alloc_fds;
+    }
+
+    for (n = 0; n < nfds; n++) {
+      int pike_events = gevents_to_pike_events(fds[n].events);
+      if (n < gpoll_nfds) {
+        update_gpoll_fd_box(gpoll_fd_boxes + n, fds[n].fd, pike_events);
+      } else {
+        INIT_FD_CALLBACK_BOX(gpoll_fd_boxes + n, default_backend, NULL,
+                             fds[n].fd, pike_events, got_gpoll_event, 0);
+      }
+    }
+
+    for(; n < gpoll_nfds; n++) {
+      update_gpoll_fd_box(gpoll_fd_boxes + n, gpoll_fd_boxes[n].fd, 0);
+    }
+    gpoll_nfds = nfds;
+  }
+
+  return g_poll(fds, nfds, timeout);
+}
+
 #endif
 
 INIT
@@ -4214,6 +4312,20 @@ PIKE_MODULE_INIT
 #endif
   object_quark = g_quark_from_static_string("PikeGI::object");
   magic_mapping = allocate_mapping(0);
+
+  /* Hook the main context poll loop into the default backend.
+   *
+   * We do this via intercepting the g_poll() call in the main context,
+   * and hooking the relevant fds to the default backend. We initialize
+   * it by calling the main context loop once with an immediate timeout.
+   *
+   * Note that similar to Pike, MainContext has a wakeup pipe which will
+   * be in the set of fds we intercept, so we will be woken up any time
+   * the fd set changes (as wanted).
+   */
+  gi_main_context = g_main_context_default();
+  g_main_context_set_poll_func(gi_main_context, gpoll_interceptor);
+  g_main_context_iteration(gi_main_context, FALSE);
 #endif
   INIT
 }
@@ -4233,6 +4345,16 @@ PIKE_MODULE_EXIT
   if (global_namespace_lookup) {
     free_mapping(global_namespace_lookup);
     global_namespace_lookup = NULL;
+  }
+  if (gi_main_context) {
+    int n;
+
+    g_main_context_set_poll_func(gi_main_context, 0);
+
+    for (n = 0; n < gpoll_nfds; n++) {
+      unhook_fd_callback_box(gpoll_fd_boxes + n);
+    }
+    free(gpoll_fd_boxes);
   }
 #endif
 }
