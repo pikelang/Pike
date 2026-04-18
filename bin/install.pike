@@ -1275,6 +1275,8 @@ void close_fileselector(object button, object selector)
 
 void set_filename(object button, array ob, mixed... rest)
 {
+  string path = "";
+#ifdef USE_GI
 #if constant(GTK.FileDialog)
   GTK.FileDialog selector = button;
   object entry = rest[0];
@@ -1284,13 +1286,18 @@ void set_filename(object button, array ob, mixed... rest)
   } else {
     file = selector->save_finish(ob);
   }
-  string path = file->get_path();
-  entry->set_text(path);
+  path = file->get_path();
 #else
   object selector=ob[0];
   object entry=ob[1];
-  entry->set_text(selector->get_filename());
+  path = selector->get_filename();
 #endif
+#else
+  object selector=ob[0];
+  object entry=ob[1];
+  path = selector->get_filename();
+#endif
+  entry->set_text(path);
   if(entry == entry1)
     update_entry2();
   close_fileselector(button,selector);
@@ -1301,10 +1308,13 @@ void selectdir(object button, object entry)
 #ifdef USE_GI
 #if constant(GTK.FileDialog)
   string initial_path = entry->get_text();
+  GI.repository.Gio.File path =
+    GI.repository.Gio.file_new_for_path(initial_path);
   GTK.FileDialog selector;
   selector = GTK.FileDialog(([ "title": "Pike installation prefix",
-                               "initial-name": initial_path,
-                               "initial-folder": GI.repository.Gio.file_new_for_path(initial_path),
+                               //"initial-name": basename(initial_path),
+                               "initial-folder": path,
+                               "accept-label": "Select",
                                "modal": 1,
                             ]));
   selector->select_folder(window1, UNDEFINED, set_filename, entry);
@@ -1335,13 +1345,21 @@ void selectfile(object button, object entry)
 {
 #ifdef USE_GI
 #if constant(GTK.FileDialog)
+  string other_path = entry->get_text();
   string initial_path = entry->get_text();
+  GI.repository.Gio.File path =
+    GI.repository.Gio.file_new_for_path(dirname(initial_path));
   GTK.FileDialog selector;
   selector = GTK.FileDialog(([ "title": "Pike binary name",
-                               "initial-name": initial_path,
-                               "initial-folder": GI.repository.Gio.file_new_for_path(basename(initial_path)),
+                               "initial-name": "pike" /*initial_path*/,
+#if 1
+                               /* "initial-file": path, */
+                               "initial-folder": path,
+#endif
+                               "accept-label": "Select",
                                "modal": 1,
                             ]));
+  selector->set_initial_folder(path);
   selector->save(window1, UNDEFINED, set_filename, entry);
 #else
   GTK.FileChooserDialog selector;
@@ -1389,7 +1407,11 @@ void proceed()
   label6->set_text("Click Ok to exit installation program.");
   hbuttonbox1->add(button1 = Button("Ok"));
   button1->show();
+#ifdef USE_GI
+  button1->connect("clicked", do_exit);
+#else
   button1->signal_connect("pressed",do_exit,0);
+#endif
 }
 
 int next()
@@ -1398,7 +1420,11 @@ int next()
   vars->pike_name = entry2->get_text();
   install_type="--new-style";
 
+#ifdef USE_GI
+  table1->set_visible(0);
+#else
   destruct(table1);
+#endif
 
   vbox2->PS(vbox3 = Vbox(),1,1,0);
   vbox3->show();
@@ -1413,8 +1439,16 @@ int next()
   label5->show();
   vbox3->PS(label6 = Label("----msg----"),0,0,0);
   label6->show();
+#ifdef USE_GI
+  button1->set_visible(0);
+  button2->set_visible(0);
+
+  proceed();
+  return 0;
+#else
   destruct(button1);
   destruct(button2);
+#endif
 
   call_out(proceed, 0);
   return 1;
@@ -1801,7 +1835,11 @@ class InstallHandler(mapping vars, string prefix) {
     {
       status1(fmt,@args);
       hbuttonbox1->add(button1 = Button("Exit")->show());
+#ifdef USE_GI
+      button1->connect("clicked", do_exit);
+#else
       button1->signal_connect("pressed",do_exit,0);
+#endif
 
       label6->set_text("Click Exit to exit installation program.");
 
@@ -4173,10 +4211,6 @@ int main(int argc, array(string) argv)
 
   if(vars->BASEDIR) {
     if(vars->BASEDIR[-1]!='/') vars->BASEDIR += "/";
-    if(!vars->LIBDIR_SRC) vars->LIBDIR_SRC=vars->BASEDIR+"lib";
-    if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"share/man";
-    if(!vars->DOCDIR_SRC) vars->DOCDIR_SRC=vars->BASEDIR+"refdoc";
-    if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
   }
   else if(vars->SRCDIR) {
     // Do some guessing...
@@ -4187,6 +4221,15 @@ int main(int argc, array(string) argv)
     werror("No BASEDIR.\n");
     exit(1);
   }
+
+  if(!vars->LIBDIR_SRC) vars->LIBDIR_SRC=vars->BASEDIR+"lib";
+  if(!vars->TMP_BINDIR) vars->TMP_BINDIR=vars->BASEDIR+"bin";
+  if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=getcwd();
+  if(!vars->TMP_LIBDIR) vars->TMP_LIBDIR=vars->TMP_BUILDDIR+"/lib";
+  if(!vars->DOCDIR) vars->DOCDIR=vars->BASEDIR+"/refdoc";
+  if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"share/man";
+  if(!vars->DOCDIR_SRC) vars->DOCDIR_SRC=vars->BASEDIR+"refdoc";
+  if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
 
 #ifdef SUPPORT_WIX
   root =
