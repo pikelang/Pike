@@ -4217,7 +4217,8 @@ static void update_gpoll_fd_box(struct fd_callback_box *box,
   set_fd_callback_events(box, pike_events, 0);
 }
 
-static int got_gpoll_event(struct fd_callback_box *box, int event)
+static int got_gpoll_event(struct fd_callback_box *PIKE_UNUSED(box),
+                           int PIKE_UNUSED(event))
 {
   g_main_context_iteration(gi_main_context, FALSE);
   return 0;
@@ -4347,7 +4348,7 @@ PIKE_MODULE_EXIT
     global_namespace_lookup = NULL;
   }
   if (gi_main_context) {
-    int n;
+    guint n;
 
     g_main_context_set_poll_func(gi_main_context, 0);
 
