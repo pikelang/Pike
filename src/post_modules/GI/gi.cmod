@@ -4314,6 +4314,7 @@ PIKE_MODULE_INIT
   object_quark = g_quark_from_static_string("PikeGI::object");
   magic_mapping = allocate_mapping(0);
 
+#ifndef __NT__
   /* Hook the main context poll loop into the default backend.
    *
    * We do this via intercepting the g_poll() call in the main context,
@@ -4328,7 +4329,8 @@ PIKE_MODULE_INIT
   g_main_context_set_poll_func(gi_main_context, gpoll_interceptor);
   g_main_context_iteration(gi_main_context, FALSE);
 #endif
-  INIT
+#endif
+  INIT;
 }
 
 PIKE_MODULE_EXIT
@@ -4347,6 +4349,7 @@ PIKE_MODULE_EXIT
     free_mapping(global_namespace_lookup);
     global_namespace_lookup = NULL;
   }
+#ifndef __NT__
   if (gi_main_context) {
     guint n;
 
@@ -4357,5 +4360,6 @@ PIKE_MODULE_EXIT
     }
     free(gpoll_fd_boxes);
   }
+#endif
 #endif
 }
