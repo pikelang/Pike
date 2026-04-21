@@ -4223,10 +4223,10 @@ int main(int argc, array(string) argv)
   }
 
   if(!vars->LIBDIR_SRC) vars->LIBDIR_SRC=vars->BASEDIR+"lib";
-  if(!vars->TMP_BINDIR) vars->TMP_BINDIR=vars->BASEDIR+"bin";
-  if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=getcwd();
-  if(!vars->TMP_LIBDIR) vars->TMP_LIBDIR=vars->TMP_BUILDDIR+"/lib";
-  if(!vars->DOCDIR) vars->DOCDIR=vars->BASEDIR+"/refdoc";
+  // if(!vars->TMP_BINDIR) vars->TMP_BINDIR=vars->BASEDIR+"bin";
+  // if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=getcwd();
+  // if(!vars->TMP_LIBDIR) vars->TMP_LIBDIR=vars->TMP_BUILDDIR+"/lib";
+  // if(!vars->DOCDIR) vars->DOCDIR=vars->BASEDIR+"/refdoc";
   if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"share/man";
   if(!vars->DOCDIR_SRC) vars->DOCDIR_SRC=vars->BASEDIR+"refdoc";
   if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
