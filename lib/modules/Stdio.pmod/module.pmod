@@ -783,6 +783,9 @@ class File
 	cb(1, @args);
       } else {
 	// Connection failed.
+        // Set the errno via error slippage
+        // cf https://cr.yp.to/docs/connect.html
+        catch { is_open() && ::read(1, 1); };
 	// Make sure the state is reset.
 	close();
 	cb(0, @args);
