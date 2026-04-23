@@ -4186,6 +4186,7 @@ PIKEFUN array(utf8_string) get_search_path()
 /*! @endnamespace
  */
 
+#ifndef __NT__
 static GMainContext *gi_main_context = NULL;
 
 static struct fd_callback_box *gpoll_fd_boxes = NULL;
@@ -4283,6 +4284,7 @@ static gint gpoll_interceptor(GPollFD *fds, guint nfds, gint timeout)
 
   return g_poll(fds, nfds, timeout);
 }
+#endif	/* !__NT__ */
 
 #endif
 
