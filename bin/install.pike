@@ -31,6 +31,14 @@
 #define GIO GI.repository.Gio
 #define GTK_FLUSH()
 
+#if constant(GTK.__GI_API_VERSION_3_0__)
+#define USE_GTK3
+#elif constant(GTK.__GI_API_VERSION_4_0__)
+#define USE_GTK4
+#else
+#warning Unsupported version of GTK.
+#endif
+
 class Hbox {
   inherit GTK.Box;
 
@@ -45,6 +53,9 @@ class Hbox {
                           int(1bit) fill,
                           int padding)
   {
+#ifdef USE_GTK3
+    ::pack_start(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->hexpand = 1;
     }
@@ -55,6 +66,7 @@ class Hbox {
       sub->set_margin_start(padding);
     }
     append(sub);
+#endif
     return this;
   }
 
@@ -63,6 +75,9 @@ class Hbox {
                         int(1bit) fill,
                         int padding)
   {
+#ifdef USE_GTK3
+    ::pack_end(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->hexpand = 1;
     }
@@ -73,8 +88,16 @@ class Hbox {
       sub->set_margin_end(padding);
     }
     prepend(sub);
+#endif
     return this;
   }
+
+#ifdef USE_GTK3
+  // Make it compatible with GTK.Widget.
+  void child_notify(string ingored)
+  {
+  }
+#endif
 }
 
 class Vbox {
@@ -90,6 +113,9 @@ class Vbox {
                           int(1bit) fill,
                           int padding)
   {
+#ifdef USE_GTK3
+    ::pack_start(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->vexpand = 1;
     }
@@ -100,6 +126,7 @@ class Vbox {
       sub->set_margin_top(padding);
     }
     append(sub);
+#endif
     return this;
   }
 
@@ -108,6 +135,9 @@ class Vbox {
                         int(1bit) fill,
                         int padding)
   {
+#ifdef USE_GTK3
+    ::pack_end(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->vexpand = 1;
     }
@@ -118,8 +148,16 @@ class Vbox {
       sub->set_margin_bottom(padding);
     }
     prepend(sub);
+#endif
     return this;
   }
+
+#ifdef USE_GTK3
+  // Make it compatible with GTK.Widget.
+  void child_notify(string ingored)
+  {
+  }
+#endif
 }
 
 #if constant(GTK.ButtonBox)
@@ -142,6 +180,9 @@ class HbuttonBox {
                           int(1bit) fill,
                           int padding)
   {
+#ifdef USE_GTK3
+    ::pack_start(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->hexpand = 1;
     }
@@ -152,6 +193,7 @@ class HbuttonBox {
       sub->set_margin_end(padding);
     }
     append(sub);
+#endif
     return this;
   }
 
@@ -160,6 +202,9 @@ class HbuttonBox {
                         int(1bit) fill,
                         int padding)
   {
+#ifdef USE_GTK3
+    ::pack_end(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->hexpand = 1;
     }
@@ -170,14 +215,26 @@ class HbuttonBox {
       sub->set_margin_start(padding);
     }
     prepend(sub);
+#endif
     return this;
   }
 
   this_program add(GTK.Widget sub)
   {
+#ifdef USE_GTK3
+    ::add(sub);
+#else
     append(sub);
+#endif
     return this;
   }
+
+#ifdef USE_GTK3
+  // Make it compatible with GTK.Widget.
+  void child_notify(string ingored)
+  {
+  }
+#endif
 }
 
 class VbuttonBox {
@@ -193,6 +250,9 @@ class VbuttonBox {
                           int(1bit) fill,
                           int padding)
   {
+#ifdef USE_GTK3
+    ::pack_start(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->vexpand = 1;
     }
@@ -203,6 +263,7 @@ class VbuttonBox {
       sub->set_margin_top(padding);
     }
     append(sub);
+#endif
     return this;
   }
 
@@ -211,6 +272,9 @@ class VbuttonBox {
                         int(1bit) fill,
                         int padding)
   {
+#ifdef USE_GTK3
+    ::pack_end(sub, expand, fill, padding);
+#else
     if (expand) {
       sub->vexpand = 1;
     }
@@ -221,14 +285,26 @@ class VbuttonBox {
       sub->set_margin_bottom(padding);
     }
     prepend(sub);
+#endif
     return this;
   }
 
   this_program add(GTK.Widget sub)
   {
+#ifdef USE_GTK3
+    ::add(sub);
+#else
     append(sub);
+#endif
     return this;
   }
+
+#ifdef USE_GTK3
+  // Make it compatible with GTK.Widget.
+  void child_notify(string ingored)
+  {
+  }
+#endif
 }
 
 class Button {
@@ -1454,6 +1530,18 @@ int next()
   return 1;
 }
 
+class Frame
+{
+  inherit GTK.Frame;
+
+#ifdef USE_GTK3
+  // Make it compatible with GTK.Widget.
+  void child_notify(string ingored)
+  {
+  }
+#endif
+}
+
 class WelcomeBox
 {
   inherit Vbox;
@@ -1470,7 +1558,7 @@ class WelcomeBox
                      JUSTIFY_CENTER
 #endif
                      ),0,0,10);
-    PS((frame1 = GTK.Frame()), 1, 1, 0);
+    PS((frame1 = Frame()), 1, 1, 0);
 
     frame1
 #if !constant(GTK.__GI_API_VERSION_4_0__)
@@ -1479,13 +1567,22 @@ class WelcomeBox
 #ifdef USE_GI
                         ShadowType.
 #endif
-                        SHADOW_IN)
+#ifdef USE_GTK3
+                        IN
+#else
+                        SHADOW_IN
+#endif
+                        )
 #endif
 #ifndef USE_GI
       ->set_border_width(11)
       ->add
 #else
+#ifdef USE_GTK3
+      ->add
+#else
       ->set_child
+#endif
 #endif
       ((hbox1 = Hbox())
        ->PS(Image(combine_path(vars->SRCDIR, "install-welcome")),
@@ -1597,11 +1694,13 @@ class WizardWindow
   inherit GTK.Window;
 
 #ifdef USE_GI
+#ifndef USE_GTK3
   this_program add(GTK.Widget sub)
   {
     set_child(sub);
     return this;
   }
+#endif
 #endif
 
   protected void create(string prefix)
