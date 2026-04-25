@@ -2059,6 +2059,9 @@ SimpleRootNode simple_parse_file(string path,
   if(catch {
     data = file->read();
     file->close();
+    if( has_prefix(data, "\357\273\277") ) {
+      data = utf8_to_string(data)[1..];
+    }
   })
     throw_error("Could not read XML file %O.\n", path);
   else
