@@ -785,6 +785,7 @@ protected mapping ext2type = ([
   "mar"     : "application/vnd.ms-access",
   "mat"     : "application/vnd.ms-access",
   "mbd"     : "application/mbdlet",
+  "md"      : "text/markdown",
   "mda"     : "application/vnd.ms-access",
   "mdb"     : "application/vnd.ms-access",
   "mde"     : "application/vnd.ms-access",
