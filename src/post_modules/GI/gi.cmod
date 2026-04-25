@@ -4266,9 +4266,24 @@ static gint gpoll_interceptor(GPollFD *fds, guint nfds, gint timeout)
       gpoll_allocated_fds = alloc_fds;
     }
 
+    for (n = 0; n < gpoll_nfds; n++) {
+      if (n < nfds) {
+        int pike_events = gevents_to_pike_events(fds[n].events);
+        if (gpoll_fd_boxes[n].fd == fds[n].fd) {
+          continue;
+        }
+      }
+      /* NB: We must unhook the old boxes where the fds mismatch
+       *     first. Otherwise an old fd box may still be active
+       *     for the same fd. Consider the transition [10, 15] ==> [15].
+       */
+      change_fd_for_box(gpoll_fd_boxes + n, -1);
+      unhook_fd_callback_box(gpoll_fd_boxes + n);
+    }
+
     for (n = 0; n < nfds; n++) {
       int pike_events = gevents_to_pike_events(fds[n].events);
-      if (n < gpoll_nfds) {
+      if ((n < gpoll_nfds) && gpoll_fd_boxes[n].backend) {
         update_gpoll_fd_box(gpoll_fd_boxes + n, fds[n].fd, pike_events);
       } else {
         INIT_FD_CALLBACK_BOX(gpoll_fd_boxes + n, default_backend, NULL,
@@ -4276,9 +4291,6 @@ static gint gpoll_interceptor(GPollFD *fds, guint nfds, gint timeout)
       }
     }
 
-    for(; n < gpoll_nfds; n++) {
-      update_gpoll_fd_box(gpoll_fd_boxes + n, gpoll_fd_boxes[n].fd, 0);
-    }
     gpoll_nfds = nfds;
   }
 
@@ -4361,6 +4373,7 @@ PIKE_MODULE_EXIT
       unhook_fd_callback_box(gpoll_fd_boxes + n);
     }
     free(gpoll_fd_boxes);
+    gpoll_nfds = 0;
   }
 #endif
 #endif
