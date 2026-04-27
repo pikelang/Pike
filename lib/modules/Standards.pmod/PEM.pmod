@@ -239,7 +239,8 @@ class Messages
   protected array(Message) low_get_private_keys()
   {
     return get_fragments( (< "RSA PRIVATE KEY", "DSA PRIVATE KEY",
-                             "EC PRIVATE KEY", "ANY PRIVATE KEY" >) );
+                             "EC PRIVATE KEY", "ANY PRIVATE KEY",
+                             "PRIVATE KEY" >) );
   }
 
   //! Returns an array of all the bodies of @expr{"RSA PRIVATE KEY"@},
