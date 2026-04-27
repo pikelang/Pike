@@ -1674,7 +1674,7 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
  *   '!'	Inhibit numerical padding (Roxen-style).
  *   '-'	Inhibit numerical padding (glibc-style).
  *   '#'	Inhibit numerical padding (MSVC-style).
- *              Alternative %c notation (MSVC-style).
+ *		Alternative %c/%x notation (MSVC-style).
  *   '^'	Upper-case (glibc-style).
  *   '~'	Capitalize (Roxen-style). NB: This is the default.
  *   'E'	Locale dependent alternative form (glibc-style).
@@ -1724,6 +1724,7 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
  *   'z'	Time zone as hour offset from UTC.
  *   'Z'	Timezone name of abbreviation, or no bytes if
  *		no timezone information exists.
+ *   '+'	Date and time in date(1) format. "
  */
 
 /* Compat notes:
@@ -1821,7 +1822,11 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
            */
         case '!': /* Inhibit numerical padding (Roxen-style). */
         case '-': /* Inhibit numerical padding (glibc-style). */
-        case '#': /* Inhibit numerical padding (MSVC-style). */
+          prefix = 0;
+          continue;
+
+        case '#': /* Inhibit numerical padding and alt form (MSVC-style). */
+          alt_form = 1;
           prefix = 0;
           continue;
 
@@ -1866,28 +1871,28 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
                                 [tm->tm_mon]);
           break;
 
-        case 'c': /* Date and time. */
+        case 'c': /* Date and time as per locale. */
           if (upper_case) {
-            string_builder_strftime(s, "%^a %^b %e %H:%M:%S %Y", tm);
+            string_builder_strftime(s, "%^x %X", tm);
           } else {
-            string_builder_strftime(s, "%a %b %e %H:%M:%S %Y", tm);
+            string_builder_strftime(s, "%x %X", tm);
           }
           break;
 
         case 'C': /* Century number; 0-prefix. */
-          string_builder_sprintf(s, "%02d", 19 + tm->tm_year/100);
+          string_builder_sprintf(s, prefix?"%02d":"%d", 19 + tm->tm_year/100);
           break;
 
         case 'd': /* Day of month [1,31]; 0-prefix. */
-          string_builder_sprintf(s, "%02d", tm->tm_mday);
+          string_builder_sprintf(s, prefix?"%02d":"%d", tm->tm_mday);
           break;
 
         case 'D': /* Date. */
-          string_builder_strftime(s, "%m/%d/%y", tm);
+          string_builder_strftime(s, prefix?"%m/%d/%y":"%-m/%-d/%-y", tm);
           break;
 
         case 'e': /* Day of month [1,31], space-prefix. */
-          string_builder_sprintf(s, "%2d", tm->tm_mday);
+          string_builder_sprintf(s, prefix?"%2d":"%d", tm->tm_mday);
           break;
 
         case 'F': /* ISO 8601 date. */
@@ -1899,12 +1904,14 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
             int wday = (tm->tm_wday + 1) % 7;	/* ISO 8601 weekday number. */
             if ((wday - tm->tm_yday) >= 4) {
               /* The day belongs to the last week of the previous year. */
-              string_builder_sprintf(s, "%02d", (99 + tm->tm_year) % 100);
+              string_builder_sprintf(s, prefix?"%02d":"%d",
+                                     (99 + tm->tm_year) % 100);
             } else if ((tm->tm_mon == 11) && ((tm->tm_mday - wday) >= 29)) {
               /* The day belongs to the first week of the next year. */
-              string_builder_sprintf(s, "%02d", (1 + tm->tm_year) % 100);
+              string_builder_sprintf(s, prefix?"%02d":"%d",
+                                     (1 + tm->tm_year) % 100);
             } else {
-              string_builder_sprintf(s, "%02d", tm->tm_year % 100);
+              string_builder_sprintf(s, prefix?"%02d":"%d", tm->tm_year % 100);
             }
           }
           break;
@@ -1914,42 +1921,47 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
             int wday = (tm->tm_wday + 1) % 7;	/* ISO 8601 weekday number. */
             if ((wday - tm->tm_yday) >= 4) {
               /* The day belongs to the last week of the previous year. */
-              string_builder_sprintf(s, "%04d", 1899 + tm->tm_year);
+              string_builder_sprintf(s, prefix?"%04d":"%d",
+                                     1899 + tm->tm_year);
             } else if ((tm->tm_mon == 11) && ((tm->tm_mday - wday) >= 29)) {
               /* The day belongs to the first week of the next year. */
-              string_builder_sprintf(s, "%04d", 1901 + tm->tm_year);
+              string_builder_sprintf(s, prefix?"%04d":"%d",
+                                     1901 + tm->tm_year);
             } else {
-              string_builder_sprintf(s, "%04d", 1900 + tm->tm_year);
+              string_builder_sprintf(s, prefix?"%04d":"%d",
+                                     1900 + tm->tm_year);
             }
           }
           break;
 
         case 'H': /* Hour (24-hour clock) [0,23]; 0-prefix. */
-          string_builder_sprintf(s, "%02d", tm->tm_hour);
+          string_builder_sprintf(s, prefix?"%02d":"%d", tm->tm_hour);
           break;
 
         case 'I': /* Hour (12-hour clock) [1,12]; 0-prefix. */
-          string_builder_sprintf(s, "%02d", 1 + (tm->tm_hour + 11) % 12);
+          string_builder_sprintf(s, prefix?"%02d":"%d",
+                                 1 + (tm->tm_hour + 11) % 12);
           break;
 
         case 'j': /* Day number of year [1,366]; 0-prefix. */
-          string_builder_sprintf(s, "%03d", tm->tm_yday + 1);
+          string_builder_sprintf(s, prefix?"%03d":"%d", tm->tm_yday + 1);
           break;
 
         case 'k': /* Hour (24-hour clock); space-prefix. */
-          string_builder_sprintf(s, "%2d", tm->tm_hour);
+          string_builder_sprintf(s, prefix?"%2d":"%d", tm->tm_hour);
           break;
 
         case 'l': /* Hour (12-hour clock) [1,12]; space-prefix. */
-          string_builder_sprintf(s, "%2d", 1 + (tm->tm_hour + 11) % 12);
+          string_builder_sprintf(s, prefix?"%2d":"%d",
+                                 1 + (tm->tm_hour + 11) % 12);
           break;
 
         case 'm': /* Month number [1,12]; 0-prefix. */
-          string_builder_sprintf(s, "%02d", tm->tm_mon + 1);
+          string_builder_sprintf(s, prefix?"%02d":"%d", tm->tm_mon + 1);
           break;
 
         case 'M': /* Minute [0,59]; 0-prefix. */
-          string_builder_sprintf(s, "%02d", tm->tm_min);
+          string_builder_sprintf(s, prefix?"%02d":"%d", tm->tm_min);
           break;
 
         case 'p': /* AM or PM. */
@@ -1965,11 +1977,12 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
           break;
 
         case 'r': /* Time in 12-hour clock format with %p. */
-          string_builder_strftime(s, "%I:%M:%S %p", tm);
+          string_builder_strftime(s, prefix?"%I:%M:%S %p":"%-I:%-M:%-S %p",
+                                  tm);
           break;
 
         case 'R': /* 24-hour clock time no seconds. */
-          string_builder_strftime(s, "%H:%M", tm);
+          string_builder_strftime(s, prefix?"%H:%M":"%-H:%-M", tm);
           break;
 
         case 's': /* Seconds since epoch. */
@@ -1980,11 +1993,11 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
           break;
 
         case 'S': /* Seconds [0,60]; 0-prefix. */
-          string_builder_sprintf(s, "%02d", tm->tm_sec);
+          string_builder_sprintf(s, prefix?"%02d":"%d", tm->tm_sec);
           break;
 
         case 'T': /* 24-hour clock time including seconds. */
-          string_builder_strftime(s, "%H:%M:%S", tm);
+          string_builder_strftime(s, prefix?"%H:%M:%S":"%-H:%-M:%-S", tm);
           break;
 
         case 'u': /* Weekday as a decimal number [1,7], Monday == 1. */
@@ -1993,7 +2006,7 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
 
         case 'U': /* Week number of current year [0,53]; 0-prefix,
                    * Sunday is first day of week. */
-          string_builder_sprintf(s, "%02d",
+          string_builder_sprintf(s, prefix?"%02d":"%d",
                                  1 + (tm->tm_yday - tm->tm_wday) / 7);
           break;
 
@@ -2027,7 +2040,7 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
                 }
               }
             }
-            string_builder_sprintf(s, "%02d", weekno);
+            string_builder_sprintf(s, prefix?"%02d":"%d", weekno);
           }
           break;
 
@@ -2037,28 +2050,24 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
 
         case 'W': /* Week number of year as a decimal number [00,53],
                    * with Monday as the first day of week 1; 0-prefix. */
-          string_builder_sprintf(s, "%02d",
+          string_builder_sprintf(s, prefix?"%02d":"%d",
                                  ((tm->tm_yday + (5 + tm->tm_wday) % 7) / 7));
           break;
 
         case 'x': /* Date in locale preferred format. */
-          buffer[0] = 0;
-          strftime(buffer, sizeof(buffer), "%x", tm);
-          string_builder_strcat(s, buffer);
+          string_builder_strftime(s, upper_case?"%^a %^b %e":"%a %b %e", tm);
           break;
 
         case 'X': /* Time in locale preferred format. */
-          buffer[0] = 0;
-          strftime(buffer, sizeof(buffer), "%X", tm);
-          string_builder_strcat(s, buffer);
+          string_builder_strftime(s, "%H:%M:%S %Y", tm);
           break;
 
         case 'y': /* Year [00,99]; 0-prefix. */
-          string_builder_sprintf(s, "%02d", tm->tm_year % 100);
+          string_builder_sprintf(s, prefix?"%02d":"%d", tm->tm_year % 100);
           break;
 
         case 'Y': /* Year [0000,9999]; 0-prefix. */
-          string_builder_sprintf(s, "%04d", 1900 + tm->tm_year);
+          string_builder_sprintf(s, prefix?"%04d":"%d", 1900 + tm->tm_year);
           break;
 
         case 'z': /* Time zone as hour offset from UTC. */
@@ -2091,6 +2100,11 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
 
         case 'Z': /* Timezone name of abbreviation, or no bytes if
                    * no timezone information exists. */
+          /* FIXME: Consider generating UTC+offset strings. */
+          break;
+
+        case '+': /* Date and time in date(1) format. */
+          string_builder_strftime(s, upper_case?"%^x %T %^Z %C":"%x %T %Z %C":
           break;
 
         default:
