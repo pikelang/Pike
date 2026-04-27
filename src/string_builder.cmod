@@ -1897,7 +1897,8 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
           break;
 
         case '+': /* Date and time in date(1) format. */
-          string_builder_strftime(s, upper_case?"%^x %T %^Z %C":"%x %T %Z %C":
+          string_builder_strftime(s, upper_case?"%^x %T %^Z %C":"%x %T %Z %C",
+                                  tm);
           break;
 
         default:
