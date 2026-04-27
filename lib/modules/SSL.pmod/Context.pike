@@ -1040,6 +1040,7 @@ variant void add_cert(string(8bit) key, array(string(8bit)) certs,
   object(Crypto.Sign.State)|zero _key =
     Standards.PKCS.RSA.parse_private_key(key) ||
     Standards.PKCS.DSA.parse_private_key(key) ||
+    Standards.PKCS.parse_private_key(key) ||
 #if constant(Crypto.ECC.Curve)
     Standards.PKCS.ECDSA.parse_private_key(key) ||
 #endif
