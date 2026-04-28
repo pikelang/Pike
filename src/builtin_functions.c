@@ -6677,11 +6677,26 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *! @section Modifiers:
  *!   @string
+ *!     @value "%#"
+ *!       Modifier: Inhibit 0-padding and use alternative formet. (MS)
+ *!
+ *!     @value "%!"
+ *!       Modifier: Inhibit 0-padding. (Roxen)
+ *!
+ *!     @value "%-"
+ *!       Modifier: Inhibit 0-padding. (GNU)
+ *!
  *!     @value "%E"
- *!       Modifier: use alternative format, see below.
+ *!       Modifier: Use alternative format, see below. (SU)
  *!
  *!     @value "%O"
- *!       Modifier: use alternative format, see below. (SU)
+ *!       Modifier: Use alternative format, see below. (SU)
+ *!
+ *!     @value "%^"
+ *!       Modifier: Upper-case strings. (GNU)
+ *!
+ *!     @value "%~"
+ *!       Modifier: Capitalize strings (no-op). (Roxen)
  *!   @endstring
  *! @endsection
  *!
@@ -6704,6 +6719,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *!     @value "%C"
  *!       The century number (year/100) as a 2-digit integer (range 00 to 99).
+ *!       (SU)
  *!
  *!     @value "%d"
  *!       The day of the month as a decimal number (range 01 to 31).
@@ -6712,11 +6728,11 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!       Equivalent to @expr{%m/%d/%y@}. (for Americans only.
  *!       Americans should note that in other countries @expr{%d/%m/%y@}
  *!       is rather common. This means that in international context
- *!       this format is ambiguous and should not be used.)
+ *!       this format is ambiguous and should not be used.) (SU)
  *!
  *!     @value "%e"
  *!       Like @expr{%d@}, the day of the month as a decimal number,
- *!       but a leading zero is replaced by a space.
+ *!       but a leading zero is replaced by a space. (SU)
  *!
  *!     @value "%F"
  *!       Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
@@ -6731,9 +6747,10 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!       week number (see @expr{%V@}). This has the same format and
  *!       value as @expr{%Y@}, except that if the ISO week number
  *!       belongs to the previous or next year, that year is used instead.
+ *!       (TZ)
  *!
  *!     @value "%h"
- *!       Equivalent to %b.
+ *!       Equivalent to %b. (SU)
  *!
  *!     @value "%H"
  *!       The hour as a decimal number using a 24-hour clock (range 00 to 23).
@@ -6746,11 +6763,11 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *!     @value "%k"
  *!       The hour as a decimal number using a 24-hour clock (range 0 to 23);
- *!       single digits are prefixed by a space. See also @expr{%H@}.
+ *!       single digits are prefixed by a space. See also @expr{%H@}. (TZ)
  *!
  *!     @value "%l"
  *!       The hour as a decimal number using a 12-hour clock (range 1 to 12).
- *!       single digits are prefixed by a space. See also @expr{%I@}.
+ *!       single digits are prefixed by a space. See also @expr{%I@}. (TZ)
  *!
  *!     @value "%m"
  *!       The month as a decimal number (range 01 to 12).
@@ -6765,18 +6782,18 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *!     @value "%P"
  *!       Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
- *!       or a corresponding string for the current locale.
+ *!       or a corresponding string for the current locale. (GNU)
  *!
  *!     @value "%q"
  *!       Quarter number (Roxen-style).
  *!
  *!     @value "%r"
  *!       The time in a.m. or p.m. notation. In the POSIX locale this is
- *!       equivalent to @expr{%I:%M:%S %p@}.
+ *!       equivalent to @expr{%I:%M:%S %p@}. (SU)
  *!
  *!     @value "%R"
- *!       The time in 24-hour notation (@expr{%H:%M@}). (SU)
- *!       For a version including the seconds, see @expr{%T@} below.
+ *!       The time in 24-hour notation (@expr{%H:%M@}).
+ *!       For a version including the seconds, see @expr{%T@} below. (SU)
  *!
  *!     @value "%s"
  *!       The number of seconds since the Epoch,
@@ -6801,7 +6818,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!     @value "%V"
  *!       The ISO 8601 week number of the current year as a decimal number,
  *!       range 01 to 53, where week 1 is the first week that has at least
- *!       4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+ *!       4 days in the new year. See also @expr{%U@} and @expr{%W@}. (SU)
  *!
  *!     @value "%w"
  *!       The day of the week as a decimal, range 0 to 6, Sunday being 0.
@@ -6824,12 +6841,19 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!       Year with four digits (range 0000 to 9999).
  *!
  *!     @value "%z"
- *!       Time zone as hour offset from UTC.
+ *!       Time zone as hour offset from UTC. (SU)
  *!
  *!     @value "%Z"
  *!       Time zone name abbreviation, or empty if unknown.
+ *!
+ *!     @value "%+"
+ *!       Date and time in @tt{date(1)@}-format. (TZ)
  *!   @endstring
  *! @endsection
+ *!
+ *! @note
+ *!   Support for the @tt{"%+"@} format was added during the beta phase
+ *!   of Pike 9.0.
  *!
  *! @fixme
  *!   This function does not support @[format] strings containing wide
