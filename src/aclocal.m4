@@ -1041,6 +1041,15 @@ define([AC_MODULE_INIT],
   AC_SUBST(MODULE_PMOD_IN)
   AC_SUBST(MODULE_WRAPPER_PREFIX)
 
+  PRECOMPILER_DEPS=""
+  for f in "$BUILD_BASE/precompile.sh-stamp" \
+    "$PIKE_SRC_DIR/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike"; do
+    if test -f "$f"; then
+      PRECOMPILER_DEPS="$PRECOMPILER_DEPS $f"
+    fi
+  done
+  AC_SUBST(PRECOMPILER_DEPS)
+
   if test -d $BUILD_BASE/modules/. ; then
     dynamic_module_makefile=$BUILD_BASE/modules/dynamic_module_makefile
     static_module_makefile=$BUILD_BASE/modules/static_module_makefile
