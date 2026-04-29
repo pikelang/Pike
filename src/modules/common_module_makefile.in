@@ -43,7 +43,7 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 .SUFFIXES:
 .SUFFIXES: .c .o .S .cmod .m .mmod .cc .ccmod .protos
 
-$(PMOD_TARGETS): $(wildcard $(BUILD_BASE)/precompile.sh-stamp) $(TMP_BINDIR)/precompile.pike $(wildcard $(PIKE_SRC_DIR)/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike) Makefile.in
+$(PMOD_TARGETS): $(TMP_BINDIR)/precompile.pike Makefile.in $(PRECOMPILER_DEPS)
 
 .cmod.c:
 	$(BUILD_BASE)/precompile.sh precompile.pike '--base=$(MODNAME)' $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
