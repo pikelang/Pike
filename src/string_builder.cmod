@@ -1581,8 +1581,6 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
                                          const char *fmt,
                                          struct tm *tm)
 {
-  char buffer[1024];	/* Used when calling strftime(3C). */
-
   STACK_LEVEL_START(0);
   while (*fmt) {
     if (*fmt == '%') {
