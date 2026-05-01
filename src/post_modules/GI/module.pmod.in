@@ -26,16 +26,20 @@ inherit @module@ : GI;
 //!   Several GI-compatible APIs are documented at
 //!   @url{https://www.gtk.org/docs/apis/@}.
 //!
+//! @note
+//!   The indexed modules may optionally be prefixed by
+//!   an api version number. Eg @expr{GI.repository.3.0.Gtk@}
+//!   (for Gtk 3.0) or @expr{GI.repository.4.0.Gtk@} (for Gtk 4.0).
+//!   If no version is been specified, the latest version
+//!   will be returned unless an older version has already
+//!   been loaded.
+//!
 //! @seealso
 //!   @[Cairo], @[GDK], @[GTK], @[Pango]
 
 //! @ignore
-class DynamicImporter {
+class DynamicImporter(string|zero|void version) {
 //! @endignore
-
-  constant magic_remaps = ([
-    "cairo" : ([ "Context" : "Cairo.Context" ])
-  ]);
 
   protected Repository repository = get_default_repository();
 
@@ -43,21 +47,41 @@ class DynamicImporter {
 
   protected mixed `[](string namespace)
   {
-    string|zero version = 0;
-    int colon = search(namespace, ":");
-    if (colon > 0) {
-      version = namespace[colon+1..];
-      namespace = namespace[..colon-1];
+    if (cache[namespace]) return cache[namespace];
+
+    if (!version) {
+      int colon = search(namespace, ":");
+      if (colon > 0) {
+        string full_version = namespace[colon+1..];
+        namespace = namespace[..colon-1];
+
+        DynamicImporter importer = this;
+        foreach(full_version/".", string ver) {
+          importer = importer[ver];
+        }
+        return importer[namespace];
+      }
     }
-    if (cache[namespace])
-      return cache[namespace];
+
+    string ver = "";
+    sscanf(namespace, "%[0-9]%s", ver, namespace);
+    if (sizeof(ver)) {
+      // Eg GI.repository.4.0.Gtk
+      if (sizeof(namespace)) {
+        // Syntax error.
+        return UNDEFINED;
+      }
+      string full_version = ver;
+      if (version) {
+        full_version = version + "." + ver;
+      }
+      return cache[ver] = DynamicImporter(full_version);
+    }
+
     if (!repository->enumerate_versions(namespace))
       return UNDEFINED;
 
     object m = repository->namespace(namespace, version);
-#if 0
-    IntrospectionModule m = IntrospectionModule(namespace, version);
-#endif
     if (m)
       cache[namespace] = m;
     return m;
