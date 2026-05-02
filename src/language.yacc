@@ -340,6 +340,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> number_or_maxint
 %type <n> cast
 %type <n> soft_cast
+%type <n> real_string
 %type <n> real_string_constant
 %type <n> real_string_or_identifier
 %type <n> string_constant
@@ -3639,6 +3640,14 @@ unqualified_id_expr: low_id_expr
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
     free_node($3);
   }
+  | unqualified_id_expr '.' real_string
+  {
+    $$ = index_node($1, $3->u.sval.u.string);
+    free_node($1);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    free_node($3);
+  }
   | unqualified_id_expr '.' bad_identifier {}
   ;
 
@@ -3743,6 +3752,14 @@ qualified_ident:
 
 qualified_id_expr: qualified_ident
   | qualified_id_expr '.' TOK_IDENTIFIER
+  {
+    $$ = index_node($1, $3->u.sval.u.string);
+    free_node($1);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    free_node($3);
+  }
+  | qualified_id_expr '.' real_string
   {
     $$ = index_node($1, $3->u.sval.u.string);
     free_node($1);
@@ -3916,6 +3933,14 @@ primary_expr: literal_expr
   | implicit_modifiers dummy_attributes enum { $$ = $3; }
   | apply
   | primary_expr '.' line_number_info TOK_IDENTIFIER
+  {
+    $$ = index_node($1, $4->u.sval.u.string);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($1);
+    free_node ($3);
+    free_node ($4);
+  }
+  | primary_expr '.' line_number_info real_string
   {
     $$ = index_node($1, $4->u.sval.u.string);
     COPY_LINE_NUMBER_INFO($$, $3);
@@ -4611,6 +4636,23 @@ low_id_expr: TOK_IDENTIFIER
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
     free_node($2);
   }
+  | '.' real_string
+  {
+    push_constant_text("");
+    if (call_handle_import()) {
+      node *tmp=mkconstantsvaluenode(Pike_sp-1);
+      set_node_name(tmp, empty_pike_string);
+      pop_stack();
+
+      $$ = index_node(tmp, $2->u.sval.u.string);
+      free_node(tmp);
+    }
+    else
+      $$=mknewintnode(0);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
+    free_node($2);
+  }
   | TOK_GLOBAL '.' TOK_IDENTIFIER
   {
     $$ = resolve_identifier ($3->u.sval.u.string);
@@ -4973,9 +5015,9 @@ string_constant: string
   }
   ;
 
-/* Same as string_constant above, but without TOK_FUNCTION_NAME. */
-real_string_constant: TOK_STRING
-  | real_string_constant TOK_STRING
+/* Same as string above, but without TOK_FUNCTION_NAME. */
+real_string: TOK_STRING
+  | real_string TOK_STRING
   {
     struct pike_string *a,*b;
     copy_shared_string(a,$1->u.sval.u.string);
@@ -4986,7 +5028,11 @@ real_string_constant: TOK_STRING
     $$=mkstrnode(a);
     free_string(a);
   }
-  | real_string_constant '+' TOK_STRING
+  ;
+
+/* Same as string_constant above, but without TOK_FUNCTION_NAME. */
+real_string_constant: real_string
+  | real_string_constant '+' real_string
   {
     struct pike_string *a,*b;
     copy_shared_string(a,$1->u.sval.u.string);
