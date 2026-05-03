@@ -1331,6 +1331,7 @@ magic_identifier: TOK_IDENTIFIER | TOK_RESERVED
     $$=mkstrnode(tmp);
     free_string(tmp);
   }
+  | real_string
   ;
 
 annotation: '@' constant_expr
