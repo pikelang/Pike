@@ -5112,7 +5112,7 @@ bad_const_expr_ident: bad_expr_ident
   | TOK_FOREACH
   { yyerror_reserved("foreach"); }
   | TOK_FUNCTION_NAME
-  { yyerror_reserved("__FUNCTION__");}
+  { yyerror_reserved("__func__");}
   | TOK_GAUGE
   { yyerror_reserved("gauge"); }
   | TOK__GENERIC
