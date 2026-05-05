@@ -1991,10 +1991,11 @@ object show_doc(program|object|function obj)
 
 // Make it possible to customize the backtrace formatting.
 protected string call_describe_backtrace(array(mixed) trace,
-					 void|int linewidth)
+                                         void|int linewidth,
+                                         void|int flags)
 {
   return (all_constants()["describe_backtrace"]||describe_backtrace)
-    (trace, linewidth);
+    (trace, linewidth, flags);
 }
 
 protected string call_describe_error(mixed /* object|array */ err)
@@ -5002,15 +5003,15 @@ string decode_charset(string data, string charset)
 
   if (mixed err = catch {
       object decoder = ([function(string:object)]Charset.decoder)(charset);
-      return ([function(void:string)]([function(string:object)]decoder->
-				      feed)(data)->drain)();
+      return ([function(int(1bit)|void:string)]
+              ([function(string:object)]decoder->feed)(data)->drain)(1);
     })
     compile_cb_rethrow (err);
 }
 
 
 //! Class used by @[describe_backtrace()] to describe values in backtraces.
-class Describer
+class Describer (protected int|void flags)
 {
   /* Attempt to avoid keeping this object around, as it may contain
    * indirect references to stuff (like mutex keys) in backtraces,
@@ -5057,6 +5058,9 @@ class Describer
   string describe_string (string m, int maxlen)
   {
     canclip++;
+    if ((flags & 2)  && (maxlen > 10)) {
+      maxlen = 10;
+    }
     if(sizeof(m) < maxlen)
     {
       string t = sprintf("%q", m);
@@ -5083,7 +5087,7 @@ class Describer
   {
     if(!sizeof(m)) return "({})";
     else {
-      if(maxlen<5)
+      if((flags & 2) || (maxlen < 5))
       {
 	clipped++;
 	return "array["+sizeof(m)+"]";
@@ -5557,7 +5561,8 @@ string|zero describe_function (function f)
 
 //! @namespace predef::
 
-//! @decl string describe_backtrace(mixed trace, void|int linewidth)
+//! @decl string describe_backtrace(mixed trace, void|int linewidth, @
+//!                                 int|void flags)
 //! @belongs MasterObject
 //!
 //! Return a readable message that describes where the backtrace
@@ -5567,11 +5572,29 @@ string|zero describe_function (function f)
 //! @[catch]), in which case the error message also is included in the
 //! description.
 //!
-//! Pass @[linewidth] -1 to disable wrapping of the output.
+//! @param trace
+//!   Backtrace to format.
+//!
+//! @param linewidth
+//!   Number of characters per line. Pass @expr{-1@} to disable wrapping
+//!   of the output. Defaults to the width of the @[Stdio.stdin] tty (if
+//!   known). Otherwise defaults to a large number.
+//!
+//! @param flags
+//!   Flags affecting the backtrace behavior.
+//!   @int
+//!     @value 1
+//!       Reserved (inhibit Roxen testsuite complaints).
+//!     @value 2
+//!       Inhibit rendering of container values.
+//!   @endint
 //!
 //! @note
 //!   For convenience this function is also made available as
 //!   @[predef::describe_backtrace()].
+//!
+//! @note
+//!   The @[flags] argument was added in Pike 9.0.
 //!
 //! @seealso
 //! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
@@ -5584,12 +5607,30 @@ string|zero describe_function (function f)
 //! @[catch]), in which case the error message also is included in the
 //! description.
 //!
-//! Pass @[linewidth] -1 to disable wrapping of the output.
+//! @param trace
+//!   Backtrace to format.
+//!
+//! @param linewidth
+//!   Number of characters per line. Pass @expr{-1@} to disable wrapping
+//!   of the output. Defaults to the width of the @[Stdio.stdin] tty (if
+//!   known). Otherwise defaults to a large number.
+//!
+//! @param flags
+//!   Flags affecting the backtrace behavior.
+//!   @int
+//!     @value 1
+//!       Reserved (inhibit Roxen testsuite complaints).
+//!     @value 2
+//!       Inhibit rendering of container values.
+//!   @endint
+//!
+//! @note
+//!   The @[flags] argument was added in Pike 9.0.
 //!
 //! @seealso
 //! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
 //!
-string describe_backtrace(mixed trace, void|int linewidth)
+string describe_backtrace(mixed trace, void|int linewidth, int|void flags)
 {
   int e;
   string ret;
@@ -5662,7 +5703,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
   }
 
   {
-    Describer desc = Describer();
+    Describer desc = Describer(flags);
     array trace = [array]trace;
 
     int end = 0;
