@@ -5003,8 +5003,8 @@ string decode_charset(string data, string charset)
 
   if (mixed err = catch {
       object decoder = ([function(string:object)]Charset.decoder)(charset);
-      return ([function(int(1bit)|void:string)]
-              ([function(string:object)]decoder->feed)(data)->drain)(1);
+      return ([function(void:string)]([function(string:object)]decoder->
+                                      feed)(data)->drain)();
     })
     compile_cb_rethrow (err);
 }
