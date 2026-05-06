@@ -5030,6 +5030,7 @@ class Describer (protected int|void flags)
 
   void identify_parts (mixed stuff)
   {
+    if (flags & 2) return; // Compacted display cannot be self-referential.
     // Use an array as stack here instead of recursing directly; we
     // might be pressed for stack space if the backtrace being
     // described is a stack overflow.
