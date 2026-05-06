@@ -883,13 +883,22 @@ class Future(<ValueType>)
 
   protected string _sprintf(int t)
   {
-    return t=='O' && sprintf("%O(%s,%O)", this_program,
+    if (t=='O') {
+      // Abbreviate the display of large results
+      string result_display;
+      if ((arrayp(result) || multisetp(result) || mappingp(result))
+          && sizeof(result) > 20)
+        result_display = sprintf("%t[%d]", result, sizeof(result));
+      else
+        result_display = sprintf("%O", result);
+      return sprintf("%O(%s,%s)", this_program,
                              ([ STATE_NO_FUTURE : "no future",
 			        STATE_PENDING : "pending",
                                 STATE_REJECTED : "rejected",
 				STATE_REJECTION_REPORTED : "rejection_reported",
                                 STATE_FULFILLED : "fulfilled" ])[state],
-                             result);
+                             result_display);
+    }
   }
 }
 
