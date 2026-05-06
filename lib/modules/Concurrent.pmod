@@ -1095,7 +1095,7 @@ class Promise(<ValueType>)
   }
 
   private string orig_backtrace =
-    sprintf("%s\n------\n", describe_backtrace(backtrace()));
+    sprintf("%s\n------\n", describe_backtrace(backtrace(), -1, 3));
 
   protected void _destruct(int when)
   {
