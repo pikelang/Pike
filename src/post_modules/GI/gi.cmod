@@ -337,6 +337,13 @@ static void signal_func_wrapper(struct signal_data *d,
  *     Namespace objects are singletons and are present
  *     as placeholder objects during their compilation.
  *
+ *   * Constructors (aka factory functions)
+ *
+ *     GObjects that have constructor functions also receive
+ *     an adjoining object with the suffix Factory, that
+ *     contains the constructor functions (usually named
+ *     new*()).
+ *
  *   Naming
  *   ------
  *
@@ -855,6 +862,8 @@ PIKECLASS GObject
                  signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
     }
 
+    /* FIXME: Looks like this function is lacking code present in connect(). */
+
     b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
     if (b==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("connect_after",sizeof(struct signal_data));
@@ -970,14 +979,18 @@ PIKECLASS GBoxed
 /*! @endclass
  */
 
-static void push_name_from_info(GIBaseInfo *info, int mixin)
+static void push_name_from_info(GIBaseInfo *info, int mixin_or_factory)
 {
   push_constant_text("GI.repository.");
   push_text(g_base_info_get_namespace(info));
   push_constant_text(".");
   push_text(g_base_info_get_name(info));
-  if (mixin) {
-    push_text("Mixin");
+  if (mixin_or_factory) {
+    if (mixin_or_factory == 1) {
+      push_text("Mixin");
+    } else {
+      push_text("FactoryProgram");
+    }
     f_add(5);
     return;
   }
@@ -1314,6 +1327,7 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
   case GI_INFO_TYPE_OBJECT:
   case GI_INFO_TYPE_INTERFACE:
     if (UNSAFE_IS_ZERO(s)) {
+      /* FIXME: Check that g_arg_info_may_be_null(ai) is true? */
       arg->v_pointer = NULL;
       break;
     }
@@ -2016,6 +2030,8 @@ static void low_invoke(GIBaseInfo *callable,
     push_gi_argument(&retval, ti);
     CALL_AND_UNSET_ONERROR(onerror);
   }
+
+  /* FIXME: Do we need to consider flags & GI_FUNCTION_IS_CONSTRUCTOR here? */
 }
 
 /* Returns the symbol number corresponding to Pike_fp->fun.
@@ -2699,14 +2715,15 @@ static int add_gifunction(struct mapping *namespace,
  *
  *  * GIInterfaceInfo
  *
- *  @param mixin
+ *  @param mixin_or_factory
  *    Flag that controls whether to generate a Mixin class
  *    (ie no storage (used for Interfaces)) or a wrapper class
- *    (is with a GObject or similar root class).
+ *    (is with a GObject or similar root class) or a FactoryProgram
+ *    class(used to contain the constructors for the class).
  */
 static struct program *program_from_info(struct mapping *namespace,
                                          GIBaseInfo *info,
-                                         int mixin)
+                                         int mixin_or_factory)
 {
   const gchar *type_name;
   struct svalue *cached;
@@ -2723,11 +2740,44 @@ static struct program *program_from_info(struct mapping *namespace,
     type_name = g_base_info_get_name(info);
   }
 
-  if (!mixin) {
+  if (!mixin_or_factory) {
     cached = simple_mapping_string_lookup(namespace, type_name);
   } else {
+
+    if (mixin_or_factory == 2) {
+      /* Check whether a factory is needed. */
+      int got_constructor = 0;
+      n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_methods(info) :
+        GI_IS_STRUCT_INFO(info) ? g_struct_info_get_n_methods(info) :
+        GI_IS_INTERFACE_INFO(info) ? g_interface_info_get_n_methods(info) : 0;
+      for (i = 0; i < n; i++) {
+        GIFunctionInfo *funcinfo = NULL;
+        GIFunctionInfoFlags flags = 0;
+        if (GI_IS_OBJECT_INFO(info)) {
+          funcinfo = g_object_info_get_method(info, i);
+        } else if (GI_IS_STRUCT_INFO(info)) {
+          funcinfo = g_struct_info_get_method(info, i);
+        } else {
+          funcinfo = g_interface_info_get_method(info, i);
+        }
+
+        flags = g_function_info_get_flags(funcinfo);
+        g_base_info_unref(funcinfo);
+
+        if (flags & GI_FUNCTION_IS_CONSTRUCTOR) {
+          got_constructor = 1;
+          break;
+        }
+      }
+      if (!got_constructor) return NULL;
+    }
+
     push_text(type_name);
-    push_text("Mixin");
+    if (mixin_or_factory == 1) {
+      push_text("Mixin");
+    } else {
+      push_text("FactoryProgram");
+    }
     f_add(2);
 
     cached = simple_mapping_string_lookup(namespace, Pike_sp[-1].u.string->str);
@@ -2747,8 +2797,12 @@ static struct program *program_from_info(struct mapping *namespace,
   if (!program_id) {
     program_id = allocate_program_id();
     push_text(type_name);
-    if (mixin) {
-      push_text("Mixin");
+    if (mixin_or_factory) {
+      if (mixin_or_factory == 1) {
+        push_text("Mixin");
+      } else {
+        push_text("FactoryProgram");
+      }
       f_add(2);
     }
     push_int(program_id);
@@ -2762,14 +2816,17 @@ static struct program *program_from_info(struct mapping *namespace,
     {
       GIObjectInfo *parentinfo = g_object_info_get_parent(info);
 
+      if (mixin_or_factory == 2) break;	/* Factories have no parents. */
+
       if (parentinfo && !g_base_info_equal(parentinfo, info)) {
-        parent_prog = program_from_info(namespace, parentinfo, mixin);
+        parent_prog = program_from_info(namespace, parentinfo,
+                                        mixin_or_factory);
         push_text(g_object_info_get_type_name(parentinfo));
-        if (mixin) {
+        if (mixin_or_factory) {
           push_text("Mixin");
           f_add(2);
         }
-      } else if (mixin) {
+      } else if (mixin_or_factory) {
         /* FIXME: If mixin the base class is the prototype-only
          *        variant of GI_GObject_program.
          */
@@ -2784,7 +2841,7 @@ static struct program *program_from_info(struct mapping *namespace,
     }
     break;
   case GI_INFO_TYPE_INTERFACE:
-    if (!mixin) {
+    if (!mixin_or_factory) {
       parent_prog = program_from_info(namespace, info, 1);
       if (!parent_prog) return NULL;
 
@@ -2822,6 +2879,7 @@ static struct program *program_from_info(struct mapping *namespace,
   case GI_INFO_TYPE_STRUCT:
   case GI_INFO_TYPE_UNION:
   case GI_INFO_TYPE_BOXED:
+    /* FIXME: Complain about mixin being set. */
     parent_prog = GI_GBoxed_program;
     add_ref(parent_prog);
     push_text("GBoxed");
@@ -2842,8 +2900,12 @@ static struct program *program_from_info(struct mapping *namespace,
   push_text(g_base_info_get_namespace(info));
   push_text(".");
   push_text(g_base_info_get_name(info));
-  if (mixin) {
-    push_text("Mixin");
+  if (mixin_or_factory) {
+    if (mixin_or_factory == 1) {
+      push_text("Mixin");
+    } else {
+      push_text("FactoryProgram");
+    }
     f_add(5);
   } else {
     f_add(4);
@@ -2862,8 +2924,12 @@ static struct program *program_from_info(struct mapping *namespace,
 
   /* Update the cache. */
   push_text(type_name);
-  if (mixin) {
-    push_text("Mixin");
+  if (mixin_or_factory) {
+    if (mixin_or_factory == 1) {
+      push_text("Mixin");
+    } else {
+      push_text("FactoryProgram");
+    }
     f_add(2);
   }
   ref_push_program(Pike_compiler->new_program);
@@ -2900,7 +2966,8 @@ static struct program *program_from_info(struct mapping *namespace,
   /*
    * Interfaces
    */
-  if (GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info)) {
+  if ((GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info)) &&
+      (mixin_or_factory != 2)) {
     /* Inherit any mixin classes for interfaces.
      */
     n = GI_IS_INTERFACE_INFO(info) ?
@@ -3000,7 +3067,8 @@ static struct program *program_from_info(struct mapping *namespace,
   /*
    * Fields
    */
-  if (GI_IS_OBJECT_INFO(info) || GI_IS_STRUCT_INFO(info)) {
+  if ((GI_IS_OBJECT_INFO(info) || GI_IS_STRUCT_INFO(info)) &&
+      (mixin_or_factory != 2)) {
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_fields(info) :
       g_struct_info_get_n_fields(info);
     for (i = 0; i < n; i++) {
@@ -3056,7 +3124,7 @@ static struct program *program_from_info(struct mapping *namespace,
   }
 
   /*
-   * Methods
+   * Methods and functions.
    */
   n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_methods(info) :
     GI_IS_STRUCT_INFO(info) ? g_struct_info_get_n_methods(info) :
@@ -3100,7 +3168,7 @@ static struct program *program_from_info(struct mapping *namespace,
     }
 
     /* FIXME: Constructors ought to be mapped onto variants of create(). */
-    if (!(flags & GI_FUNCTION_IS_CONSTRUCTOR)) {
+    if (!(flags & GI_FUNCTION_IS_CONSTRUCTOR) == (mixin_or_factory != 2)) {
       update_ident_to_n(ident_to_n_sval,
                         add_gifunction(namespace, name,
                                        funcinfo, f_call_gi_method), i);
@@ -3856,14 +3924,14 @@ PIKECLASS Repository
    */
   static int add_namespace_symbol(struct mapping *namespace,
                                   GIBaseInfo *info,
-                                  int mixin)
+                                  int mixin_or_factory)
   {
     int ret = -1;
     struct program *p = NULL;
-    if (mixin &&
+    if (mixin_or_factory &&
         (g_base_info_get_type(info) != GI_INFO_TYPE_OBJECT) &&
         (g_base_info_get_type(info) != GI_INFO_TYPE_INTERFACE)) {
-      /* Mixin mode only supported for objects and interfaces. */
+      /* Mixin and factory modes only supported for objects and interfaces. */
       return -1;
     }
     switch(g_base_info_get_type(info)) {
@@ -3890,20 +3958,40 @@ PIKECLASS Repository
     case GI_INFO_TYPE_BOXED:
     case GI_INFO_TYPE_INTERFACE:
       /* FIXME: Defer compilation by using the f_namespace_get_symbol() getter. */
-      p = program_from_info(namespace, info, mixin);
+      p = program_from_info(namespace, info, mixin_or_factory);
       if (p) {
         push_program(p);
       } else {
         push_undefined();
       }
-      if (mixin) {
+      switch(mixin_or_factory) {
+      case 1:
         push_text(g_base_info_get_name(info));
         push_text("Mixin");
         f_add(2);
         simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
         pop_stack();
-      } else {
+        break;
+      case 2:
+        if (p) {
+          push_text(g_base_info_get_name(info));
+          push_text("FactoryProgram");
+          f_add(2);
+          simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2,
+                              ID_PROTECTED);
+          pop_stack();
+
+          f_call_function(1);	/* Clone the factory object. */
+          push_text(g_base_info_get_name(info));
+          push_text("Factory");
+          f_add(2);
+          simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
+          pop_stack();
+        }
+        break;
+      default:
         simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
+        break;
       }
       pop_stack();
       break;
@@ -4039,6 +4127,9 @@ PIKECLASS Repository
       /* Add Mixin class (if any). */
       update_ident_to_n(ident_to_n_sval,
                         add_namespace_symbol(namespace_lookup, info, 1), i);
+      /* Add Factory class and object (if any). */
+      update_ident_to_n(ident_to_n_sval,
+                        add_namespace_symbol(namespace_lookup, info, 2), i);
       g_base_info_unref(info);
     }
 
