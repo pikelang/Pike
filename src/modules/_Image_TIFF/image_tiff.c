@@ -462,8 +462,12 @@ void low_image_tiff_decode( struct buffer *buf,
   if(!tif)
     Pike_error("Failed to 'open' tiff image: %s\n", last_tiff_error);
 
-  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
-  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
+  /* All TIFF images have a width and a height...
+   *
+   * The explicit casts to void are there to make Coverity happy (CID 1680319).
+   */
+  (void)TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
+  (void)TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
 
   if (DO_UINT32_MUL_OVERFLOW(w, h, &pixels)
 	|| pixels > 0x7fffffff) {
