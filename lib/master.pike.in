@@ -5059,8 +5059,8 @@ class Describer (protected int|void flags)
   string describe_string (string m, int maxlen)
   {
     canclip++;
-    if ((flags & 2)  && (maxlen > 10)) {
-      maxlen = 10;
+    if ((flags & 2) && (maxlen > 30)) {
+      maxlen = 30;
     }
     if(sizeof(m) < maxlen)
     {
