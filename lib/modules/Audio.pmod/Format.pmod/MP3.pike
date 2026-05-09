@@ -9,9 +9,9 @@
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
-#define DEBUG(X, Y ...) werror("Audio.Format.MP3: " + X, Y)
+#define WERR(X, Y ...) werror("Audio.Format.MP3: " + X, Y)
 #else
-#define DEBUG(X, Y ...)
+#define WERR(X, Y ...)
 #endif
 
 
@@ -112,7 +112,7 @@
     start = 0;
 
     while( (by = buffer->getbytes( 1  )) > 0  ) {
-      DEBUG("get_frame: getbytes = %O\n", by);
+      WERR("get_frame: getbytes = %O\n", by);
       patt <<= 8;
       patt |= by;
       p++;
@@ -226,9 +226,9 @@
   // Decodes a synchsafe integer
   private int ss2int(array(int) bytes) {
     int res;
-    DEBUG("ss2int: %O\n", bytes);
+    WERR("ss2int: %O\n", bytes);
     foreach(bytes, int byte)
       res = res << 7 | byte;
-    DEBUG("ss2int: ret=%O\n", res);
+    WERR("ss2int: ret=%O\n", res);
     return res;
   }
