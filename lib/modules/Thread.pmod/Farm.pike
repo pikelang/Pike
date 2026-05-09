@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! A thread farm.
 //!
 //! @seealso
