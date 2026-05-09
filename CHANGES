@@ -475,6 +475,8 @@ o Compiler
     the expression when the operand is false. Previously later unsafe
     operators were still applied.
 
+  - The compiler now allows some C2Y syntax.
+
 o Runtime
 
   - The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
@@ -558,13 +560,17 @@ o Stdio.File: Support concurrent close() during read() and write().
 
   Previously this had an inconsistent behavior.
 
-o Tools.Standalone.autodoc_to_split_html:
+o Tools.Standalone.autodoc_to_split_html
 
   - Fixed some navigation issues for enums.
 
   - Fixed rendering of non-inherited symbols when there is a circular inherit.
 
   - Avoid invalid simplification of references.
+
+o Tools.Standalone.pv
+
+  Support Gtk 3.0 and Gtk 4.0 via the GI module.
 
 
 Incompatible changes
@@ -688,6 +694,8 @@ o Returning UNDEFINED from `+ and ``+ is not allowed and will cause an
 o RegGetValue(), RegGetKeyNames(), RegGetKeyValues(), openlog(),
   syslog() and closelog() have been moved to System.
 
+o Some GL constants have been renamed to match the documentation.
+
 o The ZXID module has been removed.
 
 New modules and functions
@@ -696,6 +704,10 @@ New modules and functions
 o predef::m_add()
 
   This function adds (as opposed to inserts) an element to a multiset.
+
+o predef::tzname()
+
+  Returns an array with the names of the non-dst and dst timezones.
 
 o ADT.Scheduler & ADT.TreeScheduler
 
@@ -719,6 +731,12 @@ o Function.bind()
 
   Partially evaluate a function. Similar to Function.curry, but with
   better granularity.
+
+o GI.repository
+
+  Implementation of GObject-Introspection. Indexing this module
+  will load (and compile) the corresponding GObject namespace.
+  This adds support for eg Gtk 4.0.
 
 o Standards.HPack (RFC 7541)
 o Stdio.FakePipe
@@ -750,6 +768,10 @@ o Crypto.SHA256.balloon() (and others)
 
   This is a memory-hard password hashing algorithm. It requires Nettle 3.9
   or later.
+
+o GL
+
+  Added some missing functions.
 
 o Parser.ECMAScript
 
@@ -802,6 +824,10 @@ o Process.Process
   Support using Stdio.Fd for "cwd" and "chroot" on OSes that
   have fchdir(2).
 
+o Protocols.LysKOM
+
+  Updated to protocol version 11.
+
 o Web.Auth & Web.Api
 o Web.EngineIO & Web.SocketIO
 o Protocols.HTTP2
@@ -811,6 +837,10 @@ o Standards.MsgPack
 o System.Memory
 
   Support mmapping of devices on relevant platforms.
+
+o System
+
+  Added set_file_atime() and set_file_mtime() as per documentation.
 
 o Thread.Mutex
 
@@ -1353,7 +1383,13 @@ o Added @enum/@endenum markup.
 
 o Support undocumented enums with documented constants.
 
+o Lots of previously undocumented symbols are now documented.
+
 o Add some support for documenting annotations.
+
+o Lots of broken cross-references have been fixed.
+
+o Some documentation has been regenerated and updated.
 
 
 Building and installing
@@ -1376,18 +1412,18 @@ Issues fixed
 
 Github pikelang/pike: #16, #25, #40, #49
 
-Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3681, #4312, #4934,
-  #5466, #7363, #7831, #8042, #10003, #10004, #10006, #10012, #10017,
-  #10018, #10021, #10022, #10023, #10026, #10027, #10028, #10029, #10033,
-  #10035, #10037, #10039, #10040, #10041, #10042, #10043, #10045, #10046,
-  #10047, #10048, #10050, #10055, #10059, #10065, #10072, #10076, #10077,
-  #10083, #10084, #10085, #10086, #10089, #10090, #10094, #10096, #10097,
-  #10098, #10104, #10105, #10107, #10109, #10111, #10112, #10113, #10114,
-  #10117, #10118, #10119, #10121, #10122, #10125, #10128, #10129, #10130,
-  #10131, #10132, #10133, #10134, #10135, #10136, #10137, #10139, #10142,
-  #10143, #10144, #10146, #10147, #10150, #10151, #10154, #10155, #10156,
-  #10158, #10159, #10160, #10161, #10162, #10163, #10164, #10165, #10167,
-  #10170, #10171, #10173, #10174, #10175, #10176, #10177, #10178, #10179,
-  #10180, #10181, #10182, #10183, #10185, #10187, #10188, #10191, #10192,
-  #10195, #10196, #10197, #10198, #10200, #10202, #10203, #10204, #10205,
-  #10206, #10207, #10208, #10209, #10213
+Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3658, #3681, #4312,
+  #4934, #5466, #7363, #7831, #8042, #10003, #10004, #10006, #10012,
+  #10017, #10018, #10021, #10022, #10023, #10026, #10027, #10028, #10029,
+  #10033, #10035, #10037, #10039, #10040, #10041, #10042, #10043, #10045,
+  #10046, #10047, #10048, #10050, #10055, #10059, #10065, #10072, #10076,
+  #10077, #10083, #10084, #10085, #10086, #10089, #10090, #10094, #10096,
+  #10097, #10098, #10104, #10105, #10107, #10109, #10111, #10112, #10113,
+  #10114, #10117, #10118, #10119, #10121, #10122, #10125, #10128, #10129,
+  #10130, #10131, #10132, #10133, #10134, #10135, #10136, #10137, #10139,
+  #10142, #10143, #10144, #10146, #10147, #10150, #10151, #10154, #10155,
+  #10156, #10158, #10159, #10160, #10161, #10162, #10163, #10164, #10165,
+  #10167, #10170, #10171, #10173, #10174, #10175, #10176, #10177, #10178,
+  #10179, #10180, #10181, #10182, #10183, #10185, #10187, #10188, #10191,
+  #10192, #10195, #10196, #10197, #10198, #10200, #10202, #10203, #10204,
+  #10205, #10206, #10207, #10208, #10209, #10210, #10213, #10214, #10217
