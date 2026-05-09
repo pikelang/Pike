@@ -1046,7 +1046,7 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
           call_c_initializers(obj);
           stack_swap();
           init_gi_gobject(obj, gobj);
-          if (p->flags & PROGRAM_USES_PARENT) {
+          if ((p->flags & PROGRAM_USES_PARENT) && parent) {
             add_ref(PARENT_INFO(obj)->parent = parent);
             PARENT_INFO(obj)->parent_identifier = parent_identifier;
           }
