@@ -3168,7 +3168,7 @@ static struct program *program_from_info(struct mapping *namespace,
     }
 
     /* FIXME: Constructors ought to be mapped onto variants of create(). */
-    if (!(flags & GI_FUNCTION_IS_CONSTRUCTOR) == (mixin_or_factory != 2)) {
+    if ((!(flags & GI_FUNCTION_IS_CONSTRUCTOR)) == (mixin_or_factory != 2)) {
       update_ident_to_n(ident_to_n_sval,
                         add_gifunction(namespace, name,
                                        funcinfo, f_call_gi_method), i);
