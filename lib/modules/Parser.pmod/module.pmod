@@ -232,6 +232,7 @@ constant html_entities=
    "Prime":"\x2033",
    "oline":"\x203E",
    "frasl":"\x2044",
+   "it":"\x2062",
 
    // Letterlike symbols
    "weierp":"\x2118",
