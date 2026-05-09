@@ -12,7 +12,7 @@ protected mapping(string:array(string)) copyrights = ([
     "Copyright © 1996-1997 Informationsvävarna AB",
     "Copyright © 1997-2000 Idonex AB",
     "Copyright © 2000-2002 Roxen Internet Software AB",
-    "Copyright © 2002-2022 Department of Computer and Information Science,\n"
+    "Copyright © 2002-2026 Department of Computer and Information Science,\n"
     "                      Linköping University",
   }),
 
