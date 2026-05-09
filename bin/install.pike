@@ -338,6 +338,16 @@ class Label {
 }
 
 class Image {
+#if constant(GTK.Picture)
+  inherit GTK.Picture;
+
+  protected void create(string path)
+  {
+    ::create(([ "file": GIO.file_new_for_path(path), "can-shrink": 0 ]));
+    set_hexpand(1);
+    set_vexpand(1);
+  }
+#else
   inherit GTK.Image;
 
   protected void create(string path)
@@ -346,6 +356,7 @@ class Image {
     set_hexpand(1);
     set_vexpand(1);
   }
+#endif
 }
 
 #if constant GTK.Table
