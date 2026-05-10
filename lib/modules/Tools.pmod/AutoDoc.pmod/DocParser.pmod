@@ -48,6 +48,7 @@ enum DocTokenType {
 
   TEXTTOKEN = 8,	//! Documentation text.
   ENDTOKEN = 9,		//! End of documentation marker.
+  REFDELIMITERKEYWORD = 10,	//! eg @expr{@@value@}
 };
 
 // The following is the "DTD" of
@@ -107,7 +108,7 @@ mapping(string : DocTokenType) keywordtype =
   "mapping" : CONTAINERKEYWORD, "member" : DELIMITERKEYWORD,
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
   "array" : CONTAINERKEYWORD, "elem" : DELIMITERKEYWORD,
-  "int" : CONTAINERKEYWORD, "value" : DELIMITERKEYWORD,
+  "int" : CONTAINERKEYWORD, "value" : REFDELIMITERKEYWORD,
   "string" : CONTAINERKEYWORD,
   "mixed" : CONTAINERKEYWORD, "type" : DELIMITERKEYWORD,
 
@@ -809,14 +810,16 @@ protected class DocParserClass {
     }
     for (;;) {
       token = peekToken();
-      if (! (<SINGLEKEYWORD, DELIMITERKEYWORD>) [token->type] )
+      if (! (<SINGLEKEYWORD, DELIMITERKEYWORD, REFDELIMITERKEYWORD>)
+          [token->type] )
         return res;
 
       string|zero single = 0;
       array(string) keywords = ({});
       res += opentag("group");
     group:
-      while ( (<SINGLEKEYWORD, DELIMITERKEYWORD>) [token->type] ) {
+      while ( (<SINGLEKEYWORD, DELIMITERKEYWORD, REFDELIMITERKEYWORD>)
+              [token->type] ) {
         string keyword = token->keyword;
         single = single || (token->type == SINGLEKEYWORD && keyword);
         multiset(string) allow = allowedChildren[container];
@@ -856,7 +859,12 @@ protected class DocParserClass {
           res += "/>";
         }
         else if (stringp(args))
-          res += ">" + args + "</" + keyword + ">";
+          if ((token->type == REFDELIMITERKEYWORD) &&
+              (args[0] != '"') && (upper_case(args) != lower_case(args))) {
+            res += "><ref>" + args + "</ref></" + keyword + ">";
+          } else {
+            res += ">" + args + "</" + keyword + ">";
+          }
         else
           res += "/>";
 
