@@ -7,9 +7,9 @@
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
-#define DEBUG(X, Y ...) werror("Audio.Format: " + X, Y)
+#define WERR(X, Y ...) werror("Audio.Format: " + X, Y)
 #else
-#define DEBUG(X, Y ...)
+#define WERR(X, Y ...)
 #endif
 
 //! Audio data format handling
@@ -164,7 +164,7 @@ class vbuffer {
   //  Flag for type of returned data.
   //  1 = string, 0 or void = integer
   string|int getbytes( int n, int|void s ) {
-    DEBUG("getbytes: n: %d, s: %d\n", n, s);
+    WERR("getbytes: n: %d, s: %d\n", n, s);
     if(n < 1) throw(Error.Generic("Must read at least something.\n"));
     if( !buffer || !sizeof(buffer) ) {
       if(!fd)

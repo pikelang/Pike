@@ -209,7 +209,7 @@ protected int ponder_answer( int|void start_position )
       buf+=s;
    }
 
-   headerbuf = buf[start_position..i-1]-"\n";
+   headerbuf = replace(buf[start_position..i-1], "\r", "\n");
 
    if (buf[i..i+1]=="\n\n") datapos=i+2;
    else datapos=i+4;
@@ -220,10 +220,11 @@ protected int ponder_answer( int|void start_position )
    // split headers
 
    headers=([]);
-   sscanf(headerbuf,"%s%*[ ]%d%*[ ]%s%*[\r]",protocol,status,status_desc);
-   foreach ((headerbuf/"\r")[1..],string s)
+   sscanf(headerbuf,"%s%*[ ]%d%*[ ]%s%*[\n]",protocol,status,status_desc);
+   foreach ((headerbuf/"\n")[1..],string s)
    {
       string n,d;
+      if (s == "") continue;	// Remnant of \r\n.
       sscanf(s,"%[!-9;-~]%*[ \t]:%*[ \t]%s",n,d);
       switch(n=lower_case(n))
       {

@@ -42,9 +42,9 @@ this_program|zero base_uri;
 string raw_uri = "";
 
 #ifdef STANDARDS_URI_DEBUG
-#define DEBUG(X, Y ...) werror("Standards.URI: "+X+"\n", Y)
+#define WERR(X, Y ...) werror("Standards.URI: "+X+"\n", Y)
 #else
-#define DEBUG(X, Y ...)
+#define WERR(X, Y ...)
 #endif
 
 // FIXME: What about decoding of Percent-Encoding (RFC3986 2.1)?
@@ -63,7 +63,7 @@ protected void parse_authority()
     string userinfo = a[..<1] * "@";
     // userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
     sscanf(userinfo, "%[^:]:%s", user, password); // user info present
-    DEBUG("parse_authority(): user=%O, password=%O", user, password);
+    WERR("parse_authority(): user=%O, password=%O", user, password);
   }
   if(scheme)
     port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
@@ -77,7 +77,7 @@ protected void parse_authority()
     // reg-name    = *( unreserved / pct-encoded / sub-delims )
     sscanf(host_port, "%[^:]%*[:]%d", host, port);
   }
-  DEBUG("parse_authority(): host=%O, port=%O", host, port);
+  WERR("parse_authority(): host=%O, port=%O", host, port);
 }
 
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
@@ -221,7 +221,7 @@ void reparse_uri(this_program|string|void base_uri)
   string uri = raw_uri;
   if(stringp(base_uri))
   {
-    DEBUG("cloning base URI %O", base_uri);
+    WERR("cloning base URI %O", base_uri);
     this::base_uri = this_program([string]base_uri); // create a new URI object
   }
   else
@@ -240,7 +240,7 @@ void reparse_uri(this_program|string|void base_uri)
   //    (Doing this at once saves us some useless parsing efforts.)
   if((!uri || uri == "") && this::base_uri)
   {
-    DEBUG("Path is empty -- Inherit entire base URI "
+    WERR("Path is empty -- Inherit entire base URI "
 	  "as per RFC 2396, §5.2 step 2. Done!");
     inherit_properties(this::base_uri);
     return;
@@ -251,10 +251,10 @@ void reparse_uri(this_program|string|void base_uri)
   // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
   if( sscanf(uri, "%s#%s", uri, fragment)==2 )
   {
-    DEBUG("Found fragment %O", fragment);
+    WERR("Found fragment %O", fragment);
     if( !sizeof(uri) )
     {
-      DEBUG("Fragment only. Using entire base URI, except fragment.");
+      WERR("Fragment only. Using entire base URI, except fragment.");
       if( !this::base_uri )
         error("fragment only URI lacking base URI.\n");
       string f = [string]fragment;
@@ -281,7 +281,7 @@ void reparse_uri(this_program|string|void base_uri)
      */
     scheme = lower_case([string]scheme);
   }
-  DEBUG("Found scheme %O", scheme);
+  WERR("Found scheme %O", scheme);
 
   // DWIM for "www.cnn.com" style input, when parsed in the context of
   // base "http://".
@@ -290,7 +290,7 @@ void reparse_uri(this_program|string|void base_uri)
       !sizeof(this::base_uri->authority) &&
       !sizeof(this::base_uri->path))
   {
-    DEBUG("DWIM authority: %O\n", uri);
+    WERR("DWIM authority: %O\n", uri);
     uri = "//"+uri;
   }
 
@@ -300,7 +300,7 @@ void reparse_uri(this_program|string|void base_uri)
   //                / path-rootless / path-empty
   if(sscanf(uri, "//%[^/]%s", authority, uri))
   {
-    DEBUG("Found authority %O", authority);
+    WERR("Found authority %O", authority);
     int q = search(authority, "?", search(authority, "@")+1);
     if (q >= 0) {
       // There's a question mark in the host and port section
@@ -309,7 +309,7 @@ void reparse_uri(this_program|string|void base_uri)
       // Example: http://foo?bar
       uri = authority[q..] + uri;
       authority = authority[..q-1];
-      DEBUG("Adjusted authority %O", authority);
+      WERR("Adjusted authority %O", authority);
     }
   }
 
@@ -317,7 +317,7 @@ void reparse_uri(this_program|string|void base_uri)
   // query       = *( pchar / "/" / "?" )
   // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
   sscanf(uri, "%s?%s", uri, query);
-  DEBUG("Found query %O", query);
+  WERR("Found query %O", query);
 
   // Parse path:
   // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
@@ -327,7 +327,7 @@ void reparse_uri(this_program|string|void base_uri)
   } else {
     path = uri;
   }
-  DEBUG("Found path %O", path);
+  WERR("Found path %O", path);
 
   // 3) If the scheme component is defined, indicating that the reference
   //    starts with a scheme name, then the reference is interpreted as an
@@ -338,12 +338,12 @@ void reparse_uri(this_program|string|void base_uri)
     if(authority)
       parse_authority();
 
-    DEBUG("Scheme found! RFC 2396, §5.2, step 3 "
+    WERR("Scheme found! RFC 2396, §5.2, step 3 "
 	  "says we're absolute. Done!");
     return;
   }
   scheme = this::base_uri->scheme;
-  DEBUG("Inherited scheme %O from base URI", scheme);
+  WERR("Inherited scheme %O from base URI", scheme);
 
   if(authority)
     parse_authority();
@@ -357,7 +357,7 @@ void reparse_uri(this_program|string|void base_uri)
   if(!authority || !sizeof(authority))
   {
     authority = this::base_uri->authority;
-    DEBUG("Inherited authority %O from base URI", authority);
+    WERR("Inherited authority %O from base URI", authority);
     if (authority)
       parse_authority();
 
@@ -374,7 +374,7 @@ void reparse_uri(this_program|string|void base_uri)
       //    URI's path.  Although there are many ways to do this, we will
       //    describe a simple method using a separate string buffer.
 
-      DEBUG("Combining base path %O with path %O => %O",
+      WERR("Combining base path %O with path %O => %O",
 	    this::base_uri->path, path,
 	    combine_uri_path(this::base_uri->path, path,
 			     !!this::base_uri->authority));
@@ -410,7 +410,7 @@ void reparse_uri(this_program|string|void base_uri)
 protected void create(this_program|string uri,
 		      this_program|string|void base_uri)
 {
-  DEBUG("create(%O, %O) called!", uri, base_uri);
+  WERR("create(%O, %O) called!", uri, base_uri);
   sprintf_cache = ([]);
   if(stringp(uri))
     raw_uri = [string]uri; // Keep for future runs of reparse_uri after a base_uri change
@@ -431,7 +431,7 @@ protected mixed `->=(string property, mixed value) {
 }
 protected mixed `[]=(string property, mixed value)
 {
-  DEBUG("`[]=(%O, %O)", property, value);
+  WERR("`[]=(%O, %O)", property, value);
   sprintf_cache = ([]);
   switch(property)
   {

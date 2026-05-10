@@ -32,7 +32,7 @@ int test_copyright() {
 
 int test_copying() {
   if(Stdio.read_file("COPYING")!=Tools.Legal.License.get_text()) {
-    write("COPYRIGHT needs to be updated.\n");
+    write("COPYING needs to be updated.\n");
     return 0;
   }
   return 1;

@@ -5,9 +5,9 @@ inherit Parser._RCS;
 //! data structures of its contents.
 
 #ifdef PARSER_RCS_DEBUG
-#define DEBUG(X, Y ...) werror("Parser.RCS: " + X, Y)
+#define WERR(X, Y ...) werror("Parser.RCS: " + X, Y)
 #else
-#define DEBUG(X, Y ...)
+#define WERR(X, Y ...)
 #endif
 
 //! Version number of the head version of the file.
@@ -483,7 +483,7 @@ class DeltatextIterator
 	  array(string) rows = current->rcs_text / "\n";
 	  for(int row=0; row<sizeof(rows); row++)
 	  {
-	      DEBUG("%s:%O\n", this_rev, rows[row]);
+	      WERR("%s:%O\n", this_rev, rows[row]);
 	      if(sscanf(rows[row], "%[ad]%*d %d", op, count) < 2)
 		  break; // no rows at all, for instance
 	      if(op == "d")
@@ -496,7 +496,7 @@ class DeltatextIterator
 	  }
 	  if(String.count(this_rev, ".") == 1)
 	  {
-	      DEBUG("current: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
+	      WERR("current: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
 		    current->lines, current->ancestor, current->next);
 	      Revision next = revisions[current->next];
 	      current->lines = next->lines - removed + added;

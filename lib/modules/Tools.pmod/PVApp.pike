@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 #require constant(GI.repository.Gtk.Application) && constant(Cairo.Context)
 
 import GI.repository;
