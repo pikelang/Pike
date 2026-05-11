@@ -4010,6 +4010,20 @@ PIKECLASS Repository
       break;
 
     case GI_INFO_TYPE_CONSTANT:
+      {
+        GITypeInfo *c_type_info = g_constant_info_get_type(info);
+        GIArgument c_value;
+
+        g_constant_info_get_value(info, &c_value);
+
+        push_gi_argument(&c_value, c_type_info);
+        simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
+        pop_stack();
+
+        g_constant_info_free_value(info, &c_value);
+      }
+      break;
+
     case GI_INFO_TYPE_FIELD:
     case GI_INFO_TYPE_CALLBACK:
     default:
