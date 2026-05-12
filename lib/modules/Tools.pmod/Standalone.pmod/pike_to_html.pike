@@ -31,50 +31,78 @@ string constants  = "UNDEFINED|__LINE__|__FILE__|__DIR__|__func__|"
 string known_macros = "if|ifdef|define|elif|else|endif|pike|require|include|"
                       "pragma";
 
+// List of symbols at the predef:: top-level.
+//
+// NB: This list is essentially
+//
+//   sort(indices(master()->root_module) +
+//        filter(indices(all_constants()),
+//               lambda(string s) {
+//                 return ('A' <= s[0]) && (s[0] <= 'Z');
+//               })) * "\n";
+//
+// with a few obsolete symbols added and most of the _-prefixed
+// symbols removed.
 string namespaces = #"ADT
+ADT
 Apple
 Arg
 Array
 Audio
 Builtin
 Bz2
+COM
 Cache
+Cairo
 Calendar
 Charset
 Colors
+CompatIterator
+CompilationHandler
+CompilerEnvironment
 CommonLog
 Concurrent
 Crypto
 DVB
 Debug
 DefaultCompilerEnvironment
+HandlerCompilerEnvironment
 Error
 Filesystem
 Float
 Function
 Fuse
+G
 GDK
 GDK2
+GI
 GL
 GLU
 GLUE
 GLUT
+GLib
 GSSAPI
 GTK
 GTK2
 Gdbm
 Geography
 Getopt
+Gettext
+Gio
 Git
 Gmp
+Gnome
 Gnome2
 Graphics
 Gz
 HPack
+HTTPAccept
 HTTPLoop
 Image
 Int
+Iterator
 Java
+Kerberos
 Languages
 Local
 Locale
@@ -97,10 +125,13 @@ Postgres
 Process
 Program
 Protocols
+Random
 Regexp
 Remote
+Reporter
 SANE
 SDL
+SQLite
 SSL
 Search
 Serializer
@@ -120,7 +151,10 @@ Yabu
 Yp
 ZXID
 _Ffmpeg
-__builtin";
+_Roxen
+_WhiteFish
+__builtin
+sybase";
 
 protected multiset(string) delims, reserved, types, consts, ns, mods, macros;
 
