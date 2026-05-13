@@ -220,11 +220,11 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz128(unsigned __int128 i) {
   return i ? stdc_leading_zeros(i) : 128;
 #  else
   /* The generic stdc_leading_zeros() does not support __int128.
-   * Do it with int64 instead.
+   * Do it with uint64 instead.
    */
   UINT64 hi = i >> 64;
   return i ? hi ? stdc_leading_zeros(hi) :
-    (64 + stdc_leading_zeros((INT64)i)) : 128;
+    (64 + stdc_leading_zeros((UINT64)i)) : 128;
 #  endif
 # elif SIZEOF_LONG == 16 && defined(HAS___BUILTIN_CLZL)
     return i ? __builtin_clzl(i) : 128;
