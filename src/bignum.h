@@ -347,7 +347,7 @@ PMOD_EXPORT extern struct program *bignum_program;
 PMOD_EXPORT void convert_stack_top_to_bignum(void);
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void);
 int is_bignum_object(struct object *o);
-PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv);
+PMOD_EXPORT int is_bignum_object_in_svalue(const struct svalue *sv);
 PMOD_EXPORT struct object *make_bignum_object(void);
 PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s);
 PMOD_EXPORT struct object *create_double_bignum(INT_TYPE low, INT_TYPE high);
@@ -364,7 +364,7 @@ PMOD_EXPORT int low_int64_from_bignum(INT64 *i, struct object *bignum);
 
 /* Returns nonzero iff conversion is successful. */
 PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum);
-PMOD_EXPORT int int64_from_svalue(INT64 *i, struct svalue *sv);
+PMOD_EXPORT int int64_from_svalue(INT64 *i, const struct svalue *sv);
 
 PMOD_EXPORT void reduce_stack_top_bignum(void);
 
