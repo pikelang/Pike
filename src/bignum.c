@@ -24,7 +24,7 @@ PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
   push_object(clone_object(bignum_program, 2));
 }
 
-PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
+PMOD_EXPORT int is_bignum_object_in_svalue(const struct svalue *sv)
 {
   /* FIXME: object subtype? */
   return TYPEOF(*sv) == T_OBJECT && is_bignum_object(sv->u.object);
@@ -63,7 +63,7 @@ PMOD_EXPORT int compare_bignums(struct object *a, struct object *b)
   return low_compare_bignums((MP_INT *)a->storage, (MP_INT *)b->storage);
 }
 
-PMOD_EXPORT int int64_from_svalue(INT64 *i, struct svalue *sv)
+PMOD_EXPORT int int64_from_svalue(INT64 *i, const struct svalue *sv)
 {
   if (TYPEOF(*sv) == PIKE_T_INT) {
     *i = sv->u.integer;
