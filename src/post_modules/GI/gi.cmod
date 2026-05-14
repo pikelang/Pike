@@ -1312,7 +1312,7 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
   }
 }
 
-static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
+static void get_gi_argument_interface(const struct svalue *s, GIArgument *arg,
                                       GIArgInfo *ai, GIBaseInfo *info)
 {
   switch(g_base_info_get_type(info)) {
@@ -1403,7 +1403,7 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
   }
 }
 
-static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
+static void get_gi_argument_type(const struct svalue *s, GIArgument *arg,
                                  GIArgInfo *ai, GITypeInfo *ti)
 {
   switch (g_type_info_get_tag(ti)) {
@@ -1543,7 +1543,8 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
   }
 }
 
-static void get_gi_argument(struct svalue *s, GIArgument *arg, GIArgInfo *ai)
+static void get_gi_argument(const struct svalue *s, GIArgument *arg,
+                            GIArgInfo *ai)
 {
   GITypeInfo ti;
 
@@ -1913,8 +1914,17 @@ static void low_invoke(GIBaseInfo *callable,
         in_args[num_in_args-1].v_pointer = &out_args[num_out_args];
         num_out_args++;
       }
-    } else if (i<args) {
+    } else {
       GIScopeType scope = g_arg_info_get_scope (ai);
+      const struct svalue *sval = &svalue_undefined;
+      if (i < args) {
+        sval = mark + i;
+      } else {
+        /* FIXME: Too few arguments?
+         *
+         * We pad with UNDEFINED.
+         */
+      }
       if (scope != GI_SCOPE_TYPE_INVALID) {
         /* Callback function argument. */
         cbc = (struct gi_callback_context *)g_malloc0(sizeof(struct gi_callback_context));
@@ -1928,7 +1938,7 @@ static void low_invoke(GIBaseInfo *callable,
         if (cbclist)
           cbclist->backlink = &cbc->next;
         cbclist = cbc;
-        assign_svalue_no_free(&cbc->func, mark+i);
+        assign_svalue_no_free(&cbc->func, sval);
         if (cbc->closure_arg < last_arg) {
           /* Not last arg => array of extra args. */
           if ((cbc->closure_arg < args) &&
@@ -1961,7 +1971,8 @@ static void low_invoke(GIBaseInfo *callable,
         in_args[num_in_args++].v_pointer = cbc->closure;
 #endif
       } else {
-        get_gi_argument(mark+i, &in_args[num_in_args++], ai);
+        /* NB: get_gi_argument() may push stuff on the Pike stack. */
+        get_gi_argument(sval, &in_args[num_in_args++], ai);
       }
       if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
         out_args[num_out_args] = in_args[num_in_args-1];
@@ -1969,10 +1980,6 @@ static void low_invoke(GIBaseInfo *callable,
         num_out_args++;
       }
       i++;
-    } else {
-      /* FIXME: Too few arguments?
-       * FIXME: Pad with NULL arguments?
-       */
     }
 
     CALL_AND_UNSET_ONERROR(onerror2);
@@ -2622,7 +2629,7 @@ static int add_gifunction(struct mapping *namespace,
     g_base_info_unref(rettypeinfo);
   }
   if (ret_nullable) {
-    push_type(PIKE_T_ZERO);
+    push_type(PIKE_T_VOID);
     push_type(PIKE_T_OR);
   }
   if (num_callbacks) {
@@ -2692,7 +2699,7 @@ static int add_gifunction(struct mapping *namespace,
     } else if (g_arg_info_get_direction(arginfo) != GI_DIRECTION_OUT) {
       push_gi_arginfo_type(namespace, arginfo);
       if (g_arg_info_may_be_null(arginfo)) {
-        push_type(PIKE_T_ZERO);
+        push_type(PIKE_T_VOID);
         push_type(PIKE_T_OR);
       }
       push_type(PIKE_T_FUNCTION);
