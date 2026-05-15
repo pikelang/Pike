@@ -143,19 +143,19 @@ void gdbmmod_fatal(const char *err)
  *! flags in a string:
  *!
  *! @string
- *!   @value r
+ *!   @value "r"
  *!     Open database for reading
- *!   @value w
+ *!   @value "w"
  *!     Open database for writing
- *!   @value c
+ *!   @value "c"
  *!     Create database if it does not exist
- *!   @value t
+ *!   @value "t"
  *!     Overwrite existing database
- *!   @value f
+ *!   @value "f"
  *!     Fast mode
- *!   @value s
+ *!   @value "s"
  *!     Synchronous mode
- *!   @value l
+ *!   @value "l"
  *!     Locking mode
  *! @endstring
  *!

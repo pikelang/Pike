@@ -128,8 +128,9 @@ struct svalue log_ident = SVALUE_INIT_FREE;
  *!     Write messages to the console if they can't be sent to syslogd.
  *!   @value LOG_NDELAY
  *!     Open the connection to syslogd now and not later.
- *!   @value LOG_NOWAIT
- *!     Do not wait for subprocesses talking to syslogd.
+ *!   @value LOG_PERROR
+ *!     Also log the message to @[Stdio.stderr]. Not specified by POSIX.1,
+ *!     but present in most Unix-derivatives anyway.
  *! @endint
  *!
  *! @param facility

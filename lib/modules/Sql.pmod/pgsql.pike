@@ -910,9 +910,9 @@ private string trbackendst(int c) {
 //! @returns
 //! The current commitstatus of the connection.  Returns either one of:
 //! @string
-//!  @value idle
-//!  @value intransaction
-//!  @value infailedtransaction
+//!  @value "idle"
+//!  @value "intransaction"
+//!  @value "infailedtransaction"
 //! @endstring
 //!
 //! @note
