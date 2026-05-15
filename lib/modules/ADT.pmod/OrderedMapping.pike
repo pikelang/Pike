@@ -185,15 +185,15 @@ protected this_program `-(this_program|mapping|multiset|array what) {
 //!
 //! @param how
 //!  @string
-//!   @value mapping
+//!   @value "mapping"
 //!    Will return a @expr{mapping@}. This will of course break the
 //!    "orderness" of this object's indices.
-//!   @value array
+//!   @value "array"
 //!    Will return an @expr{array(array)@} where the inner array
 //!    has two values where the first is the index and the second the value.
-//!   @value multiset
+//!   @value "multiset"
 //!    Will return the indices as a @expr{multiset@}
-//!   @value program
+//!   @value "program"
 //!    Will return the @expr{program@} the object was instantiated from.
 //!  @endstring
 protected mapping|array|multiset|program cast(string how) {

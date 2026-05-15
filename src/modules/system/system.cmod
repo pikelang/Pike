@@ -2958,29 +2958,29 @@ int get_one_limit( const char *limit, struct rlimit *rl )
  *!
  *! @param resource
  *! @string
- *!   @value cpu
+ *!   @value "cpu"
  *!     The CPU time limit in seconds.
- *!   @value fsize
+ *!   @value "fsize"
  *!     The maximum size of files the process may create.
- *!   @value data
+ *!   @value "data"
  *!     The maximum size of the process's data segment.
- *!   @value stack
+ *!   @value "stack"
  *!     The maximum size of process stack, in bytes.
- *!   @value core
+ *!   @value "core"
  *!
- *!   @value rss
+ *!   @value "rss"
  *!     Specifies the limit of pages the process's resident set.
- *!   @value nproc
+ *!   @value "nproc"
  *!     The maximum number of processes that can be created for
  *!     the real user ID of the calling process.
- *!   @value nofile
+ *!   @value "nofile"
  *!     The maximum number of file descriptors the process can
  *!     open, +1.
- *!   @value memlock
+ *!   @value "memlock"
  *!     The maximum number of bytes of virtual memory that
  *!     may be locked into RAM.
- *!   @value as
- *!   @value vmem
+ *!   @value "as"
+ *!   @value "vmem"
  *! @endstring
  *!
  *! @returns
