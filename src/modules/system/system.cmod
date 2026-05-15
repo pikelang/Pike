@@ -4047,6 +4047,106 @@ PIKE_MODULE_INIT
 
 /* function(:void) */
   ADD_FUNCTION2("closelog", f_closelog,tFunc(tNone,tVoid), 0, OPT_SIDE_EFFECT);
+
+  {
+    unsigned int bit = 1;
+
+#cmod_define ADD_LOG_FLAG(NAME) do {            \
+      ADD_INT_CONSTANT(NAME, bit, 0);           \
+      bit <<= 1;                                \
+    } while(0)
+
+    /*! @module System
+     */
+
+    /*! @decl constant LOG_CONS
+     *! @decl constant LOG_NDELAY
+     *! @decl constant LOG_PERROR
+     *! @decl constant LOG_PID
+     *!
+     *!   Values for the @tt{options@} argument of @[openlog()]
+     *!
+     *! @seealso
+     *!   @[openlog()]
+     */
+    ADD_LOG_FLAG("LOG_CONS");
+    ADD_LOG_FLAG("LOG_NDELAY");
+    ADD_LOG_FLAG("LOG_PERROR");
+    ADD_LOG_FLAG("LOG_PID");
+
+    bit = 1;
+    /*! @decl constant LOG_AUTH
+     *! @decl constant LOG_AUTHPRIV
+     *! @decl constant LOG_CRON
+     *! @decl constant LOG_DAEMON
+     *! @decl constant LOG_KERN
+     *! @decl constant LOG_LOCAL
+     *! @decl constant LOG_LOCAL1
+     *! @decl constant LOG_LOCAL2
+     *! @decl constant LOG_LOCAL3
+     *! @decl constant LOG_LOCAL4
+     *! @decl constant LOG_LOCAL5
+     *! @decl constant LOG_LOCAL6
+     *! @decl constant LOG_LOCAL7
+     *! @decl constant LOG_LPR
+     *! @decl constant LOG_MAIL
+     *! @decl constant LOG_NEWS
+     *! @decl constant LOG_SYSLOG
+     *! @decl constant LOG_USER
+     *! @decl constant LOG_UUCP
+     *!
+     *!   Values for the @tt{facility@} argument of @[openlog()].
+     *!
+     *! @seealso
+     *!   @[openlog()]
+     */
+    ADD_LOG_FLAG("LOG_AUTH");
+    ADD_LOG_FLAG("LOG_AUTHPRIV");
+    ADD_LOG_FLAG("LOG_CRON");
+    ADD_LOG_FLAG("LOG_DAEMON");
+    ADD_LOG_FLAG("LOG_KERN");
+    ADD_LOG_FLAG("LOG_LOCAL");
+    ADD_LOG_FLAG("LOG_LOCAL1");
+    ADD_LOG_FLAG("LOG_LOCAL2");
+    ADD_LOG_FLAG("LOG_LOCAL3");
+    ADD_LOG_FLAG("LOG_LOCAL4");
+    ADD_LOG_FLAG("LOG_LOCAL5");
+    ADD_LOG_FLAG("LOG_LOCAL6");
+    ADD_LOG_FLAG("LOG_LOCAL7");
+    ADD_LOG_FLAG("LOG_LPR");
+    ADD_LOG_FLAG("LOG_MAIL");
+    ADD_LOG_FLAG("LOG_NEWS");
+    ADD_LOG_FLAG("LOG_SYSLOG");
+    ADD_LOG_FLAG("LOG_USER");
+    ADD_LOG_FLAG("LOG_UUCP");
+
+    bit = 1;
+    /*! @decl constant LOG_EMERG
+     *! @decl constant LOG_ALERT
+     *! @decl constant LOG_CRIT
+     *! @decl constant LOG_ERR
+     *! @decl constant LOG_WARNING
+     *! @decl constant LOG_NOTICE
+     *! @decl constant LOG_INFO
+     *! @decl constant LOG_DEBUG
+     *!
+     *!   Values for the @tt{priority@} argument of @[syslog()].
+     *!
+     *! @seealso
+     *!   @[syslog()]
+     */
+    ADD_LOG_FLAG("LOG_EMERG");
+    ADD_LOG_FLAG("LOG_ALERT");
+    ADD_LOG_FLAG("LOG_CRIT");
+    ADD_LOG_FLAG("LOG_ERR");
+    ADD_LOG_FLAG("LOG_WARNING");
+    ADD_LOG_FLAG("LOG_NOTICE");
+    ADD_LOG_FLAG("LOG_INFO");
+    ADD_LOG_FLAG("LOG_DEBUG");
+
+    /*! @endmodule System
+     */
+  }
 #endif /* HAVE_SYSLOG */
 
 #ifdef HAVE_SLEEP
