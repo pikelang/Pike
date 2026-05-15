@@ -10,7 +10,13 @@
 typedef RETSIGTYPE (*sigfunctype) (int);
 
 /* Prototypes begin here */
-struct sigdesc;
+struct sigdesc
+{
+  int signum;
+  char *signame;
+};
+
+extern const struct sigdesc signal_desc[];
 struct my_pty;
 struct pid_status;
 void my_signal(int sig, sigfunctype fun);

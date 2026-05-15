@@ -431,206 +431,328 @@ DECLARE_FIFO(wait, wait_data);
 
 #endif /* __NT__ */
 
-struct sigdesc
-{
-  int signum;
-  char *signame;
-};
+/*! @module _static_modules
+ */
 
-static const struct sigdesc signal_desc []={
+/*! @module _system
+ */
+
+const struct sigdesc signal_desc []={
 #ifdef SIGHUP
+  /*! @decl constant SIGHUP
+   */
   { SIGHUP, "SIGHUP" },
 #endif
 #ifdef SIGINT
+  /*! @decl constant SIGINT
+   */
   { SIGINT, "SIGINT" },
 #endif
 #ifdef SIGQUIT
+  /*! @decl constant SIGQUIT
+   */
   { SIGQUIT, "SIGQUIT" },
 #endif
 #ifdef SIGILL
+  /*! @decl constant SIGILL
+   */
   { SIGILL, "SIGILL" },
 #endif
 #ifdef SIGTRAP
+  /*! @decl constant SIGTRAP
+   */
   { SIGTRAP, "SIGTRAP" },
 #endif
 #ifdef SIGABRT
+  /*! @decl constant SIGABRT
+   */
   { SIGABRT, "SIGABRT" },
 #endif
 #ifdef SIGIOT
+  /*! @decl constant SIGIOT
+   */
   { SIGIOT, "SIGIOT" },
 #endif
 #ifdef SIGEMT
+  /*! @decl constant SIGEMT
+   */
   { SIGEMT, "SIGEMT" },
 #endif
 #ifdef SIGFPE
+  /*! @decl constant SIGFPE
+   */
   { SIGFPE, "SIGFPE" },
 #endif
 #ifdef SIGKILL
+  /*! @decl constant SIGKILL
+   */
   { SIGKILL, "SIGKILL" },
 #endif
 #ifdef SIGBUS
+  /*! @decl constant SIGBUS
+   */
   { SIGBUS, "SIGBUS" },
 #endif
 #ifdef SIGSEGV
+  /*! @decl constant SIGSEGV
+   */
   { SIGSEGV, "SIGSEGV" },
 #endif
 #ifdef SIGSYS
+  /*! @decl constant SIGSYS
+   */
   { SIGSYS, "SIGSYS" },
 #endif
 #ifdef SIGPIPE
+  /*! @decl constant SIGPIPE
+   */
   { SIGPIPE, "SIGPIPE" },
 #endif
 #ifdef SIGALRM
+  /*! @decl constant SIGALRM
+   */
   { SIGALRM, "SIGALRM" },
 #endif
 #ifdef SIGTERM
+  /*! @decl constant SIGTERM
+   */
   { SIGTERM, "SIGTERM" },
 #endif
 #ifdef SIGUSR1
+  /*! @decl constant SIGUSR1
+   */
   { SIGUSR1, "SIGUSR1" },
 #endif
 #ifdef SIGUSR2
+  /*! @decl constant SIGUSR2
+   */
   { SIGUSR2, "SIGUSR2" },
 #endif
 #ifdef SIGCHLD
+  /*! @decl constant SIGCHLD
+   */
   { SIGCHLD, "SIGCHLD" },
 #endif
 #ifdef SIGCLD
+  /*! @decl constant SIGCLD
+   */
   { SIGCLD, "SIGCLD" },
 #endif
 #ifdef SIGPWR
+  /*! @decl constant SIGPWR
+   */
   { SIGPWR, "SIGPWR" },
 #endif
 #ifdef SIGWINCH
+  /*! @decl constant SIGWINCH
+   */
   { SIGWINCH, "SIGWINCH" },
 #endif
 #ifdef SIGURG
+  /*! @decl constant SIGURG
+   */
   { SIGURG, "SIGURG" },
 #endif
 #ifdef SIGIO
+  /*! @decl constant SIGIO
+   */
   { SIGIO, "SIGIO" },
 #endif
 #ifdef SIGSTOP
+  /*! @decl constant SIGSTOP
+   */
   { SIGSTOP, "SIGSTOP" },
 #endif
 #ifdef SIGTSTP
+  /*! @decl constant SIGTSTP
+   */
   { SIGTSTP, "SIGTSTP" },
 #endif
 #ifdef SIGCONT
+  /*! @decl constant SIGCONT
+   */
   { SIGCONT, "SIGCONT" },
 #endif
-#ifdef SIGTSTP
-  { SIGTSTP, "SIGTSTP" },
-#endif
 #ifdef SIGTTIN
+  /*! @decl constant SIGTTIN
+   */
   { SIGTTIN, "SIGTTIN" },
 #endif
-#ifdef SIGTTIO
-  { SIGTTIO, "SIGTTIO" },
+#ifdef SIGTTOU
+  /*! @decl constant SIGTTOU
+   */
+  { SIGTTOU, "SIGTTOU" },
 #endif
 #ifdef SIGVTALRM
+  /*! @decl constant SIGVTALRM
+   */
   { SIGVTALRM, "SIGVTALRM" },
 #endif
 #ifdef SIGPROF
+  /*! @decl constant SIGPROF
+   */
   { SIGPROF, "SIGPROF" },
 #endif
 #ifdef SIGXCPU
+  /*! @decl constant SIGXCPU
+   */
   { SIGXCPU, "SIGXCPU" },
 #endif
 #ifdef SIGXFSZ
+  /*! @decl constant SIGXFSZ
+   */
   { SIGXFSZ, "SIGXFSZ" },
 #endif
 
 #ifdef SIGSTKFLT
+  /*! @decl constant SIGSTKFLT
+   */
   { SIGSTKFLT, "SIGSTKFLT" },
 #endif
 #ifdef SIGPOLL
+  /*! @decl constant SIGPOLL
+   */
   { SIGPOLL, "SIGPOLL" },
 #endif
 #ifdef SIGLOST
+  /*! @decl constant SIGLOST
+   */
   { SIGLOST, "SIGLOST" },
 #endif
 #ifdef SIGUNUSED
+  /*! @decl constant SIGUNUSED
+   */
   { SIGUNUSED, "SIGUNUSED" },
 #endif
 #ifdef SIGINFO
+  /*! @decl constant SIGINFO
+   */
   { SIGINFO, "SIGINFO" },
 #endif
 #ifdef SIGMSG
+  /*! @decl constant SIGMSG
+   */
   { SIGMSG, "SIGMSG" },
 #endif
 #ifdef SIGDANGER
+  /*! @decl constant SIGDANGER
+   */
   { SIGDANGER, "SIGDANGER" },
 #endif
 #ifdef SIGMIGRATE
+  /*! @decl constant SIGMIGRATE
+   */
   { SIGMIGRATE, "SIGMIGRATE" },
 #endif
 #ifdef SIGPRE
+  /*! @decl constant SIGPRE
+   */
   { SIGPRE, "SIGPRE" },
 #endif
 #ifdef SIGVIRT
+  /*! @decl constant SIGVIRT
+   */
   { SIGVIRT, "SIGVIRT" },
 #endif
 #ifdef SIGALRM1
+  /*! @decl constant SIGALRM1
+   */
   { SIGALRM1, "SIGALRM1" },
 #endif
 #ifdef SIGWAITING
+  /*! @decl constant SIGWAITING
+   */
   { SIGWAITING, "SIGWAITING" },
 #endif
 #ifdef SIGKAP
+  /*! @decl constant SIGKAP
+   */
   { SIGKAP, "SIGKAP" },
 #endif
 #ifdef SIGGRANT
+  /*! @decl constant SIGGRANT
+   */
   { SIGGRANT, "SIGGRANT" },
 #endif
 #ifdef SIGRETRACT
+  /*! @decl constant SIGRETRACT
+   */
   { SIGRETRACT, "SIGRETRACT" },
 #endif
 #ifdef SIGSOUND
+  /*! @decl constant SIGSOUND
+   */
   { SIGSOUND, "SIGSOUND" },
 #endif
 #ifdef SIGSAK
+  /*! @decl constant SIGSAK
+   */
   { SIGSAK, "SIGSAK" },
 #endif
 #ifdef SIGDIL
+  /*! @decl constant SIGDIL
+   */
   { SIGDIL, "SIGDIL" },
 #endif
 #ifdef SIG32
+  /*! @decl constant SIG32
+   */
   { SIG32, "SIG32" },
 #endif
 #ifdef SIGCKPT
+  /*! @decl constant SIGCKPT
+   */
   { SIGCKPT, "SIGCKPT" },
 #endif
 
 #ifdef SIGPTRESCHED
+  /*! @decl constant SIGPTRESCHED
+   */
   { SIGPTRESCHED, "SIGPTRESCHED" },
 #endif
 
 #ifndef _REENTRANT
 #ifdef SIGWAITING
+  /*! @decl constant SIGWAITING
+   */
   { SIGWAITING, "SIGWAITING" },
 #endif
 #ifdef SIGLWP
+  /*! @decl constant SIGLWP
+   */
   { SIGLWP, "SIGLWP" },
 #endif
 #ifdef SIGCANCEL
+  /*! @decl constant SIGCANCEL
+   */
   { SIGCANCEL, "SIGCANCEL" },
 #endif
 #endif /* !_REENTRANT */
 
 #ifdef SIGFREEZE
+  /*! @decl constant SIGFREEZE
+   */
   { SIGFREEZE, "SIGFREEZE" },
 #endif
 #ifdef SIGTHAW
+  /*! @decl constant SIGTHAW
+   */
   { SIGTHAW, "SIGTHAW" },
 #endif
 #ifdef SIGBREAK
+  /*! @decl constant SIGBREAK
+   */
   { SIGBREAK, "SIGBREAK" },
 #endif
 
   { -1, "END" } /* Notused */
 };
 
+/*! @endmodule _system
+ */
+
+/*! @endmodule _static_modules
+ */
 
 /* Process stuff */
 
@@ -4749,74 +4871,74 @@ void Pike_f_fork(INT32 args)
  *!
  *! Some signals and their supposed purpose:
  *! @int
- *!   @value SIGHUP
+ *!   @value System.SIGHUP
  *!     Hang-up, sent to process when user logs out.
- *!   @value SIGINT
+ *!   @value System.SIGINT
  *!     Interrupt, normally sent by ctrl-c.
- *!   @value SIGQUIT
+ *!   @value System.SIGQUIT
  *!     Quit, sent by ctrl-\.
- *!   @value SIGILL
+ *!   @value System.SIGILL
  *!     Illegal instruction.
- *!   @value SIGTRAP
+ *!   @value System.SIGTRAP
  *!     Trap, mostly used by debuggers.
- *!   @value SIGABRT
+ *!   @value System.SIGABRT
  *!     Aborts process, can be caught, used by Pike whenever something
  *!     goes seriously wrong.
- *!   @value SIGEMT
+ *!   @value System.SIGEMT
  *!     Emulation trap.
- *!   @value SIGFPE
+ *!   @value System.SIGFPE
  *!     Floating point error (such as division by zero).
- *!   @value SIGKILL
+ *!   @value System.SIGKILL
  *!     Really kill a process, cannot be caught.
- *!   @value SIGBUS
+ *!   @value System.SIGBUS
  *!     Bus error.
- *!   @value SIGSEGV
+ *!   @value System.SIGSEGV
  *!     Segmentation fault, caused by accessing memory where you
  *!     shouldn't. Should never happen to Pike.
- *!   @value SIGSYS
+ *!   @value System.SIGSYS
  *!     Bad system call. Should never happen to Pike.
- *!   @value SIGPIPE
+ *!   @value System.SIGPIPE
  *!     Broken pipe.
- *!   @value SIGALRM
+ *!   @value System.SIGALRM
  *!     Signal used for timer interrupts.
- *!   @value SIGTERM
+ *!   @value System.SIGTERM
  *!     Termination signal.
- *!   @value SIGUSR1
+ *!   @value System.SIGUSR1
  *!     Signal reserved for whatever you want to use it for.
  *!     Note that some OSs reserve this signal for the thread library.
- *!   @value SIGUSR2
+ *!   @value System.SIGUSR2
  *!     Signal reserved for whatever you want to use it for.
  *!     Note that some OSs reserve this signal for the thread library.
- *!   @value SIGCHLD
+ *!   @value System.SIGCHLD
  *!     Child process died. This signal is reserved for internal use
  *!     by the Pike run-time.
- *!   @value SIGPWR
+ *!   @value System.SIGPWR
  *!     Power failure or restart.
- *!   @value SIGWINCH
+ *!   @value System.SIGWINCH
  *!     Window change signal.
- *!   @value SIGURG
+ *!   @value System.SIGURG
  *!     Urgent socket data.
- *!   @value SIGIO
+ *!   @value System.SIGIO
  *!     Pollable event.
- *!   @value SIGSTOP
+ *!   @value System.SIGSTOP
  *!     Stop (suspend) process.
- *!   @value SIGTSTP
+ *!   @value System.SIGTSTP
  *!     Stop (suspend) process. Sent by ctrl-z.
- *!   @value SIGCONT
+ *!   @value System.SIGCONT
  *!     Continue suspended.
- *!   @value SIGTTIN
+ *!   @value System.SIGTTIN
  *!     TTY input for background process.
- *!   @value SIGTTOU
+ *!   @value System.SIGTTOU
  *!     TTY output for background process.
- *!   @value SIGVTALRM
+ *!   @value System.SIGVTALRM
  *!     Virtual timer expired.
- *!   @value SIGPROF
+ *!   @value System.SIGPROF
  *!     Profiling trap.
- *!   @value SIGXCPU
+ *!   @value System.SIGXCPU
  *!     Out of CPU.
- *!   @value SIGXFSZ
+ *!   @value System.SIGXFSZ
  *!     File size limit exceeded.
- *!   @value SIGSTKFLT
+ *!   @value System.SIGSTKFLT
  *!     Stack fault
  *! @endint
  *!

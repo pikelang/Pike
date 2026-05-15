@@ -41,6 +41,7 @@
 #include "sprintf.h"
 #include "operators.h"
 #include "fdlib.h"
+#include "signal_handler.h"
 
 #include <errno.h>
 
@@ -4168,6 +4169,14 @@ PIKE_MODULE_INIT
 
 /* function(int:string) */
   ADD_EFUN("strerror", f_strerror, tFunc(tName("Errno", tInt), tStr), 0);
+
+  {
+    int n;
+
+    for (n = 0; signal_desc[n].signum >= 0; n++) {
+      add_integer_constant(signal_desc[n].signame, signal_desc[n].signum, 0);
+    }
+  }
 }
 
 PIKE_MODULE_EXIT
