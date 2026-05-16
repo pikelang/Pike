@@ -48,7 +48,6 @@ enum DocTokenType {
 
   TEXTTOKEN = 8,	//! Documentation text.
   ENDTOKEN = 9,		//! End of documentation marker.
-  REFDELIMITERKEYWORD = 10,	//! eg @expr{@@value@}
 };
 
 // The following is the "DTD" of
@@ -108,7 +107,7 @@ mapping(string : DocTokenType) keywordtype =
   "mapping" : CONTAINERKEYWORD, "member" : DELIMITERKEYWORD,
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
   "array" : CONTAINERKEYWORD, "elem" : DELIMITERKEYWORD,
-  "int" : CONTAINERKEYWORD, "value" : REFDELIMITERKEYWORD,
+  "int" : CONTAINERKEYWORD, "value" : DELIMITERKEYWORD,
   "string" : CONTAINERKEYWORD,
   "mixed" : CONTAINERKEYWORD, "type" : DELIMITERKEYWORD,
 
@@ -136,6 +135,8 @@ mapping(string:array(string)) required_attributes =
 ([
   "param" : ({ "name" }),
 ]);
+
+multiset(string) auto_ref_keywords = (< "value" >);
 
 protected constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
@@ -502,25 +503,35 @@ protected class DocParserClass {
       // NB: Throws errors on some syntax errors.
       .PikeParser parser = .PikeParser(arg, currentPosition);
 
+      int(1bit) dwim_ref = auto_ref_keywords[keyword];
+
       //  werror("&&& %O\n", arg);
-      string s = parser->parseLiteral() || parser->parseIdents();
-      string|zero s2 = 0;
-      int dots = 0;
+      string|zero s = parser->parseLiteral() || parser->parseIdents();
+      string res = "";
+      if (s) {
+        res = xmlquote(s);
+        if (dwim_ref && sizeof(s) && (s[0] != '\"') &&
+            (upper_case(s) != lower_case(s))) {
+          res = xmltag("ref", res);
+        }
+      }
       if (parser->peekToken() == "..") {
-        dots = 1;
+        if (s) {
+          res = xmltag("minvalue", res);
+        }
         parser->readToken();
-        s2 = parser->parseLiteral() || parser->parseIdents();
+        s = parser->parseLiteral() || parser->parseIdents();
+        if (s) {
+          string tmp = xmlquote(s);
+          if (dwim_ref && sizeof(s) && (s[0] != '\"') &&
+              (upper_case(s) != lower_case(s))) {
+            tmp = xmltag("ref", tmp);
+          }
+          res += xmltag("maxvalue", tmp);
+        }
       }
       parser->eat(EOF);
-      if (s)
-        if (s2)
-          return xmltag("minvalue", xmlquote(s))
-            + xmltag("maxvalue", xmlquote(s2));
-        else
-          return dots ? xmltag("minvalue", xmlquote(s)) : xmlquote(s);
-      else
-        if (s2)
-          return xmltag("maxvalue", xmlquote(s2));
+      return res;
     };
 
     parseError("@value: expected identifier or literal constant, got %O", arg);
@@ -811,16 +822,14 @@ protected class DocParserClass {
     }
     for (;;) {
       token = peekToken();
-      if (! (<SINGLEKEYWORD, DELIMITERKEYWORD, REFDELIMITERKEYWORD>)
-          [token->type] )
+      if (! (<SINGLEKEYWORD, DELIMITERKEYWORD>)[token->type] )
         return res;
 
       string|zero single = 0;
       array(string) keywords = ({});
       res += opentag("group");
     group:
-      while ( (<SINGLEKEYWORD, DELIMITERKEYWORD, REFDELIMITERKEYWORD>)
-              [token->type] ) {
+      while ( (<SINGLEKEYWORD, DELIMITERKEYWORD>)[token->type] ) {
         string keyword = token->keyword;
         single = single || (token->type == SINGLEKEYWORD && keyword);
         multiset(string) allow = allowedChildren[container];
@@ -860,12 +869,7 @@ protected class DocParserClass {
           res += "/>";
         }
         else if (stringp(args))
-          if ((token->type == REFDELIMITERKEYWORD) &&
-              (args[0] != '"') && (upper_case(args) != lower_case(args))) {
-            res += "><ref>" + args + "</ref></" + keyword + ">";
-          } else {
-            res += ">" + args + "</" + keyword + ">";
-          }
+          res += ">" + args + "</" + keyword + ">";
         else
           res += "/>";
 
