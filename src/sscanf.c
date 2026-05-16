@@ -1748,7 +1748,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format,
  *!   @value "*"
  *!     The operator will only match its argument, without assigning any
  *!     variable.
- *!   @value number
+ *!   @value "1"..
  *!     You may define a field width by supplying a numeric modifier.
  *!     This means that the format should match that number of
  *!     characters in the input data; be it a @i{number@} characters
