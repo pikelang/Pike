@@ -3862,6 +3862,20 @@ void init_nt_system_calls(void)
                    tFunc(tStr tOr(tStr, tZero) tStr tOr(tInt, tVoid)
                          tOr(tVoid, tInt), tObj), 0);
 
+      /*! @decl constant LOGON32_LOGON_BATCH
+       *! @decl constant LOGON32_LOGON_INTERACTIVE
+       *! @decl constant LOGON32_LOGON_SERVICE
+       *! @decl constant LOGON32_LOGON_NETWORK
+       *! @decl constant LOGON32_PROVIDER_DEFAULT
+       *!
+       *!   Constants used by @[LogonUser()].
+       *!
+       *! @note
+       *!   These constants are only available on some Win32 systems.
+       *!
+       *! @seealso
+       *!   @[LogonUser()]
+       */
       SIMPCONST(LOGON32_LOGON_BATCH);
       SIMPCONST(LOGON32_LOGON_INTERACTIVE);
       SIMPCONST(LOGON32_LOGON_SERVICE);
@@ -4035,6 +4049,14 @@ void init_nt_system_calls(void)
                      tFunc(tOr(tStr, tZero) tStr tOr(tInt, tVoid)
                            tOr(tInt, tVoid), tArr(tStr)), 0);
 
+        /*! @decl constant LG_INCLUDE_INDIRECT
+         *!
+         *!   Flag to instruct @[NetUserGetLocalGroups()]
+         *!   to include indirect group memberships.
+         *!
+         *! @seealso
+         *!   @[NetUserGetLocalGroups()]
+         */
 	SIMPCONST(LG_INCLUDE_INDIRECT);
       }
 
