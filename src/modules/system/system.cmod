@@ -5136,7 +5136,6 @@ PIKE_MODULE_INIT
    *!   @[errno()]
    */
 
-# GNU/Hurd errors.
   /*! @decl constant ED_ALREADY_OPEN
    *! @decl constant ED_INVALID_OPERATION
    *! @decl constant ED_INVALID_RECNUM
