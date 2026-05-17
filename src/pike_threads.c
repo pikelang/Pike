@@ -4866,6 +4866,31 @@ void th_init(void)
            OPT_EXTERNAL_DEPEND);
 
   /* Some constants... */
+  /*! @module Thread
+   */
+  /*! @decl constant THREAD_NOT_STARTED
+   *!   Thread state: The thread has not yet started executing.
+   *! @seealso
+   *!   @[Thread()->status()]
+   */
+  /*! @decl constant THREAD_RUNNING
+   *!   Thread state: The thread has started and has not yet terminated.
+   *! @seealso
+   *!   @[Thread()->status()]
+   */
+  /*! @decl constant THREAD_EXITED
+   *!   Thread state: The thread has terminated by returning a value from the
+   *!   thread function.
+   *! @seealso
+   *!   @[Thread()->status()]
+   */
+  /*! @decl constant THREAD_ABORTED
+   *!   Thread state: The thread has terminated by throwing an uncaught error.
+   *! @seealso
+   *!   @[Thread()->status()]
+   */
+  /*! @endmodule
+   */
   add_integer_constant("THREAD_NOT_STARTED", THREAD_NOT_STARTED, 0);
   add_integer_constant("THREAD_RUNNING", THREAD_RUNNING, 0);
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
