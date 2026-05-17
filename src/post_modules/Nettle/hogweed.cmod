@@ -2227,6 +2227,25 @@ PIKECLASS Curve448
  */
 #endif /* HAVE_NETTLE_EDDSA_H && HAVE_NETTLE_CURVE448_H && HAVE_NETTLE_ED448_SHAKE256_SIGN */
 
+/*! @decl constant SECP192R1
+ *! @decl constant SECP224R1
+ *! @decl constant SECP256R1
+ *! @decl constant SECP384R1
+ *! @decl constant SECP521R1
+ *! @decl constant GOST_GC256B
+ *! @decl constant GOST_GC512A
+ *!
+ *!   Options to select various curves via @[ECC_Curve()->create()].
+ *!
+ *! @note
+ *!   Some Oses may due to security policies remove some of the curves
+ *!   even though they should nominally be supported by that version
+ *!   of Nettle.
+ *!
+ *! @seealso
+ *!   @[ECC_Curve()->create()]
+ */
+
 /*! @endmodule Nettle
  */
 

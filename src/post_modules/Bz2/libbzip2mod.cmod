@@ -1048,6 +1048,18 @@ PIKECLASS File
 /*! @endclass
  */
 
+/*! @decl constant BZ_RUN
+ *! @decl constant BZ_FLUSH
+ *! @decl constant BZ_FINISH
+ *!
+ *!   Flush mode flags for @[Deflate()->deflate()].
+ *!
+ *!   See @[Deflate()->deflate()] for details.
+ *!
+ *! @seealso
+ *!   @[Deflate()->deflate()]
+ */
+
 /*! @endmodule
  */
 

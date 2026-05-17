@@ -4248,6 +4248,2412 @@ PIKE_MODULE_INIT
   simple_add_constant("Errno", Pike_sp-1, ID_LOCAL);
   pop_stack();
 
+  /*! @module System
+   */
+  /*! @decl constant B_ALREADY_RUNNING
+   *!   Hurd Errno: Already running
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_AMBIGUOUS_APP_LAUNCH
+   *!   Hurd Errno: Ambiguous app launch
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_APP_ERROR_BASE
+   *!   Hurd Errno: Base for application errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_ADDRESS
+   *!   Hurd Errno: Bad address
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_DATA
+   *!   Hurd Errno: Bad data
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_HANDLER
+   *!   Hurd Errno: Bad handler
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_IMAGE_ID
+   *!   Hurd Errno: Bad image ID
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_INDEX
+   *!   Hurd Errno: Index not in range for the data set
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_MIME_SNIFFER_RULE
+   *!   Hurd Errno: Bad sniffer rule
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_PORT_ID
+   *!   Hurd Errno: Bad port ID
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_REPLY
+   *!   Hurd Errno: Invalid or unwanted reply
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_SCRIPT_SYNTAX
+   *!   Hurd Errno: Bad script syntax
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_SEM_ID
+   *!   Hurd Errno: Bad semaphore ID
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_SUBSCRIBER
+   *!   Hurd Errno: Bad subscriber
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_TEAM_ID
+   *!   Hurd Errno: Operation on invalid team
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_THREAD_ID
+   *!   Hurd Errno: Bad thread ID
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_THREAD_STATE
+   *!   Hurd Errno: Thread is in inappropriate state
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_TYPE
+   *!   Hurd Errno: Bad argument type passed to function
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BAD_VALUE
+   *!   Hurd Errno: Invalid argument
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BUFFER_NOT_AVAILABLE
+   *!   Hurd Errno: Buffer not available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BUFFER_OVERFLOW
+   *!   Hurd Errno: Value too large for defined type
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BUSTED_PIPE
+   *!   Hurd Errno: Broken pipe
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_BUSY
+   *!   Hurd Errno: Device/File/Resource busy
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_CANCELED
+   *!   Hurd Errno: Operation canceled
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_CROSS_DEVICE_LINK
+   *!   Hurd Errno: Cross-device link
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEBUGGER_ALREADY_INSTALLED
+   *!   Hurd Errno: Debugger already installed for this team
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEVICE_ERROR_BASE
+   *!   Hurd Errno: Base for device driver errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEVICE_FULL
+   *!   Hurd Errno: No space left on device
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEVICE_NOT_FOUND
+   *!   Hurd Errno: No such device
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_BAD_DRIVE_NUM
+   *!   Hurd Errno: Bad drive number
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_BAD_PID
+   *!   Hurd Errno: Bad device PID
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_CONFIGURATION_ERROR
+   *!   Hurd Errno: Configuration error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_CRC_ERROR
+   *!   Hurd Errno: Device check-sum error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_DATA_OVERRUN
+   *!   Hurd Errno: Device data overrun
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_DATA_UNDERRUN
+   *!   Hurd Errno: Device data underrun
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_DISABLED_BY_USER
+   *!   Hurd Errno: Disabled by user
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_DOOR_OPEN
+   *!   Hurd Errno: Drive door open
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_FIFO_OVERRUN
+   *!   Hurd Errno: Device FIFO overrun
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_FIFO_UNDERRUN
+   *!   Hurd Errno: Device FIFO underrun
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_FORMAT_ERROR
+   *!   Hurd Errno: Device format error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_ID_ERROR
+   *!   Hurd Errno: Device ID error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_INVALID_IOCTL
+   *!   Hurd Errno: Invalid device ioctl
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_INVALID_PIPE
+   *!   Hurd Errno: Invalid device pipe
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_MEDIA_CHANGED
+   *!   Hurd Errno: Device media changed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_MEDIA_CHANGE_REQUESTED
+   *!   Hurd Errno: Device media change requested
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_MULTIPLE_ERRORS
+   *!   Hurd Errno: Multiple device errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_NOT_READY
+   *!   Hurd Errno: Device not ready
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_NO_MEDIA
+   *!   Hurd Errno: No media present
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_NO_MEMORY
+   *!   Hurd Errno: No device memory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_PENDING
+   *!   Hurd Errno: Device pending
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_READ_ERROR
+   *!   Hurd Errno: Device read error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_RECALIBRATE_ERROR
+   *!   Hurd Errno: Device recalibrate error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_RESOURCE_CONFLICT
+   *!   Hurd Errno: Resource conflict
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_SEEK_ERROR
+   *!   Hurd Errno: Device seek error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_STALLED
+   *!   Hurd Errno: Device stalled
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_TIMEOUT
+   *!   Hurd Errno: Device timeout
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_TOO_LATE
+   *!   Hurd Errno: Device too late
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_UNEXPECTED_PID
+   *!   Hurd Errno: Unexpected device PID
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_UNREADABLE
+   *!   Hurd Errno: Device unreadable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DEV_WRITE_ERROR
+   *!   Hurd Errno: Device write error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DIRECTORY_NOT_EMPTY
+   *!   Hurd Errno: Directory not empty
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DONT_DO_THAT
+   *!   Hurd Errno: No, really don't do that
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_DUPLICATE_REPLY
+   *!   Hurd Errno: Duplicate reply
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_ENTRY_NOT_FOUND
+   *!   Hurd Errno: No such file or directory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_ERROR
+   *!   Hurd Errno: General system error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_ERRORS_END
+   *!   Hurd Errno: End marker for errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_FILE_ERROR
+   *!   Hurd Errno: Bad file descriptor
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_FILE_EXISTS
+   *!   Hurd Errno: File or Directory already exists
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_FILE_NOT_FOUND
+   *!   Hurd Errno: No such file or directory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_FILE_TOO_LARGE
+   *!   Hurd Errno: File too large
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_GENERAL_ERROR_BASE
+   *!   Hurd Errno: Base for general (and all) errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_ILLEGAL_DATA
+   *!   Hurd Errno: Illegal data
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_INTERFACE_ERROR_BASE
+   *!   Hurd Errno: Base for user interface errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_INTERRUPTED
+   *!   Hurd Errno: Interrupted system call
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_IO_ERROR
+   *!   Hurd Errno: I/O error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_IS_A_DIRECTORY
+   *!   Hurd Errno: Is a directory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAST_BUFFER_ERROR
+   *!   Hurd Errno: Last buffer
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAUNCH_FAILED
+   *!   Hurd Errno: Launch failed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAUNCH_FAILED_APP_IN_TRASH
+   *!   Hurd Errno: Application is in the trash
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAUNCH_FAILED_APP_NOT_FOUND
+   *!   Hurd Errno: Application could not be found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAUNCH_FAILED_EXECUTABLE
+   *!   Hurd Errno: File is mistakenly marked as executable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAUNCH_FAILED_FILES_APP_NOT_FOUND
+   *!   Hurd Errno: This file has a preferred app, but it could not be found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAUNCH_FAILED_NO_PREFERRED_APP
+   *!   Hurd Errno: There is no preferred application for this type of file
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LAUNCH_FAILED_NO_RESOLVE_LINK
+   *!   Hurd Errno: Could not resolve a link
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LEGACY_EXECUTABLE
+   *!   Hurd Errno: Unsupported legacy executable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_LINK_LIMIT
+   *!   Hurd Errno: Too many symbolic links
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_ACCESS_ERROR
+   *!   Hurd Errno: Mail access error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_ERROR_BASE
+   *!   Hurd Errno: Base for mail errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_INVALID_MAIL
+   *!   Hurd Errno: Invalid mail
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_NO_DAEMON
+   *!   Hurd Errno: No mail daemon
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_NO_RECIPIENT
+   *!   Hurd Errno: No mail recipient
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_UNKNOWN_FIELD
+   *!   Hurd Errno: Unknown mail field
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_UNKNOWN_HOST
+   *!   Hurd Errno: Mail unknown host
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_UNKNOWN_USER
+   *!   Hurd Errno: Unknown mail user
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MAIL_WRONG_PASSWORD
+   *!   Hurd Errno: Wrong password (mail)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_ADDON_DISABLED
+   *!   Hurd Errno: Media addon disabled
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_ADDON_FAILED
+   *!   Hurd Errno: Media addon failed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_ADDON_RESTRICTED
+   *!   Hurd Errno: Media addon restricted
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_ALREADY_CONNECTED
+   *!   Hurd Errno: Already connected
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_APP_ALREADY_REGISTERED
+   *!   Hurd Errno: Application already registered
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_APP_NOT_REGISTERED
+   *!   Hurd Errno: Application not registered
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BAD_BUFFER
+   *!   Hurd Errno: Bad buffer
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BAD_CLIP_FORMAT
+   *!   Hurd Errno: Bad clipping format
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BAD_DESTINATION
+   *!   Hurd Errno: Bad destination
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BAD_FORMAT
+   *!   Hurd Errno: Bad media format
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BAD_NODE
+   *!   Hurd Errno: Bad media node
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BAD_SOURCE
+   *!   Hurd Errno: Bad source
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BUFFERS_NOT_RECLAIMED
+   *!   Hurd Errno: Buffers not reclaimed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_BUFFER_ALREADY_EXISTS
+   *!   Hurd Errno: Buffer already exists
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_CANNOT_CHANGE_RUN_MODE
+   *!   Hurd Errno: Cannot change run mode
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_CANNOT_RECLAIM_BUFFERS
+   *!   Hurd Errno: Cannot reclaim buffers
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_CANNOT_SEEK
+   *!   Hurd Errno: Cannot seek
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_CHANGE_IN_PROGRESS
+   *!   Hurd Errno: Change in progress
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_DUPLICATE_FORMAT
+   *!   Hurd Errno: Duplicate format
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_ERROR_BASE
+   *!   Hurd Errno: Base for media errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_NODE_ALREADY_EXISTS
+   *!   Hurd Errno: Media node already exists
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_NODE_BUSY
+   *!   Hurd Errno: Media node busy
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_NOT_CONNECTED
+   *!   Hurd Errno: Not connected
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_NO_HANDLER
+   *!   Hurd Errno: No handler
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_REALTIME_DISABLED
+   *!   Hurd Errno: Realtime disabled
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_REALTIME_UNAVAILABLE
+   *!   Hurd Errno: Realtime unavailable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_STALE_CHANGE_COUNT
+   *!   Hurd Errno: Stale change count
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_SYSTEM_FAILURE
+   *!   Hurd Errno: System failure
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_TIME_SOURCE_BUSY
+   *!   Hurd Errno: Time source busy
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_TIME_SOURCE_STOPPED
+   *!   Hurd Errno: Time source stopped
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_TOO_MANY_BUFFERS
+   *!   Hurd Errno: Too many buffers
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MEDIA_TOO_MANY_NODES
+   *!   Hurd Errno: Too many nodes
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MESSAGE_TO_SELF
+   *!   Hurd Errno: Can't send message to self
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MIDI_ERROR_BASE
+   *!   Hurd Errno: Base for MIDI errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MISMATCHED_VALUES
+   *!   Hurd Errno: Mismatched values passed to function
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MISSING_LIBRARY
+   *!   Hurd Errno: Missing library
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_MISSING_SYMBOL
+   *!   Hurd Errno: Symbol not found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NAME_IN_USE
+   *!   Hurd Errno: Name in use
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NAME_NOT_FOUND
+   *!   Hurd Errno: Name not found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NAME_TOO_LONG
+   *!   Hurd Errno: File name too long
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NOT_ALLOWED
+   *!   Hurd Errno: Operation not allowed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NOT_AN_EXECUTABLE
+   *!   Hurd Errno: Not an executable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NOT_A_DIRECTORY
+   *!   Hurd Errno: Not a directory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NOT_A_MESSAGE
+   *!   Hurd Errno: Data is not a message
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NOT_INITIALIZED
+   *!   Hurd Errno: Initialization failed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NOT_SUPPORTED
+   *!   Hurd Errno: Operation not supported
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_ERROR
+   *!   Hurd Errno: No error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_INIT
+   *!   Hurd Errno: Initialization failed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_MEMORY
+   *!   Hurd Errno: Out of memory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_MORE_FDS
+   *!   Hurd Errno: Too many open files
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_MORE_PORTS
+   *!   Hurd Errno: No more ports available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_MORE_SEMS
+   *!   Hurd Errno: No more semaphores
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_MORE_TEAMS
+   *!   Hurd Errno: No more teams
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_MORE_THREADS
+   *!   Hurd Errno: No more threads
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_PRINT_SERVER
+   *!   Hurd Errno: No print server
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_NO_TRANSLATOR
+   *!   Hurd Errno: No translator found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_OK
+   *!   Hurd Errno: No error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_OS_ERROR_BASE
+   *!   Hurd Errno: # Base for OS errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_PARTIAL_READ
+   *!   Hurd Errno: Data read partially
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_PARTIAL_WRITE
+   *!   Hurd Errno: Data written partially
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_PARTITION_TOO_SMALL
+   *!   Hurd Errno: Partition too small to contain filesystem
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_PERMISSION_DENIED
+   *!   Hurd Errno: Permission denied
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_POSIX_ERROR_BASE
+   *!   Hurd Errno: Base for POSIX errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_PRINT_ERROR_BASE
+   *!   Hurd Errno: Base for printer errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_READ_ONLY_DEVICE
+   *!   Hurd Errno: Read-only file system
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_RESOURCE_NOT_FOUND
+   *!   Hurd Errno: Resource not found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_RESOURCE_UNAVAILABLE
+   *!   Hurd Errno: Resource unavailable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_RESULT_NOT_REPRESENTABLE
+   *!   Hurd Errno: Range Error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_SERVER_NOT_FOUND
+   *!   Hurd Errno: Server not found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_SHUTDOWN_CANCELLED
+   *!   Hurd Errno: System shutdown cancelled
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_SHUTTING_DOWN
+   *!   Hurd Errno: System shutting down
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_STORAGE_ERROR_BASE
+   *!   Hurd Errno: Base for filesystem errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_STREAM_NOT_FOUND
+   *!   Hurd Errno: Stream not found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_SUBSCRIBER_NOT_ENTERED
+   *!   Hurd Errno: Subscriber not entered
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_TIMED_OUT
+   *!   Hurd Errno: Operation timed out
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_TOO_MANY_ARGS
+   *!   Hurd Errno: Argument too big
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_TRANSLATION_BASE_ERROR
+   *!   Hurd Errno: Base for locale errors (alt name)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_TRANSLATION_ERROR_BASE
+   *!   Hurd Errno: Base for locale errors
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_UNKNOWN_EXECUTABLE
+   *!   Hurd Errno: Unknown executable format
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_UNKNOWN_MIME_TYPE
+   *!   Hurd Errno: Unknown MIME type
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_UNSUPPORTED
+   *!   Hurd Errno: Operation not supported
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant B_WOULD_BLOCK
+   *!   Hurd Errno: Operation would block
+   *! @seealso
+   *!   @[errno()]
+   */
+
+# GNU/Hurd errors.
+  /*! @decl constant ED_ALREADY_OPEN
+   *! @decl constant ED_INVALID_OPERATION
+   *! @decl constant ED_INVALID_RECNUM
+   *! @decl constant ED_INVALID_SIZE
+   *! @decl constant ED_IO_ERROR
+   *! @decl constant ED_NO_MEMORY
+   *! @decl constant ED_NO_SUCH_DEVICE
+   *! @decl constant ED_READ_ONLY
+   *! @decl constant ED_WOULD_BLOCK
+   *! @decl constant EKERN_ABORTED
+   *! @decl constant EKERN_FAILURE
+   *! @decl constant EKERN_INTERRUPTED
+   *! @decl constant EKERN_INVALID_ADDRESS
+   *! @decl constant EKERN_INVALID_ARGUMENT
+   *! @decl constant EKERN_INVALID_CAPABILITY
+   *! @decl constant EKERN_INVALID_HOST
+   *! @decl constant EKERN_INVALID_NAME
+   *! @decl constant EKERN_INVALID_RIGHT
+   *! @decl constant EKERN_INVALID_TASK
+   *! @decl constant EKERN_INVALID_VALUE
+   *! @decl constant EKERN_MEMORY_ERROR
+   *! @decl constant EKERN_MEMORY_FAILURE
+   *! @decl constant EKERN_NAME_EXISTS
+   *! @decl constant EKERN_NOT_IN_SET
+   *! @decl constant EKERN_NOT_RECEIVER
+   *! @decl constant EKERN_NO_ACCESS
+   *! @decl constant EKERN_NO_SPACE
+   *! @decl constant EKERN_PROTECTION_FAILURE
+   *! @decl constant EKERN_RESOURCE_SHORTAGE
+   *! @decl constant EKERN_RIGHT_EXISTS
+   *! @decl constant EKERN_TERMINATED
+   *! @decl constant EKERN_TIMEDOUT
+   *! @decl constant EKERN_UREFS_OVERFLOW
+   *! @decl constant EKERN_WRITE_PROTECTION_FAILURE
+   *! @decl constant EMACH_RCV_BODY_ERROR
+   *! @decl constant EMACH_RCV_HEADER_ERROR
+   *! @decl constant EMACH_RCV_INTERRUPTED
+   *! @decl constant EMACH_RCV_INVALID_DATA
+   *! @decl constant EMACH_RCV_INVALID_NAME
+   *! @decl constant EMACH_RCV_INVALID_NOTIFY
+   *! @decl constant EMACH_RCV_IN_PROGRESS
+   *! @decl constant EMACH_RCV_IN_SET
+   *! @decl constant EMACH_RCV_PORT_CHANGED
+   *! @decl constant EMACH_RCV_PORT_DIED
+   *! @decl constant EMACH_RCV_TIMED_OUT
+   *! @decl constant EMACH_RCV_TOO_LARGE
+   *! @decl constant EMACH_SEND_INTERRUPTED
+   *! @decl constant EMACH_SEND_INVALID_DATA
+   *! @decl constant EMACH_SEND_INVALID_DEST
+   *! @decl constant EMACH_SEND_INVALID_HEADER
+   *! @decl constant EMACH_SEND_INVALID_MEMORY
+   *! @decl constant EMACH_SEND_INVALID_NOTIYF
+   *! @decl constant EMACH_SEND_INVALID_REPLY
+   *! @decl constant EMACH_SEND_INVALID_RIGHT
+   *! @decl constant EMACH_SEND_INVALID_TYPE
+   *! @decl constant EMACH_SEND_IN_PROGRESS
+   *! @decl constant EMACH_SEND_MSG_TOO_SMALL
+   *! @decl constant EMACH_SEND_NOTIFY_IN_PROGRESS
+   *! @decl constant EMACH_SEND_NO_BUFFER
+   *! @decl constant EMACH_SEND_NO_NOTIFY
+   *! @decl constant EMACH_SEND_TIMED_OUT
+   *! @decl constant EMACH_SEND_WILL_NOTIFY
+   *! @decl constant EMIG_ARRAY_TOO_LARGE
+   *! @decl constant EMIG_BAD_ARGUMENTS
+   *! @decl constant EMIG_BAD_ID
+   *! @decl constant EMIG_DESTROY_REQUEST
+   *! @decl constant EMIG_EXCEPTION
+   *! @decl constant EMIG_NO_REPLY
+   *! @decl constant EMIG_REMOTE_ERROR
+   *! @decl constant EMIG_REPLY_MISMATCH
+   *! @decl constant EMIG_SERVER_DIED
+   *! @decl constant EMIG_TYPE_ERROR
+   *!   Errnos from Hurd.
+   *! @seealso
+   *!   @[errno()]
+   */
+
+  /*! @decl constant E2BIG
+   *!   Errno: Argument list too long
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EACCES
+   *!   Errno: Permission denied
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EADDRINUSE
+   *!   Errno: Address already in use
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EADDRNOTAVAIL
+   *!   Errno: Cannot assign requested address
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EADV
+   *!   Errno: Advertise error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EAFNOSUPPORT
+   *!   Errno: Address family not supported by protocol
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EAGAIN
+   *!   Errno: Try again
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EAIO
+   *!   Errno: Internal AIO operation complete
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EALREADY
+   *!   Errno: Operation already in progress
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EAUTH
+   *!   Errno: Authentication error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBACKGROUND
+   *!   Errno: #Hurd
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADARCH
+   *!   Errno: Bad CPU type in executable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADCALL
+   *!   Errno: Illegal system call number (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADCPU
+   *!   Errno: Invalid CPU (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADE
+   *!   Errno: Invalid exchange
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADDEST
+   *!   Errno: Not a valid destination address (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADEPT
+   *!   Errno: Invalid endpoint in OoQ message (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADEXEC
+   *!   Errno: Bad executable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADF
+   *!   Errno: Bad file number
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADFD
+   *!   Errno: File descriptor invalid for this operation
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADFILT
+   *!   Errno: Bad filter (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADFSYS
+   *!   Errno: Corrupted file system detected
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADIOCTL
+   *!   Errno: Illegal ioctl for device (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADMACHO
+   *!   Errno: Malformed Macho file
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADMODE
+   *!   Errno: Bad mode in ioctl (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADMSG
+   *!   Errno: Not a data message
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADR
+   *!   Errno: Invalid request descriptor
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADREQUEST
+   *!   Errno: Destination cannot handle request (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADRPC
+   *!   Errno: RPC struct is bad
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADRQC
+   *!   Errno: Invalid request code
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADRSPEC
+   *!   Errno: Bad address specification (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADSLT
+   *!   Errno: Invalid slot
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADSRCDST
+   *!   Errno: Bad source or destination process (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADTSPEC
+   *!   Errno: Bad T specification (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBADVER
+   *!   Errno: Version number mismatch for loadable kernel module
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBDHDL
+   *!   Errno: Bad HDL (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBFONT
+   *!   Errno: Bad font file format
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBUFSIZE
+   *!   Errno: Bad buffer size (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EBUSY
+   *!   Errno: Device or resource busy
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECALLDENIED
+   *!   Errno: No permission for system call (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECANCELED
+   *!   Errno: Operation cancelled
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECANTEXTENT
+   *!   Errno: Can not extend entity (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECAPMODE
+   *!   Errno: Not permitted in capability mode (FreeBSD)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECASECLASH
+   *!   Errno: Filename case clash (Cygwin)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECELLDOWN
+   *!   Errno: Cell is down (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECHILD
+   *!   Errno: No child processes
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECHRNG
+   *!   Errno: Channel number out of range
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECKPT
+   *!   Errno: POSIX checkpoint/restart error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECLOCKCPU
+   *!   Errno: Clock CPU (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECLONEME
+   *!   Errno: Stream needs restart
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECOMM
+   *!   Errno: Communication error on send
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECONFIG
+   *!   Errno: Configurable kernel resource exhausted
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECONNABORTED
+   *!   Errno: Software caused connection abort
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECONNREFUSED
+   *!   Errno: Connection refused
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECONNRESET
+   *!   Errno: Connection reset by peer
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECONTROLLER
+   *!   Errno: Controller (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECORRUPT
+   *!   Errno: Invalid file system control data
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ECTRLTERM
+   *!   Errno: Remap to controlling terminal
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ED
+   *!   Errno: #Hurd
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDEADEPT
+   *!   Errno: Bad kernel endpoint (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDEADLK
+   *!   Errno: Resource deadlock would occur
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDEADLOCK
+   *!   Errno: Resource deadlock would occur
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDEADSRCDST
+   *!   Errno: Source or destination is not alive (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDELAY
+   *!   Errno: Delay (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDESTADDREQ
+   *!   Errno: Destination address required
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDESTADDRREQ
+   *!   Errno: Destination address required
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDESTROYED
+   *!   Errno: Destroyed (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDEVERR
+   *!   Errno: Device error, e.g. paper out
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDIED
+   *!   Errno: #Hurd
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDIRCORRUPTED
+   *!   Errno: Directory corrupted (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDIRTY
+   *!   Errno: Mounting a dirty file system with out force
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDISJOINT
+   *!   Errno: Disjoint (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDIST
+   *!   Errno: Dist (AIX)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDOM
+   *!   Errno: Math argument out of domain of function
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDONTREPLY
+   *!   Errno: Pseudo-code: don't send a reply (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDOOFUS
+   *!   Errno: Programming error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDOTDOT
+   *!   Errno: RFC specific error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDQUOT
+   *!   Errno: Disc quota exceeded
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDSTDIED
+   *!   Errno: Destination just died (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDSTNOTTCH
+   *!   Errno: Destination not reachable (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EDUPPKG
+   *!   Errno: Duplicate package name on install
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EEMPTY
+   *!   Errno: Empty (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EEMULATE
+   *!   Errno: Emulation error (OSF/1)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EENDIAN
+   *!   Errno: Endian not supported
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EENDOFMINOR
+   *!   Errno: End of minor (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EENQUEUED
+   *!   Errno: Enqueued (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EEXIST
+   *!   Errno: File exists
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EFAIL
+   *!   Errno: Cannot start operation
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EFAULT
+   *!   Errno: Bad address
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EFBIG
+   *!   Errno: File too large
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EFORMAT
+   *!   Errno: Unformatted media
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EFPOS
+   *!   Errno: File position error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EFSCORRUPTED
+   *!   Errno: Filesystem corrupted (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EFTYPE
+   *!   Errno: Inappropriate file type or format
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EGENERIC
+   *!   Errno: Generic error (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EGRATIOUS
+   *!   Errno: Gratious (Hurd)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EGREGIOUS
+   *!   Errno: Gregious (Hurd)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EGROUPLOOP
+   *!   Errno: Group loop (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EHOSTDOWN
+   *!   Errno: Host is down
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EHOSTUNREACH
+   *!   Errno: No route to host
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EHWPOISON
+   *!   Errno: Memory page has hardware error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EIDRM
+   *!   Errno: Identifier removed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EIEIO
+   *!   Errno: IE I/O error (#Hurd)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EILSEQ
+   *!   Errno: Invalid wide character
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINIT
+   *!   Errno: Initialization failure (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINPROG
+   *!   Errno: Operation (now) in progress
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINPROGRESS
+   *!   Errno: Operation now in progress
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINTEGRITY
+   *!   Errno: Integrity check failed (FreeBSD)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINTR
+   *!   Errno: Interrupted system call
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINVAL
+   *!   Errno: Invalid argument
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINVALMODE
+   *!   Errno: Invalid mode (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINVALSTATE
+   *!   Errno: Invalid state (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EINVALTIME
+   *!   Errno: Invalid time (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EIO
+   *!   Errno: I/O error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EIORESID
+   *!   Errno: I/O resid (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EISCONN
+   *!   Errno: Transport endpoint is already connected
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EISDIR
+   *!   Errno: Is a directory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EISNAM
+   *!   Errno: Is a named type file
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EJOINED
+   *!   Errno: Joined (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EKEYEXPIRED
+   *!   Errno: Key has expired
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EKEYREJECTED
+   *!   Errno: Key was rejected by service
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EKEYREVOKED
+   *!   Errno: Key has been revoked
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EL2HLT
+   *!   Errno: Level 2 halted
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EL2NSYNC
+   *!   Errno: Level 2 not synchronized
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EL3HLT
+   *!   Errno: Level 3 halted
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EL3RST
+   *!   Errno: Level 3 reset
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELBIN
+   *!   Errno: L binary (Cygwin)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELIBACC
+   *!   Errno: Can not access a needed shared library
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELIBBAD
+   *!   Errno: Accessing a corrupted shared library
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELIBEXEC
+   *!   Errno: Cannot exec a shared library directly
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELIBMAX
+   *!   Errno: Attempting to link in too many shared libraries
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELIBSCN
+   *!   Errno: .lib section in a.out corrupted
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELNRNG
+   *!   Errno: Link number out of range
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELOCKED
+   *!   Errno: Can't send message due to deadlock (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELOCKUNMAPPED
+   *!   Errno: Locked lock was unmapped (Solaris)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELOGINLIM
+   *!   Errno: Login limit reached (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ELOOP
+   *!   Errno: Too many symbolic links encountered
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMEDIA
+   *!   Errno: Media surface error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMEDIUMTYPE
+   *!   Errno: Wrong medium type
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMEMRETRY
+   *!   Errno: Memory retry (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMFILE
+   *!   Errno: Too many open files
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMIGRATED
+   *!   Errno: Migrated (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMIGRATING
+   *!   Errno: Migrating (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMLINK
+   *!   Errno: Too many links
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMORE
+   *!   Errno: More to do, send message again
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMSGSIZE
+   *!   Errno: Message too long
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMTIMERS
+   *!   Errno: Too many timers
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMULTIHOP
+   *!   Errno: Multihop attempted
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EMUSTRUN
+   *!   Errno: Must run (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENAMETOOLONG
+   *!   Errno: File name too long
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENAVAIL
+   *!   Errno: No XENIX semaphores available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENEEDAUTH
+   *!   Errno: Need authenticator
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENETDOWN
+   *!   Errno: Network is down
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENETRESET
+   *!   Errno: Network dropped connection because of reset
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENETUNREACH
+   *!   Errno: Network is unreachable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENFILE
+   *!   Errno: File table overflow
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENFSREMOTE
+   *!   Errno: NFS remote (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOANO
+   *!   Errno: No anode
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOATTACH
+   *!   Errno: Not attached (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOATTR
+   *!   Errno: No attribute found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOBWD
+   *!   Errno: No BWD (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOBUFS
+   *!   Errno: No buffer space available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOCOFFEE
+   *!   Errno: No coffee (MirBSD)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOCONN
+   *!   Errno: No such connection (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOCONNECT
+   *!   Errno: No connection
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOCSI
+   *!   Errno: No CSI structure available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENODATA
+   *!   Errno: No data available on STREAM
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENODEV
+   *!   Errno: No such device
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOENT
+   *!   Errno: No such file or directory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOEXEC
+   *!   Errno: Exec format error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOEXIST
+   *!   Errno: No exist (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOINTRGROUP
+   *!   Errno: No initgroup (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOIOCTLCMD
+   *!   Errno: No IOCTL command.
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOKEY
+   *!   Errno: Required key not available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOLCK
+   *!   Errno: No record locks available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOLIC
+   *!   Errno: No license
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOLIMFILE
+   *!   Errno: No file limit (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOLINK
+   *!   Errno: Link has been severed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOLOAD
+   *!   Errno: Cannot load required kernel module
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOLOGIN
+   *!   Errno: No login (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOMATCH
+   *!   Errno: Symbol matching given spec not found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOMEDIUM
+   *!   Errno: No medium found
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOMEM
+   *!   Errno: Out of memory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOMESSAGE
+   *!   Errno: No message (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOMSG
+   *!   Errno: No message of desired type
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENONDP
+   *!   Errno: Need an NDP (8087...) to run
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENONET
+   *!   Errno: Machine is not on the network
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOPKG
+   *!   Errno: Package not installed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOPOLICY
+   *!   Errno: No such policy registered
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOPROC
+   *!   Errno: No process (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOPROTOOPT
+   *!   Errno: Protocol not available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOREG
+   *!   Errno: Cannot register required kernel module
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOREMOTE
+   *!   Errno: Must be done on local machine
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOSERVICE
+   *!   Errno: No service (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOSHARE
+   *!   Errno: No share (Cygwin)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOSPC
+   *!   Errno: No space left on device
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOSR
+   *!   Errno: Out of STREAM resources
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOSTR
+   *!   Errno: Device not a STREAM
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOSYM
+   *!   Errno: Symbol does not exist in executable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOSYS
+   *!   Errno: Invalid system call number
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTACTIVE
+   *!   Errno: Facility is not active (Solaris)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTBLK
+   *!   Errno: Block device required
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTCAPABLE
+   *!   Errno: Capabilities insufficient (FreeBSD)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTCONN
+   *!   Errno: Transport endpoint is not connected
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTCONTROLLER
+   *!   Errno: Not controller (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTDIR
+   *!   Errno: Not a directory
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTEMPTY
+   *!   Errno: Directory not empty
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTENQUEUED
+   *!   Errno: Not enqueued (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTJOINED
+   *!   Errno: Not joined (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTNAM
+   *!   Errno: Not a XENIX named type file
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTREADY
+   *!   Errno: Device not ready
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTRECOVERABLE
+   *!   Errno: State not recoverable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTRUST
+   *!   Errno: Not a trusted program
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTSOCK
+   *!   Errno: Socket operation on non-socket
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTSTOPPED
+   *!   Errno: Not stopped (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTSUP
+   *!   Errno: POSIX threads unsupported value
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTTY
+   *!   Errno: Inappropriate ioctl for device
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOTUNIQ
+   *!   Errno: Name not unique on network
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOUNLD
+   *!   Errno: Cannot unload kernel module
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOUNREG
+   *!   Errno: Cannot unregister kernel module
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENOURG
+   *!   Errno: No urgent data present (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ENXIO
+   *!   Errno: No such device or address
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EOPCOMPLETE
+   *!   Errno: Operation completed at server
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EOPNOTSUPP
+   *!   Errno: Operation not supported on socket
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EOTHER
+   *!   Errno: Other error (Win32)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EOUTOFBUFS
+   *!   Errno: Not enough buffers left (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EOVERFLOW
+   *!   Errno: Value too large for defined data type
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EOWNERDEAD
+   *!   Errno: Previous owner died
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPACKSIZE
+   *!   Errno: Invalid packet size for some protocol (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPATHREMOTE
+   *!   Errno: Pathname is remote
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPERM
+   *!   Errno: Operation not permitted
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPFNOSUPPORT
+   *!   Errno: Protocol family not supported
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPIPE
+   *!   Errno: Broken pipe
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPOWERF
+   *!   Errno: Power failure (HPUX)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPROCLIM
+   *!   Errno: Too many processes
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPROCUNAVAIL
+   *!   Errno: Bad procedure for program
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPROGMISMATCH
+   *!   Errno: Program version wrong
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPROGUNAVAIL
+   *!   Errno: RPC program not available
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPROTO
+   *!   Errno: Protocol error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPROTONOSUPPORT
+   *!   Errno: Protocol not supported
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPROTOTYPE
+   *!   Errno: Protocol wrong type for socket
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EPWROFF
+   *!   Errno: Device power is off
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EQFULL
+   *!   Errno: Interface output queue is full
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERANGE
+   *!   Errno: Math result not representable
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EREFUSED
+   *!   Errno: Double define for NFS
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERELOC
+   *!   Errno: Object file error in loading kernel module
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERELOCATED
+   *!   Errno: Relocated (OSF/1)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EREMCHG
+   *!   Errno: Remote address changed
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EREMDEV
+   *!   Errno: Remote device (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EREMOTE
+   *!   Errno: Object is remote
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EREMOTEIO
+   *!   Errno: Remote I/O error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EREMOTERELEASE
+   *!   Errno: Remote peer released connection
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERESTARTNOHAND
+ERESTARTNOINTR
+ERESTARTSYS
+ERFKILL
+*!   Errno: Operation not possible due to RF-kill
+*! @seealso
+*!   @[errno()]
+*/
+  /*! @decl constant EROFS
+   *!   Errno: Read-only filesystem
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERPCMISMATCH
+   *!   Errno: RPC version wrong
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERREMOTE
+ESAD
+*!   Errno: Security authentication denied
+*! @seealso
+*!   @[errno()]
+*/
+  /*! @decl constant ESHLIBVERS
+   *!   Errno: Shared library version mismatch
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESHUTDOWN
+   *!   Errno: Cannot send after socket shutdown
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESIGPARM
+   *!   Errno: Signal Error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESOCKTNOSUPPORT
+   *!   Errno: Socket type not supported
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESOFT
+   *!   Errno: I/O completed, but needs relocation
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESPIPE
+   *!   Errno: Illegal seek
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESRCDIED
+   *!   Errno: Source just died (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESRCH
+   *!   Errno: No such process
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESRMNT
+   *!   Errno: Srmount error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESRVRFAULT
+   *!   Errno: Server fault on msg pass
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESTALE
+   *!   Errno: Stale file handle
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESTRPIPE
+   *!   Errno: Streams pipe error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESUCCESS
+   *!   Errno: No error
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESYSERROR
+   *!   Errno: Systemm error (AIX)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ETIME
+   *!   Errno: STREAM timer expired
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ETIMEDOUT
+   *!   Errno: Connection timed out
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ETOOMANYREFS
+   *!   Errno: Too many references: cannot splice
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ETRAPDENIED
+   *!   Errno: IPC trap not allowed (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ETXTBSY
+   *!   Errno: Text file busy
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EUCLEAN
+   *!   Errno: Structure needs cleaning
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EUNATCH
+   *!   Errno: Protocol driver not attached
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EURG
+   *!   Errno: Urgent data present (Minix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EUSERS
+   *!   Errno: Too many users
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EVERSION
+   *!   Errno: Version number mismatch
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EWOULDBLOCK
+   *!   Errno: Operation would block
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EWRONGFS
+   *!   Errno: Wrong filesystem (Irix)
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EWRPROTECT
+   *!   Errno: Write-protected media
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EXDEV
+   *!   Errno: Cross-device link
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant EXFULL
+   *!   Errno: Exchange full
+   *! @seealso
+   *!   @[errno()]
+   */
+
+  /*! @decl constant ELAST
+   *! @decl constant LASTERRNO
+   *!   Errno: Equal to the largest errno
+   *! @seealso
+   *!   @[errno()]
+   */
+
+  /*! @endmodule
+   */
+
   /* errnos */
   sz = Pike_compiler->new_program->num_identifiers;
 #define ADD_ERRNO(VAL, SYM, DESC) add_integer_constant(SYM, VAL, 0);
