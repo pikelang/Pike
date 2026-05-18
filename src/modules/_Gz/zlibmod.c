@@ -1261,6 +1261,27 @@ static void gz_inflate_size( INT32 args )
         65536);
 }
 
+/*! @decl constant NO_FLUSH
+ *!   Deflate flag: Return only data that doesn't fit in the internal buffers.
+ *! @seealso
+ *!   @[deflate()->deflate()]
+ */
+/*! @decl constant PARTIAL_FLUSH
+ *!   Deflate flag: Return completed data.
+ *! @seealso
+ *!   @[deflate()->deflate()]
+ */
+/*! @decl constant SYNC_FLUSH
+ *!   Deflate flag: Return completed data.
+ *! @seealso
+ *!   @[deflate()->deflate()]
+ */
+/*! @decl constant FINISH
+ *!   Deflate flag: Append 'end of data' marker, and return all remaining data.
+ *! @seealso
+ *!   @[deflate()->deflate()]
+ */
+
 /*! @decl constant DEFAULT_STRATEGY
  *!     The default strategy as selected in the zlib library.
  */
