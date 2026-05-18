@@ -171,3 +171,11 @@ constant PAD_ANSI_X923 = Nettle.PAD_ANSI_X923;
 constant PAD_PKCS7     = Nettle.PAD_PKCS7;
 constant PAD_ZERO      = Nettle.PAD_ZERO;
 constant PAD_TLS       = Nettle.PAD_TLS;
+//! Padding variants.
+//!
+//! See @[Nettle.BufferedCipher.Buffer.State()->pad()] and
+//! @[Nettle.BufferedCipher.Buffer.State()->unpad()] for details.
+//!
+//! @seealso
+//!   @[Nettle.BufferedCipher.Buffer.State()->pad()] and
+//!   @[Nettle.BufferedCipher.Buffer.State()->unpad()]
