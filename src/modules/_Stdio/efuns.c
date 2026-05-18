@@ -1583,27 +1583,28 @@ static void f_errno(INT32 args)
  *!       to one of the following values:
  *!
  *!       @int
- *!         @value EACCESS
+ *!         @value System.EACCES
  *!           Access denied.
  *!
- *!         @value ELOOP
+ *!         @value System.ELOOP
  *!           Too many symbolic links.
  *!
- *!         @value ENAMETOOLONG
+ *!         @value System.ENAMETOOLONG
  *!           The path is too long.
  *!
- *!         @value ENOENT
+ *!         @value System.ENOENT
  *!           The file does not exist.
  *!
- *!         @value ENOTDIR
- *!           One of the directories used in @[path] is not, in fact, a directory.
+ *!         @value System.ENOTDIR
+ *!           One of the directories used in @[path] is not, in fact,
+ *!           a directory.
  *!
- *!         @value EROFS
+ *!         @value System.EROFS
  *!           The filesystem is read only and write access was requested.
  *!       @endint
  *!
  *!       Other errors can occur, but are not directly related to the
- *!       requested path, such as @expr{ENOMEM@}, etc.
+ *!       requested path, such as @[System.ENOMEM], etc.
  *!    @endint
  *!
  *! @seealso
