@@ -1185,6 +1185,9 @@ string parse_type(Node n, void|string debug) {
       } else if (attr == "\"experimental\"") {
         ret += "<code class='experimental'>__experimental__</code> " +
                subtype;
+      } else if (attr == "\"factory\"") {
+        ret += "<code class='factory'>__factory__</code> " +
+               subtype;
       } else {
 	ret += sprintf("__attribute__(%s) %s", attr, subtype);
       }
@@ -1193,6 +1196,9 @@ string parse_type(Node n, void|string debug) {
              subtype + ")";
     } else if (attr == "\"experimental\"") {
       ret += "<code class='experimental'>__experimental__</code>(" +
+             subtype + ")";
+    } else if (attr == "\"factory\"") {
+      ret += "<code class='factory'>__factory__</code>(" +
              subtype + ")";
     } else {
       ret += sprintf("__attribute__(%s, %s)", attr, subtype);
