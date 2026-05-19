@@ -424,7 +424,7 @@ class State {
 }
 
 //! Calling `() will return a @[State] object.
-protected State `()()
+protected __factory__ State `()()
 {
   return State();
 }

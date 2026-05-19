@@ -95,7 +95,7 @@ class State
 }
 
 //! Calling `() will return a @[State] object.
-protected State `()() { return State(); }
+protected __factory__ State `()() { return State(); }
 
 //! Works as a shortcut for @expr{obj->set_encrypt_key(key)->crypt(data)@}
 string encrypt(string(8bit) key, string(8bit) data) {

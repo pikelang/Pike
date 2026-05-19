@@ -1073,7 +1073,8 @@ class State
 //!
 //! @seealso
 //!   @[State()]
-protected State `()(mapping(string(8bit):Gmp.mpz|int|string(7bit))|void params)
+protected __factory__ State `()(mapping(string(8bit):
+                                        Gmp.mpz|int|string(7bit))|void params)
 {
   return State(params);
 }

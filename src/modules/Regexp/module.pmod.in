@@ -81,7 +81,9 @@ class SimpleRegexp
 }
 
 //! Convenience/compatibility method to get a @[SimpleRegexp] object.
-protected SimpleRegexp `()(void|string regexp) { return SimpleRegexp(regexp); }
+protected __factory__ SimpleRegexp `()(void|string regexp) {
+  return SimpleRegexp(regexp);
+}
 
 
 #if constant(_Regexp_PCRE._pcre)
