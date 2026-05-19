@@ -1977,13 +1977,17 @@ void resolv_type(node *n)
 	break;
       } else {
 	/* Attempt to get the return type for the function. */
+        struct compilation *c = THIS_COMPILATION;
 	struct pike_type *a, *b = NULL;
 	struct call_state cs;
 
 	a = get_type_of_svalue(Pike_sp-1);
 
-        if (!type_attributep(a, MK_STRING("factory"))) {
-          yywarning("Using an non-factory function as a type.");
+        if (!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
+            !type_attributep(a, MK_STRING("factory"))) {
+          yytype_report(REPORT_WARNING, NULL, 0, NULL, NULL, 0, a,
+                        0, "Using non-factory function %pO as a type.",
+                        Pike_sp-1);
         }
 
 	/* Note: check_splice_call() below eats a reference from a.
