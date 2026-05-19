@@ -89,13 +89,16 @@ protected program(Connection) find_dbm(string program_name)
   return p;
 }
 
-//! @decl Connection Sql(string host)
-//! @decl Connection Sql(string host, string db)
-//! @decl Connection Sql(string host, mapping(string:int|string) options)
-//! @decl Connection Sql(string host, string db, string user)
-//! @decl Connection Sql(string host, string db, string user, string password)
-//! @decl Connection Sql(string host, string db, string user, @
-//!                      string password, mapping(string:int|string) options)
+//! @decl __factory__ Connection Sql(string host)
+//! @decl __factory__ Connection Sql(string host, string db)
+//! @decl __factory__ Connection Sql(string host, @
+//!                                  mapping(string:int|string) options)
+//! @decl __factory__ Connection Sql(string host, string db, string user)
+//! @decl __factory__ Connection Sql(string host, string db, string user, @
+//!                                  string password)
+//! @decl __factory__ Connection Sql(string host, string db, string user, @
+//!                                  string password, @
+//!                                  mapping(string:int|string) options)
 //!
 //! Create a new generic SQL connection.
 //!
@@ -181,14 +184,16 @@ protected program(Connection) find_dbm(string program_name)
 //!   Use of an object @[host] was deprecated in Pike 8.1.
 //!
 //! @note
-//!   Prior to Pike 8.1 this was a wrapper class.
+//!   Prior to Pike 8.1 this was a wrapper class. It being marked as
+//!   a @tt{__factory__@} means that the old syntax @expr{Sql.Sql con@}
+//!   may still be used in place of @expr{Sql.Connection con@}.
 //!
 //! @seealso
 //!   @[8.0::Sql.Sql], @[Connection]
-Connection Sql(string|zero host,
-	       void|string|mapping(string:int|string) db,
-	       void|string user, void|string _password,
-	       void|mapping(string:int|string) options)
+__factory__ Connection Sql(string|zero host,
+                           void|string|mapping(string:int|string) db,
+                           void|string user, void|string _password,
+                           void|mapping(string:int|string) options)
 {
   // Note: No need to censor host here, since it is rewritten below if
   //       it contains an SQL-URL.
@@ -296,8 +301,8 @@ Connection Sql(string|zero host,
 
 #pragma no_deprecation_warnings
 
-//! @decl Connection Sql(__deprecated__(Connection) con)
-//! @decl Connection Sql(__deprecated__(Connection) con, string db)
+//! @decl __factory__ Connection Sql(__deprecated__(Connection) con)
+//! @decl __factory__ Connection Sql(__deprecated__(Connection) con, string db)
 //!
 //! Create a new generic SQL connection (DEPRECATED).
 //!
@@ -316,7 +321,8 @@ Connection Sql(string|zero host,
 //!
 //! @seealso
 //!   @[8.0::Sql.Sql], @[Connection]
-variant Connection Sql(__deprecated__(Connection) con, string db = "")
+variant __factory__ Connection Sql(__deprecated__(Connection) con,
+                                   string db = "")
 {
   if (db != "") {
     con->select_db(db);
