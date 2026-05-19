@@ -5274,6 +5274,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
 
+ loop:
   /* Attributes. */
   switch(a?a->type:PIKE_T_UNKNOWN) {
   case PIKE_T_ATTRIBUTE:
@@ -5424,7 +5425,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
    * NB: At this point a and b are either NULL, a basic type or a marker.
    */
 
- loop:
   switch(a ? a->type : PIKE_T_UNKNOWN) {
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
