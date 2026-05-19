@@ -1979,7 +1979,13 @@ void resolv_type(node *n)
 	/* Attempt to get the return type for the function. */
 	struct pike_type *a, *b = NULL;
 	struct call_state cs;
+
 	a = get_type_of_svalue(Pike_sp-1);
+
+        if (!type_attributep(a, MK_STRING("factory"))) {
+          yywarning("Using an non-factory function as a type.");
+        }
+
 	/* Note: check_splice_call() below eats a reference from a.
 	 * Note: CALL_INHIBIT_WARNINGS is needed since we don't
 	 *       provide a function name (and we don't want
