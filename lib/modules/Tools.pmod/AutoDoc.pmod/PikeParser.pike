@@ -734,6 +734,26 @@ AttributeType parseExperimental()
   return t;
 }
 
+AttributeType parseFactory()
+{
+  eat("__factory__");
+  AttributeType t = AttributeType();
+  t->attribute = "\"factory\"";
+  if (peekToken() == "(") {
+    readToken();
+    if (peekToken() == ")") {
+      readToken();
+    } else {
+      t->subtype = parseType();
+      eat(")");
+      return t;
+    }
+  }
+  t->prefix = 1;
+  t->subtype = parseType();
+  return t;
+}
+
 object(Type)|zero parseType() {
   string s = peekToken();
   switch(s) {
@@ -779,6 +799,8 @@ object(Type)|zero parseType() {
       return parseDeprecated();
     case "__experimental__":
       return parseExperimental();
+    case "__factory__":
+      return parseFactory();
     case ".":
       return parseObject();
     default:

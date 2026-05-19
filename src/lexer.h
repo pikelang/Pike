@@ -764,6 +764,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_DEPRECATED_ID;
           if(ISWORD("__experimental__"))
             return TOK_EXPERIMENTAL_ID;
+          if(ISWORD("__factory__"))
+            return TOK_FACTORY_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
           if(ISWORD("__generic__"))
