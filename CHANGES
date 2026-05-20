@@ -65,6 +65,20 @@ o '__experimental__' type attribute added.
   also #pragmas {no_,}experimental_warnings that are analogous
   to the #pragmas {no_,}deprecation_warnings.
 
+o '__factory__' type attribute added.
+
+  This identifier is intended for function constants, to allow them
+  to be used as types (then being an alias for their return type.
+  This helps avoiding bugs like (seen in the wild):
+
+    mixed err = catch { /* ... */ };
+    if (err) {
+      throw err;	// BUG: Declares a variable err of type void.
+    }
+
+  The above code now triggers a warning (as throw() does not have
+  the __factory__ atribute set).
+
 o Syntax for declaring and using generic types added.
 
     class Foo (< T >) (protected T val) {
@@ -1426,4 +1440,5 @@ Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3658, #3681, #4312,
   #10167, #10170, #10171, #10173, #10174, #10175, #10176, #10177, #10178,
   #10179, #10180, #10181, #10182, #10183, #10185, #10187, #10188, #10191,
   #10192, #10195, #10196, #10197, #10198, #10200, #10202, #10203, #10204,
-  #10205, #10206, #10207, #10208, #10209, #10210, #10213, #10214, #10217
+  #10205, #10206, #10207, #10208, #10209, #10210, #10213, #10214, #10217,
+  #10220, #10221
