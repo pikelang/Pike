@@ -13,7 +13,7 @@
 inherit .__Hash;
 
 //! Calling `() will return a @[State] object.
-protected State `()() { return State(); }
+protected __factory__ State `()() { return State(); }
 
 //!  Works as a (possibly faster) shortcut for e.g.
 //!  @expr{State(data)->digest()@}, where @[State] is the hash state
