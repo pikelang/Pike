@@ -1418,11 +1418,13 @@ class NScope
   array(SimpleNode) object_types_for_node(SimpleNode n)
   {
     switch(n->get_any_name()) {
-    case "type": case "returntype":
+    case "type": case "subtype": case "returntype":
     case "or": case "and":
       return map(n->get_children(), object_types_for_node) * ({});
     case "object":
       return ({ n });
+    case "attribute":
+      return map(n->get_elements("subtype"), object_types_for_node) * ({});
     }
 
     return ({});
