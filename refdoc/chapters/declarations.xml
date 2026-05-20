@@ -584,6 +584,10 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
            <c>Marks the corresponding value as deprecated.
               There is a short-hand syntax <expr>__experimental__</expr>
               for declaring this attribute; see below.</c></r>
+        <r><c><expr>"factory"</expr></c>
+           <c>Marks the corresponding value as a factory.
+              There is a short-hand syntax <expr>__factory__</expr>
+              for declaring this attribute; see below.</c></r>
         <r><c><expr>"sprintf_args"</expr></c>
            <c>Used to mark lists of arguments that will be passed to
               <ref>sprintf()</ref>. There is a short-hand typedef
@@ -660,6 +664,36 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
       deprecated value. In a <tt>no_experimental_warnings</tt> context
       it would thus be needed to call the function without any arguments
       and not use the return value in order to avoid the related warnings.</p>
+    </subsection>
+
+    <subsection title="__factory__">
+      <p>The <tt>__factory__</tt> attribute marks a symbol (typically
+      a function) with the attribute <expr>"factory"</expr>, which causes
+      the type-checker to not complain when such values are used as types.</p>
+      <p>Warnings about using non-factory values as types can be
+      suppressed with the <ref>cpp::#pragma</ref>
+      <tt>no_deprecation_warnings</tt></p>
+
+      <example>
+        // In some pmod or similar:
+        protected class Foo {...};
+        __factory__ Foo Bar(...)
+        {
+          Foo foo = Foo();
+          // ...
+          return foo;
+        }
+
+        // Somewhere else:
+        Bar bar = Bar();
+      </example>
+
+      <p>In the above the symbol <tt>Bar</tt> is declared as a <tt>Foo</tt>
+      factory. Note that the symbol <tt>Foo</tt> is declared <tt>protected</tt>
+      and is thus not visible outside of the pmod. The symbol <tt>Bar</tt>
+      is however visible, and it being declared a <tt>__factory__</tt> means
+      that the type-checker will not complain about it being used as if
+      it were a type.</p>
     </subsection>
   </section>
 </chapter>
