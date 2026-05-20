@@ -5745,8 +5745,10 @@ PIKECLASS SelectBackend
 	     sleep_time->u.integer) {
       SIMPLE_ARG_TYPE_ERROR("`()", 1, "float|int(0..0)");
     }
-    else
+    else {
       timeout.tv_sec = -1;
+      timeout.tv_usec = 0;	/* Make some compilers happy. */
+    }
 
     sb_low_backend_once(THIS, &timeout);
 
