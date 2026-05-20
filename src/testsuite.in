@@ -1699,6 +1699,7 @@ test_type_error(object,multiset,(<1,2,3>))
 
 test_any_equal([[
   // This code caused a NULL dereference in Pike 7.8.306 and earlier.
+#pragma no_deprecation_warnings
   indices foo;
   return typeof(foo);
 ]], typeof(indices((mixed)0)))
