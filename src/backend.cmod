@@ -4234,6 +4234,13 @@ PIKECLASS PollDeviceBackend
 	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLRDBAND)
 #ifdef BACKEND_USES_KQUEUE
 	      && (!EV_OOBAND || PDB_CHECK_ERROR_EVENT(poll_fds[i], EV_OOBAND))
+              /* NOTE: FreeBSD 15.1 sends spurious OOB notifications
+               *       even when there is no OOB data. It also has a
+               *       recv(3N) that returns inband data for MSG_OOB
+               *       when this happens. The data field only counts
+               *       inband data, so only check for OOB when zero.
+               */
+              && !poll_fds[i].data
 #endif
 	      ) {
             PDWERR("[%d]BACKEND[%d]: POLLRDBAND on %d\n", THR_NO, me->id, fd);
@@ -5745,8 +5752,10 @@ PIKECLASS SelectBackend
 	     sleep_time->u.integer) {
       SIMPLE_ARG_TYPE_ERROR("`()", 1, "float|int(0..0)");
     }
-    else
+    else {
       timeout.tv_sec = -1;
+      timeout.tv_usec = 0;	/* Make some compilers happy. */
+    }
 
     sb_low_backend_once(THIS, &timeout);
 
