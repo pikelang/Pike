@@ -1014,6 +1014,17 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
 {
   if (!gobj) {
     push_int(0);
+  } else if (!G_IS_OBJECT(gobj)) {
+    /* Some typelibs declare some raw pointers as gobjects.
+     *
+     * Seen for GDK.Pixmap on MacOS X.
+     */
+#if 0
+    fprintf(stderr, "gobj: %p, info: %p (%d: %s)\n",
+            gobj, info, g_base_info_get_type(info),
+            g_base_info_get_name(info));
+#endif
+    push_int(0);
   } else {
     struct object *obj = g_object_get_qdata(gobj, object_quark);
     if (obj == NULL) {
