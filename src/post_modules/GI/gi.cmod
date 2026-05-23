@@ -177,6 +177,81 @@ static void marshaller(GClosure *closure,
   callback(data1, data2, n_params, param_values, return_value);
 }
 
+struct gi_arg_map {
+  unsigned char arg_map[0x80];	/* NB: Reserve space of NUL sentinel at 0x7f. */
+};
+
+/**
+ * Initializes an array that maps GI arguments to their
+ * Pike counter parts.
+ *
+ * Arguments that are implicit are mapped to pike argument 0xff.
+ *
+ * We want to return two properties for each GI arg:
+ *
+ *   Which pike argument that corresponds to it or if is
+ *   implicit in Pike.
+ *
+ *   A marker that indicates that the argument is the
+ *   extra args for a callback function.
+ *
+ * We assume that no GI function has more than 126 arguments,
+ * and encode as follows:
+ *
+ *   0-126:   Corresponding pike argument number.
+ *
+ *   127:     Reserved.
+ *
+ *   128-254: Pike argument number | 128 for extra args.
+ *
+ *   255:     Implicit. These are OUT arguments, lengths of arrays
+ *            and destroy callbacks.
+ */
+void get_arg_map(GIBaseInfo *callable, struct gi_arg_map *arg_map)
+{
+  gint num_args = g_callable_info_get_n_args(callable);
+  gint n, i;
+
+  if (!num_args) return;
+
+  if (num_args > 127) num_args = 127;	/* Kludge! */
+
+  memset(arg_map->arg_map, 0, num_args + 1);
+  for (n = 0; n < num_args; n++) {
+    if (!arg_map->arg_map[n]) {
+      GIArgInfo *arginfo = g_callable_info_get_arg(callable, n);
+      GITypeInfo *typeinfo = g_arg_info_get_type(arginfo);
+      if (g_arg_info_get_direction(arginfo) == GI_DIRECTION_OUT) {
+        arg_map->arg_map[n] = 0xff;
+      } else {
+        gint nn = g_arg_info_get_destroy(arginfo);
+        if ((nn >= 0) && (nn < 128)) {
+          /* Implicit destroy callback argument. */
+          arg_map->arg_map[nn] = 0xff;
+        } else if (((nn = g_type_info_get_array_length(typeinfo)) >= 0) &&
+                   (nn < 128)) {
+          /* Implicit array size or string length argument. */
+          arg_map->arg_map[nn] = 0xff;
+        }
+        if (((nn = g_arg_info_get_closure(arginfo)) >= 0) && (nn < 128)) {
+          /* Extra args. */
+          arg_map->arg_map[nn] = 0x80;
+        }
+      }
+      g_base_info_unref(typeinfo);
+      g_base_info_unref(arginfo);
+    }
+  }
+
+  for (n = i = 0; n < num_args; n++, i++) {
+    if (arg_map->arg_map[n] == 0xff) {
+      i--;
+      continue;
+    }
+    arg_map->arg_map[n] |= i;
+  }
+}
+
 struct signal_wrapper_context
 {
   struct signal_data *d;
@@ -194,8 +269,9 @@ static void invoke_signal_func(void *arg)
   GValue *return_value = ctx->return_value;
   JMP_BUF recovery;
   unsigned int i;
-  INT32 args;
+  INT32 args = 0;
   struct svalue *osp = Pike_sp;
+  struct gi_arg_map arg_map;
 
   if (SETJMP(recovery)) {
     pop_n_elems(Pike_sp-osp);
@@ -206,12 +282,17 @@ static void invoke_signal_func(void *arg)
     return;
   }
 
-  for (i=0; i<n_params; i++)
+  get_arg_map(d->siginfo, &arg_map);
+
+  for (i=0; i<n_params; i++) {
     if (!i) {
       if (G_VALUE_HOLDS_OBJECT(&param_values[0]))
         push_wrapped_gobject(g_value_get_object(&param_values[0]), NULL);
       else
         Pike_error("Signal emitter is not an object\n");
+    } else if ((i < 128) && (arg_map.arg_map[i-1] == 0xff)) {
+      /* Argument is implicit in Pike (eg array size or string length) */
+      continue;
     } else {
       GIArgInfo arg_info;
       GITypeInfo type_info;
@@ -226,7 +307,12 @@ static void invoke_signal_func(void *arg)
       } else
         push_gi_argument(&arg, &type_info);
     }
-  args = n_params;
+
+    /* FIXME: Assert (arg_map.arg_map[i-1] & 0x7f) == (args + 1)? */
+
+    args++;
+  }
+
   if (TYPEOF(d->extra_args) == PIKE_T_ARRAY) {
     struct array *a = d->extra_args.u.array;
     INT32 asize = a->size;
@@ -235,9 +321,12 @@ static void invoke_signal_func(void *arg)
     Pike_sp += asize;
     args += asize;
   }
+
   apply_svalue(&d->cb, args);
+
   if (return_value && G_VALUE_TYPE(return_value) != 0 )
     set_gvalue_from_svalue(return_value, &Pike_sp[-1]);
+
   pop_stack();
   UNSETJMP(recovery);
 }
@@ -1414,8 +1503,8 @@ static void get_gi_argument_interface(const struct svalue *s, GIArgument *arg,
   }
 }
 
-static void get_gi_argument_type(const struct svalue *s, GIArgument *arg,
-                                 GIArgInfo *ai, GITypeInfo *ti)
+static ptrdiff_t get_gi_argument_type(const struct svalue *s, GIArgument *arg,
+                                      GIArgInfo *ai, GITypeInfo *ti)
 {
   switch (g_type_info_get_tag(ti)) {
   case GI_TYPE_TAG_VOID:
@@ -1487,19 +1576,19 @@ static void get_gi_argument_type(const struct svalue *s, GIArgument *arg,
     ref_push_string(s->u.string);
     f_string_to_utf8(1);
     arg->v_pointer = STR0(Pike_sp[-1].u.string);
-    break;
+    return Pike_sp[-1].u.string->len;
 
   case GI_TYPE_TAG_FILENAME:
     if (TYPEOF(*s) != PIKE_T_STRING)
       Pike_error("Expected string\n");
     ref_push_string(s->u.string);
     arg->v_pointer = STR0(Pike_sp[-1].u.string);
-    break;
+    return Pike_sp[-1].u.string->len;
 
   case GI_TYPE_TAG_ARRAY:
     if (UNSAFE_IS_ZERO(s)) {
       arg->v_pointer = NULL;
-      break;
+      return 0;
     }
     if (TYPEOF(*s) != PIKE_T_ARRAY) {
       if (TYPEOF(*s) == PIKE_T_STRING && !s->u.string->size_shift) {
@@ -1513,7 +1602,7 @@ static void get_gi_argument_type(const struct svalue *s, GIArgument *arg,
           g_array_insert_vals(arr, 0, STR0(s->u.string), s->u.string->len);
           CALL_AND_UNSET_ONERROR(onerror);
           arg->v_pointer = arr->data;
-          break;
+          return s->u.string->len;
         } else
           g_base_info_unref(itemti);
       }
@@ -1529,11 +1618,12 @@ static void get_gi_argument_type(const struct svalue *s, GIArgument *arg,
                               s->u.array->size);
       for (i=0; i<s->u.array->size; i++) {
         GIArgument a;
-        get_gi_argument_type(&ITEM(s->u.array)[i], &a, NULL, itemti);
+        (void)get_gi_argument_type(&ITEM(s->u.array)[i], &a, NULL, itemti);
         g_array_insert_val(arr, i, a);
       }
       CALL_AND_UNSET_ONERROR(onerror);
       arg->v_pointer = arr->data;
+      return s->u.array->size;
     }
     break;
 
@@ -1552,15 +1642,17 @@ static void get_gi_argument_type(const struct svalue *s, GIArgument *arg,
     Pike_error("Don't know how to get a %d (%s)\n",
                g_type_info_get_tag(ti), g_base_info_get_name(ti));
   }
+
+  return 0;
 }
 
-static void get_gi_argument(const struct svalue *s, GIArgument *arg,
-                            GIArgInfo *ai)
+static ptrdiff_t get_gi_argument(const struct svalue *s, GIArgument *arg,
+                                 GIArgInfo *ai)
 {
   GITypeInfo ti;
 
   g_arg_info_load_type(ai, &ti);
-  get_gi_argument_type(s, arg, ai, &ti);
+  return get_gi_argument_type(s, arg, ai, &ti);
 }
 
 static gsize get_interface_size(GIBaseInfo *info)
@@ -1828,6 +1920,7 @@ static void low_invoke(GIBaseInfo *callable,
   GITypeInfo *ti;
   struct svalue *mark = Pike_sp-args;
   int i = 0, arg_num, num_in_args = 0, num_out_args = 0, out_arg_0_num;
+  int imax = -1;
   GIFunctionInfo *funcinfo =
     GI_IS_FUNCTION_INFO(callable) ? callable :
     GI_IS_VFUNC_INFO(callable) ? g_vfunc_info_get_invoker(callable) : NULL;
@@ -1837,6 +1930,9 @@ static void low_invoke(GIBaseInfo *callable,
   GIArgument *in_args;
   GIArgument out_arg_0, *out_args;
   struct gi_callback_context *cbc, *cbclist = NULL;
+  struct gi_arg_map arg_map;
+
+  get_arg_map(callable, &arg_map);
 
   if (funcinfo == callable) {
     g_base_info_ref(funcinfo);
@@ -1925,9 +2021,20 @@ static void low_invoke(GIBaseInfo *callable,
         in_args[num_in_args-1].v_pointer = &out_args[num_out_args];
         num_out_args++;
       }
+    } else if ((arg_num < 128) && (arg_map.arg_map[arg_num] == 0xff)) {
+      // Skip for now.
+      // Save the slot number so that we can back-patch.
+      arg_map.arg_map[arg_num] = num_in_args++;
     } else {
       GIScopeType scope = g_arg_info_get_scope (ai);
       const struct svalue *sval = &svalue_undefined;
+      if (arg_num < 127) {
+        i = arg_map.arg_map[arg_num] & 0x7f;
+      } else {
+        /* Assume remaining arguments follow sequentially. */
+        i = (arg_map.arg_map[126] & 0x7f) + arg_num - 126;
+      }
+      if (i > imax) imax = i;
       if (i < args) {
         sval = mark + i;
       } else {
@@ -1982,21 +2089,46 @@ static void low_invoke(GIBaseInfo *callable,
         in_args[num_in_args++].v_pointer = cbc->closure;
 #endif
       } else {
+        GITypeInfo *typeinfo = g_arg_info_get_type(ai);
+        gint al_arg = g_type_info_get_array_length(typeinfo);
+        ptrdiff_t arr_len;
+        g_base_info_unref(typeinfo);
         /* NB: get_gi_argument() may push stuff on the Pike stack. */
-        get_gi_argument(sval, &in_args[num_in_args++], ai);
+        push_int64(get_gi_argument(sval, &in_args[num_in_args++], ai));
+        if (al_arg >= 0) {
+          GIArgInfo *alai = g_callable_info_get_arg(callable, al_arg);
+          gint al_argno;
+          if (al_arg < 127) {
+            al_argno = arg_map.arg_map[al_arg];
+            if (al_argno == 0xff) {
+              /* Forward argument number.
+               * We assume that there are no DIRECTION_OUT arguments
+               * between us and the forward argument.
+               */
+              al_argno = num_in_args + al_arg - (arg_num + 1);
+            }
+          } else {
+            /* Too many arguments for arg_map.
+             * We assume that there are no DIRECTION_OUT arguments
+             * between us and the argument.
+             */
+            al_argno = num_in_args + al_arg - (arg_num + 1);
+          }
+          (void)get_gi_argument(Pike_sp-1, &in_args[al_argno], alai);
+        }
+        pop_stack();
       }
       if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
         out_args[num_out_args] = in_args[num_in_args-1];
         in_args[num_in_args-1].v_pointer = &out_args[num_out_args];
         num_out_args++;
       }
-      i++;
     }
 
     CALL_AND_UNSET_ONERROR(onerror2);
   }
 
-  if (i<args)
+  if (imax < args-1)
     Pike_error("Too many arguments to function %s\n",
                g_base_info_get_name(callable));
 
@@ -2583,39 +2715,29 @@ static int add_gifunction(struct mapping *namespace,
                           void (*func)(INT32 args))
 {
   gint num_args = g_callable_info_get_n_args(funcinfo);
-  gint num_in_args = 0, num_out_args = 0;
   gint n = -1;
   GITypeInfo *rettypeinfo = NULL;
   gboolean ret_nullable = 0;
-  int num_callbacks = 0;
-  unsigned char *callback_args = alloca(num_args);
+  struct gi_arg_map arg_map;
 
-  memset(callback_args, 0, num_args);
+  get_arg_map(funcinfo, &arg_map);
 
   for (n = 0; n < num_args; n++) {
     GIArgInfo *arginfo = g_callable_info_get_arg(funcinfo, n);
-    if (g_arg_info_get_scope(arginfo) != GI_SCOPE_TYPE_INVALID) {
-      num_callbacks++;
-      // Keep track of which arguments are callback extra args.
-      callback_args[g_arg_info_get_closure(arginfo)] = 1;
-      if (g_arg_info_get_destroy(arginfo) >= 0) {
-        callback_args[g_arg_info_get_destroy(arginfo)] = 2;
-      }
-    }
+    GITypeInfo *typeinfo = g_arg_info_get_type(arginfo);
     switch(g_arg_info_get_direction(arginfo)) {
     case GI_DIRECTION_INOUT:
-      num_in_args++;
-      /* FALLTHRU */
     case GI_DIRECTION_OUT:
-      num_out_args++;
       if (!rettypeinfo) {
-        rettypeinfo = g_arg_info_get_type(arginfo);
+        rettypeinfo = typeinfo;
+        g_base_info_ref(typeinfo);
+        n = num_args;	/* Short-circuit the loop. */
       }
       break;
     default:	/* GI_DIRECTION_IN */
-      num_in_args++;
       break;
     }
+    g_base_info_unref(typeinfo);
     g_base_info_unref(arginfo);
   }
 
@@ -2635,48 +2757,63 @@ static int add_gifunction(struct mapping *namespace,
 
   type_stack_mark();
 
-  push_gi_typeinfo_type(namespace, rettypeinfo);
+  /* Handle the return type. */
   if (rettypeinfo) {
+    push_gi_typeinfo_type(namespace, rettypeinfo);
     g_base_info_unref(rettypeinfo);
-  }
-  if (ret_nullable) {
-    push_type(PIKE_T_VOID);
-    push_type(PIKE_T_OR);
-  }
-  if (num_callbacks) {
-    while (callback_args[num_args-1] == 2) {
-      /* Destroy callback skipped. */
-      num_args--;
+    if (ret_nullable) {
+      push_type(PIKE_T_VOID);
+      push_type(PIKE_T_OR);
     }
+  } else {
+    push_type(PIKE_T_VOID);
   }
-  if (num_callbacks && callback_args[num_args-1]) {
+
+  /* NB: We know that there is a NUL end sentinel.
+   *
+   * It is also unlikely that there are 128 implicit arguments in a row...
+   */
+  while (num_args && (arg_map.arg_map[num_args-1] == 0xff)) {
+    /* Skip implicit arguments at the end of the argument list. */
+    num_args--;
+  }
+
+  /* Handle the MANY type. */
+  if (num_args && (arg_map.arg_map[num_args-1] & 0x80)) {
+    /* Got callback arguments marker for the last argument. */
     push_type(PIKE_T_MIXED);
+    num_args--;
   } else {
     push_type(PIKE_T_VOID);
   }
   push_type(PIKE_T_MANY);
 
+  /* Handle the remaining arguments. */
   for (n = num_args; n--;) {
     GIArgInfo *arginfo;
-    if (num_callbacks && callback_args[n]) {
-      if (callback_args[n] == 2) continue;	/* Skip */
-      /* Extra arguments to callback function. */
-      if (n < num_args-1) {
-        /* NB: n == num_args-1 is handled above. */
-        push_type(PIKE_T_MIXED);
-        push_unlimited_array_type(PIKE_T_ARRAY);
-        push_type(T_ZERO);
-        push_type(T_OR);
-        push_type(PIKE_T_FUNCTION);
-      }
-      continue; /* Handled above. */
+    if ((n < 128) && (arg_map.arg_map[n] & 0x80)) {
+      if (arg_map.arg_map[n] == 0xff) continue;	/* Implicit argument, skip. */
+
+      /* Extra arguments to callback function.
+       *
+       * array(mixed)|void
+       *
+       * NB: The case where the last argument is extra args has
+       *     already been handled by the PIKE_T_MANY code above.
+       */
+      push_type(PIKE_T_MIXED);
+      push_unlimited_array_type(PIKE_T_ARRAY);
+      push_type(T_VOID);
+      push_type(T_OR);
+      push_type(PIKE_T_FUNCTION);
+      continue;
     }
 
     arginfo = g_callable_info_get_arg(funcinfo, n);
 
     if (g_arg_info_get_scope(arginfo) != GI_SCOPE_TYPE_INVALID) {
-      /* FIXME: How to determine the types for the arguments
-       *        to callback functions?
+      /* NB: A valid scope being present means that
+       *     this argument is a callback function.
        */
       GITypeInfo *cinfo = g_arg_info_get_type(arginfo);
       push_type(PIKE_T_VOID);
@@ -2704,17 +2841,23 @@ static int add_gifunction(struct mapping *namespace,
           pop_stack();
         }
         g_base_info_unref(iinfo);
+      } else {
+        push_type(PIKE_T_VOID);
+        push_type(PIKE_T_UNKNOWN);	/* Extra args... */
+        push_type(PIKE_T_MANY);
       }
       g_base_info_unref(cinfo);
-      push_type(PIKE_T_FUNCTION);
-    } else if (g_arg_info_get_direction(arginfo) != GI_DIRECTION_OUT) {
+    } else {
+      /* A normal argument. */
       push_gi_arginfo_type(namespace, arginfo);
       if (g_arg_info_may_be_null(arginfo)) {
         push_type(PIKE_T_VOID);
         push_type(PIKE_T_OR);
       }
-      push_type(PIKE_T_FUNCTION);
     }
+
+    /* NB: OUT arguments are skipped earlier via arg_map. */
+    push_type(PIKE_T_FUNCTION);
 
     g_base_info_unref(arginfo);
   }
