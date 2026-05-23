@@ -7,7 +7,7 @@ int main(int argc, array(string) argv)
 {
   if(argc<2) { werror("Usage: pike -x pv files...\n"); return 1; }
 #if constant(Tools.PVApp)
-  Tools.PVApp()->run(argc, argv);
+  Tools.PVApp()->run(argv);
   return 0;
 #else
   Tools.PV(argv[1..][*])->signal_connect("destroy", lambda() {
