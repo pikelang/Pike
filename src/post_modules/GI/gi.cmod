@@ -269,7 +269,7 @@ static void invoke_signal_func(void *arg)
   GValue *return_value = ctx->return_value;
   JMP_BUF recovery;
   unsigned int i;
-  INT32 args = 0;
+  INT32 args;
   struct svalue *osp = Pike_sp;
   struct gi_arg_map arg_map;
 
@@ -284,6 +284,7 @@ static void invoke_signal_func(void *arg)
 
   get_arg_map(d->siginfo, &arg_map);
 
+  args = 0;
   for (i=0; i<n_params; i++) {
     if (!i) {
       if (G_VALUE_HOLDS_OBJECT(&param_values[0]))
@@ -2683,36 +2684,9 @@ static void add_giconstant(GIConstantInfo *info)
   pop_stack();
 }
 
-/**
- *  Add a function to the current class.
- *
- *  @arg name
- *    Symbol name.
- *
- *  @arg func
- *    C function to add.
- *
- *  NOTE: The type for the function is on the type stack
- *        and gets popped.
- */
-static int low_add_gifunction(struct pike_string *name,
-                              void (*func)(INT32 args))
-{
-  struct pike_type *t = pop_unfinished_type();
-  union idptr tmp;
-  int fun;
-  tmp.c_fun = func;
-  fun = define_function(name, t, 0, IDENTIFIER_C_FUNCTION, &tmp,
-                        OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-  free_type(t);
-
-  return fun;
-}
-
-static int add_gifunction(struct mapping *namespace,
-                          struct pike_string *name,
-                          GIFunctionInfo *funcinfo,
-                          void (*func)(INT32 args))
+static struct pike_type *generate_gi_fun_type(struct mapping *namespace,
+                                              GIFunctionInfo *funcinfo,
+                                              int is_arg)
 {
   gint num_args = g_callable_info_get_n_args(funcinfo);
   gint n = -1;
@@ -2781,7 +2755,11 @@ static int add_gifunction(struct mapping *namespace,
   /* Handle the MANY type. */
   if (num_args && (arg_map.arg_map[num_args-1] & 0x80)) {
     /* Got callback arguments marker for the last argument. */
-    push_type(PIKE_T_MIXED);
+    if (is_arg) {
+      push_type(PIKE_T_UNKNOWN);
+    } else {
+      push_type(PIKE_T_MIXED);
+    }
     num_args--;
   } else {
     push_type(PIKE_T_VOID);
@@ -2801,7 +2779,11 @@ static int add_gifunction(struct mapping *namespace,
        * NB: The case where the last argument is extra args has
        *     already been handled by the PIKE_T_MANY code above.
        */
-      push_type(PIKE_T_MIXED);
+      if (is_arg) {
+        push_type(PIKE_T_UNKNOWN);
+      } else {
+        push_type(PIKE_T_MIXED);
+      }
       push_unlimited_array_type(PIKE_T_ARRAY);
       push_type(T_VOID);
       push_type(T_OR);
@@ -2816,25 +2798,14 @@ static int add_gifunction(struct mapping *namespace,
        *     this argument is a callback function.
        */
       GITypeInfo *cinfo = g_arg_info_get_type(arginfo);
-      push_type(PIKE_T_VOID);
-      push_type(PIKE_T_UNKNOWN);	/* Extra args... */
-      push_type(PIKE_T_MANY);
+      struct pike_type *fun_type;
       if (g_type_info_get_tag(cinfo) == GI_TYPE_TAG_INTERFACE) {
         GIBaseInfo *iinfo = g_type_info_get_interface(cinfo);
         gint ncbargs, i;
-        ncbargs = g_callable_info_get_n_args(iinfo);
-        /* NB: Loop skips last argument (assumed to be data/context). */
-        for (i = ncbargs-1; i-- > 0;) {
-          GIArgInfo *ai = g_callable_info_get_arg(iinfo, i);
-          if (!ai) continue;
-          if (g_arg_info_get_direction(arginfo) == GI_DIRECTION_OUT) continue;
-          push_gi_arginfo_type(namespace, ai);
-          if (g_arg_info_may_be_null(ai)) {
-            push_type(PIKE_T_ZERO);
-            push_type(PIKE_T_OR);
-          }
-          push_type(PIKE_T_FUNCTION);
-        }
+        fun_type = generate_gi_fun_type(namespace, iinfo, 1);
+        push_finished_type(fun_type);
+        free_type(fun_type);
+
         if (g_base_info_get_name(iinfo)) {
           push_text(g_base_info_get_name(iinfo));
           push_type_name(Pike_sp[-1].u.string);
@@ -2862,7 +2833,44 @@ static int add_gifunction(struct mapping *namespace,
     g_base_info_unref(arginfo);
   }
 
-  return low_add_gifunction(name, func);
+  return pop_unfinished_type();
+}
+
+/**
+ *  Add a function to the current class.
+ *
+ *  @arg name
+ *    Symbol name.
+ *
+ *  @arg func
+ *    C function to add.
+ *
+ *  NOTE: The type for the function is on the type stack
+ *        and gets popped.
+ */
+static int low_add_gifunction(struct pike_string *name,
+                              void (*func)(INT32 args),
+                              struct pike_type *fun_type)
+{
+  union idptr tmp;
+  int fun;
+  tmp.c_fun = func;
+  fun = define_function(name, fun_type, 0, IDENTIFIER_C_FUNCTION, &tmp,
+                        OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+
+  return fun;
+}
+
+static int add_gifunction(struct mapping *namespace,
+                          struct pike_string *name,
+                          GIFunctionInfo *funcinfo,
+                          void (*func)(INT32 args))
+{
+  struct pike_type *fun_type = generate_gi_fun_type(namespace, funcinfo, 0);
+  int ret = low_add_gifunction(name, func, fun_type);
+  free_type(fun_type);
+
+  return ret;
 }
 
 /**
@@ -3252,28 +3260,36 @@ static struct program *program_from_info(struct mapping *namespace,
         push_text(g_base_info_get_name(fieldinfo));
         f_add(2);
         if (fieldflags & GI_FIELD_IS_READABLE) {
+          struct pike_type *t;
           type_stack_mark();
           push_gi_typeinfo_type(namespace, ti);
           push_type(PIKE_T_VOID);
           push_type(PIKE_T_MANY);
+          t = pop_unfinished_type();
+
           update_ident_to_n(ident_to_n_sval,
                             low_add_gifunction(Pike_sp[-1].u.string,
-                                               f_get_gi_field), i);
+                                               f_get_gi_field, t), i);
+          free_type(t);
         }
 
         /* Setter */
         push_text("=");
         f_add(2);
         if (fieldflags & GI_FIELD_IS_WRITABLE) {
+          struct pike_type *t;
           type_stack_mark();
           push_type(PIKE_T_VOID);
           push_type(PIKE_T_VOID);
           push_type(PIKE_T_MANY);
           push_gi_typeinfo_type(namespace, ti);
           push_type(PIKE_T_FUNCTION);
+          t = pop_unfinished_type();
+
           update_ident_to_n(ident_to_n_sval,
                             low_add_gifunction(Pike_sp[-1].u.string,
-                                               f_set_gi_field), i);
+                                               f_set_gi_field, t), i);
+          free_type(t);
         }
 
         pop_stack();
