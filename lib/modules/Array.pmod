@@ -152,7 +152,7 @@ int search_array(array arr, string|function|int fun, mixed ... args)
 //! Applies the function @[sum] columnwise on the elements in the
 //! provided arrays. E.g. @expr{sum_arrays(`+,a,b,c)@} does the same
 //! as @expr{`+(a[*],b[*],c[*])@}.
-array sum_arrays(function(int(0..0) ...:mixed) sum, array ... args)
+array sum_arrays(function(__unknown__ ...:mixed) sum, array ... args)
 {
   // FIXME: int(0..0) in the function prototype above is a kludge.
   // See the FIXME in sort_array.
@@ -768,13 +768,13 @@ array common_prefix(array(array) arrs)
 //!   Array.all( ({ 2, 4, 6, 8 }), `<, 17 )
 //! @seealso
 //!   @[any], @[has_value]
-int(0..1) all( array a, function(int(0..0), mixed ...:mixed) predicate,
+int(0..1) all( array a, function(__unknown__, __unknown__ ...:mixed) predicate,
 	       mixed ... extra_args )
 {
   // FIXME: int(0..0) in the function prototype above is a kludge.
   // See the FIXME in sort_array.
   foreach( a, mixed elem )
-    if( !predicate( [int(0..0)] elem, @extra_args ) )
+    if( !([function(mixed...:mixed)]predicate)( elem, @extra_args ) )
       return 0;
   return 1;
 }
@@ -808,14 +808,15 @@ int(0..1) any( array a, function(__unknown__, __unknown__ ...:mixed) predicate,
 //!   > ({ ({ 4, 5, 6 }), ({ 0, 1, 2, 3, 7, 8 }) })
 //! @seealso
 //!   @[filter], @[`/], @[`%]
-array(array) partition( array a, function(int(0..0), mixed ...:mixed) arbiter,
+array(array) partition( array a,
+                        function(__unknown__, __unknown__ ...:mixed) arbiter,
 			mixed ... extra_args )
 {
   // FIXME: int(0..0) in the function prototype above is a kludge.
   // See the FIXME in sort_array.
   array first = ({}), second = ({});
   foreach( a, mixed elem )
-    if( arbiter( [int(0..0)] elem, @extra_args ) )
+    if( ([function(mixed...:mixed)]arbiter)( elem, @extra_args ) )
       first += ({ elem });
     else
       second += ({ elem });
