@@ -4201,8 +4201,16 @@ PIKECLASS Repository
       }
       break;
 
-    case GI_INFO_TYPE_FIELD:
     case GI_INFO_TYPE_CALLBACK:
+      /* NB: These are typically used to declare variables or arguments,
+       *     thus is_arg = 1.
+       */
+      push_type_value(generate_gi_fun_type(namespace, info, 1));
+      simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
+      pop_stack();
+      break;
+
+    case GI_INFO_TYPE_FIELD:
     default:
       /* Unsupported info type. */
       break;
