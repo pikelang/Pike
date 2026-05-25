@@ -809,16 +809,16 @@ PIKECLASS GObject
     pop_stack();
 
     while (info) {
-      fprintf(stderr, "info: %p\n", info);
-
       for (n = g_object_info_get_n_signals(info); n--; ) {
         GISignalInfo *si = g_object_info_get_signal(info, n);
         if (GI_IS_SIGNAL_INFO(si)) {
           push_text(g_base_info_get_name(si));
           g_base_info_unref(si);
+#ifdef PIKE_DEBUG
         } else {
           fprintf(stderr, "Signal #%d returned info type %d\n",
                   n, g_base_info_get_type(si));
+#endif
         }
       }
 
@@ -851,16 +851,16 @@ PIKECLASS GObject
     pop_stack();
 
     while (info) {
-      fprintf(stderr, "info: %p\n", info);
-
       for (n = g_object_info_get_n_properties(info); n--; ) {
         GISignalInfo *si = g_object_info_get_property(info, n);
         if (GI_IS_PROPERTY_INFO(si)) {
           push_text(g_base_info_get_name(si));
           g_base_info_unref(si);
+#ifdef PIKE_DEBUG
         } else {
           fprintf(stderr, "Signal #%d returned info type %d\n",
                   n, g_base_info_get_type(si));
+#endif
         }
       }
 
@@ -2329,7 +2329,7 @@ static void f_set_gi_field(INT32 args)
 
   SET_ONERROR(err, g_base_info_unref, fieldinfo);
   ti = g_field_info_get_type(fieldinfo);
-  get_gi_argument_type(Pike_sp-args, &value, NULL, ti);
+  (void)get_gi_argument_type(Pike_sp-args, &value, NULL, ti);
   if (!g_field_info_set_field(fieldinfo, ptr, &value)) {
     Pike_error("Failed to write field.\n");
   }
