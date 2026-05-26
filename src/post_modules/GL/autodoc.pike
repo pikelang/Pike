@@ -681,6 +681,7 @@ class FuncPrototypeSegment
   inherit ContainerSegment;
   string name;
   string retval;
+  int(0..1) array_version = 0;
 
   protected void create(string n, string rv,
                         array(ParamDefSegment) contents)
@@ -894,7 +895,7 @@ void visit_refentry(string id, mapping context)
   else if(name = names[id+"v"]) new_name = name[..sizeof(name)-2];
 
   if(new_name) {
-    FuncPrototypeSegment delegate;
+    FuncPrototypeSegment delegate, delegate2;
     if (new_name != id)
       error("Unexpected rename %O -> %O\n", id, new_name);
     foreach(prots;; FuncPrototypeSegment prot) {
@@ -903,9 +904,21 @@ void visit_refentry(string id, mapping context)
       }
       if (prot->name == name)
         delegate = prot;
+      else if (prot->name == name+"v") {
+        prot->array_version = 1;
+        delegate2 = prot;
+      } else if (id == "glMapGrid" && prot->name == id+"1f")
+        delegate2 = prot;
     }
     delegate->name = new_name;
     prots = ({ delegate });
+    if (delegate2) {
+      delegate2->name = new_name;
+      if (delegate2->array_version)
+        prots += ({ delegate2 });
+      else
+        prots = ({ delegate2 }) + prots;
+    }
   } else {
     /* Use first declared name when mapping to pike prototypes, except
        in the case of glEvalMesh where the second declared name is used
@@ -1165,6 +1178,8 @@ void visit_docs(string func, mixed ... args)
 }
 
 string process_docbook(string name, string prot_ret, array(string) prot_types) {
+  array(string) prot_types2;
+
   if(!docs[name]) {
     deferred_docs[name] = 1;
     return "";
@@ -1172,8 +1187,22 @@ string process_docbook(string name, string prot_ret, array(string) prot_types) {
 
   RefEntrySegment doc = m_delete(docs, name);
 
+  if (doc->synopsis[-1]->array_version) {
+    int n = search(prot_types[0], "|array(");
+    if (n > 0) {
+      prot_types2 = ({}) + prot_types;
+      prot_types[0] = prot_types[0][..n-1];
+      prot_types2[0] = prot_types2[0][n+1..];
+      prot_types = map(prot_types, replace, "|VOID", "");
+    } else
+      doc->synopsis = doc->synopsis[..<1];
+  }
+  prot_types = map(prot_types, replace, "VOID", "void");
+
   foreach(doc->synopsis;; FuncPrototypeSegment proto) {
     completed_docs[proto->name] = 1;
+    if (proto->array_version && prot_types2)
+      prot_types = prot_types2;
     if (proto->name == "glClipPlane") {
       proto->contents[-1]->var += "_0";
       proto->contents += ({ ParamDefSegment("", "equation_1"),
@@ -1231,8 +1260,10 @@ array(string|array(string)) special_234(int mi, int mx, string ty, int|void a)
     string t = baset;
     if(!i)
       t+="|array("+baset+")";
-    if(i>=mi || i>0)
+    if(i>=mi)
       t+="|void";
+    else if(i>0)
+      t+="|VOID";
     typ+=({t});
   }
 
