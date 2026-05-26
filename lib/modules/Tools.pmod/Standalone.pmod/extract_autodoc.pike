@@ -338,7 +338,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	if(!file_stat(builddir+fn)) mkdir(builddir+fn);
 	string mod_name = fn;
 	sscanf(mod_name, "%s.pmod", mod_name);
-	recurse(srcdir+fn+"/", builddir+fn+"/", root_ts, root + ({mod_name}));
+        recurse(srcdir+fn+"/", builddir+fn+"/", root_ts, root + mod_name/".");
 	continue;
       }
 
