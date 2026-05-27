@@ -5,23 +5,23 @@
 //
 
 //! @module Gdk
-//! @belongs predef::GI.repository
 //!
 //!   The latest installed version of the GIMP Drawing Kit (aka GDK)
 //!   (typically 3.0 or 4.0).
 //!
 //! @seealso
+//!   @[3.0.Gdk], @[4.0.Gdk],
 //!   @url{https://docs.gtk.org/gtd3@}, @url{https://docs.gtk.org/gtd4@}
 
 //! @endmodule
 
 //! @module Gtk
-//! @belongs predef::GI.repository
 //!
 //!   The lastest installed version of the GIMP ToolKit (aka GTK)
 //!   (typically 3.0 or 4.0).
 //!
 //! @seealso
+//!   @[3.0.Gtk], @[4.0.Gtk],
 //!   @url{https://docs.gtk.org/gtk3@}, @url{https://docs.gtk.org/gtk4@}
 
 //! @class Application
@@ -70,12 +70,11 @@
 //! @endmodule
 
 //! @module Pango
-//! @belongs predef::GI.repository
 //!
 //!   The latest installed version of Pango - Internationalized text
 //!   layout and rendering (typically 1.0).
 //!
 //! @seealso
-//!   @url{https://docs.gtk.org/Pango@},
+//!   @[1.0.Pango], @url{https://docs.gtk.org/Pango@}
 
 //! @endmodule
