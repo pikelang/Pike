@@ -1071,6 +1071,8 @@ PIKECLASS GBoxed
 
 static void push_name_from_info(GIBaseInfo *info, int mixin_or_factory)
 {
+  STACK_LEVEL_START(0);
+
   push_constant_text("GI.repository.");
   push_text(g_base_info_get_namespace(info));
   push_constant_text(".");
@@ -1085,6 +1087,8 @@ static void push_name_from_info(GIBaseInfo *info, int mixin_or_factory)
     return;
   }
   f_add(4);
+
+  STACK_LEVEL_DONE(1);
 }
 
 static void init_gi_gobject(struct object *obj, gpointer gobj)
@@ -1102,6 +1106,8 @@ static void init_gi_gobject(struct object *obj, gpointer gobj)
 
 static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
 {
+  STACK_LEVEL_START(0);
+
   if (!gobj) {
     push_int(0);
   } else if (!G_IS_OBJECT(gobj)) {
@@ -1170,6 +1176,8 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
     } else
       ref_push_object(obj);
   }
+
+  STACK_LEVEL_DONE(1);
 }
 
 static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
@@ -2903,6 +2911,8 @@ static struct program *program_from_info(struct mapping *namespace,
   gint i, n;
   struct svalue *ident_to_n_sval;
 
+  STACK_LEVEL_START(0);
+
   if (GI_IS_OBJECT_INFO(info)) {
     type_name = g_object_info_get_type_name(info);
   } else {
@@ -2953,6 +2963,8 @@ static struct program *program_from_info(struct mapping *namespace,
     pop_stack();
   }
 
+  STACK_LEVEL_CHECK(0);
+
   if (cached) {
     if (TYPEOF(*cached) == PIKE_T_PROGRAM) {
       add_ref(cached->u.program);
@@ -2980,6 +2992,8 @@ static struct program *program_from_info(struct mapping *namespace,
     pop_stack();
   }
 
+  STACK_LEVEL_CHECK(0);
+
   switch(g_base_info_get_type(info)) {
   case GI_INFO_TYPE_OBJECT:
     {
@@ -2990,6 +3004,11 @@ static struct program *program_from_info(struct mapping *namespace,
       if (parentinfo && !g_base_info_equal(parentinfo, info)) {
         parent_prog = program_from_info(namespace, parentinfo,
                                         mixin_or_factory);
+        if (!parent_prog) {
+          Pike_fatal("No program for %s.%s\n",
+                     g_base_info_get_namespace(parentinfo),
+                     g_base_info_get_name(parentinfo));
+        }
         push_text(g_object_info_get_type_name(parentinfo));
         if (mixin_or_factory) {
           push_text("Mixin");
@@ -3059,8 +3078,16 @@ static struct program *program_from_info(struct mapping *namespace,
     break;
   default:
     /* Unsupported info type. */
+#ifdef PIKE_DEBUG
     fprintf(stderr, "UNSUPPORTED INFO TYPE: %d\n", g_base_info_get_type(info));
+#endif
     return NULL;
+  }
+
+  if (parent_prog) {
+    STACK_LEVEL_CHECK(1);
+  } else {
+    STACK_LEVEL_CHECK(0);
   }
 
   enter_compiler(NULL, 0);
@@ -3086,10 +3113,13 @@ static struct program *program_from_info(struct mapping *namespace,
 
   if (parent_prog) {
     /* Inherit the parent class. */
+    STACK_LEVEL_CHECK(1);
     low_inherit(parent_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
     free_program(parent_prog);
     pop_stack();
   }
+
+  STACK_LEVEL_CHECK(0);
 
   /* Update the cache. */
   push_text(type_name);
@@ -3104,6 +3134,8 @@ static struct program *program_from_info(struct mapping *namespace,
   ref_push_program(Pike_compiler->new_program);
   mapping_insert(namespace, Pike_sp-2, Pike_sp-1);
   pop_n_elems(2);
+
+  STACK_LEVEL_CHECK(0);
 
   /*
    * Enums and Flags
@@ -3126,11 +3158,15 @@ static struct program *program_from_info(struct mapping *namespace,
 
     exit_compiler();
 
+    STACK_LEVEL_CHECK(0);
+
     return p;
   }
 
   push_array(low_allocate_array(0, 10));
   ident_to_n_sval = Pike_sp-1;
+
+  STACK_LEVEL_CHECK(1);
 
   /*
    * Interfaces
@@ -3159,7 +3195,11 @@ static struct program *program_from_info(struct mapping *namespace,
         free_program(interface_prog);
         pop_stack();
       }
+
+      STACK_LEVEL_CHECK(1);
     }
+
+    STACK_LEVEL_CHECK(1);
 
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_constants(info) :
       g_interface_info_get_n_constants(info);
@@ -3170,6 +3210,8 @@ static struct program *program_from_info(struct mapping *namespace,
       add_giconstant(constinfo);
       g_base_info_unref(constinfo);
     }
+
+    STACK_LEVEL_CHECK(1);
 
 #ifdef HAVE_G_PROPERTY_INFO_GET_GETTER
     /* NB: Old versions of gobject-introspection did not have
@@ -3206,6 +3248,8 @@ static struct program *program_from_info(struct mapping *namespace,
     }
 #endif
 
+    STACK_LEVEL_CHECK(1);
+
 #if 0
     /* FIXME: Support binding signals via overloading? */
     n = GI_IS_OBJECT_INFO(info) ? g_object_info_get_n_signals(info) :
@@ -3218,6 +3262,8 @@ static struct program *program_from_info(struct mapping *namespace,
       g_base_info_unref(siginfo);
     }
 #endif
+
+    STACK_LEVEL_CHECK(1);
 
 #if 0
     /* low_invoke() does not support VFuncInfo properly yet. */
@@ -3232,6 +3278,8 @@ static struct program *program_from_info(struct mapping *namespace,
     }
 #endif
   }
+
+  STACK_LEVEL_CHECK(1);
 
   /*
    * Fields
@@ -3300,6 +3348,8 @@ static struct program *program_from_info(struct mapping *namespace,
     }
   }
 
+  STACK_LEVEL_CHECK(1);
+
   /*
    * Methods and functions.
    */
@@ -3355,6 +3405,8 @@ static struct program *program_from_info(struct mapping *namespace,
     g_base_info_unref(funcinfo);
   }
 
+  STACK_LEVEL_CHECK(1);
+
   /*
    * Save the info for use by call_gifunction() et al.
    *
@@ -3376,6 +3428,8 @@ static struct program *program_from_info(struct mapping *namespace,
   p = end_program();
 
   exit_compiler();
+
+  STACK_LEVEL_DONE(0);
 
   return p;
 }
@@ -4105,6 +4159,9 @@ PIKECLASS Repository
   {
     int ret = -1;
     struct program *p = NULL;
+
+    STACK_LEVEL_START(0);
+
     if (mixin_or_factory &&
         (g_base_info_get_type(info) != GI_INFO_TYPE_OBJECT) &&
         (g_base_info_get_type(info) != GI_INFO_TYPE_INTERFACE)) {
@@ -4127,6 +4184,8 @@ PIKECLASS Repository
       pop_stack();
       pop_stack();
 
+      STACK_LEVEL_CHECK(0);
+
       /* Register the values of the enum as constants in a program. */
       /* FALLTHRU */
     case GI_INFO_TYPE_OBJECT:
@@ -4141,6 +4200,7 @@ PIKECLASS Repository
       } else {
         push_undefined();
       }
+      STACK_LEVEL_CHECK(1);
       switch(mixin_or_factory) {
       case 1:
         push_text(g_base_info_get_name(info));
@@ -4148,6 +4208,7 @@ PIKECLASS Repository
         f_add(2);
         simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
         pop_stack();
+        STACK_LEVEL_CHECK(1);
         break;
       case 2:
         if (p) {
@@ -4165,12 +4226,16 @@ PIKECLASS Repository
           simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
           pop_stack();
         }
+        STACK_LEVEL_CHECK(1);
         break;
       default:
         simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
+        STACK_LEVEL_CHECK(1);
         break;
       }
       pop_stack();
+
+      STACK_LEVEL_CHECK(0);
       break;
 
     case GI_INFO_TYPE_FUNCTION:
@@ -4178,12 +4243,16 @@ PIKECLASS Repository
       ret = add_gifunction(namespace, Pike_sp[-1].u.string, info,
                            f_namespace_call_function);
       pop_stack();
+
+      STACK_LEVEL_CHECK(0);
       break;
 
     case GI_INFO_TYPE_VALUE:
       push_int64(g_value_info_get_value(info));
       simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
       pop_stack();
+
+      STACK_LEVEL_CHECK(0);
       break;
 
     case GI_INFO_TYPE_CONSTANT:
@@ -4198,6 +4267,8 @@ PIKECLASS Repository
         pop_stack();
 
         g_constant_info_free_value(info, &c_value);
+
+        STACK_LEVEL_CHECK(0);
       }
       break;
 
@@ -4208,13 +4279,18 @@ PIKECLASS Repository
       push_type_value(generate_gi_fun_type(namespace, info, 1));
       simple_add_constant(g_base_info_get_name(info), Pike_sp-1, 0);
       pop_stack();
+
+      STACK_LEVEL_CHECK(0);
       break;
 
     case GI_INFO_TYPE_FIELD:
     default:
       /* Unsupported info type. */
+      STACK_LEVEL_CHECK(0);
       break;
     }
+
+    STACK_LEVEL_DONE(0);
 
     return ret;
   }
@@ -4248,6 +4324,8 @@ PIKECLASS Repository
     struct object *res;
     int namespace_is_cairo = 0;
 
+    STACK_LEVEL_START(args);
+
     typelib = g_irepository_require(repository,
                                     (gchar *)STR0(name),
                                     (version? (gchar *)STR0(version) : NULL),
@@ -4278,12 +4356,14 @@ PIKECLASS Repository
     ref_push_object(c->placeholder);
     mapping_string_insert(namespace_lookup, name, Pike_sp-1);
     /* NB: The above is kept on the stack as it will be the return value. */
+    STACK_LEVEL_CHECK(args+1);
 
     push_text("GI.repository.");
     ref_push_string(name);
     f_add(2);
     debug_start_new_program_id(0, Pike_sp[-1].u.string->str, 0);
     pop_stack();
+    STACK_LEVEL_CHECK(args+1);
 
 #if 0
     Pike_compiler->new_program->flags |=
@@ -4304,6 +4384,7 @@ PIKECLASS Repository
     push_int(num * 2);
     f_allocate(2);
     ident_to_n_sval = Pike_sp-1;
+    STACK_LEVEL_CHECK(args+2);
 
     /* First direct symbols ie those that typically need
      * to map to identifier numbers.
@@ -4331,6 +4412,7 @@ PIKECLASS Repository
                         add_namespace_symbol(namespace_lookup, info, 2), i);
       g_base_info_unref(info);
     }
+    STACK_LEVEL_CHECK(args+2);
 
 #if 0
     /* Then indirect symbols (eg enum values).
@@ -4424,6 +4506,7 @@ PIKECLASS Repository
     exit_compiler();
 
     /* NB: The placeholder object is on the stack since earlier. */
+    STACK_LEVEL_DONE(args + 1);
   }
 }
 
