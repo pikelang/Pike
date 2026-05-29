@@ -2530,19 +2530,45 @@ PIKECLASS Buffer
     io_add_space(io, n, 0);
   }
 
-  /*! @decl int(0..)|int(-1..-1) consume( int(0..) n )
+  /*! @decl int(0..)|int(-1..-1) consume( int n, int(1bit)|void absolute )
    *!
-   *! Discard the first @[n] bytes from the buffer
+   *! Discard the first @[n] bytes from the buffer.
+   *!
+   *! @param n
+   *!   Number of bytes relative to the current read position.
+   *!
+   *! @param absolute
+   *!   If @expr{1@} @[n] is relative to the absolute buffer start
+   *!   (ie it will adjust the read position so that @expr{unread(0)@}
+   *!   will return @[n]).
    *!
    *! Returns -1 on error and the amount of space still left otherwise.
+   *!
+   *! @note
+   *!   Prior to Pike 9.0, this function supported neither negative @[n]
+   *!   nor the @[absolute] argument.
+   *!
+   *! @seealso
+   *!   @[unread()]
    */
-  PIKEFUN int(-1..) consume( int(0..) n )
+  PIKEFUN int(-1..) consume( int n, int(1bit)|void absolute )
   {
-    Pike_sp--;
-    if (LIKELY(io_avail(THIS, n)))
-      push_int64( io_consume( THIS, n ) );
-    else
+    Buffer *io = THIS;
+    if (UNLIKELY(absolute) && !UNSAFE_IS_ZERO(absolute)) {
+      n -= io->offset;
+    }
+    if (UNLIKELY(n < 0)) {
+      // Undelete...
+      if (UNLIKELY((n + (ptrdiff_t)io->offset) < 0)) {
+        push_int(-1);
+      } else {
+        push_int64(io_consume(io, n));
+      }
+    } else if (LIKELY(io_avail(io, n))) {
+      push_int64(io_consume(THIS, n));
+    } else {
       push_int(-1);
+    }
   }
 
   /*! @decl int(0..)|int(-1..-1) truncate( int(0..) n )
@@ -2572,14 +2598,17 @@ PIKECLASS Buffer
    *! @returns
    *!
    *! This function returns how many more bytes of buffer is
-   *! available to rewind, or -1 on error.
+   *! available to rewind, or @expr{-1@} on error.
    *!
    *! @note
    *!
    *! Unless you add new data to the buffer using any of the add
    *! functions you can always rewind.
    *!
-   *! You can call @[unread(0)] to see how much.
+   *! You can call @expr{unread(0)@} to see how much.
+   *!
+   *! @seealso
+   *!   @[consume()]
    */
   PIKEFUN int(-1..) unread( int(0..) bytes )
   {
