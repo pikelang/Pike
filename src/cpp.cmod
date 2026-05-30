@@ -6617,11 +6617,29 @@ PIKEFUN string macro___has_embed(string arg)
 
 /*! @decl constant __AUTO_BIGNUM__
  *!
- *! This define is defined when automatic bignum conversion is enabled.
+ *! This macro is defined when automatic bignum conversion is enabled.
  *! When enabled all integers will automatically be converted to
  *! bignums when they get bigger than what can be represented by
- *! an integer, hampering performance slightly instead of crashing
- *! the program. This define is always set since Pike 8.0.
+ *! a native integer, hampering performance slightly instead of
+ *! truncating the value. This define is always set since Pike 8.0.
+ */
+
+/*! @decl constant __PIKE_BYTEORDER__
+ *!
+ *!   This macro expands to the same value as
+ *!   @expr{get_runtime_info()->native_byteorder@},
+ *!   but is available from the preprocessor.
+ *!
+ *!   It typically expands to one of
+ *!   @int
+ *!     @value 1234
+ *!       Least significant byte first (aka little-endian).
+ *!     @value 4321
+ *!       Most significant byte first (aka big-endian).
+ *!   @endint
+ *!
+ *! @seealso
+ *!   @[get_runtime_info()]
  */
 
 /*! @decl constant __NT__
@@ -7047,6 +7065,8 @@ PIKEFUN string macro___has_embed(string arg)
     simple_add_define(this, "__REAL_BUILD__",
                       DEFINETOSTR(PIKE_BUILD_VERSION));
     simple_add_define(this, "__AUTO_BIGNUM__", "1");
+    simple_add_define(this, "__PIKE_BYTEORDER__",
+                      DEFINETOSTR(PIKE_BYTEORDER));
 #ifdef __NT__
     simple_add_define(this, "__NT__", "1");
 #endif
