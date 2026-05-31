@@ -43,11 +43,16 @@ constant is_struct = 1;
 constant is_item = 1;
 int id = ADT.get_item_id();
 
-//! @decl void create(void|string|Stdio.File data)
+//! @decl void create(void|string|Stdio.InputStream data, mixed... state)
 //! @param data
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
-optional protected void create(void|string|object file) {
+//! @param state
+//!   Extra arguments that may be used by custom @[Item] decoders.
+//!   They are passed straight to @[decode()] and not handled in
+//!   any other way.
+optional protected void create(void|string|Stdio.InputStream file,
+                               mixed... state) {
   foreach(::_indices(this, 0), string index) {
     mixed val = ::`[](index, this, 0);
     if(objectp(val) && val->is_item) names[index]=val;
@@ -55,23 +60,61 @@ optional protected void create(void|string|object file) {
   items = values(names);
   sort(items->id, items);
 
-  if(file) decode(file);
+  if(file) decode(file, @state);
 }
 
-//! @decl void decode(string|Stdio.File data)
+//! @decl void low_decode(Stdio.InputStream data, mixed... state)
+//! Decodes @[data] according to the struct and populates
+//! the struct variables. The @[data] is always a file object.
+//!
+//! @param data
+//! @param state
+//!   Arguments from @[decode()].
+//!
+//! Called by @[decode()] after it has normalized its input.
+//!
+//! This is probably the function you want to overload when
+//! writing custom decoders.
+//!
+//! @note
+//!   This function did not exist prior to Pike 9.0.
+//!
+//! @seealso
+//!   @[decode()]
+protected void low_decode(Stdio.InputStream file, mixed... state) {
+  items->decode(file, @state);
+}
+
+//! @decl void decode(string|Stdio.InputStream data, mixed... state)
 //! Decodes @[data] according to the struct and populates
 //! the struct variables. The @[data] can either be a file
 //! object or a string.
-void decode(string|object file) {
-  if(stringp(file)) file = Stdio.FakeFile(file);
-  items->decode(file);
+//!
+//! @param state
+//!   Extra arguments that may be used by custom @[Item] decoders.
+//!   They are passed straight to @[Item()->decode()] and not handled in
+//!   any other way.
+//!
+//! @seealso
+//!   @[decode()]
+void decode(string|Stdio.InputStream file, mixed... state) {
+  if (file) {
+    if(stringp(file)) file = Stdio.FakeFile(file);
+    low_decode(file, @state);
+  }
 }
 
 //! Serializes the struct into a string. This string is equal
 //! to the string fed to @[decode] if nothing in the struct
 //! has been altered.
-string encode() {
-  return items->encode()*"";
+//! @param state
+//!   Extra arguments that may be used by custom @[Item] encoders.
+//!   They are passed straight to @[Item()->encode()] and not handled in
+//!   any other way.
+//! @seealso
+//!   @[encode()]
+string encode(mixed... state) {
+  return items->encode(@state)*"";
 }
 
 
@@ -145,8 +188,8 @@ class Item {
   int size;
 
   //! @ignore
-  void decode(object);
-  string encode();
+  void decode(Stdio.InputStream, mixed...);
+  string encode(mixed...);
   //! @endignore
 
   void set(mixed in) { value=in; }
@@ -177,10 +220,10 @@ class Byte {
     if(in<0 || in>255) error("Value %d out of bound (0..255).\n", in);
     value = in;
   }
-  void decode(object f) {
+  void decode(Stdio.InputStream f, mixed... state) {
     sscanf(f->read(1), "%c", value);
   }
-  string encode() {
+  string encode(mixed... state) {
     return sprintf("%c", value);
   }
 
@@ -205,10 +248,10 @@ class SByte {
     if(in<-128 || in>127) error("Value %d out of bound (-128..127).\n", in);
     value = in;
   }
-  void decode(object f) {
+  void decode(Stdio.InputStream f, mixed... state) {
     sscanf(f->read(1), "%+1c", value);
   }
-  string encode() {
+  string encode(mixed... state) {
     return sprintf("%1c", value);
   }
 
@@ -237,8 +280,12 @@ class Word {
 	    in, ~((-1)<<size*8));
     value = in;
   }
-  void decode(object f) { sscanf(f->read(size), "%"+size+"c", value); }
-  string encode() { return sprintf("%"+size+"c", value); }
+  void decode(Stdio.InputStream f, mixed... state) {
+    sscanf(f->read(size), "%"+size+"c", value);
+  }
+  string encode(mixed... state) {
+    return sprintf("%"+size+"c", value);
+  }
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d)", this_program, value);
@@ -268,8 +315,12 @@ class SWord {
 	    in, -(~(1<<size*8-1)&negmask), ~((-1)<<size*8-1));
     value = in;
   }
-  void decode(object f) { sscanf(f->read(size), "%+"+size+"c", value); }
-  string encode() { return sprintf("%"+size+"c", value); }
+  void decode(Stdio.InputStream f, mixed... state) {
+    sscanf(f->read(size), "%+"+size+"c", value);
+  }
+  string encode(mixed... state) {
+    return sprintf("%"+size+"c", value);
+  }
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d)", this_program, value);
@@ -281,11 +332,16 @@ class SWord {
 //! @[Word]
 class Drow {
   inherit Word;
-  void decode(object f) { sscanf(f->read(size), "%-"+size+"c", value); }
-  string encode() { return sprintf("%-"+size+"c", value); }
+  void decode(Stdio.InputStream f, mixed... state) {
+    sscanf(f->read(size), "%-"+size+"c", value);
+  }
+  string encode(mixed... state) {
+    return sprintf("%-"+size+"c", value);
+  }
 }
 
-//! One longword (4 bytes) in network order, integer value between 0 and 2^32.
+//! One longword (4 bytes) in network order, integer value between
+//! 0 and 2^32-1.
 //! @seealso
 //! @[Gnol]
 class Long {
@@ -299,7 +355,7 @@ class Long {
 }
 
 //! One longword (4 bytes) in network order, signed integer value
-//! -(2^31) <= x < 2^31-1.
+//! -(2^31) <= x <= 2^31-1.
 class SLong {
   inherit SWord;
   int size = 4;
@@ -310,7 +366,7 @@ class SLong {
   }
 }
 
-//! One longword (4 bytes) in intel order, integer value between 0 and 2^32.
+//! One longword (4 bytes) in intel order, integer value between 0 and 2^32-1.
 //! @seealso
 //! @[Long]
 class Gnol {
@@ -359,13 +415,13 @@ class Chars {
     if(dynsize) dynsize->set(sizeof(in));
     value = in;
   }
-  void decode(object f) {
+  void decode(Stdio.InputStream f, mixed... state) {
     if(objectp(dynsize))
       size =  dynsize->get();
     value=f->read(size);
     if(!value || sizeof(value)!=size) error("End of data reached.\n");
   }
-  string encode() { return value; }
+  string encode(mixed... state) { return value; }
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
@@ -391,7 +447,7 @@ class Varchars {
     value = in;
   }
 
-  void decode(object f) {
+  void decode(Stdio.InputStream f, mixed... state) {
     String.Buffer buf = String.Buffer( predef::max(256,min) );
     string next;
     do {
@@ -399,7 +455,7 @@ class Varchars {
     } while (next && next!="\0" && buf->add(next));
     set(buf->get());
   }
-  string encode() {
+  string encode(mixed... state) {
     return value + "\0";
   }
 }
