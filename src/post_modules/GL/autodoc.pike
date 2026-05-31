@@ -228,6 +228,13 @@ class Segment
   }
 }
 
+class NullSegment
+{
+  inherit Segment;
+  void output_autodoc(Formatter f, mapping context) { }
+  void output_xml(Formatter f, mapping context) { }
+}
+
 /* Continuation:
  * 0 = start of paragraph
  * 1 = preceding text ends in non-whitespace
@@ -285,6 +292,11 @@ class TextSegment(string text)
     f->out(replace(xml_to_ascii->feed(Parser.XML.text_quote(output(context)))
                    ->drain(), "*/", "&#42;/"));
   }
+
+  void cleanup_doc()
+  {
+    text = replace(text, "a pointer to an array", "an array");
+  }
 }
 
 class ContainerSegment(array contents)
@@ -308,6 +320,77 @@ class ContainerSegment(array contents)
       if (c = c->visit(func, @args))
         contents[i] = c;
     return ::visit(func, @args);
+  }
+
+  protected array(int) index_of_keys(string ... keys)
+  {
+    int pos = 0;
+    array(int) res = allocate(sizeof(keys));
+    string s = "";
+    foreach(contents;; Segment c)
+      if (c->text)
+        s += c->text;
+    foreach(keys; int i; string key)
+      if (pos < 0)
+        res[i] = -1;
+      else {
+        int n = search(s, key, pos);
+        res[i] = n;
+        pos = (n<0? -1 : n+sizeof(key));
+      }
+    return res;
+  }
+  
+  void replace_sequence(string prefix, string suffix, mixed ... replacement)
+  {
+    [int start, int end] = index_of_keys(prefix, suffix);
+    if (end < 0)
+      return;
+    end += sizeof(suffix);
+    int starti = 0, endi = sizeof(contents);
+    foreach(contents; int i; Segment c)
+      if (c->text) {
+        int cut1 = -1, cut2 = -1;
+        if (start < 0)
+          ;
+        else if (start == 0) {
+          starti = i;
+          --start;
+        } else if (start < sizeof(c->text)) {
+          cut1 = start-1;
+          starti = i+1;
+          start = -1;
+        } else
+          start -= sizeof(c->text);
+        if (end < 0)
+          ;
+        else if (end == 0) {
+          endi = i;
+          --end;
+        } else if (end < sizeof(c->text)) {
+          cut2 = end;
+          endi = i;
+          end = -1;
+        } else
+          end -= sizeof(c->text);
+        if (cut1 >= 0 || cut2 >= 0) {
+          if (cut2 < 0)
+            c->text = c->text[..cut1];
+          else if (cut1 < 0)
+            c->text = c->text[cut2..];
+          else {
+            /* Split current segment into two */
+            contents = contents[..i]+({ mksegment(replacement, c->text[cut2..]) })+contents[i+1..];
+            c->text = c->text[..cut1];
+            return;
+          }
+        }
+      } else {
+        if (!start) { starti = i; --start; }
+        if (!end) { endi = i; --end; }
+      }
+    contents = (starti > 0? contents[..starti-1] : ({})) +
+      ({ mksegment(replacement) }) + contents[endi..];
   }
 }
 
@@ -375,6 +458,14 @@ class ParagraphSegment
     f->allow_break();
     f->outnb(">");
     context->continuation = 0;
+  }
+
+  Segment remove_paragraph(string key)
+  {
+    if (index_of_keys(key)[0] >= 0)
+      return NullSegment();
+    else
+      return UNDEFINED;
   }
 }
 
@@ -607,6 +698,19 @@ class VariableListSegment
     f->allow_break();
     f->outnb(">");
   }
+
+  Segment remove_variablelist(string key)
+  {
+    int found = 0;
+    visit(lambda(Segment seg) {
+      if (seg->text && search(seg->text, key) >= 0)
+        found = 1;
+    });
+    if (found)
+      return NullSegment();
+    else
+      return UNDEFINED;
+  }
 }
 
 class VarListEntrySegment
@@ -673,6 +777,19 @@ class VarListEntrySegment
     foreach(terms;; Segment term)
       term->visit(c->add);
     terms = c->get();
+  }
+
+  Segment remove_varlistentry(string key)
+  {
+    int found = 0;
+    foreach(terms;; Segment term) {
+      term->visit(lambda(Segment seg) {
+        if (seg->text && search(seg->text, key) >= 0)
+          found = 1;
+      });
+      if (found)
+        return NullSegment();
+    }
   }
 }
 
@@ -783,6 +900,74 @@ class RefEntrySegment(string id, array(FuncPrototypeSegment) synopsis,
       if (s = s->visit(func, @args))
         sections[i] = s;
     return ::visit(func, @args);
+  }
+
+  void cleanup_doc()
+  {
+    switch(id) {
+    case "glColor":
+      visit("replace_sequence", "glColor has two major variants:",
+            "glColor4 variants specify all four color components explicitly.",
+            "If no alpha value has been given, 1.0 (full intensity) is implied.");
+      visit("remove_paragraph", "three or four signed byte, short, or long");
+      visit("replace_sequence", "Included only in the four-argument glColor4 ",
+            "commands.", "");
+      break;
+    case "glRasterPos":
+      visit("replace_sequence", "glRasterPos4 specifies object coordinates",
+            "to 0 and 1.", "The variable ", tag("z", "i"),
+            " defaults to 0 and ", tag("w", "i"), " defaults to 1.");
+      break;
+    case "glCallLists":
+      visit("replace_sequence", " more than one display list.",
+            "follows:", " more than one display list.");
+      visit("remove_variablelist", "unsigned bytes");
+      visit("remove_paragraph", "null-terminated");
+      visit("remove_varlistentry", "n");
+      visit("remove_varlistentry", "type");
+      visit("replace_sequence", "The pointer type is void",
+            ".", "");
+      m_delete(sections, "errors");
+      break;
+    case "glDeleteTextures":
+      visit("remove_varlistentry", "n");
+      visit("remove_paragraph", "is negative");
+      visit("replace_sequence", "an array of textures to be deleted.", "",
+            "the textures to be deleted.");
+      break;
+    case "glGenTextures":
+      visit("replace_sequence", "texture names in ", ".",
+            "texture names in an array.");
+      visit("remove_varlistentry", "textures");
+      break;
+    case "glDrawElements":
+      visit("replace_sequence", "it uses ", " sequential elements",
+            "it uses sequential elements");
+      visit("replace_sequence", "enabled array, starting at", "",
+            "enabled array");
+      visit("remove_varlistentry", "count");
+      visit("remove_varlistentry", "type");
+      visit("replace_sequence", "a pointer to the location where ",
+            " are stored", "an array of indices");
+      visit("remove_paragraph", "is negative");
+      break;
+    case "glMapGrid":
+      visit("replace_sequence", "glMapGrid1 and glMapGrid2 specify the linear",
+            "", RefSegment("glMapGrid"), " specifies the linear");
+      visit("replace_sequence", "glMapGrid1 specifies ",
+            "", RefSegment("glMapGrid"), " with three arguments specifies ");
+      visit("replace_sequence", "glMapGrid2 specifies ",
+            "", RefSegment("glMapGrid"), " with six arguments specifies ");
+      visit("replace_sequence", "(glMapGrid2 only).", "",
+            "(With six arguments only).");
+      break;
+    case "glGet":
+      visit("replace_sequence", "These four commands return ", "",
+            "This command returns ");
+      visit("replace_sequence", "returned,", "returned data.",
+            "returned.");
+      break;
+    }
   }
 }
 
@@ -929,7 +1114,8 @@ void visit_refentry(string id, mapping context)
       new_name = prots[0]->name;
   }
   
-  context->parent[new_name] = RefEntrySegment(id, prots, context->refsect1);
+  (context->parent[new_name] =
+   RefEntrySegment(id, prots, context->refsect1))->visit("cleanup_doc");
 }
 
 mixed visit_element(ElementNode e, array(mixed) children, mapping context)
