@@ -34,6 +34,10 @@ protected multiset(string) modifiers =
    "__async__", "__generator__",
 >);
 
+protected multiset(string) attributes =
+(< "__attribute__", "__deprecated__", "__experimental__", "__factory__",
+>);
+
 protected multiset(string) scopeModules =
 (< "predef", "top", "lfun", "efun" >);
 
@@ -937,6 +941,42 @@ array(string) parseModifiers() {
   return mods;
 }
 
+//! Parse a set of attributes from the token stream.
+array(AttributeType) parseAttributes() {
+  string s = peekToken();
+  array(string) attrs = ({ });
+  while (attributes[s]) {
+    readToken();
+    if (s == "__attribute__") {
+      eat("(");
+      s = readToken();
+      skip(",");
+      eat(")");
+    } else {
+      string tmp = peekToken();
+      if (tmp == "(") {
+        eat("(");
+        eat(")");
+      }
+    }
+    if (has_prefix(s, "__") && has_suffix(s, "__")) {
+      s = "\"" + s[2..<2] + "\"";
+    }
+    if (!has_value(attrs, s)) {
+      attrs += ({ s });
+    }
+    s = peekToken();
+  }
+
+  return map(attrs, lambda(string attr) {
+    AttributeType a = AttributeType();
+    a->attribute = attr;
+    a->subtype = UNDEFINED;
+    a->prefix = 1;
+    return a;
+  });
+}
+
 //! Parse the next literal constant (if any) from the token stream.
 string|zero parseLiteral() {
   string sign = peekToken() == "-" ? readToken() : "";
@@ -1010,8 +1050,16 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
       break;
     }
   }
+
   array(string) modifiers = parseModifiers();
   string s = peekToken(WITH_NL);
+  while (s == "\n") {
+    readToken(WITH_NL);
+    s = peekToken(WITH_NL);
+  }
+
+  array(AttributeType) attributes = parseAttributes();
+  s = peekToken(WITH_NL);
   while (s == "\n") {
     readToken(WITH_NL);
     s = peekToken(WITH_NL);
@@ -1022,6 +1070,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     c->position = position;
     c->annotations = annotations;
     c->modifiers = modifiers;
+    c->attributes = attributes;
     readToken();
     c->name = eatIdentifier();
     return c;
@@ -1031,6 +1080,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     m->position = position;
     m->annotations = annotations;
     m->modifiers = modifiers;
+    m->attributes = attributes;
     return m;
   }
   else if (s == "constant") {
@@ -1038,6 +1088,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     c->position = position;
     c->annotations = annotations;
     c->modifiers = modifiers;
+    c->attributes = attributes;
     readToken();
     int save_pos = tokenPtr;
     mixed err = catch (c->type = parseOrType());
@@ -1073,6 +1124,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     i->position = position;
     i->annotations = annotations;
     i->modifiers = modifiers;
+    i->attributes = attributes;
     readToken();
     i->name = i->classname = parseProgramName();
     if ((s == "inherit") && (peekToken() == ":")) {
@@ -1109,6 +1161,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     t->position = position;
     t->annotations = annotations;
     t->modifiers = modifiers;
+    t->attributes = attributes;
     readToken();
     t->type = parseOrType();
     t->name = eatIdentifier();
@@ -1119,6 +1172,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     e->position = position;
     e->annotations = annotations;
     e->modifiers = modifiers;
+    e->attributes = attributes;
     readToken();
     if (peekToken() != "{")
       e->name = eatIdentifier();
@@ -1150,6 +1204,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
       Method m = Method();
       m->annotations = annotations;
       m->modifiers = modifiers;
+      m->attributes = attributes;
       m->name = name;
       m->position = position;
       m->returntype = t;
@@ -1163,6 +1218,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
         Variable v = Variable();
 	v->annotations = annotations;
         v->modifiers = modifiers;
+        v->attributes = attributes;
         v->name = name;
 	v->position = position;
         v->type = t;

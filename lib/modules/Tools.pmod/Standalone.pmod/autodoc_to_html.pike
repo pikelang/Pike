@@ -358,6 +358,19 @@ ADT.Stack old_class_name = ADT.Stack();
 string parse_class(Node n, void|int noheader) {
   string ret ="";
   if(!noheader) {
+    string modifiers_etc = "";
+    Node modifiers = n->get_first_element("modifiers");
+    if (modifiers) {
+      foreach(modifiers->get_elements(), Node m) {
+        modifiers_etc += " " + parse_type(m);
+      }
+    }
+    Node attributes = n->get_first_element("attributes");
+    if (attributes) {
+      foreach(attributes->get_elements("attribute"), Node a) {
+        modifiers_etc += " " + parse_type(a);
+      }
+    }
     array(Node) generics =
       n->get_elements("docgroup")->get_first_element("generic") -
       ({ 0 });
@@ -370,7 +383,7 @@ string parse_class(Node n, void|int noheader) {
         "</b> &gt;)<b class='ms datatype'>";
     }
 
-    ret += "<dl><dt>"
+    ret += "<dl><dt>" + modifiers_etc +
       "<h2 class='header'>Class <b class='ms datatype'>" +
       n->get_attributes()->class_path + n->get_attributes()->name +
       generics_decl + "</b>"
@@ -1168,8 +1181,8 @@ string parse_type(Node n, void|string debug) {
 
   case "attribute":
     string attr = n->get_first_element("attribute")->value_of_node();
-    string subtype =
-      parse_type(n->get_first_element("subtype")->get_first_element());
+    d = n->get_first_element("subtype");
+    string subtype = d? parse_type(d->get_first_element()): "";
     if (n->get_first_element("prefix")) {
       if (attr == "\"deprecated\"") {
 	ret += "<code class='deprecated'>__deprecated__</code> " +
@@ -1255,6 +1268,7 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "source-position":
   case "modifiers":
   case "annotations":
+  case "attributes":
   case "classname":
   case "generic":
     // We're not interrested in the stuff under the above nodes.
@@ -1428,6 +1442,8 @@ string parse_not_doc(Node n) {
       {
           ret += "<code>";
           cc = c->get_first_element("modifiers");
+          if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+          cc = c->get_first_element("attributes");
           if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
           ret += parse_type(get_first_element(c->get_first_element("returntype")));
           ret += " ";
