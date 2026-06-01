@@ -6627,7 +6627,7 @@ PIKEFUN string macro___has_embed(string arg)
 /*! @decl constant __PIKE_BYTEORDER__
  *!
  *!   This macro expands to the same value as
- *!   @expr{get_runtime_info()->native_byteorder@},
+ *!   @expr{Pike.get_runtime_info()->native_byteorder@},
  *!   but is available from the preprocessor.
  *!
  *!   It typically expands to one of
@@ -6639,7 +6639,7 @@ PIKEFUN string macro___has_embed(string arg)
  *!   @endint
  *!
  *! @seealso
- *!   @[get_runtime_info()]
+ *!   @[Pike.get_runtime_info()]
  */
 
 /*! @decl constant __NT__
