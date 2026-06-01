@@ -39,6 +39,15 @@ enum GTypelibBlobType {
 }
 
 // Typelib files are in native byte-order.
+//! @decl private constant program(ADT.Struct.Item) guint8 = Byte
+//!   8-bit unsigned integer.
+
+//! @decl private constant program(ADT.Struct.Item) guint16
+//!   16-bit unsigned integer in native byte-order.
+
+//! @decl private constant program(ADT.Struct.Item) guint32
+//!   32-bit unsigned integer in native byte-order.
+
 #define guint8 Byte
 #if __PIKE_BYTEORDER__ == 1234
 #define guint16 Drow
@@ -196,6 +205,8 @@ __experimental__ class Header {
   inherit Struct;
 
   Item magic = Chars(16);
+  //!
+
   Item major_version = Byte();
   Item minor_version = Byte();
   Item reserved = guint16();
