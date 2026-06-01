@@ -124,10 +124,13 @@ class Struct
   //!   Indentation level in characters. This is typically increased
   //!   in increments of @expr{2@}.
   //!
+  //! @param header
+  //!   Header if known.
+  //!
   //! @note
   //!   The default implementation just renders an XML comment
   //!   with a note that @tt{render_xml()@} is not implemented.
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     buf->sprintf("%*s<!-- %O->render_xml() not implemented! -->\n",
                  indent, "", object_program(this));
@@ -150,7 +153,7 @@ class Blob
     if (!(attributes = attribute_lookup[file_offset])) {
       attributes = ({});
     }
-    ::low_decode(file, @state);
+    ::low_decode(file, attribute_lookup, @state);
   }
 }
 
@@ -171,10 +174,11 @@ class AttributeBlob {
     } else {
       value = guint32();
     }
+    names["value"] = value;
     value->decode(file, attribute_lookup, @state);
   }
 
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     string|int val = value->get();
     if (stringp(val)) {
@@ -196,9 +200,8 @@ __experimental__ class Header {
   Item minor_version = Byte();
   Item reserved = guint16();
   Item n_entries = guint16();
-  array(object) entries = ({});
+  array(DirEntry) entries = ({});
   Item n_local_entries = guint16();
-  array(object) local_entries = ({});
   Item directory = guint32();
   Item n_attributes = guint32();
   Item attributes = guint32();
@@ -268,22 +271,33 @@ __experimental__ class Header {
     return sprintf("%s: entries: %O\n", ::_sprintf(c), entries);
   }
 
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+    buf->sprintf(#"\
+%*s<repository version='1.0'
+%*s            xmlns='http://www.gtk.org/introspection/core/1.0'
+%*s            xmlns:c='http://www.gtk.org/introspection/c/1.0'
+%*s            xmlns:glib='http://www.gtk.org/introspection/glib/1.0'>
+", indent, "", indent, "", indent, "", indent, "");
+    foreach(dependencies->get()/"|", string dep) {
+      if (sizeof(dep)) {
+        array(string) a = dep/"-";
+        buf->sprintf("%*s<include name='%s' version='%s'/>\n",
+                     indent + 2, "",
+                     a[0], (sizeof(a) > 1)?a[1]:"");
+      }
+    }
     buf->sprintf("%*s<namespace name='%s'"
                  " version='%s' c:prefix='%s'>\n",
-                 indent, "",
+                 indent + 2, "",
                  namespace->get(), nsversion->get(), c_prefix->get());
-    foreach(dependencies->get()/"|", string dep) {
-      array(string) a = dep/"-";
-      buf->sprintf("%*s<include name='%s' version='%s'/>\n",
-                   indent + 2, "",
-                   a[0], (sizeof(a) > 1)?a[1]:"");
-    }
     foreach(entries, object entry) {
-      entry->render_xml(buf, indent + 2);
+      entry->render_xml(buf, indent + 4, this);
     }
-    buf->sprintf("%*s</namespace>\n", indent, "");
+    buf->sprintf(#"\
+%*s</namespace>
+%*s</repository>
+", indent + 2, "", indent, "");
   }
 }
 
@@ -306,28 +320,36 @@ class DirEntry {
 
   Item local_reserved = guint16();
   Item name = gstring();
-  Item offset = guint32();
 
-  string|array(Item) blob = ({});
+  Item offset;
+
+  Item blob;
 
   void low_decode(Stdio.InputBlockFile file, mixed... state)
   {
     ::low_decode(file, @state);
 
-    int pos = file->tell();
+    m_delete(names, "blob");
+    if (local_reserved->get() & 0x0001) {
+      offset = guint32();
+      offset->decode(file);
+      names["offset"] = offset;
 
-    if (offset->get()) {
-      file->seek(offset->get());
-      if (local_reserved->get() & 0x0001) {
-        blob = ({ blob_factory(file, blob_type->get(), @state) });
+      if (offset->get()) {
+        int pos = file->tell();
+        file->seek(offset->get());
+        blob = blob_factory(file, blob_type->get(), @state);
+        file->seek(pos);
+        names["blob"] = blob;
       } else {
-        Item var_string = Varchars();
-        var_string->decode(file);
-        blob = var_string->get();
+        blob = UNDEFINED;
       }
+    } else {
+      offset = gstring();
+      offset->decode(file);
+      names["offset"] = offset;
+      blob = UNDEFINED;
     }
-
-    file->seek(pos);
   }
 
   protected string _sprintf(int c)
@@ -337,13 +359,22 @@ class DirEntry {
                    name->get(), blob);
   }
 
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    if (arrayp(blob) && sizeof(blob)) {
-      blob[0]->render_xml(buf, indent);
+    if (blob) {
+      blob->render_xml(buf, indent, header);
     } else {
-      buf->sprintf("%*s<record name='%s'>\n", indent, "", name->get());
-      buf->sprintf("%*s</record>\n", indent, "");
+      string|int off = offset->get();
+      if (stringp(off) && sizeof(off)) {
+#ifdef PARSER_TYPELIB_DEBUG
+        buf->sprintf("%*s<record name='%s' namespace='%s'>\n",
+                     indent, "", name->get(), off);
+        buf->sprintf("%*s</record>\n", indent, "");
+#endif
+      } else {
+        buf->sprintf("%*s<record name='%s'>\n", indent, "", name->get());
+        buf->sprintf("%*s</record>\n", indent, "");
+      }
     }
   }
 }
@@ -503,7 +534,7 @@ class ValueBlob {
     ::low_decode(file, @state);
   }
 
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     int val = value->get();
     if (!(flags->get() & 0x00000002)) {
@@ -516,7 +547,7 @@ class ValueBlob {
     buf->sprintf("%*s<member name='%s' value='%d'>\n",
                  indent, "", name->get(), val);
     // FIXME: <attribute name="c:identifier" value="XXXX_XXXX"/>
-    attributes->render_xml(buf, indent + 2);
+    attributes->render_xml(buf, indent + 2, header);
     buf->sprintf("%*s</member>\n", indent, "");
   }
 }
@@ -564,7 +595,7 @@ class StructBlob {
   Item copy_func = gstring();
   Item free_func = gstring();
 
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
       buf->sprintf("%*s<glib:boxed glib:name='%s'"
@@ -633,14 +664,14 @@ class EnumBlob {
     }
   }
 
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     buf->sprintf("%*s<enumeration name='%s'>\n", indent, "", name->get());
     foreach(values, Struct value) {
-      value->render_xml(buf, indent + 2);
+      value->render_xml(buf, indent + 2, header);
     }
     foreach(methods, Struct method) {
-      method->render_xml(buf, indent + 2);
+      method->render_xml(buf, indent + 2, header);
     }
     buf->sprintf("%*s</enumeration>\n", indent, "");
   }
@@ -720,7 +751,7 @@ class ObjectBlob {
   Item reserved3 = guint32();
   Item reserved4 = guint32();
 
-  void render_xml(String.Buffer buf, int|void indent)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     buf->sprintf("%*s<class name='%s' parent='%d' "
                  "glib:type-name='%s' glib:get-type='%s'>\n",
