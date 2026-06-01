@@ -563,22 +563,55 @@ class AttributeType {
   protected void create() { ::create("__attribute__"); }
 
   string print() {
-    if (attribute == "\"deprecated\"") {
-      return prefix?"__deprecated__ " + subtype->print():
-	"__deprecated__(" + subtype->print() + ")";
-    } else if (attribute == "\"experimental\"") {
-      return prefix?"__experimental__ " + subtype->print():
-        "__experimental__(" + subtype->print() + ")";
-    } else {
-      return prefix?"__attribute__(" + attribute + ") " + subtype->print():
-	"__attribute__(" + attribute + ", " + subtype->print() + ")";
+    int flags;
+    string ret = ([
+      "\"deprecated\"": "__deprecated__",
+      "\"experimental\"": "__experimental__",
+      "\"factory\"": "__factory__",
+    ])[attribute];
+
+    if (!ret) {
+      ret = "__attribute__(" + attribute;
+      flags = 1;
+    }
+
+    if (prefix) {
+      if (flags & 1) {
+        ret += ")";
+        flags = 0;
+      }
+      if (subtype) {
+        ret += " ";
+      }
+    }
+
+    if (subtype) {
+      if (prefix) {
+        if (flags) {
+          ret += ")";
+          flags = 0;
+        }
+        ret += " ";
+      } else if (flags) {
+        ret += ", ";
+      } else {
+        ret += "(";
+        flags = 1;
+      }
+
+      ret += subtype->print();
+    }
+
+    if (flags) {
+      ret += ")";
     }
   }
+
   string xml(.Flags|void flags) {
     return xmltag("attribute",
 		  (prefix?xmltag("prefix"):"") +
 		  xmltag("attribute", attribute) +
-		  xmltag("subtype", subtype->xml(flags)));
+                  (subtype?(xmltag("subtype", subtype->xml(flags))):""));
   }
 }
 
@@ -759,6 +792,9 @@ class PikeObject {
   //! The set of modifiers affecting this entity.
   array(string) modifiers = ({ });
 
+  //! The set of attributes affecting this entity.
+  array(AttributeType) attributes = ({ });
+
   //! The name of the entity.
   string name;
 
@@ -789,6 +825,8 @@ class PikeObject {
       s += xmltag("annotations", annotations->xml(flags) * "");
     if (sizeof(modifiers))
       s += xmltag("modifiers", map(modifiers, xmltag) * "");
+    if (sizeof(attributes))
+      s += xmltag("attributes", attributes->xml(flags) * "");
     return s;
   }
 
