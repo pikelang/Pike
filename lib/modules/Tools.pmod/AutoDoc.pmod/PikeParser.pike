@@ -919,31 +919,39 @@ array(string) parseModifiers() {
   return mods;
 }
 
-//! Parse a set of attributes from the token stream.
+//! Parse a set of prefix attributes from the token stream.
 array(AttributeType) parseAttributes() {
   string s = peekToken();
   array(string) attrs = ({ });
-  while (attributes[s]) {
-    readToken();
-    if (s == "__attribute__") {
-      eat("(");
-      s = readToken();
-      skip(",");
-      eat(")");
-    } else {
-      string tmp = peekToken();
-      if (tmp == "(") {
-        eat("(");
-        eat(")");
+  int save_pos = tokenPtr;
+  mixed err = catch {
+      while (attributes[s]) {
+        readToken();
+        if (s == "__attribute__") {
+          eat("(");
+          s = readToken();
+          skip(",");
+          eat(")");
+        } else {
+          string tmp = peekToken();
+          if (tmp == "(") {
+            eat("(");
+            eat(")");
+          }
+        }
+        if (has_prefix(s, "__") && has_suffix(s, "__")) {
+          s = "\"" + s[2..<2] + "\"";
+        }
+        if (!has_value(attrs, s)) {
+          attrs += ({ s });
+        }
+        s = peekToken();
+        save_pos = tokenPtr;
       }
-    }
-    if (has_prefix(s, "__") && has_suffix(s, "__")) {
-      s = "\"" + s[2..<2] + "\"";
-    }
-    if (!has_value(attrs, s)) {
-      attrs += ({ s });
-    }
-    s = peekToken();
+    };
+  if (err) {
+    // Probably an attibuted type. Let the type parser handle it.
+    tokenPtr = save_pos;
   }
 
   return map(attrs, lambda(string attr) {
