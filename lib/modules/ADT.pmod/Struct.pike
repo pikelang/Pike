@@ -154,6 +154,11 @@ protected array(string) _indices() {
 
 //! The values of a struct is the values of the struct items.
 protected array _values() {
+  if (sizeof(items) != sizeof(names)) {
+    // Regenerate.
+    items = values(names);
+    sort(items->id, items);
+  }
   return items->get();
 }
 
