@@ -1243,6 +1243,7 @@ class Node
 
     if (sizeof(inherits) || sizeof(children)) {
       make_inherit_graph(contents);
+      contents->add("<hr/>\n");
     }
     contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
     contents->add( parse_children(n, "namespace", parse_namespace, 1) );
