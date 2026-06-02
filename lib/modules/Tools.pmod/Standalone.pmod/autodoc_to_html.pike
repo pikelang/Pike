@@ -357,50 +357,54 @@ string parse_annotations(Node n, void|int noheader)
 ADT.Stack old_class_name = ADT.Stack();
 string parse_class(Node n, void|int noheader) {
   string ret ="";
+  array(Node) generics =
+    n->get_elements("docgroup")->get_first_element("generic") -
+    ({ 0 });
+  string generics_decl = "";
+  if (sizeof(generics)) {
+    array(mapping(string:string)) attrs = generics->get_attributes();
+    sort((array(int))attrs->index, attrs);
+    generics_decl = " (&lt; <b class='ms datatype'>" +
+      (map(attrs->name, quote) * "</b>, <b class='ms datatype'>") +
+      "</b> &gt;)";
+  }
   if(!noheader) {
-    string modifiers_etc = "";
-    Node modifiers = n->get_first_element("modifiers");
-    if (modifiers) {
-      foreach(modifiers->get_elements(), Node m) {
-        modifiers_etc += " " + parse_type(m);
-      }
-    }
-    Node attributes = n->get_first_element("attributes");
-    if (attributes) {
-      foreach(attributes->get_elements("attribute"), Node a) {
-        modifiers_etc += " " + parse_type(a);
-      }
-    }
-    array(Node) generics =
-      n->get_elements("docgroup")->get_first_element("generic") -
-      ({ 0 });
-    string generics_decl = "";
-    if (sizeof(generics)) {
-      array(mapping(string:string)) attrs = generics->get_attributes();
-      sort((array(int))attrs->index, attrs);
-      generics_decl = "</b> (&lt; <b class='ms datatype'>" +
-        (map(attrs->name, quote) * "</b>, <b class='ms datatype'>") +
-        "</b> &gt;)<b class='ms datatype'>";
-    }
-
-    ret += "<dl><dt>" + modifiers_etc +
+    ret += "<dl><dt>"
       "<h2 class='header'>Class <b class='ms datatype'>" +
-      n->get_attributes()->class_path + n->get_attributes()->name +
-      generics_decl + "</b>"
+      n->get_attributes()->class_path + n->get_attributes()->name + "</b>" +
+      generics_decl +
       "</h2>\n"
       "</dt><dd>";
+  }
+  string modifiers_etc = "";
+  Node modifiers = n->get_first_element("modifiers");
+  if (modifiers) {
+    foreach(modifiers->get_elements(), Node m) {
+      modifiers_etc += parse_type(m) + " ";
+    }
+  }
+  Node attributes = n->get_first_element("attributes");
+  if (attributes) {
+    foreach(attributes->get_elements("attribute"), Node a) {
+      modifiers_etc += parse_type(a) + " ";
+    }
   }
 
   Node a = n->get_first_element("annotations");
   Node c = n->get_first_element("doc");
   old_class_name->push(class_name);
   class_name = n->get_attributes()->class_path+n->get_attributes()->name;
-  if(a || c) {
-    ret += "<dl class='group--doc'>";
-    if (a) ret += parse_annotations(a);
-    if (c) ret += parse_doc(c);
-    ret += "</dl>";
-  }
+
+  ret += "<dl class='group--doc'>";
+  ret += "<dd><code><code class='datatype'>" + modifiers_etc +
+    "class</code> " + quote(n->get_attributes()->class_path) +
+    "<span class='constant'>" + quote(n->get_attributes()->name) + "</class>"+
+    generics_decl + "</code></dd>\n";
+
+  if (a) ret += parse_annotations(a);
+  if (c) ret += parse_doc(c);
+
+  ret += "</dl>";
 
   if((sizeof(n->get_elements("doc"))>1) &&
      ((flags & (Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_DEBUG)) ==

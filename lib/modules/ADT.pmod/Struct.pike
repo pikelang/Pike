@@ -192,10 +192,11 @@ class Item {
   protected mixed value;
   int size;
 
-  //! @ignore
+  //! Entry point for decoding.
   void decode(Stdio.InputStream, mixed...);
+
+  //! Entry point for encoding.
   string encode(mixed...);
-  //! @endignore
 
   void set(mixed in) { value=in; }
   mixed get() { return value; }

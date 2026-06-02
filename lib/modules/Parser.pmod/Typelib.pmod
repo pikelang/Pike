@@ -39,6 +39,15 @@ enum GTypelibBlobType {
 }
 
 // Typelib files are in native byte-order.
+//! @decl private constant program(ADT.Struct.Item) guint8 = Byte
+//!   8-bit unsigned integer.
+
+//! @decl private constant program(ADT.Struct.Item) guint16
+//!   16-bit unsigned integer in native byte-order.
+
+//! @decl private constant program(ADT.Struct.Item) guint32
+//!   32-bit unsigned integer in native byte-order.
+
 #define guint8 Byte
 #if __PIKE_BYTEORDER__ == 1234
 #define guint16 Drow
@@ -196,6 +205,8 @@ __experimental__ class Header {
   inherit Struct;
 
   Item magic = Chars(16);
+  //!
+
   Item major_version = Byte();
   Item minor_version = Byte();
   Item reserved = guint16();
@@ -437,6 +448,20 @@ class SignatureBlob {
   Item flags = guint16();
 
   Item n_arguments = guint16();
+
+  array(ArgBlob) arguments = ({});
+
+  void low_decode(Stdio.InputBlockFile file,
+                  mapping(int:array(this_program)) attribute_lookup,
+                  mixed... state)
+  {
+    ::low_decode(file, attribute_lookup, @state);
+
+    arguments = ({});
+    for (int i = 0; i < n_arguments->get(); i++) {
+      arguments += ({ ArgBlob(file, attribute_lookup, @state) });
+    }
+  }
 }
 
 class CommonBlob {
@@ -590,18 +615,44 @@ class StructBlob {
   Item size = guint32();
 
   Item n_fields = guint16();
+  array(FieldBlob) fields = ({});
   Item n_methods = guint16();
+  array(FunctionBlob) methods = ({});
 
   Item copy_func = gstring();
   Item free_func = gstring();
+
+  void low_decode(Stdio.InputBlockFile file,
+                  mapping(int:array(AttributeBlob)) attribute_lookup,
+                  mixed... state)
+  {
+    ::low_decode(file, attribute_lookup, @state);
+
+    fields = ({});
+    for (int i = 0; i < n_fields->get(); i++) {
+      fields += ({ FieldBlob(file, attribute_lookup, @state) });
+    }
+
+    methods = ({});
+    for (int i = 0; i < n_methods->get(); i++) {
+      methods += ({ FunctionBlob(file, attribute_lookup, @state) });
+    }
+  }
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
       buf->sprintf("%*s<glib:boxed glib:name='%s'"
-                   " glib:type-name='%s' glib:get-type='%s'/>\n",
+                   " glib:type-name='%s' glib:get-type='%s'>\n",
                    indent, "", name->get(),
                    gtype_name->get(), gtype_init->get());
+      foreach(fields, FieldBlob field) {
+        field->render_xml(buf, indent + 2, header);
+      }
+      foreach(methods, FunctionBlob method) {
+        method->render_xml(buf, indent + 2, header);
+      }
+      buf->sprintf("%*s</glib:boxed>\n", indent, "");
     } else {
       buf->sprintf("%*s<record name='%s'/>\n", indent, "", name->get());
     }
@@ -753,11 +804,33 @@ class ObjectBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<class name='%s' parent='%d' "
-                 "glib:type-name='%s' glib:get-type='%s'>\n",
-                 indent, "",
-                 name->get(), parent->get(),
-                 gtype_name->get(), gtype_init->get());
+    buf->sprintf("%*s<class name='%s'", indent, "", name->get());
+
+    int p = parent->get();
+    if (p > 0) {
+      if (header && (p <= sizeof(header->entries))) {
+        DirEntry entry = header->entries[p-1];
+        werror("Entry: %O\n", (mapping)entry);
+        if (stringp(entry->offset)) {
+          buf->sprintf(" parent='%s.%s'", entry->offset, entry->name);
+        } else {
+          buf->sprintf(" parent='%s'", entry->name);
+        }
+      } else {
+        buf->sprintf(" parent='%d'", parent->get());
+      }
+    }
+
+    if (gtype_name->get() != "") {
+      buf->sprintf(" glib:type-name='%s'", gtype_name->get());
+    }
+
+    if (gtype_init->get() != "") {
+      buf->sprintf(" glib:get-type='%s'", gtype_init->get());
+    }
+
+    buf->add(">\n");
+    // FIXME: Class content.
     buf->sprintf("%*s</class>\n", indent, "");
   }
 }
