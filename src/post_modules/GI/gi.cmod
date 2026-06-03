@@ -4530,9 +4530,6 @@ PIKEFUN Repository get_default_repository()
   ref_push_object(default_repository);
 }
 
-/*! @endmodule
- */
-
 /*! @decl array(utf8_string) get_search_path()
  */
 PIKEFUN array(utf8_string) get_search_path()
@@ -4555,6 +4552,9 @@ PIKEFUN array(utf8_string) get_search_path()
 
   f_aggregate(Pike_sp - save_sp);
 }
+
+/*! @endmodule
+ */
 
 /*! @endnamespace
  */
