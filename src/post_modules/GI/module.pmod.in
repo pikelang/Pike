@@ -30,9 +30,8 @@ inherit @module@ : GI;
 //!   The indexed modules may optionally be prefixed by
 //!   an api version number. Eg @expr{GI.repository.3.0.Gtk@}
 //!   (for Gtk 3.0) or @expr{GI.repository.4.0.Gtk@} (for Gtk 4.0).
-//!   If no version is been specified, the latest version
-//!   will be returned unless an older version has already
-//!   been loaded.
+//!   If no version is specified, the latest version will be
+//!   returned unless an older version has already been loaded.
 //!
 //! @seealso
 //!   @[Cairo], @[GDK], @[GTK], @[Pango]
