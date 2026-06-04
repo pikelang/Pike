@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //!
 //! Parser for the typelib binary format.
 //!
@@ -15,6 +17,9 @@
 //!   @[GI],
 //!   @url{https://gnome.pages.gitlab.gnome.org/gobject-introspection/girepository/gi-GITypelib-Internals.html@}
 //!
+
+// This file contains experimental code...
+#pragma no_experimental_warnings
 
 //! Magic cookie value for the @[Header()->magic] field.
 constant G_IR_MAGIC = "GOBJ\nMETADATA\r\n\032";
