@@ -304,9 +304,17 @@ __experimental__ class Header {
       }
     }
     buf->sprintf("%*s<namespace name='%s'"
-                 " version='%s' c:prefix='%s'>\n",
+                 " version='%s'",
                  indent + 2, "",
-                 namespace->get(), nsversion->get(), c_prefix->get());
+                 namespace->get(), nsversion->get());
+    if (sizeof(c_prefix->get())) {
+      buf->sprintf(" c:identifier-prefixes='%s'", c_prefix->get());
+      buf->sprintf(" c:prefix='%s'", c_prefix->get());
+    }
+    if (sizeof(shared_library->get())) {
+      buf->sprintf(" shared-library='%s'", shared_library->get());
+    }
+    buf->add(">\n");
     foreach(entries, object entry) {
       entry->render_xml(buf, indent + 4, this);
     }
@@ -419,17 +427,65 @@ Blob blob_factory(object file, GTypelibBlobType blob_type, mixed... state)
   return blob_program(file, @state);
 }
 
-class SimpleTypeBlobFlags {
-  inherit Struct;
-
-  Item reserved_pointer_tag = guint32();
-}
-
 class SimpleTypeBlob {
   inherit Blob;
 
-  SimpleTypeBlobFlags flags = SimpleTypeBlobFlags();
-  Item offset = guint32();
+  Item flags = guint32();
+
+  Blob blob;
+
+  void low_decode(Stdio.InputBlockFile file,
+                  mapping(int:array(this_program)) attribute_lookup,
+                  mixed... state)
+  {
+    ::low_decode(file, attribute_lookup, @state);
+
+    if (flags->get() & 0x00ffffff) {
+      // Pointer to type blob.
+      int pos = file->tell();
+      werror("POS: 0x%04x\n", pos - 4);
+      werror("SimpleType: 0x%08x\n", flags->get());
+      file->seek(flags->get());
+      string c = file->read(1);
+      werror("C: %O\n", c);
+      file->seek(flags->get());
+      int tag = c[0]>>3;
+      werror("TAG: %O\n", tag);
+      switch(tag) {
+        // Non-basic types:
+      case GI_TYPE_TAG_ARRAY:
+        blob = ArrayTypeBlob();
+        break;
+      case GI_TYPE_TAG_INTERFACE:
+        blob = InterfaceTypeBlob();
+        break;
+      case GI_TYPE_TAG_GLIST:
+      case GI_TYPE_TAG_GSLIST:
+      case GI_TYPE_TAG_GHASH:
+      case GI_TYPE_TAG_ERROR:
+        // FIXME: Not supported yet.
+        break;
+      }
+      if (blob) {
+        blob->decode(file, attribute_lookup, @state);
+
+        werror("TypeBlob: %O\n", blob);
+      }
+      file->seek(pos);
+    }
+  }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    if (blob) {
+      blob->render_xml(buf, indent, header);
+    } else {
+      int tag = flags->get() >> 27;
+      buf->sprintf("%*s<type name='%s'/>\n",
+                   indent, "",
+                   TypeTagNameLookup[tag] || ("&lt;" + tag + "&gt;"));
+    }
+  }
 }
 
 class ArgBlob {
@@ -443,6 +499,26 @@ class ArgBlob {
   Item padding = guint16();
 
   SimpleTypeBlob arg_type = SimpleTypeBlob();
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*s<parameters name='%s' transfer-ownership='%s'",
+                 indent, "",
+                 name->get(),
+                 (flags->get() & 0x20) ? "full" : "none");
+    // FIXME: nullable, allow-none, introspectable
+    if (closure_arg->get() != 0xff) {
+      buf->sprintf(" closure='%d'", closure_arg->get());
+    }
+    if (destroy_arg->get() != 0xff) {
+      buf->sprintf(" destroy='%d'", destroy_arg->get());
+    }
+    // FIXME: scope, direction, caller-allocates, optional, skip
+    // FIXME: TransferOwnership
+    buf->add(">\n");
+    arg_type->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*s</parameters>\n", indent, "");
+  }
 }
 
 enum GITypeTag {
@@ -470,6 +546,31 @@ enum GITypeTag {
   GI_TYPE_TAG_UNICHAR,
 }
 
+protected constant TypeTagNameLookup = ([
+  GI_TYPE_TAG_VOID: "none",
+  GI_TYPE_TAG_BOOLEAN: "bool",
+  GI_TYPE_TAG_INT8: "int8",
+  GI_TYPE_TAG_UINT8: "uint8",
+  GI_TYPE_TAG_INT16: "int16",
+  GI_TYPE_TAG_UINT16: "uint16",
+  GI_TYPE_TAG_INT32: "int32",
+  GI_TYPE_TAG_UINT32: "uint32",
+  GI_TYPE_TAG_INT64: "int64",
+  GI_TYPE_TAG_UINT64: "uint64",
+  GI_TYPE_TAG_FLOAT: "float",
+  GI_TYPE_TAG_DOUBLE: "double",
+  GI_TYPE_TAG_GTYPE: "",
+  GI_TYPE_TAG_UTF8: "utf8",
+  GI_TYPE_TAG_FILENAME: "",
+  GI_TYPE_TAG_ARRAY: "",
+  GI_TYPE_TAG_INTERFACE: "",
+  GI_TYPE_TAG_GLIST: "",
+  GI_TYPE_TAG_GSLIST: "",
+  GI_TYPE_TAG_GHASH: "",
+  GI_TYPE_TAG_ERROR: "",
+  GI_TYPE_TAG_UNICHAR: "",
+]);
+
 class SignatureBlob {
   inherit Blob;
 
@@ -492,6 +593,24 @@ class SignatureBlob {
       arguments += ({ ArgBlob(file, attribute_lookup, @state) });
     }
   }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*s<return-value transfer-ownership='%s'",
+                 indent, "",
+                 (flags->get() & 0x0002)? "full": "none");
+    // FIXME: introspectable, nullable, closure, destroy, skip, allow-none.
+    buf->add(">\n");
+    return_type->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*s</return-value>\n", indent, "");
+    if (sizeof(arguments)) {
+      buf->sprintf("%*s<parameters>\n", indent, "");
+      foreach(arguments, ArgBlob arg) {
+        arg->render_xml(buf, indent + 2, header);
+      }
+      buf->sprintf("%*s</parameters>\n", indent, "");
+    }
+  }
 }
 
 class CommonBlob {
@@ -512,11 +631,39 @@ class FunctionBlob {
 
   Item name = gstring();
   Item symbol = gstring();
-  Item signature = guint32();
+  Item signature_offset = guint32();
 
   Item more_flags = guint16();
 
   Item finish = guint16();
+
+  SignatureBlob signature;
+
+  void low_decode(Stdio.InputBlockFile file, mixed... state)
+  {
+    ::low_decode(file, @state);
+
+    int pos = file->tell();
+    file->seek(signature_offset->get());
+    signature = SignatureBlob(file, @state);
+    file->seek(pos);
+  }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    int fl = flags->get();
+    int mfl = more_flags->get();
+    string tag = "method";
+    if (fl & 0x0008) {
+      tag = "constructor";
+    } else if (mfl & 0x0001) {
+      tag = "function";
+    }
+    buf->sprintf("%*s<%s name='%s' c:identifier='%s'>\n",
+                 indent, "", tag, name->get(), symbol->get());
+    signature->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*s</%s>\n", indent, "", tag);
+  }
 }
 
 class CallbackBlob {
@@ -535,13 +682,12 @@ class InterfaceTypeBlob {
   Item pointer_and_tag = Byte();
   Item reserved2 = Byte();
   Item interface = guint16();
-}
 
-class ArrayTypeDimension {
-  inherit Struct;
-
-  Item length = guint16();
-  Item size = guint16();
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    DirEntry blob = header->entries[interface->get()-1];
+    buf->sprintf("%*s<type name='%s'/>\n", indent, "", blob->name);
+  }
 }
 
 class ArrayTypeBlob {
@@ -549,9 +695,20 @@ class ArrayTypeBlob {
 
   Item pointer_and_tag = guint16();
 
-  ArrayTypeDimension dimensions = ArrayTypeDimension();
+  Item length = guint16();
 
   SimpleTypeBlob type = SimpleTypeBlob();
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*s<array", indent, "");
+    if (pointer_and_tag->get() & 0x0100) {
+      buf->add(" zero-terminated='1'");
+    }
+    buf->add(">\n");
+    type->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*s</array>\n", indent, "");
+  }
 }
 
 class ParamTypeBlob {
@@ -609,6 +766,8 @@ class ValueBlob {
 
 class FieldBlob {
   inherit Blob;
+
+  Item name = gstring();
 
   Item flags = Byte();
   Item bits = Byte();
@@ -709,6 +868,15 @@ class UnionBlob {
 
   Item discriminator_offset = guint32();
   SimpleTypeBlob discriminator_type = SimpleTypeBlob();
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
+      ::render_xml(buf, indent, header);
+    } else {
+      buf->sprintf("%*s<union name='%s'/>\n", indent, "", name->get());
+    }
+  }
 }
 
 class EnumBlob {
