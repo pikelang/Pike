@@ -502,10 +502,13 @@ class ArgBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<parameters name='%s' transfer-ownership='%s'",
+    buf->sprintf("%*s<parameter name='%s' transfer-ownership='%s'",
                  indent, "",
                  name->get(),
                  (flags->get() & 0x20) ? "full" : "none");
+    if (flags->get() & 0x00000004) { // nullable
+      buf->add(" allow-none='1'");
+    }
     // FIXME: nullable, allow-none, introspectable
     if (closure_arg->get() != 0xff) {
       buf->sprintf(" closure='%d'", closure_arg->get());
@@ -517,7 +520,7 @@ class ArgBlob {
     // FIXME: TransferOwnership
     buf->add(">\n");
     arg_type->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</parameters>\n", indent, "");
+    buf->sprintf("%*s</parameter>\n", indent, "");
   }
 }
 
@@ -547,8 +550,8 @@ enum GITypeTag {
 }
 
 protected constant TypeTagNameLookup = ([
-  GI_TYPE_TAG_VOID: "none",
-  GI_TYPE_TAG_BOOLEAN: "bool",
+  GI_TYPE_TAG_VOID: "any",	// Note: "none" for return values.
+  GI_TYPE_TAG_BOOLEAN: "gboolean",
   GI_TYPE_TAG_INT8: "int8",
   GI_TYPE_TAG_UINT8: "uint8",
   GI_TYPE_TAG_INT16: "int16",
@@ -599,9 +602,17 @@ class SignatureBlob {
     buf->sprintf("%*s<return-value transfer-ownership='%s'",
                  indent, "",
                  (flags->get() & 0x0002)? "full": "none");
+    if (flags->get() & 0x01) { // may_return_null
+      buf->add(" allow-none='1'");
+    }
     // FIXME: introspectable, nullable, closure, destroy, skip, allow-none.
     buf->add(">\n");
-    return_type->render_xml(buf, indent + 2, header);
+    if (!return_type->blob && !(return_type->flags >> 27)) {
+      // Special case to avoid type='any'.
+      buf->sprintf("%*s<type name='none'/>\n", indent + 2, "");
+    } else {
+      return_type->render_xml(buf, indent + 2, header);
+    }
     buf->sprintf("%*s</return-value>\n", indent, "");
     if (sizeof(arguments)) {
       buf->sprintf("%*s<parameters>\n", indent, "");
@@ -686,7 +697,12 @@ class InterfaceTypeBlob {
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     DirEntry blob = header->entries[interface->get()-1];
-    buf->sprintf("%*s<type name='%s'/>\n", indent, "", blob->name);
+    if (stringp(blob->offset)) {
+      buf->sprintf("%*s<type name='%s.%s'/>\n",
+                   indent, "", blob->offset, blob->name);
+    } else {
+      buf->sprintf("%*s<type name='%s'/>\n", indent, "", blob->name);
+    }
   }
 }
 
@@ -704,6 +720,9 @@ class ArrayTypeBlob {
     buf->sprintf("%*s<array", indent, "");
     if (pointer_and_tag->get() & 0x0100) {
       buf->add(" zero-terminated='1'");
+    }
+    if (length->get() != 0xffff) {
+      buf->sprintf(" fixed-size='%d'", length->get());
     }
     buf->add(">\n");
     type->render_xml(buf, indent + 2, header);
@@ -777,6 +796,14 @@ class FieldBlob {
   Item reserved2 = guint32();
 
   SimpleTypeBlob type = SimpleTypeBlob();
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*s<field name='%s'>\n",
+                 indent, "", name->get());
+    type->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*s</field>\n", indent, "");
+  }
 }
 
 class RegisteredTypeBlob {
@@ -830,20 +857,30 @@ class StructBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+    string tag = "record";
     if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
       buf->sprintf("%*s<glib:boxed glib:name='%s'"
-                   " glib:type-name='%s' glib:get-type='%s'>\n",
+                   " glib:type-name='%s' glib:get-type='%s'",
                    indent, "", name->get(),
                    gtype_name->get(), gtype_init->get());
+      tag = "glib:boxed";
+    } else {
+      buf->sprintf("%*s<%s name='%s'", indent, "", tag, name->get());
+    }
+    if (flags->get() & 0x0004) { // is_gtype_struct
+      buf->add(" glib:is-gtype-struct='1'");
+    }
+    if (n_fields->get() || n_methods->get()) {
+      buf->add(">\n");
       foreach(fields, FieldBlob field) {
         field->render_xml(buf, indent + 2, header);
       }
       foreach(methods, FunctionBlob method) {
         method->render_xml(buf, indent + 2, header);
       }
-      buf->sprintf("%*s</glib:boxed>\n", indent, "");
+      buf->sprintf("%*s</%s>\n", indent, "", tag);
     } else {
-      buf->sprintf("%*s<record name='%s'/>\n", indent, "", name->get());
+      buf->add("/>\n");
     }
   }
 }
@@ -984,13 +1021,21 @@ class ObjectBlob {
   Item gtype_struct = guint16();
 
   Item n_interfaces = guint16();
+  array(InterfaceBlob) interfaces = ({});
   Item n_fields = guint16();
+  array(FieldBlob) fields = ({});
   Item n_properties = guint16();
+  array(PropertyBlob) properties = ({});
   Item n_methods = guint16();
+  array(FunctionBlob) methods = ({});
   Item n_signals = guint16();
+  array(SignalBlob) signals = ({});
   Item n_vfuncs = guint16();
+  array(VFuncBlob) vfuncs = ({});
   Item n_constants = guint16();
+  array(ConstantBlob) constants = ({});
   Item n_field_callbacks = guint16();
+  array(CallbackBlob) field_callbacks = ({});
 
   Item ref_func = gstring();
   Item unref_func = gstring();
@@ -999,6 +1044,44 @@ class ObjectBlob {
 
   Item reserved3 = guint32();
   Item reserved4 = guint32();
+
+  void low_decode(Stdio.InputBlockFile file, mixed... state)
+  {
+    ::low_decode(file, @state);
+
+    interfaces = ({});
+    for (int i = 0; i < n_interfaces->get(); i++) {
+      interfaces += ({ InterfaceBlob(file, @state) });
+    }
+    fields = ({});
+    for (int i = 0; i < n_fields->get(); i++) {
+      fields += ({ FieldBlob(file, @state) });
+    }
+    properties = ({});
+    for (int i = 0; i < n_properties->get(); i++) {
+      properties += ({ PropertyBlob(file, @state) });
+    }
+    methods = ({});
+    for (int i = 0; i < n_methods->get(); i++) {
+      methods += ({ FunctionBlob(file, @state) });
+    }
+    signals = ({});
+    for (int i = 0; i < n_signals->get(); i++) {
+      signals += ({ SignalBlob(file, @state) });
+    }
+    vfuncs = ({});
+    for (int i = 0; i < n_vfuncs->get(); i++) {
+      vfuncs += ({ VFuncBlob(file, @state) });
+    }
+    constants = ({});
+    for (int i = 0; i < n_constants->get(); i++) {
+      constants += ({ ConstantBlob(file, @state) });
+    }
+    field_callbacks = ({});
+    for (int i = 0; i < n_field_callbacks->get(); i++) {
+      field_callbacks += ({ CallbackBlob(file, @state) });
+    }
+  }
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
@@ -1029,6 +1112,14 @@ class ObjectBlob {
 
     buf->add(">\n");
     // FIXME: Class content.
+    interfaces->render_xml(buf, indent + 2, header);
+    fields->render_xml(buf, indent + 2, header);
+    properties->render_xml(buf, indent + 2, header);
+    methods->render_xml(buf, indent + 2, header);
+    signals->render_xml(buf, indent + 2, header);
+    vfuncs->render_xml(buf, indent + 2, header);
+    constants->render_xml(buf, indent + 2, header);
+    field_callbacks->render_xml(buf, indent + 2, header);
     buf->sprintf("%*s</class>\n", indent, "");
   }
 }
