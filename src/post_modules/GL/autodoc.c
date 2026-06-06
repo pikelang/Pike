@@ -12870,6 +12870,19 @@
  */
 /*! @decl constant GL_ARB_multitexture = 1
  */
+/*! @decl constant GL_ARB_texture_non_power_of_two = 1
+ *! Used in @[glCopyTexImage1D], @[glTexImage1D] and @[glTexImage2D]
+ */
+/*! @decl constant GL_ARRAY_BUFFER = 34962
+ *! Used in @[glColorPointer], @[glEdgeFlagPointer], @[glGet],
+ *! @[glIndexPointer], @[glNormalPointer], @[glTexCoordPointer] and
+ *! @[glVertexPointer]
+ */
+/*! @decl constant GL_ARRAY_BUFFER_BINDING = 34964
+ *! Used in @[glColorPointer], @[glEdgeFlagPointer], @[glGet],
+ *! @[glIndexPointer], @[glNormalPointer], @[glTexCoordPointer] and
+ *! @[glVertexPointer]
+ */
 /*! @decl constant GL_ATI_blend_equation_separate = 1
  */
 /*! @decl constant GL_ATTRIB_STACK_DEPTH = 2992
@@ -12936,13 +12949,31 @@
 /*! @decl constant GL_BLEND_DST = 3040
  *! Used in @[glBlendFunc]
  */
+/*! @decl constant GL_BLEND_DST_ALPHA = 32970
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_BLEND_DST_RGB = 32968
+ *! Used in @[glGet]
+ */
 /*! @decl constant GL_BLEND_EQUATION = 32777
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_BLEND_EQUATION_ALPHA = 34877
  *! Used in @[glGet]
  */
 /*! @decl constant GL_BLEND_EQUATION_EXT = 32777
  */
+/*! @decl constant GL_BLEND_EQUATION_RGB = 32777
+ *! Used in @[glGet]
+ */
 /*! @decl constant GL_BLEND_SRC = 3041
  *! Used in @[glBlendFunc]
+ */
+/*! @decl constant GL_BLEND_SRC_ALPHA = 32971
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_BLEND_SRC_RGB = 32969
+ *! Used in @[glGet]
  */
 /*! @decl constant GL_BLUE = 6405
  *! Used in @[glDrawPixels], @[glGetTexImage], @[glReadPixels],
@@ -13036,6 +13067,9 @@
  *! Used in @[glColorPointer], @[glDrawArrays], @[glDrawElements],
  *! @[glEnableClientState], @[glGet] and @[glIsEnabled]
  */
+/*! @decl constant GL_COLOR_ARRAY_BUFFER_BINDING = 34968
+ *! Used in @[glColorPointer] and @[glGet]
+ */
 /*! @decl constant GL_COLOR_ARRAY_POINTER = 32912
  *! Used in @[glColorPointer]
  */
@@ -13083,6 +13117,9 @@
  */
 /*! @decl constant GL_COLOR_MATRIX_STACK_DEPTH = 32946
  *! Used in @[glGet] and @[glPushMatrix]
+ */
+/*! @decl constant GL_COLOR_SUM = 33880
+ *! Used in @[glEnable], @[glGet] and @[glIsEnabled]
  */
 /*! @decl constant GL_COLOR_TABLE = 32976
  *! Used in @[glEnable], @[glGet], @[glIsEnabled], @[glTexImage1D] and
@@ -13143,6 +13180,9 @@
  */
 /*! @decl constant GL_COMBINE_RGB = 34161
  *! Used in @[glTexEnv]
+ */
+/*! @decl constant GL_COMPARE_R_TO_TEXTURE = 34894
+ *! Used in @[glTexParameter]
  */
 /*! @decl constant GL_COMPILE = 4864
  *! Used in @[glNewList]
@@ -13244,6 +13284,9 @@
  */
 /*! @decl constant GL_CONVOLUTION_WIDTH_EXT = 32792
  */
+/*! @decl constant GL_COORD_REPLACE = 34914
+ *! Used in @[glTexEnv]
+ */
 /*! @decl constant GL_COPY = 5379
  *! Used in @[glGet] and @[glLogicOp]
  */
@@ -13268,11 +13311,17 @@
 /*! @decl constant GL_CURRENT_COLOR = 2816
  *! Used in @[glColor], @[glGet] and @[glRasterPos]
  */
+/*! @decl constant GL_CURRENT_FOG_COORD = 33875
+ *! Used in @[glGet]
+ */
 /*! @decl constant GL_CURRENT_INDEX = 2817
  *! Used in @[glGet], @[glIndex] and @[glRasterPos]
  */
 /*! @decl constant GL_CURRENT_NORMAL = 2818
  *! Used in @[glGet] and @[glNormal]
+ */
+/*! @decl constant GL_CURRENT_PROGRAM = 35725
+ *! Used in @[glGet]
  */
 /*! @decl constant GL_CURRENT_RASTER_COLOR = 2820
  *! Used in @[glGet] and @[glRasterPos]
@@ -13290,8 +13339,14 @@
  *! Used in @[glCopyPixels], @[glDrawPixels], @[glGet], @[glPushAttrib]
  *! and @[glRasterPos]
  */
+/*! @decl constant GL_CURRENT_RASTER_SECONDARY_COLOR = 33887
+ *! Used in @[glGet] and @[glRasterPos]
+ */
 /*! @decl constant GL_CURRENT_RASTER_TEXTURE_COORDS = 2822
  *! Used in @[glGet] and @[glRasterPos]
+ */
+/*! @decl constant GL_CURRENT_SECONDARY_COLOR = 33881
+ *! Used in @[glGet]
  */
 /*! @decl constant GL_CURRENT_TEXTURE_COORDS = 2819
  *! Used in @[glGet], @[glRasterPos] and @[glTexCoord]
@@ -13303,6 +13358,9 @@
  *! Used in @[glTexEnv]
  */
 /*! @decl constant GL_DECR = 7683
+ *! Used in @[glStencilOp]
+ */
+/*! @decl constant GL_DECR_WRAP = 34056
  *! Used in @[glStencilOp]
  */
 /*! @decl constant GL_DEPTH = 6145
@@ -13325,6 +13383,18 @@
  *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glDrawPixels],
  *! @[glGetTexImage], @[glReadPixels], @[glTexImage1D] and @[glTexImage2D]
  */
+/*! @decl constant GL_DEPTH_COMPONENT16 = 33189
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_DEPTH_COMPONENT24 = 33190
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_DEPTH_COMPONENT32 = 33191
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
 /*! @decl constant GL_DEPTH_FUNC = 2932
  *! Used in @[glDepthFunc] and @[glGet]
  */
@@ -13338,6 +13408,9 @@
 /*! @decl constant GL_DEPTH_TEST = 2929
  *! Used in @[glDepthFunc], @[glEnable], @[glGet], @[glIsEnabled] and
  *! @[glPushAttrib]
+ */
+/*! @decl constant GL_DEPTH_TEXTURE_MODE = 34891
+ *! Used in @[glTexParameter]
  */
 /*! @decl constant GL_DEPTH_WRITEMASK = 2930
  *! Used in @[glDepthMask], @[glGet] and @[glPushAttrib]
@@ -13369,6 +13442,9 @@
 /*! @decl constant GL_DRAW_BUFFER = 3073
  *! Used in @[glDrawBuffer], @[glGet] and @[glPushAttrib]
  */
+/*! @decl constant GL_DRAW_BUFFER0 = 34853
+ *! Used in @[glGet]
+ */
 /*! @decl constant GL_DRAW_PIXEL_TOKEN = 1797
  *! Used in @[glFeedbackBuffer]
  */
@@ -13385,11 +13461,20 @@
  *! Used in @[glEdgeFlagPointer], @[glEnableClientState], @[glGet] and
  *! @[glIsEnabled]
  */
+/*! @decl constant GL_EDGE_FLAG_ARRAY_BUFFER_BINDING = 34971
+ *! Used in @[glEdgeFlagPointer] and @[glGet]
+ */
 /*! @decl constant GL_EDGE_FLAG_ARRAY_POINTER = 32915
  *! Used in @[glEdgeFlagPointer]
  */
 /*! @decl constant GL_EDGE_FLAG_ARRAY_STRIDE = 32908
  *! Used in @[glEdgeFlagPointer] and @[glGet]
+ */
+/*! @decl constant GL_ELEMENT_ARRAY_BUFFER = 34963
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_ELEMENT_ARRAY_BUFFER_BINDING = 34965
+ *! Used in @[glGet]
  */
 /*! @decl constant GL_EMISSION = 5632
  *! Used in @[glColorMaterial] and @[glMaterial]
@@ -13483,6 +13568,24 @@
 /*! @decl constant GL_FOG_COLOR = 2918
  *! Used in @[glFog] and @[glGet]
  */
+/*! @decl constant GL_FOG_COORD = 33873
+ *! Used in @[glFog]
+ */
+/*! @decl constant GL_FOG_COORD_ARRAY = 33879
+ *! Used in @[glEnableClientState], @[glGet] and @[glIsEnabled]
+ */
+/*! @decl constant GL_FOG_COORD_ARRAY_BUFFER_BINDING = 34973
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_FOG_COORD_ARRAY_STRIDE = 33877
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_FOG_COORD_ARRAY_TYPE = 33876
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_FOG_COORD_SRC = 33872
+ *! Used in @[glFog] and @[glGet]
+ */
 /*! @decl constant GL_FOG_DENSITY = 2914
  *! Used in @[glFog] and @[glGet]
  */
@@ -13500,6 +13603,12 @@
  */
 /*! @decl constant GL_FOG_START = 2915
  *! Used in @[glFog] and @[glGet]
+ */
+/*! @decl constant GL_FRAGMENT_DEPTH = 33874
+ *! Used in @[glFog] and @[glGet]
+ */
+/*! @decl constant GL_FRAGMENT_SHADER_DERIVATIVE_HINT = 35723
+ *! Used in @[glGet] and @[glHint]
  */
 /*! @decl constant GL_FRONT = 1028
  *! Used in @[glColorMaterial], @[glCullFace], @[glDrawBuffer], @[glGet],
@@ -13533,6 +13642,12 @@
  *! Used in @[glGet]
  */
 /*! @decl constant GL_FUNC_SUBTRACT_EXT = 32778
+ */
+/*! @decl constant GL_GENERATE_MIPMAP = 33169
+ *! Used in @[glTexParameter]
+ */
+/*! @decl constant GL_GENERATE_MIPMAP_HINT = 33170
+ *! Used in @[glGet], @[glHint] and @[glPushAttrib]
  */
 /*! @decl constant GL_GEQUAL = 518
  *! Used in @[glAlphaFunc], @[glDepthFunc], @[glStencilFunc] and
@@ -13607,9 +13722,15 @@
 /*! @decl constant GL_INCR = 7682
  *! Used in @[glStencilOp]
  */
+/*! @decl constant GL_INCR_WRAP = 34055
+ *! Used in @[glStencilOp]
+ */
 /*! @decl constant GL_INDEX_ARRAY = 32887
  *! Used in @[glEnableClientState], @[glGet], @[glIndexPointer] and
  *! @[glIsEnabled]
+ */
+/*! @decl constant GL_INDEX_ARRAY_BUFFER_BINDING = 34969
+ *! Used in @[glGet] and @[glIndexPointer]
  */
 /*! @decl constant GL_INDEX_ARRAY_POINTER = 32913
  *! Used in @[glIndexPointer]
@@ -14057,6 +14178,9 @@
 /*! @decl constant GL_MAX_COLOR_MATRIX_STACK_DEPTH = 32947
  *! Used in @[glGet]
  */
+/*! @decl constant GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS = 35661
+ *! Used in @[glGet]
+ */
 /*! @decl constant GL_MAX_CONVOLUTION_HEIGHT = 32795
  */
 /*! @decl constant GL_MAX_CONVOLUTION_HEIGHT_EXT = 32795
@@ -14066,6 +14190,9 @@
 /*! @decl constant GL_MAX_CONVOLUTION_WIDTH_EXT = 32794
  */
 /*! @decl constant GL_MAX_CUBE_MAP_TEXTURE_SIZE = 34076
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_MAX_DRAW_BUFFERS = 34852
  *! Used in @[glGet]
  */
 /*! @decl constant GL_MAX_ELEMENTS_INDICES = 33001
@@ -14078,6 +14205,9 @@
  *! Used in @[glGet]
  */
 /*! @decl constant GL_MAX_EXT = 32776
+ */
+/*! @decl constant GL_MAX_FRAGMENT_UNIFORM_COMPONENTS = 35657
+ *! Used in @[glGet]
  */
 /*! @decl constant GL_MAX_LIGHTS = 3377
  *! Used in @[glGet], @[glLight] and @[glPushAttrib]
@@ -14099,6 +14229,16 @@
 /*! @decl constant GL_MAX_PROJECTION_STACK_DEPTH = 3384
  *! Used in @[glGet] and @[glPushMatrix]
  */
+/*! @decl constant GL_MAX_TEXTURE_COORDS = 34929
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_MAX_TEXTURE_IMAGE_UNITS = 34930
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_MAX_TEXTURE_LOD_BIAS = 34045
+ *! Used in @[glCopyPixels], @[glDrawPixels], @[glGet], @[glReadPixels],
+ *! @[glTexImage1D] and @[glTexImage2D]
+ */
 /*! @decl constant GL_MAX_TEXTURE_SIZE = 3379
  *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D],
  *! @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glGet],
@@ -14112,6 +14252,18 @@
  *! Used in @[glGet]
  */
 /*! @decl constant GL_MAX_TEXTURE_UNITS_ARB = 34018
+ */
+/*! @decl constant GL_MAX_VARYING_FLOATS = 35659
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_MAX_VERTEX_ATTRIBS = 34921
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS = 35660
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_MAX_VERTEX_UNIFORM_COMPONENTS = 35658
+ *! Used in @[glGet]
  */
 /*! @decl constant GL_MAX_VIEWPORT_DIMS = 3386
  *! Used in @[glGet] and @[glViewport]
@@ -14133,6 +14285,9 @@
 /*! @decl constant GL_MINMAX_SINK_EXT = 32816
  */
 /*! @decl constant GL_MIN_EXT = 32775
+ */
+/*! @decl constant GL_MIRRORED_REPEAT = 33648
+ *! Used in @[glTexParameter]
  */
 /*! @decl constant GL_MODELVIEW = 5888
  *! Used in @[glGet], @[glMatrixMode], @[glPushMatrix], @[glRotate],
@@ -14200,6 +14355,9 @@
 /*! @decl constant GL_NORMAL_ARRAY = 32885
  *! Used in @[glEnableClientState], @[glGet], @[glIsEnabled] and
  *! @[glNormalPointer]
+ */
+/*! @decl constant GL_NORMAL_ARRAY_BUFFER_BINDING = 34967
+ *! Used in @[glGet] and @[glNormalPointer]
  */
 /*! @decl constant GL_NORMAL_ARRAY_POINTER = 32911
  *! Used in @[glNormalPointer]
@@ -14397,6 +14555,12 @@
 /*! @decl constant GL_PIXEL_MODE_BIT = 32
  *! Used in @[glPushAttrib]
  */
+/*! @decl constant GL_PIXEL_PACK_BUFFER = 35051
+ *! Used in @[glGet], @[glGetTexImage] and @[glReadPixels]
+ */
+/*! @decl constant GL_PIXEL_PACK_BUFFER_BINDING = 35053
+ *! Used in @[glGet], @[glGetTexImage] and @[glReadPixels]
+ */
 /*! @decl constant GL_PIXEL_TRANSFORM_2D_EXT = 33584
  */
 /*! @decl constant GL_PIXEL_TRANSFORM_2D_MATRIX_EXT = 33592
@@ -14404,6 +14568,14 @@
 /*! @decl constant GL_PIXEL_TRANSFORM_2D_STACK_DEPTH_EXT = 33590
  */
 /*! @decl constant GL_PIXEL_TRANSFORM_COLOR_TABLE_EXT = 33593
+ */
+/*! @decl constant GL_PIXEL_UNPACK_BUFFER = 35052
+ *! Used in @[glDrawPixels], @[glGet], @[glTexImage1D], @[glTexImage2D],
+ *! @[glTexSubImage1D] and @[glTexSubImage2D]
+ */
+/*! @decl constant GL_PIXEL_UNPACK_BUFFER_BINDING = 35055
+ *! Used in @[glDrawPixels], @[glGet], @[glTexImage1D], @[glTexImage2D],
+ *! @[glTexSubImage1D] and @[glTexSubImage2D]
  */
 /*! @decl constant GL_POINT = 6912
  *! Used in @[glEdgeFlag], @[glEnable], @[glEvalMesh2] and
@@ -14416,10 +14588,22 @@
 /*! @decl constant GL_POINT_BIT = 2
  *! Used in @[glPushAttrib]
  */
+/*! @decl constant GL_POINT_DISTANCE_ATTENUATION = 33065
+ *! Used in @[glGet] and @[glPointSize]
+ */
+/*! @decl constant GL_POINT_FADE_THRESHOLD_SIZE = 33064
+ *! Used in @[glGet] and @[glPointSize]
+ */
 /*! @decl constant GL_POINT_SIZE = 2833
  *! Used in @[glGet], @[glPointSize] and @[glPolygonMode]
  */
 /*! @decl constant GL_POINT_SIZE_GRANULARITY = 2835
+ *! Used in @[glGet] and @[glPointSize]
+ */
+/*! @decl constant GL_POINT_SIZE_MAX = 33063
+ *! Used in @[glGet] and @[glPointSize]
+ */
+/*! @decl constant GL_POINT_SIZE_MIN = 33062
  *! Used in @[glGet] and @[glPointSize]
  */
 /*! @decl constant GL_POINT_SIZE_RANGE = 2834
@@ -14431,6 +14615,9 @@
  */
 /*! @decl constant GL_POINT_SMOOTH_HINT = 3153
  *! Used in @[glGet], @[glHint] and @[glPushAttrib]
+ */
+/*! @decl constant GL_POINT_SPRITE = 34913
+ *! Used in @[glEnable], @[glGet], @[glIsEnabled] and @[glTexEnv]
  */
 /*! @decl constant GL_POINT_TOKEN = 1793
  *! Used in @[glFeedbackBuffer]
@@ -14810,6 +14997,21 @@
  *! Used in @[glEnable], @[glGet], @[glIsEnabled], @[glPushAttrib] and
  *! @[glScissor]
  */
+/*! @decl constant GL_SECONDARY_COLOR_ARRAY = 33886
+ *! Used in @[glEnableClientState], @[glGet] and @[glIsEnabled]
+ */
+/*! @decl constant GL_SECONDARY_COLOR_ARRAY_BUFFER_BINDING = 34972
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_SECONDARY_COLOR_ARRAY_SIZE = 33882
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_SECONDARY_COLOR_ARRAY_STRIDE = 33884
+ *! Used in @[glGet]
+ */
+/*! @decl constant GL_SECONDARY_COLOR_ARRAY_TYPE = 33883
+ *! Used in @[glGet]
+ */
 /*! @decl constant GL_SELECT = 7170
  *! Used in @[glInitNames], @[glLoadName], @[glPushName], @[glRenderMode]
  *! and @[glSelectBuffer]
@@ -14838,6 +15040,9 @@
 /*! @decl constant GL_SHADE_MODEL = 2900
  *! Used in @[glGet], @[glPushAttrib] and @[glShadeModel]
  */
+/*! @decl constant GL_SHADING_LANGUAGE_VERSION = 35724
+ *! Used in @[glGetString]
+ */
 /*! @decl constant GL_SHININESS = 5633
  *! Used in @[glMaterial]
  */
@@ -14849,6 +15054,22 @@
  */
 /*! @decl constant GL_SINGLE_COLOR = 33273
  *! Used in @[glGet] and @[glLightModel]
+ */
+/*! @decl constant GL_SLUMINANCE = 35910
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_SLUMINANCE8 = 35911
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_SLUMINANCE8_ALPHA8 = 35909
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_SLUMINANCE_ALPHA = 35908
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
  */
 /*! @decl constant GL_SMOOTH = 7425
  *! Used in @[glGet] and @[glShadeModel]
@@ -14892,6 +15113,24 @@
 /*! @decl constant GL_SPOT_EXPONENT = 4613
  *! Used in @[glLight]
  */
+/*! @decl constant GL_SRC0_ALPHA = 34184
+ *! Used in @[glTexEnv]
+ */
+/*! @decl constant GL_SRC0_RGB = 34176
+ *! Used in @[glTexEnv]
+ */
+/*! @decl constant GL_SRC1_ALPHA = 34185
+ *! Used in @[glTexEnv]
+ */
+/*! @decl constant GL_SRC1_RGB = 34177
+ *! Used in @[glTexEnv]
+ */
+/*! @decl constant GL_SRC2_ALPHA = 34186
+ *! Used in @[glTexEnv]
+ */
+/*! @decl constant GL_SRC2_RGB = 34178
+ *! Used in @[glTexEnv]
+ */
 /*! @decl constant GL_SRC_ALPHA = 770
  *! Used in @[glBlendFunc] and @[glTexEnv]
  */
@@ -14900,6 +15139,22 @@
  */
 /*! @decl constant GL_SRC_COLOR = 768
  *! Used in @[glBlendFunc] and @[glTexEnv]
+ */
+/*! @decl constant GL_SRGB = 35904
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_SRGB8 = 35905
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_SRGB8_ALPHA8 = 35907
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
+ */
+/*! @decl constant GL_SRGB_ALPHA = 35906
+ *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage1D] and
+ *! @[glTexImage2D]
  */
 /*! @decl constant GL_STACK_OVERFLOW = 1283
  *! Used in @[glGetError], @[glPushAttrib], @[glPushClientAttrib],
@@ -14911,6 +15166,27 @@
  */
 /*! @decl constant GL_STENCIL = 6146
  *! Used in @[glCopyPixels]
+ */
+/*! @decl constant GL_STENCIL_BACK_FAIL = 34817
+ *! Used in @[glGet] and @[glStencilOp]
+ */
+/*! @decl constant GL_STENCIL_BACK_FUNC = 34816
+ *! Used in @[glGet] and @[glStencilFunc]
+ */
+/*! @decl constant GL_STENCIL_BACK_PASS_DEPTH_FAIL = 34818
+ *! Used in @[glGet] and @[glStencilOp]
+ */
+/*! @decl constant GL_STENCIL_BACK_PASS_DEPTH_PASS = 34819
+ *! Used in @[glGet] and @[glStencilOp]
+ */
+/*! @decl constant GL_STENCIL_BACK_REF = 36003
+ *! Used in @[glGet] and @[glStencilFunc]
+ */
+/*! @decl constant GL_STENCIL_BACK_VALUE_MASK = 36004
+ *! Used in @[glGet] and @[glStencilFunc]
+ */
+/*! @decl constant GL_STENCIL_BACK_WRITEMASK = 36005
+ *! Used in @[glGet] and @[glStencilMask]
  */
 /*! @decl constant GL_STENCIL_BITS = 3415
  *! Used in @[glClearStencil], @[glGet], @[glStencilFunc],
@@ -15160,6 +15436,15 @@
 /*! @decl constant GL_TEXTURE_BASE_LEVEL = 33084
  *! Used in @[glTexParameter]
  */
+/*! @decl constant GL_TEXTURE_BINDING_1D = 32872
+ *! Used in @[glBindTexture] and @[glGet]
+ */
+/*! @decl constant GL_TEXTURE_BINDING_2D = 32873
+ *! Used in @[glBindTexture], @[glGet] and @[glPushAttrib]
+ */
+/*! @decl constant GL_TEXTURE_BINDING_3D = 32874
+ *! Used in @[glBindTexture] and @[glGet]
+ */
 /*! @decl constant GL_TEXTURE_BINDING_CUBE_MAP = 34068
  *! Used in @[glGet]
  */
@@ -15177,6 +15462,12 @@
  */
 /*! @decl constant GL_TEXTURE_COLOR_TABLE_SGI = 32956
  */
+/*! @decl constant GL_TEXTURE_COMPARE_FUNC = 34893
+ *! Used in @[glTexParameter]
+ */
+/*! @decl constant GL_TEXTURE_COMPARE_MODE = 34892
+ *! Used in @[glTexParameter]
+ */
 /*! @decl constant GL_TEXTURE_COMPONENTS = 4099
  */
 /*! @decl constant GL_TEXTURE_COMPRESSED = 34465
@@ -15189,6 +15480,9 @@
 /*! @decl constant GL_TEXTURE_COORD_ARRAY = 32888
  *! Used in @[glEnableClientState], @[glGet], @[glIsEnabled] and
  *! @[glTexCoordPointer]
+ */
+/*! @decl constant GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING = 34970
+ *! Used in @[glGet] and @[glTexCoordPointer]
  */
 /*! @decl constant GL_TEXTURE_COORD_ARRAY_POINTER = 32914
  *! Used in @[glTexCoordPointer]
@@ -15243,6 +15537,9 @@
 /*! @decl constant GL_TEXTURE_ENV_MODE = 8704
  *! Used in @[glTexEnv]
  */
+/*! @decl constant GL_TEXTURE_FILTER_CONTROL = 34048
+ *! Used in @[glTexEnv]
+ */
 /*! @decl constant GL_TEXTURE_GEN_MODE = 9472
  *! Used in @[glPushAttrib] and @[glTexGen]
  */
@@ -15272,6 +15569,10 @@
  */
 /*! @decl constant GL_TEXTURE_INTERNAL_FORMAT = 4099
  *! Used in @[glGetTexImage]
+ */
+/*! @decl constant GL_TEXTURE_LOD_BIAS = 34049
+ *! Used in @[glCopyPixels], @[glDrawPixels], @[glReadPixels],
+ *! @[glTexEnv], @[glTexImage1D] and @[glTexImage2D]
  */
 /*! @decl constant GL_TEXTURE_LUMINANCE_SIZE = 32864
  */
@@ -15474,6 +15775,9 @@
  *! @[glEnableClientState], @[glGet], @[glIsEnabled] and
  *! @[glVertexPointer]
  */
+/*! @decl constant GL_VERTEX_ARRAY_BUFFER_BINDING = 34966
+ *! Used in @[glGet] and @[glVertexPointer]
+ */
 /*! @decl constant GL_VERTEX_ARRAY_POINTER = 32910
  *! Used in @[glVertexPointer]
  */
@@ -15485,6 +15789,12 @@
  */
 /*! @decl constant GL_VERTEX_ARRAY_TYPE = 32891
  *! Used in @[glGet] and @[glVertexPointer]
+ */
+/*! @decl constant GL_VERTEX_PROGRAM_POINT_SIZE = 34370
+ *! Used in @[glEnable], @[glGet] and @[glIsEnabled]
+ */
+/*! @decl constant GL_VERTEX_PROGRAM_TWO_SIDE = 34371
+ *! Used in @[glEnable], @[glGet] and @[glIsEnabled]
  */
 /*! @decl constant GL_VIEWPORT = 2978
  *! Used in @[glGet] and @[glViewport]
