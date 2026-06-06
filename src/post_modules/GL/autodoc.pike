@@ -519,6 +519,14 @@ class RefSegment
   Segment fixup_various_references()
   {
     switch (text) {
+    case "Value": // Bogus reference in glTexEnv.xml
+      return mksegment(text);
+    case "dFdx":
+    case "dFdy":
+    case "fwidth":
+    case "gl_PointSize":
+      // shader built-in functions (only documented in GLES/GL4)
+      return tag(text, "tt");
     case "glEvalMesh":
       return mksegment(RefSegment("glEvalMesh1"), " and ", RefSegment("glEvalMesh2"));
     case "GL_AUX":

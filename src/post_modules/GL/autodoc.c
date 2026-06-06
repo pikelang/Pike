@@ -4411,8 +4411,8 @@
  *! per-vertex calculation of fog effects. </p></c></r>
  *! <r><c><ref>GL_FRAGMENT_SHADER_DERIVATIVE_HINT</ref></c>
  *! <c><p></p><p>Indicates the accuracy of the derivative calculation for
- *! the GL shading language fragment processing built-in functions: <ref
- *! >dFdx</ref>, <ref>dFdy</ref>, and <ref>fwidth</ref>. </p></c></r>
+ *! the GL shading language fragment processing built-in functions: <tt
+ *! >dFdx</tt>, <tt>dFdy</tt>, and <tt>fwidth</tt>. </p></c></r>
  *! <r><c><ref>GL_GENERATE_MIPMAP_HINT</ref></c>
  *! <c><p></p><p>Indicates the quality of filtering when generating mipmap
  *! images. </p></c></r>
@@ -7039,10 +7039,10 @@
  *! color, and the subscript @i{v@} indicates a value produced by the
  *! texture function.
  *! 
- *! @xml{<matrix><r><c>Texture Base Internal Format </c><c><ref>Value</ref
- *! ></c><c><ref>GL_REPLACE</ref> Function </c><c><ref>GL_MODULATE</ref>
- *! Function </c><c><ref>GL_DECAL</ref> Function </c><c><ref>GL_BLEND</ref
- *! > Function </c><c><ref>GL_ADD</ref> Function </c></r><r><c><ref
+ *! @xml{<matrix><r><c>Texture Base Internal Format </c><c>Value</c><c
+ *! ><ref>GL_REPLACE</ref> Function </c><c><ref>GL_MODULATE</ref> Function
+ *! </c><c><ref>GL_DECAL</ref> Function </c><c><ref>GL_BLEND</ref>
+ *! Function </c><c><ref>GL_ADD</ref> Function </c></r><r><c><ref
  *! >GL_ALPHA</ref></c><c> <i>C</i><sub><i>v</i></sub>=</c><c> <i>C</i
  *! ><sub><i>p</i></sub></c><c> <i>C</i><sub><i>p</i></sub></c><c>
  *! undefined </c><c><i>C</i><sub><i>p</i></sub></c><c> <i>C</i><sub><i
@@ -12225,7 +12225,7 @@
  *! <r><c><ref>GL_VERTEX_PROGRAM_POINT_SIZE</ref></c>
  *! <c><p></p><p>If enabled and a vertex shader is active, then the
  *! derived point size is taken from the (potentially clipped) shader
- *! builtin <ref>gl_PointSize</ref> and clamped to the
+ *! builtin <tt>gl_PointSize</tt> and clamped to the
  *! implementation-dependent point size range. </p></c></r>
  *! <r><c><ref>GL_VERTEX_PROGRAM_TWO_SIDE</ref></c>
  *! <c><p></p><p>If enabled and a vertex shader is active, it specifies
