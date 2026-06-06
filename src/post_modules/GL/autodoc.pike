@@ -519,6 +519,14 @@ class RefSegment
   Segment fixup_various_references()
   {
     switch (text) {
+    case "Value": // Bogus reference in glTexEnv.xml
+      return mksegment(text);
+    case "dFdx":
+    case "dFdy":
+    case "fwidth":
+    case "gl_PointSize":
+      // shader built-in functions (only documented in GLES/GL4)
+      return tag(text, "tt");
     case "glEvalMesh":
       return mksegment(RefSegment("glEvalMesh1"), " and ", RefSegment("glEvalMesh2"));
     case "GL_AUX":
@@ -1107,6 +1115,7 @@ void visit_refentry(string id, mapping context)
   else if(name = names[id+"2"])  new_name = name[..sizeof(name)-2];
   else if(name = names[id+"fv"]) new_name = name[..sizeof(name)-3];
   else if(name = names[id+"uiv"]) new_name = name[..sizeof(name)-4];
+  else if(name = names[id+"iv"]) new_name = name[..sizeof(name)-3];
   else if(name = names[id+"v"]) new_name = name[..sizeof(name)-2];
 
   if(new_name) {
