@@ -237,8 +237,8 @@ struct timeval;
 #endif /* HAVE_DECLSPEC */
 
 #ifdef HAS___BUILTIN_EXPECT
-# define UNLIKELY(X) __builtin_expect( (long)(X), 0 )
-# define LIKELY(X) __builtin_expect( (long)(X), 1 )
+# define UNLIKELY(X) __builtin_expect( (ptrdiff_t)(X), 0 )
+# define LIKELY(X) __builtin_expect( (ptrdiff_t)(X), 1 )
 #else
 # define UNLIKELY(X) X
 # define LIKELY(X) X
