@@ -146,8 +146,8 @@ class Struct
   //!   with a note that @tt{render_xml()@} is not implemented.
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<!-- %O->render_xml() not implemented! -->\n",
-                 indent, "", object_program(this));
+    buf->sprintf("%*n<!-- %O->render_xml() not implemented! -->\n",
+                 indent, object_program(this));
   }
 }
 
@@ -196,11 +196,11 @@ class AttributeBlob {
   {
     string|int val = value->get();
     if (stringp(val)) {
-      buf->sprintf("%*s<attribute name='%s' value='%s'/>\n",
-                   indent, "", name->get(), val);
+      buf->sprintf("%*n<attribute name='%s' value='%s'/>\n",
+                   indent, name->get(), val);
     } else {
-      buf->sprintf("%*s<attribute name='%s' value='%d'/>\n",
-                   indent, "", name->get(), val);
+      buf->sprintf("%*n<attribute name='%s' value='%d'/>\n",
+                   indent, name->get(), val);
     }
   }
 }
@@ -293,22 +293,22 @@ __experimental__ class Header {
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     buf->sprintf(#"\
-%*s<repository version='1.0'
-%*s            xmlns='http://www.gtk.org/introspection/core/1.0'
-%*s            xmlns:c='http://www.gtk.org/introspection/c/1.0'
-%*s            xmlns:glib='http://www.gtk.org/introspection/glib/1.0'>
-", indent, "", indent, "", indent, "", indent, "");
+%*n<repository version='1.0'
+%*n            xmlns='http://www.gtk.org/introspection/core/1.0'
+%*n            xmlns:c='http://www.gtk.org/introspection/c/1.0'
+%*n            xmlns:glib='http://www.gtk.org/introspection/glib/1.0'>
+", indent, indent, indent, indent);
     foreach(dependencies->get()/"|", string dep) {
       if (sizeof(dep)) {
         array(string) a = dep/"-";
-        buf->sprintf("%*s<include name='%s' version='%s'/>\n",
-                     indent + 2, "",
+        buf->sprintf("%*n<include name='%s' version='%s'/>\n",
+                     indent + 2,
                      a[0], (sizeof(a) > 1)?a[1]:"");
       }
     }
-    buf->sprintf("%*s<namespace name='%s'"
+    buf->sprintf("%*n<namespace name='%s'"
                  " version='%s'",
-                 indent + 2, "",
+                 indent + 2,
                  namespace->get(), nsversion->get());
     if (sizeof(c_prefix->get())) {
       buf->sprintf(" c:identifier-prefixes='%s'", c_prefix->get());
@@ -322,9 +322,9 @@ __experimental__ class Header {
       entry->render_xml(buf, indent + 4, this);
     }
     buf->sprintf(#"\
-%*s</namespace>
-%*s</repository>
-", indent + 2, "", indent, "");
+%*n</namespace>
+%*n</repository>
+", indent + 2, indent);
   }
 }
 
@@ -394,13 +394,13 @@ class DirEntry {
       string|int off = offset->get();
       if (stringp(off) && sizeof(off)) {
 #ifdef PARSER_TYPELIB_DEBUG
-        buf->sprintf("%*s<record name='%s' namespace='%s'>\n",
-                     indent, "", name->get(), off);
-        buf->sprintf("%*s</record>\n", indent, "");
+        buf->sprintf("%*n<record name='%s' namespace='%s'>\n",
+                     indent, name->get(), off);
+        buf->sprintf("%*n</record>\n", indent);
 #endif
       } else {
-        buf->sprintf("%*s<record name='%s'>\n", indent, "", name->get());
-        buf->sprintf("%*s</record>\n", indent, "");
+        buf->sprintf("%*n<record name='%s'>\n", indent, name->get());
+        buf->sprintf("%*n</record>\n", indent);
       }
     }
   }
@@ -484,8 +484,8 @@ class SimpleTypeBlob {
       blob->render_xml(buf, indent, header);
     } else {
       int tag = flags->get() >> 27;
-      buf->sprintf("%*s<type name='%s'/>\n",
-                   indent, "",
+      buf->sprintf("%*n<type name='%s'/>\n",
+                   indent,
                    TypeTagNameLookup[tag] || ("&lt;" + tag + "&gt;"));
     }
   }
@@ -507,8 +507,8 @@ class ArgBlob {
   {
     int f = flags->get();
 
-    buf->sprintf("%*s<parameter name='%s' transfer-ownership='%s'",
-                 indent, "",
+    buf->sprintf("%*n<parameter name='%s' transfer-ownership='%s'",
+                 indent,
                  name->get(),
                  (f & 0x20) ? "full" : "none");
     if (f & 0x00000006) {
@@ -534,7 +534,7 @@ class ArgBlob {
     // FIXME: TransferOwnership
     buf->add(">\n");
     arg_type->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</parameter>\n", indent, "");
+    buf->sprintf("%*n</parameter>\n", indent);
   }
 }
 
@@ -613,8 +613,8 @@ class SignatureBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<return-value transfer-ownership='%s'",
-                 indent, "",
+    buf->sprintf("%*n<return-value transfer-ownership='%s'",
+                 indent,
                  (flags->get() & 0x0002)? "full": "none");
     if (flags->get() & 0x01) { // may_return_null
       buf->add(" allow-none='1'");
@@ -623,17 +623,17 @@ class SignatureBlob {
     buf->add(">\n");
     if (!return_type->blob && !(return_type->flags >> 27)) {
       // Special case to avoid type='any'.
-      buf->sprintf("%*s<type name='none'/>\n", indent + 2, "");
+      buf->sprintf("%*n<type name='none'/>\n", indent + 2);
     } else {
       return_type->render_xml(buf, indent + 2, header);
     }
-    buf->sprintf("%*s</return-value>\n", indent, "");
+    buf->sprintf("%*n</return-value>\n", indent);
     if (sizeof(arguments)) {
-      buf->sprintf("%*s<parameters>\n", indent, "");
+      buf->sprintf("%*n<parameters>\n", indent);
       foreach(arguments, ArgBlob arg) {
         arg->render_xml(buf, indent + 2, header);
       }
-      buf->sprintf("%*s</parameters>\n", indent, "");
+      buf->sprintf("%*n</parameters>\n", indent);
     }
   }
 }
@@ -684,15 +684,15 @@ class FunctionBlob {
     } else if (mfl & 0x0001) {
       tag = "function";
     }
-    buf->sprintf("%*s<%s name='%s' c:identifier='%s'",
-                 indent, "", tag, name->get(), symbol->get());
+    buf->sprintf("%*n<%s name='%s' c:identifier='%s'",
+                 indent, tag, name->get(), symbol->get());
     if (fl & 0x0001) {
       buf->add(" deprecated='1'");
     }
     // FIXME: glib:async-func?
     buf->add(">\n");
     signature->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</%s>\n", indent, "", tag);
+    buf->sprintf("%*n</%s>\n", indent, tag);
   }
 }
 
@@ -719,10 +719,10 @@ class CallbackBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<callback name='%s'>\n",
-                 indent, "", name->get());
+    buf->sprintf("%*n<callback name='%s'>\n",
+                 indent, name->get());
     signature->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</callback>\n", indent, "");
+    buf->sprintf("%*n</callback>\n", indent);
   }
 }
 
@@ -737,10 +737,10 @@ class InterfaceTypeBlob {
   {
     DirEntry blob = header->entries[interface->get()-1];
     if (stringp(blob->offset)) {
-      buf->sprintf("%*s<type name='%s.%s'/>\n",
-                   indent, "", blob->offset, blob->name);
+      buf->sprintf("%*n<type name='%s.%s'/>\n",
+                   indent, blob->offset, blob->name);
     } else {
-      buf->sprintf("%*s<type name='%s'/>\n", indent, "", blob->name);
+      buf->sprintf("%*n<type name='%s'/>\n", indent, blob->name);
     }
   }
 }
@@ -756,7 +756,7 @@ class ArrayTypeBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<array", indent, "");
+    buf->sprintf("%*n<array", indent);
     if (pointer_and_tag->get() & 0x0100) {
       buf->add(" zero-terminated='1'");
     }
@@ -765,7 +765,7 @@ class ArrayTypeBlob {
     }
     buf->add(">\n");
     type->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</array>\n", indent, "");
+    buf->sprintf("%*n</array>\n", indent);
   }
 }
 
@@ -814,11 +814,11 @@ class ValueBlob {
       }
     }
     // FIXME: How to mark deprecated values?
-    buf->sprintf("%*s<member name='%s' value='%d'>\n",
-                 indent, "", name->get(), val);
+    buf->sprintf("%*n<member name='%s' value='%d'>\n",
+                 indent, name->get(), val);
     // FIXME: <attribute name="c:identifier" value="XXXX_XXXX"/>
     attributes->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</member>\n", indent, "");
+    buf->sprintf("%*n</member>\n", indent);
   }
 }
 
@@ -838,10 +838,10 @@ class FieldBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<field name='%s'>\n",
-                 indent, "", name->get());
+    buf->sprintf("%*n<field name='%s'>\n",
+                 indent, name->get());
     type->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</field>\n", indent, "");
+    buf->sprintf("%*n</field>\n", indent);
   }
 }
 
@@ -898,13 +898,13 @@ class StructBlob {
   {
     string tag = "record";
     if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
-      buf->sprintf("%*s<glib:boxed glib:name='%s'"
+      buf->sprintf("%*n<glib:boxed glib:name='%s'"
                    " glib:type-name='%s' glib:get-type='%s'",
-                   indent, "", name->get(),
+                   indent, name->get(),
                    gtype_name->get(), gtype_init->get());
       tag = "glib:boxed";
     } else {
-      buf->sprintf("%*s<%s name='%s'", indent, "", tag, name->get());
+      buf->sprintf("%*n<%s name='%s'", indent, tag, name->get());
     }
     if (flags->get() & 0x0004) { // is_gtype_struct
       buf->add(" glib:is-gtype-struct='1'");
@@ -917,7 +917,7 @@ class StructBlob {
       foreach(methods, FunctionBlob method) {
         method->render_xml(buf, indent + 2, header);
       }
-      buf->sprintf("%*s</%s>\n", indent, "", tag);
+      buf->sprintf("%*n</%s>\n", indent, tag);
     } else {
       buf->add("/>\n");
     }
@@ -950,7 +950,7 @@ class UnionBlob {
     if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
       ::render_xml(buf, indent, header);
     } else {
-      buf->sprintf("%*s<union name='%s'/>\n", indent, "", name->get());
+      buf->sprintf("%*n<union name='%s'/>\n", indent, name->get());
     }
   }
 }
@@ -991,14 +991,14 @@ class EnumBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<enumeration name='%s'>\n", indent, "", name->get());
+    buf->sprintf("%*n<enumeration name='%s'>\n", indent, name->get());
     foreach(values, Struct value) {
       value->render_xml(buf, indent + 2, header);
     }
     foreach(methods, Struct method) {
       method->render_xml(buf, indent + 2, header);
     }
-    buf->sprintf("%*s</enumeration>\n", indent, "");
+    buf->sprintf("%*n</enumeration>\n", indent);
   }
 }
 
@@ -1124,7 +1124,7 @@ class ObjectBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<class name='%s'", indent, "", name->get());
+    buf->sprintf("%*n<class name='%s'", indent, name->get());
 
     int p = parent->get();
     if (p > 0) {
@@ -1159,7 +1159,7 @@ class ObjectBlob {
     vfuncs->render_xml(buf, indent + 2, header);
     constants->render_xml(buf, indent + 2, header);
     field_callbacks->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</class>\n", indent, "");
+    buf->sprintf("%*n</class>\n", indent);
   }
 }
 
@@ -1262,7 +1262,7 @@ class ConstantBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*s<constant name='%s'", indent, "", name->get());
+    buf->sprintf("%*n<constant name='%s'", indent, name->get());
     if (stringp(value)) {
       buf->sprintf(" value='%s'", String.string2hex(value));
     } else if (intp(value)) {
@@ -1272,7 +1272,7 @@ class ConstantBlob {
     }
     buf->add(">\n");
     type->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*s</constant>\n", indent, "");
+    buf->sprintf("%*n</constant>\n", indent);
   }
 }
 
