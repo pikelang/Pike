@@ -1039,7 +1039,7 @@
  *! plane. Otherwise, it is @i{out@}.
  *! 
  *! To enable and disable clipping planes, call @[glEnable] and
- *! @[glDisable] with the argument @tt{GL_CLIP_PLANE@}@i{i@}, where @i{i@}
+ *! @[glDisable] with the argument @tt{GL_CLIP_PLANE@i{i@}@}, where @i{i@}
  *! is the plane number.
  *! 
  *! All clipping planes are initially defined as (0, 0, 0, 0) in eye
@@ -1048,7 +1048,7 @@
  *! @param plane
  *! 
  *! Specifies which clipping plane is being positioned. Symbolic names of
- *! the form @tt{GL_CLIP_PLANE@}@i{i@}, where @i{i@} is an integer between
+ *! the form @tt{GL_CLIP_PLANE@i{i@}@}, where @i{i@} is an integer between
  *! 0 and @[GL_MAX_CLIP_PLANES]-1, are accepted.
  *! 
  *! @param equation
@@ -3054,7 +3054,7 @@
  *! @[glGetTexImage] returns a texture image into @i{img@}. @i{target@}
  *! specifies whether the desired texture image is one specified by
  *! @[glTexImage1D] (@[GL_TEXTURE_1D]), @[glTexImage2D] (@[GL_TEXTURE_2D]
- *! or any of @[GL_TEXTURE_CUBE_MAP_*]), or @[glTexImage3D]
+ *! or any of @tt{GL_TEXTURE_CUBE_MAP_@i{*@}@}), or @[glTexImage3D]
  *! (@[GL_TEXTURE_3D]). @i{level@} specifies the level-of-detail number of
  *! the desired image. @i{format@} and @i{type@} specify the format and
  *! type of the desired image array. See the reference pages
@@ -4572,7 +4572,7 @@
  *! ><ref>GL_ALPHA_TEST</ref></c><c><ref>glAlphaFunc</ref></c></r><r><c
  *! ><ref>GL_AUTO_NORMAL</ref></c><c><ref>glEvalCoord</ref></c></r><r><c
  *! ><ref>GL_BLEND</ref></c><c><ref>glBlendFunc</ref>, <ref>glLogicOp</ref
- *! ></c></r><r><c><tt>GL_CLIP_PLANE</tt><i>i</i></c><c><ref
+ *! ></c></r><r><c><tt>GL_CLIP_PLANE<i>i</i></tt></c><c><ref
  *! >glClipPlane</ref></c></r><r><c><ref>GL_COLOR_ARRAY</ref></c><c><ref
  *! >glColorPointer</ref></c></r><r><c><ref>GL_COLOR_LOGIC_OP</ref></c><c
  *! ><ref>glLogicOp</ref></c></r><r><c><ref>GL_COLOR_MATERIAL</ref></c><c
@@ -4590,7 +4590,7 @@
  *! >glFogCoordPointer</ref></c></r><r><c><ref>GL_HISTOGRAM</ref></c><c
  *! ><ref>glHistogram</ref></c></r><r><c><ref>GL_INDEX_ARRAY</ref></c><c
  *! ><ref>glIndexPointer</ref></c></r><r><c><ref>GL_INDEX_LOGIC_OP</ref
- *! ></c><c><ref>glLogicOp</ref></c></r><r><c><tt>GL_LIGHT</tt><i>i</i></c
+ *! ></c><c><ref>glLogicOp</ref></c></r><r><c><tt>GL_LIGHT<i>i</i></tt></c
  *! ><c><ref>glLightModel</ref>, <ref>glLight</ref></c></r><r><c><ref
  *! >GL_LIGHTING</ref></c><c><ref>glMaterial</ref>, <ref>glLightModel</ref
  *! >, <ref>glLight</ref></c></r><r><c><ref>GL_LINE_SMOOTH</ref></c><c
@@ -6123,15 +6123,15 @@
  *! >GL_COLOR_MATERIAL</ref></c></r><r><c></c><c><ref>GL_CULL_FACE</ref>
  *! flag </c></r><r><c></c><c><ref>GL_DEPTH_TEST</ref> flag </c></r><r><c
  *! ></c><c><ref>GL_DITHER</ref> flag </c></r><r><c></c><c><ref
- *! >GL_FOG</ref> flag </c></r><r><c></c><c><tt>GL_LIGHT</tt><i>i</i>
+ *! >GL_FOG</ref> flag </c></r><r><c></c><c><tt>GL_LIGHT<i>i</i></tt>
  *! where <ref>0</ref> &lt;= <i>i</i> &lt; <ref>GL_MAX_LIGHTS</ref></c></r
  *! ><r><c></c><c><ref>GL_LIGHTING</ref> flag </c></r><r><c></c><c><ref
  *! >GL_LINE_SMOOTH</ref> flag </c></r><r><c></c><c><ref
  *! >GL_LINE_STIPPLE</ref> flag </c></r><r><c></c><c><ref
  *! >GL_COLOR_LOGIC_OP</ref> flag </c></r><r><c></c><c><ref
- *! >GL_INDEX_LOGIC_OP</ref> flag </c></r><r><c></c><c><ref>GL_MAP1_</ref
- *! ><i>x</i> where <i>x</i> is a map type </c></r><r><c></c><c><ref
- *! >GL_MAP2_</ref><i>x</i> where <i>x</i> is a map type </c></r><r><c></c
+ *! >GL_INDEX_LOGIC_OP</ref> flag </c></r><r><c></c><c><tt>GL_MAP1_<i>x</i
+ *! ></tt> where <i>x</i> is a map type </c></r><r><c></c><c><tt
+ *! >GL_MAP2_<i>x</i></tt> where <i>x</i> is a map type </c></r><r><c></c
  *! ><c><ref>GL_MULTISAMPLE</ref> flag </c></r><r><c></c><c><ref
  *! >GL_NORMALIZE</ref> flag </c></r><r><c></c><c><ref
  *! >GL_POINT_SMOOTH</ref> flag </c></r><r><c></c><c><ref
@@ -6147,23 +6147,22 @@
  *! >GL_STENCIL_TEST</ref> flag </c></r><r><c></c><c><ref
  *! >GL_TEXTURE_1D</ref> flag </c></r><r><c></c><c><ref>GL_TEXTURE_2D</ref
  *! > flag </c></r><r><c></c><c><ref>GL_TEXTURE_3D</ref> flag </c></r><r
- *! ><c></c><c>Flags <tt>GL_TEXTURE_GEN_</tt><i>x</i> where <i>x</i> is S,
- *! T, R, or Q </c></r><r><c><ref>GL_EVAL_BIT</ref></c><c><ref
- *! >GL_MAP1_</ref><i>x</i> enable bits, where <i>x</i> is a map type </c
- *! ></r><r><c></c><c><ref>GL_MAP2_</ref><i>x</i> enable bits, where <i
- *! >x</i> is a map type </c></r><r><c></c><c>1D grid endpoints and
- *! divisions </c></r><r><c></c><c>2D grid endpoints and divisions </c></r
- *! ><r><c></c><c><ref>GL_AUTO_NORMAL</ref> enable bit </c></r><r><c><ref
- *! >GL_FOG_BIT</ref></c><c><ref>GL_FOG</ref> enable bit </c></r><r><c></c
- *! ><c>Fog color </c></r><r><c></c><c>Fog density </c></r><r><c></c><c
- *! >Linear fog start </c></r><r><c></c><c>Linear fog end </c></r><r><c
- *! ></c><c>Fog index </c></r><r><c></c><c><ref>GL_FOG_MODE</ref> value
- *! </c></r><r><c><ref>GL_HINT_BIT</ref></c><c><ref
- *! >GL_PERSPECTIVE_CORRECTION_HINT</ref> setting </c></r><r><c></c><c
- *! ><ref>GL_POINT_SMOOTH_HINT</ref> setting </c></r><r><c></c><c><ref
- *! >GL_LINE_SMOOTH_HINT</ref> setting </c></r><r><c></c><c><ref
- *! >GL_POLYGON_SMOOTH_HINT</ref> setting </c></r><r><c></c><c><ref
- *! >GL_FOG_HINT</ref> setting </c></r><r><c></c><c><ref
+ *! ><c></c><c>Flags <tt>GL_TEXTURE_GEN_<i>x</i></tt> where <i>x</i> is S,
+ *! T, R, or Q </c></r><r><c><ref>GL_EVAL_BIT</ref></c><c><tt>GL_MAP1_<i
+ *! >x</i></tt> enable bits, where <i>x</i> is a map type </c></r><r><c
+ *! ></c><c><tt>GL_MAP2_<i>x</i></tt> enable bits, where <i>x</i> is a map
+ *! type </c></r><r><c></c><c>1D grid endpoints and divisions </c></r><r
+ *! ><c></c><c>2D grid endpoints and divisions </c></r><r><c></c><c><ref
+ *! >GL_AUTO_NORMAL</ref> enable bit </c></r><r><c><ref>GL_FOG_BIT</ref
+ *! ></c><c><ref>GL_FOG</ref> enable bit </c></r><r><c></c><c>Fog color
+ *! </c></r><r><c></c><c>Fog density </c></r><r><c></c><c>Linear fog start
+ *! </c></r><r><c></c><c>Linear fog end </c></r><r><c></c><c>Fog index </c
+ *! ></r><r><c></c><c><ref>GL_FOG_MODE</ref> value </c></r><r><c><ref
+ *! >GL_HINT_BIT</ref></c><c><ref>GL_PERSPECTIVE_CORRECTION_HINT</ref>
+ *! setting </c></r><r><c></c><c><ref>GL_POINT_SMOOTH_HINT</ref> setting
+ *! </c></r><r><c></c><c><ref>GL_LINE_SMOOTH_HINT</ref> setting </c></r><r
+ *! ><c></c><c><ref>GL_POLYGON_SMOOTH_HINT</ref> setting </c></r><r><c></c
+ *! ><c><ref>GL_FOG_HINT</ref> setting </c></r><r><c></c><c><ref
  *! >GL_GENERATE_MIPMAP_HINT</ref> setting </c></r><r><c></c><c><ref
  *! >GL_TEXTURE_COMPRESSION_HINT</ref> setting </c></r><r><c><ref
  *! >GL_LIGHTING_BIT</ref></c><c><ref>GL_COLOR_MATERIAL</ref> enable bit
@@ -6230,8 +6229,8 @@
  *! image </c></r><r><c></c><c>Magnification function for each texture
  *! image </c></r><r><c></c><c>Texture coordinates and wrap mode for each
  *! texture image </c></r><r><c></c><c>Color and mode for each texture
- *! environment </c></r><r><c></c><c>Enable bits <tt>GL_TEXTURE_GEN_</tt
- *! ><i>x</i>, <i>x</i> is S, T, R, and Q </c></r><r><c></c><c><ref
+ *! environment </c></r><r><c></c><c>Enable bits <tt>GL_TEXTURE_GEN_<i
+ *! >x</i></tt>, <i>x</i> is S, T, R, and Q </c></r><r><c></c><c><ref
  *! >GL_TEXTURE_GEN_MODE</ref> setting for S, T, R, and Q </c></r><r><c
  *! ></c><c><ref>glTexGen</ref> plane equations for S, T, R, and Q </c></r
  *! ><r><c></c><c>Current texture bindings (for example, <ref
@@ -7108,9 +7107,9 @@
  *! The following describes how the texture sources, as specified by
  *! @[GL_SRC0_RGB], @[GL_SRC1_RGB], @[GL_SRC2_RGB], @[GL_SRC0_ALPHA],
  *! @[GL_SRC1_ALPHA], and @[GL_SRC2_ALPHA], are combined to produce a
- *! final texture color. In the following tables, @[GL_SRC0_c] is
- *! represented by Arg0, @[GL_SRC1_c] is represented by Arg1, and
- *! @[GL_SRC2_c] is represented by Arg2.
+ *! final texture color. In the following tables, @tt{GL_SRC0_@i{c@}@} is
+ *! represented by Arg0, @tt{GL_SRC1_@i{c@}@} is represented by Arg1, and
+ *! @tt{GL_SRC2_@i{c@}@} is represented by Arg2.
  *! 
  *! @[GL_COMBINE_RGB] accepts any of @[GL_REPLACE], @[GL_MODULATE],
  *! @[GL_ADD], @[GL_ADD_SIGNED], @[GL_INTERPOLATE], @[GL_SUBTRACT],
@@ -7155,18 +7154,18 @@
  *! The following table describes the values assigned to Arg0, Arg1, and
  *! Arg2 based upon the RGB sources and operands:
  *! 
- *! @xml{<matrix><r><c><b><ref>GL_SRCn_RGB</ref></b></c><c><b><ref
- *! >GL_OPERANDn_RGB</ref></b></c><c><b> Argument Value </b></c></r><r><c
- *! ><ref>GL_TEXTURE</ref></c><c><ref>GL_SRC_COLOR</ref></c><c><i>C</i
- *! ><sub><i>s</i></sub></c></r><r><c></c><c><ref
+ *! @xml{<matrix><r><c><b><tt>GL_SRC<i>n</i>_RGB</tt></b></c><c><b><tt
+ *! >GL_OPERAND<i>n</i>_RGB</tt></b></c><c><b> Argument Value </b></c></r
+ *! ><r><c><ref>GL_TEXTURE</ref></c><c><ref>GL_SRC_COLOR</ref></c><c><i
+ *! >C</i><sub><i>s</i></sub></c></r><r><c></c><c><ref
  *! >GL_ONE_MINUS_SRC_COLOR</ref></c><c> 1-<i>C</i><sub><i>s</i></sub></c
  *! ></r><r><c></c><c><ref>GL_SRC_ALPHA</ref></c><c><i>A</i><sub><i>s</i
  *! ></sub></c></r><r><c></c><c><ref>GL_ONE_MINUS_SRC_ALPHA</ref></c><c>
- *! 1-<i>A</i><sub><i>s</i></sub></c></r><r><c><ref>GL_TEXTUREn</ref></c
- *! ><c><ref>GL_SRC_COLOR</ref></c><c><i>C</i><sub><i>s</i></sub></c></r
- *! ><r><c></c><c><ref>GL_ONE_MINUS_SRC_COLOR</ref></c><c> 1-<i>C</i><sub
- *! ><i>s</i></sub></c></r><r><c></c><c><ref>GL_SRC_ALPHA</ref></c><c><i
- *! >A</i><sub><i>s</i></sub></c></r><r><c></c><c><ref
+ *! 1-<i>A</i><sub><i>s</i></sub></c></r><r><c><tt>GL_TEXTURE<i>n</i></tt
+ *! ></c><c><ref>GL_SRC_COLOR</ref></c><c><i>C</i><sub><i>s</i></sub></c
+ *! ></r><r><c></c><c><ref>GL_ONE_MINUS_SRC_COLOR</ref></c><c> 1-<i>C</i
+ *! ><sub><i>s</i></sub></c></r><r><c></c><c><ref>GL_SRC_ALPHA</ref></c><c
+ *! ><i>A</i><sub><i>s</i></sub></c></r><r><c></c><c><ref
  *! >GL_ONE_MINUS_SRC_ALPHA</ref></c><c> 1-<i>A</i><sub><i>s</i></sub></c
  *! ></r><r><c><ref>GL_CONSTANT</ref></c><c><ref>GL_SRC_COLOR</ref></c><c
  *! ><i>C</i><sub><i>c</i></sub></c></r><r><c></c><c><ref
@@ -7184,20 +7183,21 @@
  *! >GL_ONE_MINUS_SRC_COLOR</ref></c><c> 1-<i>C</i><sub><i>p</i></sub></c
  *! ></r><r><c></c><c><ref>GL_SRC_ALPHA</ref></c><c><i>A</i><sub><i>p</i
  *! ></sub></c></r><r><c></c><c><ref>GL_ONE_MINUS_SRC_ALPHA</ref></c><c>
- *! 1-<i>A</i><sub><i>p</i></sub></c></r></matrix>@} For @[GL_TEXTUREn]
- *! sources, @i{C@}@sub{@i{s@}@} and @i{A@}@sub{@i{s@}@} represent the
- *! color and alpha, respectively, produced from texture stage @i{n@}.
+ *! 1-<i>A</i><sub><i>p</i></sub></c></r></matrix>@} For
+ *! @tt{GL_TEXTURE@i{n@}@} sources, @i{C@}@sub{@i{s@}@} and
+ *! @i{A@}@sub{@i{s@}@} represent the color and alpha, respectively,
+ *! produced from texture stage @i{n@}.
  *! 
  *! The follow table describes the values assigned to Arg0, Arg1, and Arg2
  *! based upon the alpha sources and operands:
  *! 
- *! @xml{<matrix><r><c><b><ref>GL_SRCn_ALPHA</ref></b></c><c><b><ref
- *! >GL_OPERANDn_ALPHA</ref></b></c><c><b> Argument Value </b></c></r><r
- *! ><c><ref>GL_TEXTURE</ref></c><c><ref>GL_SRC_ALPHA</ref></c><c><i>A</i
- *! ><sub><i>s</i></sub></c></r><r><c></c><c><ref
- *! >GL_ONE_MINUS_SRC_ALPHA</ref></c><c> 1-<i>A</i><sub><i>s</i></sub></c
- *! ></r><r><c><ref>GL_TEXTUREn</ref></c><c><ref>GL_SRC_ALPHA</ref></c><c
+ *! @xml{<matrix><r><c><b><tt>GL_SRC<i>n</i>_ALPHA</tt></b></c><c><b><tt
+ *! >GL_OPERAND<i>n</i>_ALPHA</tt></b></c><c><b> Argument Value </b></c
+ *! ></r><r><c><ref>GL_TEXTURE</ref></c><c><ref>GL_SRC_ALPHA</ref></c><c
  *! ><i>A</i><sub><i>s</i></sub></c></r><r><c></c><c><ref
+ *! >GL_ONE_MINUS_SRC_ALPHA</ref></c><c> 1-<i>A</i><sub><i>s</i></sub></c
+ *! ></r><r><c><tt>GL_TEXTURE<i>n</i></tt></c><c><ref>GL_SRC_ALPHA</ref
+ *! ></c><c><i>A</i><sub><i>s</i></sub></c></r><r><c></c><c><ref
  *! >GL_ONE_MINUS_SRC_ALPHA</ref></c><c> 1-<i>A</i><sub><i>s</i></sub></c
  *! ></r><r><c><ref>GL_CONSTANT</ref></c><c><ref>GL_SRC_ALPHA</ref></c><c
  *! ><i>A</i><sub><i>c</i></sub></c></r><r><c></c><c><ref
@@ -7300,7 +7300,8 @@
  *! @[GL_COMBINE] mode and its associated constants may only be used if
  *! the GL version is 1.3 or greater.
  *! 
- *! @[GL_TEXTUREn] may only be used if the GL version is 1.4 or greater.
+ *! @tt{GL_TEXTURE@i{n@}@} may only be used if the GL version is 1.4 or
+ *! greater.
  *! 
  *! Internal formats other than 1, 2, 3, or 4 may only be used if the GL
  *! version is 1.1 or greater.
@@ -8008,20 +8009,20 @@
  *! <i>width</i> must 2<sup><i>n</i></sup>+2(border), for some integer <i
  *! >n</i>, and <i>height</i> must be 2<sup><i>m</i></sup>+2(border), for
  *! some integer <i>m</i>, after filtering. </p></c></r>
- *! <r><c>3. RGBA components may be multiplied by <ref
- *! >GL_POST_CONVOLUTION_c_SCALE</ref>,</c>
- *! <c><p>and added to <ref>GL_POST_CONVOLUTION_c_BIAS</ref>, if enabled.
- *! See <ref>glPixelTransfer</ref>. </p></c></r>
+ *! <r><c>3. RGBA components may be multiplied by <tt
+ *! >GL_POST_CONVOLUTION_<i>c</i>_SCALE</tt>,</c>
+ *! <c><p>and added to <tt>GL_POST_CONVOLUTION_<i>c</i>_BIAS</tt>, if
+ *! enabled. See <ref>glPixelTransfer</ref>. </p></c></r>
  *! <r><c>4. Color component replacement by the color table specified
  *! for</c>
  *! <c><p><ref>GL_POST_CONVOLUTION_COLOR_TABLE</ref>, if enabled. See <ref
  *! >glColorTable</ref>. </p></c></r>
  *! <r><c>5. Transformation by the color matrix.</c>
  *! <c><p>See <ref>glMatrixMode</ref>. </p></c></r>
- *! <r><c>6. RGBA components may be multiplied by <ref
- *! >GL_POST_COLOR_MATRIX_c_SCALE</ref>,</c>
- *! <c><p>and added to <ref>GL_POST_COLOR_MATRIX_c_BIAS</ref>, if enabled.
- *! See <ref>glPixelTransfer</ref>. </p></c></r>
+ *! <r><c>6. RGBA components may be multiplied by <tt
+ *! >GL_POST_COLOR_MATRIX_<i>c</i>_SCALE</tt>,</c>
+ *! <c><p>and added to <tt>GL_POST_COLOR_MATRIX_<i>c</i>_BIAS</tt>, if
+ *! enabled. See <ref>glPixelTransfer</ref>. </p></c></r>
  *! <r><c>7. Color component replacement by the color table specified
  *! for</c>
  *! <c><p><ref>GL_POST_COLOR_MATRIX_COLOR_TABLE</ref>, if enabled. See
@@ -8441,20 +8442,20 @@
  *! >GL_CONVOLUTION_BORDER_MODE</ref> of <ref>GL_REDUCE</ref>, for
  *! example), the <i>width</i> must 2<sup><i>n</i></sup>+2(border), for
  *! some integer <i>n</i>, after filtering. </p></c></r>
- *! <r><c>3. RGBA components may be multiplied by <ref
- *! >GL_POST_CONVOLUTION_c_SCALE</ref>,</c>
- *! <c><p>and added to <ref>GL_POST_CONVOLUTION_c_BIAS</ref>, if enabled.
- *! See <ref>glPixelTransfer</ref>. </p></c></r>
+ *! <r><c>3. RGBA components may be multiplied by <tt
+ *! >GL_POST_CONVOLUTION_<i>c</i>_SCALE</tt>,</c>
+ *! <c><p>and added to <tt>GL_POST_CONVOLUTION_<i>c</i>_BIAS</tt>, if
+ *! enabled. See <ref>glPixelTransfer</ref>. </p></c></r>
  *! <r><c>4. Color component replacement by the color table specified
  *! for</c>
  *! <c><p><ref>GL_POST_CONVOLUTION_COLOR_TABLE</ref>, if enabled. See <ref
  *! >glColorTable</ref>. </p></c></r>
  *! <r><c>5. Transformation by the color matrix.</c>
  *! <c><p>See <ref>glMatrixMode</ref>. </p></c></r>
- *! <r><c>6. RGBA components may be multiplied by <ref
- *! >GL_POST_COLOR_MATRIX_c_SCALE</ref>,</c>
- *! <c><p>and added to <ref>GL_POST_COLOR_MATRIX_c_BIAS</ref>, if enabled.
- *! See <ref>glPixelTransfer</ref>. </p></c></r>
+ *! <r><c>6. RGBA components may be multiplied by <tt
+ *! >GL_POST_COLOR_MATRIX_<i>c</i>_SCALE</tt>,</c>
+ *! <c><p>and added to <tt>GL_POST_COLOR_MATRIX_<i>c</i>_BIAS</tt>, if
+ *! enabled. See <ref>glPixelTransfer</ref>. </p></c></r>
  *! <r><c>7. Color component replacement by the color table specified
  *! for</c>
  *! <c><p><ref>GL_POST_COLOR_MATRIX_COLOR_TABLE</ref>, if enabled. See
@@ -8699,9 +8700,9 @@
  *! information. </p></c></r>
  *! <r><c><ref>GL_TEXTURE_COMPARE_MODE</ref></c>
  *! <c><p>Specifies the texture comparison mode for currently bound depth
- *! textures. That is, a texture whose internal format is <ref
- *! >GL_DEPTH_COMPONENT_*</ref>; see <ref>glTexImage2D</ref>) Permissible
- *! values are: <matrix>
+ *! textures. That is, a texture whose internal format is <tt
+ *! >GL_DEPTH_COMPONENT_<i>*</i></tt>; see <ref>glTexImage2D</ref>)
+ *! Permissible values are: <matrix>
  *! <r><c><ref>GL_COMPARE_R_TO_TEXTURE</ref></c>
  *! <c><p>Specifies that the interpolated and clamped <i>r</i> texture
  *! coordinate should be compared to the value in the currently bound
@@ -9871,7 +9872,7 @@
  *! <c><p></p><p><i>params</i> returns one value indicating the depth of
  *! the attribute stack. The initial value is 0. See <ref
  *! >glPushClientAttrib</ref>. </p></c></r>
- *! <r><c><tt>GL_CLIP_PLANE</tt><i>i</i></c>
+ *! <r><c><tt>GL_CLIP_PLANE<i>i</i></tt></c>
  *! <c><p></p><p><i>params</i> returns a single boolean value indicating
  *! whether the specified clipping plane is enabled. The initial value is
  *! <ref>GL_FALSE</ref>. See <ref>glClipPlane</ref>. </p></c></r>
@@ -10268,7 +10269,7 @@
  *! <c><p></p><p><i>params</i> returns one value, a mask indicating which
  *! bitplanes of each color index buffer can be written. The initial value
  *! is all 1's. See <ref>glIndexMask</ref>. </p></c></r>
- *! <r><c><tt>GL_LIGHT</tt><i>i</i></c>
+ *! <r><c><tt>GL_LIGHT<i>i</i></tt></c>
  *! <c><p></p><p><i>params</i> returns a single boolean value indicating
  *! whether the specified light is enabled. The initial value is <ref
  *! >GL_FALSE</ref>. See <ref>glLight</ref> and <ref>glLightModel</ref>.
@@ -11958,7 +11959,7 @@
  *! <c><p></p><p>If enabled, blend the computed fragment color values with
  *! the values in the color buffers. See <ref>glBlendFunc</ref>. </p
  *! ></c></r>
- *! <r><c><tt>GL_CLIP_PLANE</tt><i>i</i></c>
+ *! <r><c><tt>GL_CLIP_PLANE<i>i</i></tt></c>
  *! <c><p></p><p>If enabled, clip geometry against user-defined clipping
  *! plane <i>i</i>. See <ref>glClipPlane</ref>. </p></c></r>
  *! <r><c><ref>GL_COLOR_LOGIC_OP</ref></c>
@@ -12006,7 +12007,7 @@
  *! <c><p></p><p>If enabled, apply the currently selected logical
  *! operation to the incoming index and color buffer indices. See <ref
  *! >glLogicOp</ref>. </p></c></r>
- *! <r><c><tt>GL_LIGHT</tt><i>i</i></c>
+ *! <r><c><tt>GL_LIGHT<i>i</i></tt></c>
  *! <c><p></p><p>If enabled, include light <i>i</i> in the evaluation of
  *! the lighting equation. See <ref>glLightModel</ref> and <ref
  *! >glLight</ref>. </p></c></r>
