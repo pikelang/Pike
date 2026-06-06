@@ -221,6 +221,7 @@ __experimental__ class Header {
   Item directory = guint32();
   Item n_attributes = guint32();
   Item attributes = guint32();
+  array(AttributeBlob) attribute_array = ({});
 
   Item dependencies = gstring();
 
@@ -266,10 +267,12 @@ __experimental__ class Header {
 
     int pos = file->tell();
 
+    attribute_array = ({});
     mapping(int:array(AttributeBlob)) attribute_lookup = ([]);
     file->seek(attributes->get());
     for (int i = 0; i < n_attributes->get(); i++) {
       AttributeBlob attr = AttributeBlob(file, attribute_lookup, @state);
+      attribute_array += ({ attr });
       attribute_lookup[attr->offset] += ({ attr });
     }
 
@@ -502,11 +505,22 @@ class ArgBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+    int f = flags->get();
+
     buf->sprintf("%*s<parameter name='%s' transfer-ownership='%s'",
                  indent, "",
                  name->get(),
-                 (flags->get() & 0x20) ? "full" : "none");
-    if (flags->get() & 0x00000004) { // nullable
+                 (f & 0x20) ? "full" : "none");
+    if (f & 0x00000006) {
+      if (f & 0x00000001) { // in
+        buf->add(" direction='in'");
+      }
+      if (f & 0x00000002) { // out
+        buf->add(" direction='out'");
+      }
+      buf->sprintf(" caller-allocates='%d'", !!(f & 0x00000004));
+    }
+    if (flags->get() & 0x00000008) { // nullable
       buf->add(" allow-none='1'");
     }
     // FIXME: nullable, allow-none, introspectable
@@ -552,14 +566,14 @@ enum GITypeTag {
 protected constant TypeTagNameLookup = ([
   GI_TYPE_TAG_VOID: "any",	// Note: "none" for return values.
   GI_TYPE_TAG_BOOLEAN: "gboolean",
-  GI_TYPE_TAG_INT8: "int8",
-  GI_TYPE_TAG_UINT8: "uint8",
-  GI_TYPE_TAG_INT16: "int16",
-  GI_TYPE_TAG_UINT16: "uint16",
-  GI_TYPE_TAG_INT32: "int32",
-  GI_TYPE_TAG_UINT32: "uint32",
-  GI_TYPE_TAG_INT64: "int64",
-  GI_TYPE_TAG_UINT64: "uint64",
+  GI_TYPE_TAG_INT8: "gint8",
+  GI_TYPE_TAG_UINT8: "guint8",
+  GI_TYPE_TAG_INT16: "gint16",
+  GI_TYPE_TAG_UINT16: "guint16",
+  GI_TYPE_TAG_INT32: "gint32",
+  GI_TYPE_TAG_UINT32: "guint32",
+  GI_TYPE_TAG_INT64: "gint64",
+  GI_TYPE_TAG_UINT64: "guint64",
   GI_TYPE_TAG_FLOAT: "float",
   GI_TYPE_TAG_DOUBLE: "double",
   GI_TYPE_TAG_GTYPE: "",
@@ -670,8 +684,13 @@ class FunctionBlob {
     } else if (mfl & 0x0001) {
       tag = "function";
     }
-    buf->sprintf("%*s<%s name='%s' c:identifier='%s'>\n",
+    buf->sprintf("%*s<%s name='%s' c:identifier='%s'",
                  indent, "", tag, name->get(), symbol->get());
+    if (fl & 0x0001) {
+      buf->add(" deprecated='1'");
+    }
+    // FIXME: glib:async-func?
+    buf->add(">\n");
     signature->render_xml(buf, indent + 2, header);
     buf->sprintf("%*s</%s>\n", indent, "", tag);
   }
@@ -684,7 +703,27 @@ class CallbackBlob {
 
   Item flags = guint16();
   Item name = gstring();
-  Item signature = guint32();
+  Item signature_offset = guint32();
+
+  SignatureBlob signature;
+
+  void low_decode(Stdio.InputBlockFile file, mixed... state)
+  {
+    ::low_decode(file, @state);
+
+    int pos = file->tell();
+    file->seek(signature_offset->get());
+    signature = SignatureBlob(file, @state);
+    file->seek(pos);
+  }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*s<callback name='%s'>\n",
+                 indent, "", name->get());
+    signature->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*s</callback>\n", indent, "");
+  }
 }
 
 class InterfaceTypeBlob {
@@ -1161,6 +1200,80 @@ class ConstantBlob {
   Item offset = guint32();
 
   Item reserved2 = guint32();
+
+  string(8bit)|int|float value;
+
+  void low_decode(Stdio.InputBlockFile file,
+                  mapping(int:array(this_program)) attribute_lookup,
+                  mixed... state)
+  {
+    ::low_decode(file, attribute_lookup, @state);
+
+#if __PIKE_BYTEORDER__ == 1234
+    string dir = "-";
+#else
+    string dir = "";
+#endif
+
+    int pos = file->tell();
+    file->seek(offset->get());
+    value = file->read(size->get());
+    if (!type->blob) {
+      int tag = type->flags >> 27;
+      if ((<
+            GI_TYPE_TAG_BOOLEAN,
+            GI_TYPE_TAG_INT8,
+            GI_TYPE_TAG_UINT8,
+            GI_TYPE_TAG_INT16,
+            GI_TYPE_TAG_UINT16,
+            GI_TYPE_TAG_INT32,
+            GI_TYPE_TAG_UINT32,
+            GI_TYPE_TAG_INT64,
+            GI_TYPE_TAG_UINT64,
+            GI_TYPE_TAG_FLOAT,
+            GI_TYPE_TAG_DOUBLE,
+            GI_TYPE_TAG_UNICHAR,
+          >)[tag]) {
+        if ((<
+              GI_TYPE_TAG_FLOAT,
+              GI_TYPE_TAG_DOUBLE,
+            >)[tag]) {
+          // Float/double.
+          sscanf(value, "%" + dir + size->get() + "F", value);
+        } else if ((<
+                     GI_TYPE_TAG_INT8,
+                     GI_TYPE_TAG_INT16,
+                     GI_TYPE_TAG_INT32,
+                     GI_TYPE_TAG_INT64,
+                   >)[tag]){
+          // Signed integer.
+          sscanf(value, "%+" + dir + size->get() + "c", value);
+        } else {
+          // Unsigned integer.
+          sscanf(value, "%" + dir + size->get() + "c", value);
+          if (tag == GI_TYPE_TAG_BOOLEAN) {
+            value = !!value;
+          }
+        }
+      }
+    }
+    file->seek(pos);
+  }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*s<constant name='%s'", indent, "", name->get());
+    if (stringp(value)) {
+      buf->sprintf(" value='%s'", String.string2hex(value));
+    } else if (intp(value)) {
+      buf->sprintf(" value='%d'", value);
+    } else if (floatp(value)) {
+      buf->sprintf(" value='%5g'", value);
+    }
+    buf->add(">\n");
+    type->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*s</constant>\n", indent, "");
+  }
 }
 
 enum GITypelibError {
