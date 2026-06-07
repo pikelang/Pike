@@ -322,6 +322,21 @@ class ContainerSegment(array contents)
     return ::visit(func, @args);
   }
 
+  void fixup_various_references()
+  {
+    int i = sizeof(contents)-1;
+    while (--i >= 0) {
+      Segment s1 = contents[i];
+      Segment s2 = contents[i+1];
+      if (object_program(s1) == TagSegment &&
+          object_program(s2) == TagSegment &&
+          s1->tag == "tt" && s2->tag == "i") {
+        s1->child = mksegment(s1->child, s2);
+        contents[i+1] = NullSegment();
+      }
+    }
+  }
+
   protected array(int) index_of_keys(string ... keys)
   {
     int pos = 0;
@@ -504,22 +519,45 @@ class RefSegment
   Segment fixup_various_references()
   {
     switch (text) {
+    case "Value": // Bogus reference in glTexEnv.xml
+      return mksegment(text);
+    case "dFdx":
+    case "dFdy":
+    case "fwidth":
+    case "gl_PointSize":
+      // shader built-in functions (only documented in GLES/GL4)
+      return tag(text, "tt");
     case "glEvalMesh":
       return mksegment(RefSegment("glEvalMesh1"), " and ", RefSegment("glEvalMesh2"));
     case "GL_AUX":
       return mksegment(RefSegment("GL_AUX0"), " through ", RefSegment("GL_AUX3"));
     case "GL_CLIP_PLANE": return tag("GL_CLIP_PLANE", "tt");
     case "GL_LIGHT": return tag("GL_LIGHT", "tt");
+    case "GL_MAP1_": return tag("GL_MAP1_", "tt");
+    case "GL_MAP2_": return tag("GL_MAP2_", "tt");
     case "GL_POLYGON_OFFSET": return tag("GL_POLYGON_OFFSET", "tt");
     case "GL_TEXTURE_GEN_": return tag("GL_TEXTURE_GEN_", "tt");
     case "GL_PIXEL_MAP_c_TO_c":
       return tag(mksegment("GL_PIXEL_MAP_", tag("c", "i"),
                            "_TO_", tag("c", "i")), "tt");
-    case "GL_c_BIAS":
-      return tag(mksegment("GL_", tag("c", "i"), "_BIAS"), "tt");
-    case "GL_c_SCALE":
-      return tag(mksegment("GL_", tag("c", "i"), "_SCALE"), "tt");
+    case "GL_OPERANDn_ALPHA":
+      return tag(mksegment("GL_OPERAND", tag("n", "i"), "_ALPHA"), "tt");
+    case "GL_OPERANDn_RGB":
+      return tag(mksegment("GL_OPERAND", tag("n", "i"), "_RGB"), "tt");
+    case "GL_SRCn_ALPHA":
+      return tag(mksegment("GL_SRC", tag("n", "i"), "_ALPHA"), "tt");
+    case "GL_SRCn_RGB":
+      return tag(mksegment("GL_SRC", tag("n", "i"), "_RGB"), "tt");
+    case "GL_TEXTUREn":
+      return tag(mksegment("GL_TEXTURE", tag("n", "i")), "tt");
     }
+    if (has_suffix(text, "_*"))
+      return tag(mksegment(text[..<1], tag("*", "i")), "tt");
+    if (has_suffix(text, "_c"))
+      return tag(mksegment(text[..<1], tag("c", "i")), "tt");
+    int n = search(text, "_c_");
+    if (n >= 0)
+      return tag(mksegment(text[..n], tag("c", "i"), text[n+2..]), "tt");
   }
 }
 
@@ -1077,6 +1115,7 @@ void visit_refentry(string id, mapping context)
   else if(name = names[id+"2"])  new_name = name[..sizeof(name)-2];
   else if(name = names[id+"fv"]) new_name = name[..sizeof(name)-3];
   else if(name = names[id+"uiv"]) new_name = name[..sizeof(name)-4];
+  else if(name = names[id+"iv"]) new_name = name[..sizeof(name)-3];
   else if(name = names[id+"v"]) new_name = name[..sizeof(name)-2];
 
   if(new_name) {
