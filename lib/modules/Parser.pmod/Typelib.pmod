@@ -511,6 +511,14 @@ class ArgBlob {
                  indent,
                  name->get(),
                  (f & 0x20) ? "full" : "none");
+    if (f & 0x00000700) {
+      int scope = (f & 0x00000700)>>8;
+      buf->sprintf(" scope='%s'",
+                   ([
+                     /* 2: "destroy", */ // ???
+                     3: "notified",
+                   ])[scope] || (string)scope);
+    }
     if (f & 0x00000006) {
       if (f & 0x00000001) { // in
         buf->add(" direction='in'");
@@ -689,6 +697,9 @@ class FunctionBlob {
     if (fl & 0x0001) {
       buf->add(" deprecated='1'");
     }
+    if (fl & 0x0020) {
+      buf->add(" throws='1'");
+    }
     // FIXME: glib:async-func?
     buf->add(">\n");
     signature->render_xml(buf, indent + 2, header);
@@ -838,8 +849,12 @@ class FieldBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*n<field name='%s'>\n",
+    buf->sprintf("%*n<field name='%s'",
                  indent, name->get());
+    if (flags->get() & 2) {
+      buf->add(" writeable='1'");
+    }
+    buf->add(">\n");
     type->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</field>\n", indent);
   }
@@ -991,7 +1006,11 @@ class EnumBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*n<enumeration name='%s'>\n", indent, name->get());
+    buf->sprintf("%*n<enumeration name='%s'", indent, name->get());
+    if (sizeof(error_domain->get())) {
+      buf->sprintf(" glib:error-domain='%s'", error_domain->get());
+    }
+    buf->add(">\n");
     foreach(values, Struct value) {
       value->render_xml(buf, indent + 2, header);
     }
@@ -1150,7 +1169,6 @@ class ObjectBlob {
     }
 
     buf->add(">\n");
-    // FIXME: Class content.
     interfaces->render_xml(buf, indent + 2, header);
     fields->render_xml(buf, indent + 2, header);
     properties->render_xml(buf, indent + 2, header);
@@ -1166,7 +1184,7 @@ class ObjectBlob {
 class InterfaceBlob {
   inherit Blob;
 
-  Item blub_type = guint16();
+  Item blob_type = guint16();
   Item flags = guint16();
   Item name = gstring();
 
