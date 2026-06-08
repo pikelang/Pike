@@ -984,7 +984,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 {
   struct pike_string *s2;
 
-  switch(UNLIKELY(s->size_shift))
+  switch(UNLIKELY(s->size_shift)?(s->size_shift):eightbit)
   {
     case thirtytwobit:
       switch(find_magnitude2(STR2(s),s->len))

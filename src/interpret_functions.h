@@ -456,7 +456,7 @@ OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>",
 	Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
 	Pike_sp++;
       ,
-	if( UNLIKELY(arg2)==PIKE_T_INT )
+        if( UNLIKELY(arg2 == PIKE_T_INT) )
 	  push_int( *(INT_TYPE*)ptr );
 	else
 	  push_float( *(FLOAT_TYPE*)ptr )
