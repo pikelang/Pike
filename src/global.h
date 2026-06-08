@@ -240,8 +240,8 @@ struct timeval;
 # define UNLIKELY(X) __builtin_expect( !!(X), 0 )
 # define LIKELY(X) __builtin_expect( !!(X), 1 )
 #else
-# define UNLIKELY(X) X
-# define LIKELY(X) X
+# define UNLIKELY(X) !!(X)
+# define LIKELY(X) !!(X)
 #endif
 
 #ifdef HAS___BUILTIN_UNREACHABLE
