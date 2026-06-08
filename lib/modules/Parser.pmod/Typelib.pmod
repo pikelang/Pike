@@ -404,6 +404,16 @@ class DirEntry {
       }
     }
   }
+
+  string get_gi_name(Header header)
+  {
+    string res = name->get();
+    string ns = offset->get();
+    if (stringp(ns)) {
+      res = ns + "." + res;
+    }
+    return res;
+  }
 }
 
 Blob blob_factory(object file, GTypelibBlobType blob_type, mixed... state)
@@ -1079,7 +1089,7 @@ class ObjectBlob {
   Item gtype_struct = guint16();
 
   Item n_interfaces = guint16();
-  array(InterfaceBlob) interfaces = ({});
+  array(guint16) interfaces = ({});
   Item n_fields = guint16();
   array(FieldBlob) fields = ({});
   Item n_properties = guint16();
@@ -1109,8 +1119,11 @@ class ObjectBlob {
 
     interfaces = ({});
     for (int i = 0; i < n_interfaces->get(); i++) {
-      interfaces += ({ InterfaceBlob(file, @state) });
+      guint16 entryno = guint16();
+      entryno->decode(file, @state);
+      interfaces += ({ entryno });
     }
+    if (file->tell() & 0x03) file->read(2);	// Pad to 32bit.
     fields = ({});
     for (int i = 0; i < n_fields->get(); i++) {
       fields += ({ FieldBlob(file, @state) });
@@ -1169,7 +1182,11 @@ class ObjectBlob {
     }
 
     buf->add(">\n");
-    interfaces->render_xml(buf, indent + 2, header);
+    foreach(interfaces->get(), int entryno) {
+      DirEntry entry = header->entries[entryno - 1];
+      buf->sprintf("%*n<implements name='%s'/>\n",
+                   indent + 2, entry->get_gi_name(header));
+    }
     fields->render_xml(buf, indent + 2, header);
     properties->render_xml(buf, indent + 2, header);
     methods->render_xml(buf, indent + 2, header);
