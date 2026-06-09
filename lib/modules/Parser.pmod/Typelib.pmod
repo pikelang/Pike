@@ -857,6 +857,17 @@ class FieldBlob {
 
   SimpleTypeBlob type = SimpleTypeBlob();
 
+  Blob embedded_type;
+
+  void low_decode(Stdio.InputBlockFile file, mixed... state)
+  {
+    ::low_decode(file, @state);
+
+    if (flags->get() & 0x04) { // has_embedded_type
+      embedded_type = blob_factory(file, type->flags, @state);
+    }
+  }
+
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
     buf->sprintf("%*n<field name='%s'",
@@ -865,7 +876,7 @@ class FieldBlob {
       buf->add(" writeable='1'");
     }
     buf->add(">\n");
-    type->render_xml(buf, indent + 2, header);
+    (embedded_type || type)->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</field>\n", indent);
   }
 }
@@ -933,6 +944,9 @@ class StructBlob {
     }
     if (flags->get() & 0x0004) { // is_gtype_struct
       buf->add(" glib:is-gtype-struct='1'");
+    }
+    if (flags->get() & 0x0001) { // deprecated
+      buf->add(" deprecated='1'");
     }
     if (n_fields->get() || n_methods->get()) {
       buf->add(">\n");
@@ -1020,6 +1034,9 @@ class EnumBlob {
     if (sizeof(error_domain->get())) {
       buf->sprintf(" glib:error-domain='%s'", error_domain->get());
     }
+    if (flags->get() & 0x0001) { // deprecated
+      buf->add(" deprecated='1'");
+    }
     buf->add(">\n");
     foreach(values, Struct value) {
       value->render_xml(buf, indent + 2, header);
@@ -1040,7 +1057,48 @@ class PropertyBlob {
 
   Item reserved2 = guint32();
 
-  SimpleTypeBlob discriminator_type = SimpleTypeBlob();
+  SimpleTypeBlob prop_type = SimpleTypeBlob();
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header,
+                  array(FunctionBlob)|void methods)
+  {
+    buf->sprintf("%*n<property name='%s'", indent, name->get());
+    if (flags->get() & 0x00000004) {
+      buf->add(" writeable='1'");
+    }
+    if (flags->get() & 0x00000010) {
+      buf->add(" construct-only='1'");
+    }
+    if ((flags->get() & 0x0001ff80) != 0x0001ff80) {
+      // Setter.
+      int e = (flags->get() & 0x07fe0000) >> 7;
+      if (methods && (e <= sizeof(methods))) {
+        buf->sprintf(" setter='%s'", methods[e]->name);
+      } else {
+        buf->sprintf(" setter='%d'", e);
+      }
+    }
+    if ((flags->get() & 0x07fe0000) != 0x07fe0000) {
+      // Getter.
+      int e = (flags->get() & 0x07fe0000) >> 17;
+      if (methods && (e <= sizeof(methods))) {
+        buf->sprintf(" getter='%s'", methods[e]->name);
+      } else {
+        buf->sprintf(" getter='%d'", e);
+      }
+    }
+    if (flags->get() & 0x00000020) {
+      buf->add(" transfer-ownership='full'");
+    } else {
+      buf->add(" transfer-ownership='none'");
+    }
+    if (flags->get() & 0x0001) { // deprecated
+      buf->add(" deprecated='1'");
+    }
+    buf->add(">\n");
+    prop_type->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*n</property>\n", indent);
+  }
 }
 
 class SignalBlob {
@@ -1054,7 +1112,39 @@ class SignalBlob {
 
   Item reserved2 = guint32();
 
-  Item signature = guint32();
+  Item signature_offset = guint32();
+
+  SignatureBlob signature;
+
+  void low_decode(Stdio.InputBlockFile file, mixed... state)
+  {
+    ::low_decode(file, @state);
+
+    int pos = file->tell();
+    file->seek(signature_offset->get());
+    signature = SignatureBlob(file, @state);
+    file->seek(pos);
+  }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- StructBlob, flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
+    int fl = flags->get();
+
+    buf->sprintf("%*n<signal name='%s'", indent, name->get());
+    if (fl & 0x0004) {
+      buf->add(" when='LAST'");
+    }
+    if (fl & 0x0040) {
+      buf->add(" action='1'");
+    }
+    buf->add(">\n");
+    signature->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*n</signal>\n", indent);
+  }
 }
 
 class VFuncBlob {
@@ -1069,10 +1159,40 @@ class VFuncBlob {
   Item invoker = guint16();
 
   Item finish = guint16();
-  Item reserved2 = guint16();
   Item reserved3 = guint16();
 
-  Item signature = guint32();
+  Item signature_offset = guint32();
+
+  SignatureBlob signature;
+
+  void low_decode(Stdio.InputBlockFile file, mixed... state)
+  {
+    ::low_decode(file, @state);
+
+    int pos = file->tell();
+    file->seek(signature_offset->get());
+    signature = SignatureBlob(file, @state);
+    file->seek(pos);
+  }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    int fl = flags->get();
+
+    buf->sprintf("%*n<virtual-method name='%s'", indent, name->get());
+    if (struct_offset->get() != 0xffff) {
+      buf->sprintf(" offset='%d'", struct_offset->get());
+    }
+    if ((invoker->get() & 0x03ff) != 0x3ff) {
+      buf->sprintf("invoker='%d'", invoker->get() & 0x3ff);
+    }
+    if ((finish->get() & 0x03ff) != 0x3ff) {
+      buf->sprintf("finish='%d'", finish->get() & 0x3ff);
+    }
+    buf->add(">\n");
+    signature->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*n</virtual-method>\n", indent);
+  }
 }
 
 class ObjectBlob {
@@ -1162,15 +1282,24 @@ class ObjectBlob {
     if (p > 0) {
       if (header && (p <= sizeof(header->entries))) {
         DirEntry entry = header->entries[p-1];
-        werror("Entry: %O\n", (mapping)entry);
-        if (stringp(entry->offset)) {
-          buf->sprintf(" parent='%s.%s'", entry->offset, entry->name);
-        } else {
-          buf->sprintf(" parent='%s'", entry->name);
-        }
+        buf->sprintf(" parent='%s'", entry->get_gi_name());
       } else {
-        buf->sprintf(" parent='%d'", parent->get());
+        buf->sprintf(" parent='%d'", p);
       }
+    }
+
+    int ts = gtype_struct->get();
+    if (ts > 0) {
+      if (header && (ts <= sizeof(header->entries))) {
+        DirEntry entry = header->entries[ts-1];
+        buf->sprintf(" glib:type-struct='%s'", entry->get_gi_name());
+      } else {
+        buf->sprintf(" glib:type-struct='%d'", ts);
+      }
+    }
+
+    if (flags->get() & 2) {
+      buf->add(" abstract='1'");
     }
 
     if (gtype_name->get() != "") {
@@ -1210,16 +1339,70 @@ class InterfaceBlob {
   Item gtype_struct = gstring();
 
   Item n_prerequisites = guint16();
+  array(InterfaceBlob) prerequisites = ({});
   Item n_properties = guint16();
+  array(PropertyBlob) properties = ({});
   Item n_methods = guint16();
+  array(FunctionBlob) methods = ({});
   Item n_signals = guint16();
+  array(SignalBlob) signals = ({});
   Item n_vfuncs = guint16();
+  array(VFuncBlob) vfuncs = ({});
   Item n_constants = guint16();
+  array(ConstantBlob) constants = ({});
 
   Item padding = guint16();
 
   Item reserved2 = guint32();
   Item reserved3 = guint32();
+
+  void low_decode(Stdio.InputBlockFile file, mixed... state)
+  {
+    int off = file->tell();
+    string raw = file->read(64);
+    file->seek(off);
+    ::low_decode(file, @state);
+
+    prerequisites = ({});
+    for (int i = 0; i < n_prerequisites->get(); i++) {
+      guint16 entryno = guint16();
+      entryno->decode(file, @state);
+      prerequisites += ({ entryno });
+    }
+    if (file->tell() & 0x03) file->read(2);	// Pad to 32bit.
+    properties = ({});
+    for (int i = 0; i < n_properties->get(); i++) {
+      properties += ({ PropertyBlob(file, @state) });
+    }
+    methods = ({});
+    for (int i = 0; i < n_methods->get(); i++) {
+      methods += ({ FunctionBlob(file, @state) });
+    }
+    signals = ({});
+    for (int i = 0; i < n_signals->get(); i++) {
+      signals += ({ SignalBlob(file, @state) });
+    }
+    vfuncs = ({});
+    for (int i = 0; i < n_vfuncs->get(); i++) {
+      vfuncs += ({ VFuncBlob(file, @state) });
+    }
+    constants = ({});
+    for (int i = 0; i < n_constants->get(); i++) {
+      constants += ({ ConstantBlob(file, @state) });
+    }
+  }
+
+  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*n<implements name='%s'", indent, name->get());
+    buf->add(">\n");
+    properties->render_xml(buf, indent + 2, header, methods);
+    methods->render_xml(buf, indent + 2, header);
+    signals->render_xml(buf, indent + 2, header);
+    vfuncs->render_xml(buf, indent + 2, header);
+    constants->render_xml(buf, indent + 2, header);
+    buf->sprintf("%*n</implements>\n", indent);
+  }
 }
 
 class ConstantBlob {
@@ -1299,7 +1482,12 @@ class ConstantBlob {
   {
     buf->sprintf("%*n<constant name='%s'", indent, name->get());
     if (stringp(value)) {
-      buf->sprintf(" value='%s'", String.string2hex(value));
+      if (has_suffix(value, "\0")) {
+        buf->sprintf(" value='%s'", value[..<1]);
+      } else {
+        // FIXME: How should the binary data be encoded?
+        buf->sprintf(" value='%s'", String.string2hex(value));
+      }
     } else if (intp(value)) {
       buf->sprintf(" value='%d'", value);
     } else if (floatp(value)) {
