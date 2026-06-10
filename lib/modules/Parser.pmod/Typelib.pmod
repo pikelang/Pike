@@ -1030,7 +1030,11 @@ class EnumBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*n<enumeration name='%s'", indent, name->get());
+    string tag = "enumeration";
+    if (blob_type->get() == BLOB_TYPE_FLAGS) {
+      tag = "bitfield";
+    }
+    buf->sprintf("%*n<%s name='%s'", indent, tag, name->get());
     if (sizeof(error_domain->get())) {
       buf->sprintf(" glib:error-domain='%s'", error_domain->get());
     }
@@ -1044,7 +1048,7 @@ class EnumBlob {
     foreach(methods, Struct method) {
       method->render_xml(buf, indent + 2, header);
     }
-    buf->sprintf("%*n</enumeration>\n", indent);
+    buf->sprintf("%*n</%s>\n", indent, tag);
   }
 }
 
@@ -1071,8 +1075,8 @@ class PropertyBlob {
     }
     if ((flags->get() & 0x0001ff80) != 0x0001ff80) {
       // Setter.
-      int e = (flags->get() & 0x07fe0000) >> 7;
-      if (methods && (e <= sizeof(methods))) {
+      int e = (flags->get() & 0x0001ff80) >> 7;
+      if (methods && (e < sizeof(methods))) {
         buf->sprintf(" setter='%s'", methods[e]->name);
       } else {
         buf->sprintf(" setter='%d'", e);
@@ -1081,7 +1085,7 @@ class PropertyBlob {
     if ((flags->get() & 0x07fe0000) != 0x07fe0000) {
       // Getter.
       int e = (flags->get() & 0x07fe0000) >> 17;
-      if (methods && (e <= sizeof(methods))) {
+      if (methods && (e < sizeof(methods))) {
         buf->sprintf(" getter='%s'", methods[e]->name);
       } else {
         buf->sprintf(" getter='%d'", e);
@@ -1175,7 +1179,8 @@ class VFuncBlob {
     file->seek(pos);
   }
 
-  void render_xml(String.Buffer buf, int|void indent, Header|void header)
+  void render_xml(String.Buffer buf, int|void indent, Header|void header,
+                  array(FunctionBlob)|void methods)
   {
     int fl = flags->get();
 
@@ -1184,10 +1189,23 @@ class VFuncBlob {
       buf->sprintf(" offset='%d'", struct_offset->get());
     }
     if ((invoker->get() & 0x03ff) != 0x3ff) {
-      buf->sprintf("invoker='%d'", invoker->get() & 0x3ff);
+      int e = invoker->get() & 0x03ff;
+      if (methods && (e < sizeof(methods))) {
+        buf->sprintf(" invoker='%s'", methods[e]->name);
+      } else {
+        buf->sprintf(" invoker='%d'", e);
+      }
     }
     if ((finish->get() & 0x03ff) != 0x3ff) {
-      buf->sprintf("finish='%d'", finish->get() & 0x3ff);
+      int e = finish->get() & 0x03ff;
+      if (e) {
+        // NB: Apparently 0 is also used to indicate no finish.
+        if (methods && (e < sizeof(methods))) {
+          buf->sprintf(" finish='%s'", methods[e]->name);
+        } else {
+          buf->sprintf(" finish='%d'", finish->get() & 0x3ff);
+        }
+      }
     }
     buf->add(">\n");
     signature->render_xml(buf, indent + 2, header);
@@ -1312,15 +1330,21 @@ class ObjectBlob {
 
     buf->add(">\n");
     foreach(interfaces->get(), int entryno) {
-      DirEntry entry = header->entries[entryno - 1];
-      buf->sprintf("%*n<implements name='%s'/>\n",
-                   indent + 2, entry->get_gi_name(header));
+      if (entryno <= sizeof(header->entries)) {
+        DirEntry entry = header->entries[entryno - 1];
+        buf->sprintf("%*n<implements name='%s'/>\n",
+                     indent + 2, entry->get_gi_name(header));
+      } else {
+        buf->sprintf("%*n<implements name='%d'/>\n",
+                     indent + 2, entryno - 1);
+      }
     }
+    // interfaces->render_xml(buf, indent + 2, header);
     fields->render_xml(buf, indent + 2, header);
-    properties->render_xml(buf, indent + 2, header);
     methods->render_xml(buf, indent + 2, header);
     signals->render_xml(buf, indent + 2, header);
-    vfuncs->render_xml(buf, indent + 2, header);
+    properties->render_xml(buf, indent + 2, header, methods);
+    vfuncs->render_xml(buf, indent + 2, header, methods);
     constants->render_xml(buf, indent + 2, header);
     field_callbacks->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</class>\n", indent);
@@ -1336,10 +1360,10 @@ class InterfaceBlob {
 
   Item gtype_name = gstring();
   Item gtype_init = gstring();
-  Item gtype_struct = gstring();
+  Item gtype_struct = guint16();
 
   Item n_prerequisites = guint16();
-  array(InterfaceBlob) prerequisites = ({});
+  array(guint16) prerequisites = ({});
   Item n_properties = guint16();
   array(PropertyBlob) properties = ({});
   Item n_methods = guint16();
@@ -1394,14 +1418,31 @@ class InterfaceBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*n<implements name='%s'", indent, name->get());
+    buf->sprintf("%*n<interface name='%s'", indent, name->get());
+    if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
+      buf->sprintf(" glib:type-name='%s' glib:get-type='%s'",
+                   gtype_name->get(), gtype_init->get());
+    }
+    int eno = gtype_struct->get();
+    if (eno < sizeof(header->entries)) {
+      DirEntry e = header->entries[eno];
+      buf->sprintf(" glib:gtype-struct='%s'", e->get_gi_name());
+    }
     buf->add(">\n");
-    properties->render_xml(buf, indent + 2, header, methods);
+    foreach(prerequisites->get(), int req) {
+      if (req && (req <= sizeof(header->entries))) {
+        buf->sprintf("%*n<prerequisite name='%s'/>\n",
+                     indent + 2, header->entries[req-1]->get_gi_name());
+      } else {
+        buf->sprintf("%*n<prerequisite name='%d'/>\n", indent + 2, req-1);
+      }
+    }
     methods->render_xml(buf, indent + 2, header);
     signals->render_xml(buf, indent + 2, header);
-    vfuncs->render_xml(buf, indent + 2, header);
+    vfuncs->render_xml(buf, indent + 2, header, methods);
+    properties->render_xml(buf, indent + 2, header, methods);
     constants->render_xml(buf, indent + 2, header);
-    buf->sprintf("%*n</implements>\n", indent);
+    buf->sprintf("%*n</interface>\n", indent);
   }
 }
 
