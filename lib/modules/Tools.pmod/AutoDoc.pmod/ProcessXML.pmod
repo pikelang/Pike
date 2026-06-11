@@ -943,6 +943,8 @@ constant pike_devel_to_release_version =
 // "\"foo.pike\"" ==> ({ "\"foo.pike\"" })
 // ".protocol" ==> ({ "", "protocol" })
 // ".module.ANY" ==> ({ "", "ANY" })
+// "predef::GI.repository.4.0.Gtk" ==> ({ "predef::", "GI", "repository",
+//                                        "4", "0", "Gtk" })
 protected array(string) splitRef(string ref) {
   if ((sizeof(ref)>1) && (ref[0] == '"')) {
     if ((ref == "\".\"") || (ref == "\"module.pmod\"")) {
@@ -987,7 +989,7 @@ protected array(string) splitRef(string ref) {
       return result;
     string token = a[0];
     a = a[1..];
-    if (isIdent(token))
+    if (isIdent(token) || isInteger(token))
       result += ({ token });
     else
       return result;
@@ -1006,7 +1008,9 @@ protected array(string) splitRef(string ref) {
     }
     if ((<".", "->">)[token])
       a = a[1..];
-    else
+    else if (has_prefix(token, ".")) {
+      a[0] = a[0][1..];
+    } else
       return result;
   }
 }
