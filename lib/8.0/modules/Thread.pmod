@@ -509,8 +509,8 @@ class Farm
   //!   The callback function. This will get invoked with the thread as the
   //!   first parameter and the name as the second whenever a thread is
   //!   created. When the same thread terminates the callback is invoked
-  //!   again with @[0] as the second parameter. Set @[cb] to @[0] to stop
-  //!   any previously registered callbacks from being called.
+  //!   again with @expr{0@} as the second parameter. Set @[cb] to @expr{0@}
+  //!   to stop any previously registered callbacks from being called.
   //!
   //! @param prefix
   //!   An optional name prefix to distinguish different farms. If not given
