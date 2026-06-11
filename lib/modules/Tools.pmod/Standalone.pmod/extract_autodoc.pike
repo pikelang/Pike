@@ -212,13 +212,15 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
   foreach(get_dir(builddir), string fn) {
     if ((fn != ".cache.xml") && has_suffix(fn, ".xml")) {
-      if (!Stdio.is_file(srcdir + fn[..<4])) {
+      string src_fn = fn[..<4];
+      if (has_suffix(fn, ".autodoc.xml")) src_fn = fn;
+      if (!Stdio.is_file(srcdir + src_fn)) {
 	if (verbosity > 0)
-	  werror("The file %O is no more.\n", srcdir + fn[..<4]);
+          werror("The file %O is no more.\n", srcdir + src_fn);
 
 	num_updated_files++;
 	rm(builddir + fn);
-	rm(builddir + fn[..<4] + ".brokenxml");
+        rm(builddir + src_fn + ".brokenxml");
 	rm(builddir + fn + ".stamp");
 	rm(builddir + ".cache.xml.stamp");
       } else if (source_timestamp && (source_timestamp < 950000000) &&
@@ -229,7 +231,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	    (old_ts >= bmml_invalidate_after)) {
 	  // BMML file that may have changed at this time.
 	  if (verbosity > 1)
-	    werror("Forcing reextraction of %s.\n", srcdir + fn[..<4]);
+            werror("Forcing reextraction of %s.\n", srcdir + src_fn);
 	  rm(builddir + fn + ".stamp");
 	}
       }
@@ -347,6 +349,14 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       if (has_suffix(fn, ".c") && file_stat(srcdir + fn[..<2] + ".yacc")) {
         rm(builddir + fn + ".xml");
         rm(builddir + fn + ".xml.stamp");
+        continue;
+      }
+
+      if (has_suffix(fn, ".autodoc.xml")) {
+        // Raw Autodoc XML.
+        // This may be useful for documentation extracted from other sources.
+        Stdio.cp(srcdir + fn, builddir + fn);
+        Stdio.write_file(builddir + fn + ".stamp", (string)source_timestamp);
         continue;
       }
 

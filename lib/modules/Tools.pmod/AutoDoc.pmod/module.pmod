@@ -35,6 +35,12 @@ protected int isDocComment(string s) {
   return has_prefix(s, DOC_COMMENT);
 }
 
+protected int isInteger(string s)
+{
+  if (!s || (s == "")) return 0;
+  return (array_sscanf(s, "%*d%n") + ({ -1 }))[0] == sizeof(s);
+}
+
 //FIXME: should it return 0 for keywords ??
 protected int isIdent(string s) {
   if (!s || s == "")
