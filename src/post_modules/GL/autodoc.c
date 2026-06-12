@@ -6124,9 +6124,9 @@
  *! flag </c></r><r><c></c><c><ref>GL_DEPTH_TEST</ref> flag </c></r><r><c
  *! ></c><c><ref>GL_DITHER</ref> flag </c></r><r><c></c><c><ref
  *! >GL_FOG</ref> flag </c></r><r><c></c><c><tt>GL_LIGHT<i>i</i></tt>
- *! where <ref>0</ref> &lt;= <i>i</i> &lt; <ref>GL_MAX_LIGHTS</ref></c></r
- *! ><r><c></c><c><ref>GL_LIGHTING</ref> flag </c></r><r><c></c><c><ref
- *! >GL_LINE_SMOOTH</ref> flag </c></r><r><c></c><c><ref
+ *! where <expr>0</expr> &lt;= <i>i</i> &lt; <ref>GL_MAX_LIGHTS</ref></c
+ *! ></r><r><c></c><c><ref>GL_LIGHTING</ref> flag </c></r><r><c></c><c
+ *! ><ref>GL_LINE_SMOOTH</ref> flag </c></r><r><c></c><c><ref
  *! >GL_LINE_STIPPLE</ref> flag </c></r><r><c></c><c><ref
  *! >GL_COLOR_LOGIC_OP</ref> flag </c></r><r><c></c><c><ref
  *! >GL_INDEX_LOGIC_OP</ref> flag </c></r><r><c></c><c><tt>GL_MAP1_<i>x</i
