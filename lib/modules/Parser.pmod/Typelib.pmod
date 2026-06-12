@@ -149,6 +149,44 @@ class Struct
     buf->sprintf("%*n<!-- %O->render_xml() not implemented! -->\n",
                  indent, object_program(this));
   }
+
+  //! Render an Autodoc representation of the object to a buffer.
+  //!
+  //! @param buf
+  //!   Buffer to write to.
+  //!
+  //! @param indent
+  //!   Indentation level in characters. This is typically increased
+  //!   in increments of @expr{2@}.
+  //!
+  //! @param header
+  //!   Header if known.
+  //!
+  //! @note
+  //!   The default implementation just renders an XML comment
+  //!   with a note that @tt{render_autodoc()@} is not implemented.
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf("%*n<!-- %O->render_autodoc() not implemented! -->\n",
+                 indent, object_program(this));
+  }
+
+  //! Render an Autodoc type representation of the object to a buffer.
+  //!
+  //! @param buf
+  //!   Buffer to write to.
+  //!
+  //! @param header
+  //!   Header if known.
+  //!
+  //! @note
+  //!   The default implementation just renders an XML comment
+  //!   with a note that @tt{render_autodoc_type()@} is not implemented.
+  void render_autodoc_type(String.Buffer buf, Header|void header)
+  {
+    buf->sprintf("<!-- %O->render_autodoc_type() not implemented! -->",
+                 object_program(this));
+  }
 }
 
 //! @[Struct] that may be annotated with attributes.
@@ -326,6 +364,70 @@ __experimental__ class Header {
 %*n</repository>
 ", indent + 2, indent);
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf(#"\
+%*n<autodoc>
+%*n  <namespace name='predef'>
+%*n    <module name='GI'>
+%*n      <module name='repository'>
+", indent, indent, indent, indent);
+    indent += 8;
+    int save_indent = indent;
+    foreach(nsversion->get()/"." - ({ "" }), string v) {
+      buf->sprintf("%*n<module name='%s'>\n", indent, v);
+      indent += 2;
+    }
+    buf->sprintf("%*n<module name='%s'>\n", indent, namespace->get());
+    indent += 2;
+
+    // Add some automatic symbols.
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='__GI_API_VERSION__' homogen-type='constant'>
+%*n  <doc><text><p>This constant contains a string with the version number
+%*n      of the <ref>%s</ref> module (in this case <expr>%q</expr>).</p>
+%*n    </text>
+%*n    <group><seealso/><text><p><ref>__GI_API_VERSION_%s__</ref></p>
+%*n  </text></group></doc>
+%*n  <constant name='__GI_API_VERSION__'>
+%*n    <type><string><min>0</min><max>255</max></string></type>
+%*n  </constant>
+%*n</docgroup>
+",
+                 indent, indent, indent, namespace->get(), nsversion->get(),
+                 indent, indent, replace(nsversion->get(), ".", "_"),
+                 indent, indent, indent, indent, indent);
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='__GI_API_VERSION_%s__' homogen-type='constant'>
+%*n  <doc><text><p>This presence of this constant indicates that this is
+%*n      version %s of the <ref>%s</ref> module.</p>
+%*n    </text>
+%*n    <group><seealso/><text><p><ref>__GI_API_VERSION__</ref></p>
+%*n  </text></group></doc>
+%*n  <constant name='__GI_API_VERSION_%s__'>
+%*n    <type><int><min>1</min><max>1</max></int></type>
+%*n  </constant>
+%*n</docgroup>
+",
+                 indent, replace(nsversion->get(), ".", "_"),
+                 indent, indent, nsversion->get(), namespace->get(),
+                 indent, indent,
+                 indent, indent, replace(nsversion->get(), ".", "_"),
+                 indent, indent, indent);
+    entries->render_autodoc(buf, indent, this);
+    while (indent > save_indent) {
+      indent -= 2;
+      buf->sprintf("%*n</module>\n", indent);
+    }
+    indent -= 8;
+    buf->sprintf(#"\
+%*n      </module>
+%*n    </module>
+%*n  </namespace>
+%*n</autodoc>
+", indent, indent, indent, indent);
+  }
 }
 
 enum SectionType {
@@ -414,6 +516,30 @@ class DirEntry {
     }
     return res;
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    if (blob) {
+      blob->render_autodoc(buf, indent, header);
+    }
+  }
+
+  string get_pike_name(Header header)
+  {
+    string res = name->get();
+    string ns = offset->get();
+    if (stringp(ns)) {
+      res = ns + "." + res;
+      foreach(header->dependencies/"|", string dep) {
+        if (dep == ns) break;	// Unversioned.
+        if (has_prefix(dep, ns + "-")) {
+          res = "predef::GI.repository." + (dep/"-")[-1] + "." + res;
+          break;
+        }
+      }
+    }
+    return res;
+  }
 }
 
 Blob blob_factory(object file, GTypelibBlobType blob_type, mixed... state)
@@ -499,6 +625,16 @@ class SimpleTypeBlob {
                    TypeTagNameLookup[tag] || ("&lt;" + tag + "&gt;"));
     }
   }
+
+  void render_autodoc_type(String.Buffer buf, Header|void header)
+  {
+    if (blob) {
+      blob->render_autodoc_type(buf, header);
+    } else {
+      int tag = flags->get() >> 27;
+      buf->add(TypeTagPikeNameLookup[tag] || ("<!-- " + tag + " -->"));
+    }
+  }
 }
 
 class ArgBlob {
@@ -525,6 +661,7 @@ class ArgBlob {
       int scope = (f & 0x00000700)>>8;
       buf->sprintf(" scope='%s'",
                    ([
+                     1: "call",
                      /* 2: "destroy", */ // ???
                      3: "notified",
                    ])[scope] || (string)scope);
@@ -553,6 +690,49 @@ class ArgBlob {
     buf->add(">\n");
     arg_type->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</parameter>\n", indent);
+  }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    int f = flags->get();
+
+    if ((f & 0x00000003) == 0x00000002) { // out only
+      buf->sprintf("%*n<!-- Skipping out paremeter. -->\n", indent);
+      return;
+    }
+
+    buf->sprintf("%*n<argument name='%s'>\n", indent, name->get());
+    buf->sprintf("%*n  <type>\n", indent);
+
+    if (flags->get() & 0x00000008) { // nullable
+      buf->sprintf("%*n<or><void/>\n", indent + 4);
+      arg_type->render_autodoc_type(buf, header);
+      buf->sprintf("%*n</or>\n", indent + 4);
+    } else {
+      arg_type->render_autodoc_type(buf, header);
+    }
+    buf->sprintf("%*n  </type>\n"
+                 "%*n</argument>\n", indent, indent);
+  }
+
+  void render_autodoc_type(String.Buffer buf, Header|void header)
+  {
+    int f = flags->get();
+
+    if ((f & 0x00000003) == 0x00000002) { // out only
+      return;
+    }
+
+    buf->add("<argtype>");
+
+    if (flags->get() & 0x00000008) { // nullable
+      buf->add("<or><void/>");
+      arg_type->render_autodoc_type(buf, header);
+      buf->add("</or>");
+    } else {
+      arg_type->render_autodoc_type(buf, header);
+    }
+    buf->add("</argtype>");
   }
 }
 
@@ -606,6 +786,31 @@ protected constant TypeTagNameLookup = ([
   GI_TYPE_TAG_UNICHAR: "",
 ]);
 
+protected constant TypeTagPikeNameLookup = ([
+  GI_TYPE_TAG_VOID: "<mixed/>",	// Note: "void" for return values.
+  GI_TYPE_TAG_BOOLEAN: "<int><min>0</min><max>1</max></int>",
+  GI_TYPE_TAG_INT8: "<int><min>-128</min><max>127</max></int>",
+  GI_TYPE_TAG_UINT8: "<int><min>0</min><max>255</max></int>",
+  GI_TYPE_TAG_INT16: "<int><min>-32768</min><max>32767</max></int>",
+  GI_TYPE_TAG_UINT16: "<int><min>0</min><max>65535</max></int>",
+  GI_TYPE_TAG_INT32: "<int><min/><max/></int>",
+  GI_TYPE_TAG_UINT32: "<int><min>0</min><max/></int>",
+  GI_TYPE_TAG_INT64: "<int><min/><max/></int>",
+  GI_TYPE_TAG_UINT64: "<int><min>0</min><max/></int>",
+  GI_TYPE_TAG_FLOAT: "<float/>",
+  GI_TYPE_TAG_DOUBLE: "<float/>",
+  GI_TYPE_TAG_GTYPE: "<mixed/>",
+  GI_TYPE_TAG_UTF8: "<object>utf8_string</object>",
+  GI_TYPE_TAG_FILENAME: "<object>utf8_string</object>",
+  GI_TYPE_TAG_ARRAY: "<array/>",
+  GI_TYPE_TAG_INTERFACE: "<program/>",
+  GI_TYPE_TAG_GLIST: "<!-- GList -->",
+  GI_TYPE_TAG_GSLIST: "<!-- GSList -->",
+  GI_TYPE_TAG_GHASH: "<mapping/>",
+  GI_TYPE_TAG_ERROR: "<!-- Error -->",
+  GI_TYPE_TAG_UNICHAR: "<int><min>0</min><max/></int>",
+]);
+
 class SignatureBlob {
   inherit Blob;
 
@@ -653,6 +858,56 @@ class SignatureBlob {
       }
       buf->sprintf("%*n</parameters>\n", indent);
     }
+  }
+
+  // This renders the signature as a method entry.
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    if (sizeof(arguments)) {
+      buf->sprintf("%*n<arguments>\n", indent);
+      arguments->render_autodoc(buf, indent + 2, header);
+      buf->sprintf("%*n</arguments>\n", indent);
+    } else {
+      buf->sprintf("%*n<arguments/>\n", indent);
+    }
+
+    buf->sprintf("%*n<returntype>", indent);
+    if (!return_type->blob && !(return_type->flags >> 27)) {
+      // void/any.
+      buf->add("<void/>");
+    } else if (flags->get() & 0x01) {
+      // may_return_null
+      buf->add("<or>");
+      return_type->render_autodoc_type(buf, header);
+      buf->add("<zero/></or>");
+    } else {
+      return_type->render_autodoc_type(buf, header);
+    }
+    buf->add("</returntype>\n");
+  }
+
+  // Rendering as a type (ie function(...:...)
+  void render_autodoc_type(String.Buffer buf, Header|void header)
+  {
+    buf->add("<function>");
+
+    arguments->render_autodoc_type(buf, header);
+
+    buf->add("<returntype>");
+    if (!return_type->blob && !(return_type->flags >> 27)) {
+      // Special case to avoid type='any'.
+      buf->add("<void/>");
+    } else {
+      if (flags->get() & 0x01) { // may_return_null
+        buf->add("<or><zero/>");
+      }
+      // FIXME: introspectable, nullable, closure, destroy, skip, allow-none.
+      return_type->render_autodoc_type(buf, header);
+      if (flags->get() & 0x01) { // may_return_null
+        buf->add("</or>");
+      }
+    }
+    buf->add("</returntype></function>");
   }
 }
 
@@ -715,6 +970,29 @@ class FunctionBlob {
     signature->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</%s>\n", indent, tag);
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    int fl = flags->get();
+    int mfl = more_flags->get();
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='method'>
+%*n  <method keep='' name='%s'>
+",
+                 indent, name->get(),
+                 indent, name->get());
+    if (fl & 0x0001) {
+      buf->sprintf("%*n<attributes><attribute><prefix/>"
+                   "<attribute>\"deprecated\"</attribute>"
+                   "</attribute></attributes>\n", indent + 4);
+    }
+    signature->render_autodoc(buf, indent + 4, header);
+    buf->sprintf(#"\
+%*n  </method>
+%*n</docgroup>
+",
+                 indent, indent);
+  }
 }
 
 class CallbackBlob {
@@ -745,6 +1023,19 @@ class CallbackBlob {
     signature->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</callback>\n", indent);
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='typedef'>
+%*n  <typedef name='%s'><type>",
+                 indent, name->get(),
+                 indent, name->get());
+    signature->render_autodoc_type(buf, header);
+    buf->sprintf(#"</type></typedef>
+%*n</docgroup>
+", indent);
+  }
 }
 
 class InterfaceTypeBlob {
@@ -763,6 +1054,23 @@ class InterfaceTypeBlob {
     } else {
       buf->sprintf("%*n<type name='%s'/>\n", indent, blob->name);
     }
+  }
+
+  void render_autodoc_type(String.Buffer buf, Header|void header)
+  {
+    DirEntry entry = header->entries[interface->get()-1];
+    string name = entry->name;
+    if (stringp(entry->offset)) {
+      name = entry->offset + "." + name;
+      foreach(header->dependencies/"|", string dep) {
+        if (dep == entry->offset) break;	// Unversioned.
+        if (has_prefix(dep, entry->offset + "-")) {
+          name = "predef::GI.repository." + (dep/"-")[-1] + "." + name;
+          break;
+        }
+      }
+    }
+    buf->sprintf("<object>%s</object>", name);
   }
 }
 
@@ -787,6 +1095,17 @@ class ArrayTypeBlob {
     buf->add(">\n");
     type->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</array>\n", indent);
+  }
+
+  void render_autodoc_type(String.Buffer buf, Header|void header)
+  {
+    buf->add("<array>");
+    if (length->get() != 0xffff) {
+      // FIXME: We could support this.
+      // buf->sprintf(" fixed-size='%d'", length->get());
+    }
+    type->render_autodoc_type(buf, header);
+    buf->add("</array>");
   }
 }
 
@@ -841,6 +1160,28 @@ class ValueBlob {
     attributes->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</member>\n", indent);
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    int val = value->get();
+    if (!(flags->get() & 0x00000002)) {
+      // Signed value.
+      if (val & 0x80000000) {
+        val -= 0x100000000;
+      }
+    }
+    // FIXME: How to mark deprecated values?
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='constant'>
+%*n  <doc><text/></doc>
+%*n  <constant name='%s'/>
+%*n</docgroup>
+",
+                 indent, name->get(),
+                 indent,
+                 indent, name->get(),
+                 indent);
+  }
 }
 
 class FieldBlob {
@@ -878,6 +1219,31 @@ class FieldBlob {
     buf->add(">\n");
     (embedded_type || type)->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</field>\n", indent);
+  }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='variable'>
+%*n  <doc><text/></doc>
+%*n  <variable name='%s'>
+%*n    <type>",
+                 indent, name->get(),
+                 indent,
+                 indent, name->get(),
+                 indent);
+#if 0
+    // FIXME: Read-only, etc.
+    if (flags->get() & 2) {
+      buf->add(" writeable='1'");
+    }
+#endif
+    (embedded_type || type)->render_autodoc_type(buf, header);
+    buf->sprintf(#"\
+%*n  </variable>
+%*n</docgroup>
+",
+                 indent, indent);
   }
 }
 
@@ -961,6 +1327,60 @@ class StructBlob {
       buf->add("/>\n");
     }
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    //
+    // First: Consolidate any constructors in a Factory module.
+    //
+    array(FunctionBlob) constructors =
+      filter(methods, lambda(FunctionBlob f) {
+        if (f->flags & 0x0008) {
+          return 1;
+        }
+        return 0;
+      });
+    if (sizeof(constructors)) {
+      buf->sprintf("%*n<module name='%sFactory'>\n",
+                   indent, name->get());
+      buf->sprintf(#"\
+%*n  <doc><text><p>Constructors for %s.</p>
+%*n  </text></doc>
+",
+                   indent, name->get(),
+                   indent);
+      constructors->render_autodoc(buf, indent + 2, header);
+      buf->sprintf("%*n</module>\n", indent);
+    }
+
+    //
+    // Second: Output the actual class.
+    //
+    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+    if (flags->get() & 0x0001) { // deprecated
+      buf->sprintf(#"\
+%*n  <attributes><attribute><prefix/><attribute>\"deprecated\"</attribute>
+%*n              </attribute></attributes>
+",
+                   indent, indent);
+    }
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='GBoxed' homogen-type='inherit'>
+%*n  <inherit name='GBoxed'><classname>predef::__GI.GBoxed</classname></inherit>
+%*n</docgroup>
+",
+                   indent + 2,
+                   indent + 2,
+                 indent + 2);
+    foreach(fields, FieldBlob field) {
+      field->render_autodoc(buf, indent + 2, header);
+    }
+    foreach(methods, FunctionBlob method) {
+      if (method->flags & 0x0008) continue;
+      method->render_autodoc(buf, indent + 2, header);
+    }
+    buf->sprintf("%*n</class>\n", indent);
+  }
 }
 
 class UnionBlob {
@@ -1035,6 +1455,14 @@ class EnumBlob {
       tag = "bitfield";
     }
     buf->sprintf("%*n<%s name='%s'", indent, tag, name->get());
+
+    if (gtype_name->get() != "") {
+      buf->sprintf(" glib:type-name='%s'", gtype_name->get());
+    }
+
+    if (gtype_init->get() != "") {
+      buf->sprintf(" glib:get-type='%s'", gtype_init->get());
+    }
     if (sizeof(error_domain->get())) {
       buf->sprintf(" glib:error-domain='%s'", error_domain->get());
     }
@@ -1049,6 +1477,61 @@ class EnumBlob {
       method->render_xml(buf, indent + 2, header);
     }
     buf->sprintf("%*n</%s>\n", indent, tag);
+  }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf(#"\
+%*n<module name='%s'>
+%*n  <doc><text><p>Module wrapper for the <ref>%s.%s</ref> enum.</p>
+%*n    </text>
+%*n    <group><seealso/><text><p><ref>%sType</ref>, <ref>%s.%s</ref></p>
+%*n    </text></group>
+%*n  </doc>
+%*n  <enum name='%s'>
+",
+                 indent, name->get(),
+                 indent, name->get(), name->get(),
+                 indent,
+                 indent, name->get(), name->get(), name->get(),
+                 indent,
+                 indent,
+                 indent, name->get());
+
+    if (flags->get() & 0x0001) { // deprecated
+      buf->sprintf(#"\
+%*n    <attributes><attribute><prefix/><attribute>\"deprecated\"</attribute>
+%*n                </attribute></attributes>
+",
+                   indent, indent);
+    }
+
+    foreach(values, Struct value) {
+      value->render_autodoc(buf, indent + 4, header);
+    }
+#if 0
+    foreach(methods, Struct method) {
+      method->render_autodoc(buf, indent + 4, header);
+    }
+#endif
+    buf->sprintf(#"\
+%*n  </enum>
+%*n</module>
+", indent, indent);
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%sType' homogen-type='typedef'>
+%*n  <doc><text><p>Type of the <ref>%s.%s</ref> enum.</p></text>
+%*n    <group><seealso/><text><p><ref>%s.%s</ref></p>
+%*n  </text></group></doc>
+%*n  <typedef name='%sType'><type><object>%s.%s</object></type></typedef>
+%*n</docgroup>
+",
+                 indent, name->get(),
+                 indent, name->get(), name->get(),
+                 indent, name->get(), name->get(),
+                 indent,
+                 indent, name->get(), name->get(), name->get(),
+                 indent);
   }
 }
 
@@ -1349,6 +1832,169 @@ class ObjectBlob {
     field_callbacks->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</class>\n", indent);
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    //
+    // First: Consolidate any constructors in a Factory module.
+    //
+    array(FunctionBlob) constructors =
+      filter(methods, lambda(FunctionBlob f) {
+        if (f->flags & 0x0008) {
+          return 1;
+        }
+        return 0;
+      });
+    if (sizeof(constructors)) {
+      buf->sprintf("%*n<module name='%sFactory'>\n",
+                   indent, name->get());
+      buf->sprintf(#"\
+%*n  <doc><text><p>Constructors for %s.</p>
+%*n  </text></doc>
+",
+                   indent, name->get(),
+                   indent);
+      constructors->render_autodoc(buf, indent + 2, header);
+      buf->sprintf("%*n</module>\n", indent);
+    }
+
+    //
+    // Second: Generate the main class.
+    //
+    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+
+    if (sizeof(constructors)) {
+      buf->sprintf("%*n  <doc><group><seealso/><text><p>\n", indent);
+      foreach(constructors; int i; FunctionBlob f) {
+        buf->sprintf("%*n    %s <ref>%sFactory.%s</ref>\n",
+                     indent, i?",":"", name->get(), f->name);
+      }
+      buf->sprintf("%*n  </p></text></group></doc>\n", indent);
+    }
+
+    int p = parent->get();
+    if (p > 0) {
+      if (header && (p <= sizeof(header->entries))) {
+        DirEntry entry = header->entries[p-1];
+        string parent = entry->get_pike_name(header);
+        buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='inherit'>
+%*n  <inherit name='%s'><classname>%s</classname></inherit>
+%*n</docgroup>
+",
+                     indent + 2, entry->name,
+                     indent + 2, entry->name, parent,
+                     indent + 2);
+      }
+    } else {
+      buf->sprintf(#"\
+%*n<docgroup homogen-name='GObject' homogen-type='inherit'>
+%*n  <inherit name='GObject'><classname>predef::__GI.GObject</classname></inherit>
+%*n</docgroup>
+",
+                   indent + 2,
+                   indent + 2,
+                   indent + 2);
+    }
+    if (sizeof(interfaces->get())) {
+      foreach(interfaces->get(), int entryno) {
+        if (entryno <= sizeof(header->entries)) {
+          DirEntry entry = header->entries[entryno - 1];
+          string mixin = entry->get_pike_name(header);
+          buf->sprintf(#"\
+%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
+%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n</docgroup>
+",
+                       indent + 2, entry->name,
+                       indent + 2, entry->name, mixin,
+                       indent + 2);
+        }
+      }
+      buf->sprintf("%*n<annotations>\n", indent + 2);
+      foreach(interfaces->get(), int entryno) {
+        if (entryno <= sizeof(header->entries)) {
+          DirEntry entry = header->entries[entryno - 1];
+          string mixin = entry->get_pike_name(header);
+          buf->sprintf("%*n<annotation>"
+                       "<ref>predef::Pike.Annotations.Implements</ref>"
+                       "(<ref>%s</ref>)</annotation>\n",
+                       indent + 4, mixin);
+        }
+      }
+      buf->sprintf("%*n</annotations>\n", indent + 2);
+    }
+
+    fields->render_autodoc(buf, indent + 2, header);
+    properties->render_autodoc(buf, indent + 2, header, methods);
+    foreach(methods, FunctionBlob method) {
+      if (method->flags & 0x0008) continue;
+      method->render_autodoc(buf, indent + 2, header);
+    }
+    signals->render_autodoc(buf, indent + 2, header);
+    // vfuncs->render_autodoc(buf, indent + 2, header, methods);
+    constants->render_autodoc(buf, indent + 2, header);
+    // field_callbacks->render_autodoc(buf, indent + 2, header);
+    buf->sprintf("%*n</class>\n", indent);
+
+    //
+    // Third: Generate the Mixin class.
+    //
+    buf->sprintf("%*n<class name='%sMixin'>\n", indent, name->get());
+
+    p = parent->get();
+    if (p > 0) {
+      if (header && (p <= sizeof(header->entries))) {
+        DirEntry entry = header->entries[p-1];
+        string parent = entry->get_pike_name(header);
+        buf->sprintf(#"\
+%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
+%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n</docgroup>
+",
+                     indent + 2, entry->name,
+                     indent + 2, entry->name, parent,
+                     indent + 2);
+      }
+    }
+    if (sizeof(interfaces->get())) {
+      foreach(interfaces->get(), int entryno) {
+        if (entryno <= sizeof(header->entries)) {
+          DirEntry entry = header->entries[entryno - 1];
+          string mixin = entry->get_pike_name(header);
+          buf->sprintf(#"\
+%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
+%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n</docgroup>
+",
+                       indent + 2, entry->name,
+                       indent + 2, entry->name, mixin,
+                       indent + 2);
+        }
+      }
+      buf->sprintf("%*n<annotations>\n", indent + 2);
+      foreach(interfaces->get(), int entryno) {
+        if (entryno <= sizeof(header->entries)) {
+          DirEntry entry = header->entries[entryno - 1];
+          string mixin = entry->get_pike_name(header);
+          buf->sprintf("%*n<annotation>"
+                       "<ref>predef::Pike.Annotations.Implements</ref>"
+                       "(<ref>%s</ref>)</annotation>\n",
+                       indent + 4, mixin);
+        }
+      }
+      buf->sprintf("%*n</annotations>\n", indent + 2);
+    }
+
+    fields->render_autodoc(buf, indent + 2, header);
+    properties->render_autodoc(buf, indent + 2, header, methods);
+    methods->render_autodoc(buf, indent + 2, header);
+    signals->render_autodoc(buf, indent + 2, header);
+    // vfuncs->render_autodoc(buf, indent + 2, header, methods);
+    constants->render_autodoc(buf, indent + 2, header);
+    // field_callbacks->render_autodoc(buf, indent + 2, header);
+    buf->sprintf("%*n</class>\n", indent);
+  }
 }
 
 class InterfaceBlob {
@@ -1444,6 +2090,118 @@ class InterfaceBlob {
     constants->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</interface>\n", indent);
   }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    //
+    // First: Consolidate any constructors in a Factory module.
+    //
+    array(FunctionBlob) constructors =
+      filter(methods, lambda(FunctionBlob f) {
+        if (f->flags & 0x0008) {
+          return 1;
+        }
+        return 0;
+      });
+    if (sizeof(constructors)) {
+      buf->sprintf("%*n<module name='%sFactory'>\n",
+                   indent, name->get());
+      buf->sprintf(#"\
+%*n  <doc><text><p>Constructors for %s.</p>
+%*n  </text></doc>
+",
+                   indent, name->get(),
+                   indent);
+      constructors->render_autodoc(buf, indent + 2, header);
+      buf->sprintf("%*n</module>\n", indent);
+    }
+
+    //
+    // Second: Generate the Mixin class.
+    //
+    buf->sprintf("%*n<class name='%sMixin'>\n", indent, name->get());
+
+    if (sizeof(constructors)) {
+      buf->sprintf("%*n  <doc><group><seealso/><text><p>\n", indent);
+      foreach(constructors; int i; FunctionBlob f) {
+        buf->sprintf("%*n    %s <ref>%sFactory.%s</ref>\n",
+                     indent, i?",":"", name->get(), f->name);
+      }
+      buf->sprintf("%*n  </p></text></group></doc>\n", indent);
+    }
+
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='GObjectMixin' homogen-type='inherit'>
+%*n  <inherit name='GObjectMixin'><classname>predef::__GI.GObjectMixin</classname></inherit>
+%*n</docgroup>
+",
+                 indent + 2,
+                 indent + 2,
+                 indent + 2);
+    if (sizeof(prerequisites)) {
+      foreach(prerequisites->get(), int entryno) {
+        if (entryno <= sizeof(header->entries)) {
+          DirEntry entry = header->entries[entryno - 1];
+          string mixin = entry->get_pike_name(header);
+          buf->sprintf(#"\
+%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
+%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n</docgroup>
+",
+                       indent + 2, entry->name,
+                       indent + 2, entry->name, mixin,
+                       indent + 2);
+        }
+      }
+      buf->sprintf("%*n<annotations>\n", indent + 2);
+      foreach(prerequisites->get(), int entryno) {
+        if (entryno <= sizeof(header->entries)) {
+          DirEntry entry = header->entries[entryno - 1];
+          string mixin = entry->get_pike_name(header);
+          buf->sprintf("%*n<annotation>"
+                       "<ref>predef::Pike.Annotations.Implements</ref>"
+                       "(<ref>%s</ref>)</annotation>\n",
+                       indent + 4, mixin);
+        }
+      }
+      buf->sprintf("%*n</annotations>\n", indent + 2);
+    }
+
+    properties->render_autodoc(buf, indent + 2, header, methods);
+    foreach(methods, FunctionBlob method) {
+      if (method->flags & 0x0008) continue;
+      method->render_autodoc(buf, indent + 2, header);
+    }
+    signals->render_autodoc(buf, indent + 2, header);
+    // vfuncs->render_autodoc(buf, indent + 2, header, methods);
+    constants->render_autodoc(buf, indent + 2, header);
+    // field_callbacks->render_autodoc(buf, indent + 2, header);
+    buf->sprintf("%*n</class>\n", indent);
+
+    //
+    // Third: Generate the instance class.
+    //
+    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
+%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n</docgroup>
+",
+                 indent + 2, name->get(),
+                 indent + 2, name->get(), name->get(),
+                 indent + 2);
+
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='GObject' homogen-type='inherit'>
+%*n  <inherit name='GObject'><classname>___GI.GObject</classname></inherit>
+%*n</docgroup>
+",
+                 indent + 2,
+                 indent + 2,
+                 indent + 2);
+    buf->sprintf("%*n</class>\n", indent);
+  }
 }
 
 class ConstantBlob {
@@ -1537,6 +2295,24 @@ class ConstantBlob {
     buf->add(">\n");
     type->render_xml(buf, indent + 2, header);
     buf->sprintf("%*n</constant>\n", indent);
+  }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='constant'>
+%*n  <doc><text/></doc>
+%*n  <constant name='%s'>
+",
+                 indent, name->get(),
+                 indent,
+                 indent, name->get());
+    type->render_xml(buf, indent + 4, header);
+    buf->sprintf(#"\
+%*n  </constant>
+%*n</docgroup>
+",
+                 indent, indent);
   }
 }
 

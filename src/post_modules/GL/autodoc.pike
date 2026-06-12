@@ -42,6 +42,9 @@ constant subtree_elements =
   (<"refentry", "funcprototype", "variablelist", "varlistentry", "term",
     "math", "programlisting", "itemizedlist">);
 
+Regexp.SimpleRegexp ident_regexp =
+  Regexp.SimpleRegexp("^[a-zA-Z_][a-zA-Z_0-9.]*$");
+
 
 array(string) not_documented = ({});
 array(string) not_implemented = ({});
@@ -558,6 +561,9 @@ class RefSegment
     int n = search(text, "_c_");
     if (n >= 0)
       return tag(mksegment(text[..n], tag("c", "i"), text[n+2..]), "tt");
+    if (!ident_regexp->match(text))
+      // non-identifier
+      return tag(text, "expr");
   }
 }
 
