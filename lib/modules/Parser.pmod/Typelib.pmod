@@ -415,6 +415,23 @@ __experimental__ class Header {
                  indent, indent,
                  indent, indent, replace(nsversion->get(), ".", "_"),
                  indent, indent, indent);
+
+    foreach(dependencies->get()/"|", string dep) {
+      array(string) a = dep/"-";
+      string sym = "predef::GI.repository.";
+      if (sizeof(a) > 1) {
+        sym += a[1..] * "." + ".";
+      }
+      buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='import'>
+%*n  <import name='%s' symbol='1' recurse='1'><classname>%s</classname></import>
+%*n</docgroup>
+",
+                   indent, a[0],
+                   indent, a[0], sym + a[0],
+                   indent);
+    }
+
     entries->render_autodoc(buf, indent, this);
     while (indent > save_indent) {
       indent -= 2;
@@ -692,46 +709,52 @@ class ArgBlob {
     buf->sprintf("%*n</parameter>\n", indent);
   }
 
-  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header,
+                      int(0..2)|void closure_type)
   {
     int f = flags->get();
-
-    if ((f & 0x00000003) == 0x00000002) { // out only
-      buf->sprintf("%*n<!-- Skipping out paremeter. -->\n", indent);
-      return;
-    }
 
     buf->sprintf("%*n<argument name='%s'>\n", indent, name->get());
-    buf->sprintf("%*n  <type>\n", indent);
+    buf->sprintf("%*n  <type>", indent);
 
-    if (flags->get() & 0x00000008) { // nullable
-      buf->sprintf("%*n<or><void/>\n", indent + 4);
-      arg_type->render_autodoc_type(buf, header);
-      buf->sprintf("%*n</or>\n", indent + 4);
-    } else {
-      arg_type->render_autodoc_type(buf, header);
+    if (!closure_type) {
+      if (flags->get() & 0x00000008) { // nullable
+        buf->add("<or><void/>");
+        arg_type->render_autodoc_type(buf, header);
+        buf->add("</or>");
+      } else {
+        arg_type->render_autodoc_type(buf, header);
+      }
+    } else if (closure_type == 1) {
+      buf->add("<array><valuetype><mixed/></valuetype></array>");
+    } else { // closure_type == 2.
+      buf->add("<varargs><mixed/></varargs>");
     }
-    buf->sprintf("%*n  </type>\n"
-                 "%*n</argument>\n", indent, indent);
+    buf->sprintf("</type>\n"
+                 "%*n</argument>\n", indent);
   }
 
-  void render_autodoc_type(String.Buffer buf, Header|void header)
+  void render_autodoc_type(String.Buffer buf, Header|void header,
+                           int(0..2)|void closure_type)
   {
     int f = flags->get();
-
-    if ((f & 0x00000003) == 0x00000002) { // out only
-      return;
-    }
 
     buf->add("<argtype>");
 
-    if (flags->get() & 0x00000008) { // nullable
-      buf->add("<or><void/>");
-      arg_type->render_autodoc_type(buf, header);
-      buf->add("</or>");
-    } else {
-      arg_type->render_autodoc_type(buf, header);
+    if (!closure_type) {
+      if (flags->get() & 0x00000008) { // nullable
+        buf->add("<or><void/>");
+        arg_type->render_autodoc_type(buf, header);
+        buf->add("</or>");
+      } else {
+        arg_type->render_autodoc_type(buf, header);
+      }
+    } else if (closure_type == 1) {
+      buf->add("<array><valuetype><mixed/></valuetype></array>");
+    } else { // closure_type == 2.
+      buf->add("<varargs><mixed/></varargs>");
     }
+
     buf->add("</argtype>");
   }
 }
@@ -774,16 +797,16 @@ protected constant TypeTagNameLookup = ([
   GI_TYPE_TAG_UINT64: "guint64",
   GI_TYPE_TAG_FLOAT: "float",
   GI_TYPE_TAG_DOUBLE: "double",
-  GI_TYPE_TAG_GTYPE: "",
+  GI_TYPE_TAG_GTYPE: "gtype",
   GI_TYPE_TAG_UTF8: "utf8",
-  GI_TYPE_TAG_FILENAME: "",
-  GI_TYPE_TAG_ARRAY: "",
-  GI_TYPE_TAG_INTERFACE: "",
-  GI_TYPE_TAG_GLIST: "",
-  GI_TYPE_TAG_GSLIST: "",
-  GI_TYPE_TAG_GHASH: "",
-  GI_TYPE_TAG_ERROR: "",
-  GI_TYPE_TAG_UNICHAR: "",
+  GI_TYPE_TAG_FILENAME: "filename",
+  GI_TYPE_TAG_ARRAY: "array",
+  GI_TYPE_TAG_INTERFACE: "interface",
+  GI_TYPE_TAG_GLIST: "glist",
+  GI_TYPE_TAG_GSLIST: "gslist",
+  GI_TYPE_TAG_GHASH: "ghash",
+  GI_TYPE_TAG_ERROR: "error",
+  GI_TYPE_TAG_UNICHAR: "unichar",
 ]);
 
 protected constant TypeTagPikeNameLookup = ([
@@ -860,28 +883,89 @@ class SignatureBlob {
     }
   }
 
+  array(SimpleTypeBlob|ArgBlob|array(ArgBlob)) get_pike_signature()
+  {
+    array(SimpleTypeBlob|ArgBlob|array(ArgBlob)|zero) pike_signature =
+      ({ UNDEFINED }) + arguments;
+    foreach(arguments; int i; ArgBlob arg) {
+      if (!pike_signature[i + 1]) continue;
+      if (arg->flags & 0x00000002) { // OUT
+        if (!pike_signature[0]) {
+          // This will be the return value.
+          pike_signature[0] = arg->arg_type;
+        }
+        if (!(arg->flags & 0x00000001)) { // !IN
+          // Zap pure out parameters.
+          pike_signature[i + 1] = UNDEFINED;
+          continue;
+        }
+      }
+      if (arg->flags & 0x00000700) {
+        // Scope (ie a function argument).
+        if (arg->closure_arg != 0xff) {
+          // Mark closure argument as multi.
+          pike_signature[arg->closure_arg+1] =
+            ({ pike_signature[arg->closure_arg+1] });
+        }
+        if (arg->destroy_arg != 0xff) {
+          // Mark destroy argument as implicit.
+          pike_signature[arg->destroy_arg+1] = UNDEFINED;
+        }
+      } else {
+        if (arg->arg_type->blob &&
+            (((arg->arg_type->blob->pointer_and_tag >> 3) & 0x1f) ==
+             GI_TYPE_TAG_ARRAY)) {
+          if ((arg->arg_type->blob->pointer_and_tag & 0x0200) &&
+              (arg->arg_type->blob->length != 0xffff)) {
+            // Mark array length argument as implicit.
+            pike_signature[arg->arg_type->blob->length+1] = UNDEFINED;
+          }
+        }
+      }
+    }
+    if (!pike_signature[0]) {
+      pike_signature[0] = return_type;
+    }
+
+    return pike_signature - ({ UNDEFINED });
+  }
+
   // This renders the signature as a method entry.
   void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
   {
-    if (sizeof(arguments)) {
+    array pike_signature = get_pike_signature();
+    if (sizeof(pike_signature) > 1) {
       buf->sprintf("%*n<arguments>\n", indent);
-      arguments->render_autodoc(buf, indent + 2, header);
+      foreach(pike_signature[1..<1], array(ArgBlob)|ArgBlob arg) {
+        if (objectp(arg)) {
+          arg->render_autodoc(buf, indent + 2, header);
+        } else {
+          arg[0]->render_autodoc(buf, indent + 2, header, 1);
+        }
+      }
+      // Special case for many argument.
+      if (objectp(pike_signature[-1])) {
+        pike_signature[-1]->render_autodoc(buf, indent + 2, header);
+      } else {
+        pike_signature[-1][0]->render_autodoc(buf, indent + 2, header, 2);
+      }
       buf->sprintf("%*n</arguments>\n", indent);
     } else {
       buf->sprintf("%*n<arguments/>\n", indent);
     }
 
     buf->sprintf("%*n<returntype>", indent);
-    if (!return_type->blob && !(return_type->flags >> 27)) {
+    SimpleTypeBlob rt = pike_signature[0];
+    if (!rt->blob && !(rt->flags >> 27)) {
       // void/any.
       buf->add("<void/>");
     } else if (flags->get() & 0x01) {
       // may_return_null
       buf->add("<or>");
-      return_type->render_autodoc_type(buf, header);
+      rt->render_autodoc_type(buf, header);
       buf->add("<zero/></or>");
     } else {
-      return_type->render_autodoc_type(buf, header);
+      rt->render_autodoc_type(buf, header);
     }
     buf->add("</returntype>\n");
   }
@@ -891,10 +975,26 @@ class SignatureBlob {
   {
     buf->add("<function>");
 
-    arguments->render_autodoc_type(buf, header);
+    array pike_signature = get_pike_signature();
+    if (sizeof(pike_signature) > 1) {
+      foreach(pike_signature[1..<1], array(ArgBlob)|ArgBlob arg) {
+        if (objectp(arg)) {
+          arg->render_autodoc_type(buf, header);
+        } else {
+          arg[0]->render_autodoc_type(buf, header, 1);
+        }
+      }
+      // Special case for many argument.
+      if (objectp(pike_signature[-1])) {
+        pike_signature[-1]->render_autodoc_type(buf, header);
+      } else {
+        pike_signature[-1][0]->render_autodoc_type(buf, header, 2);
+      }
+    }
 
     buf->add("<returntype>");
-    if (!return_type->blob && !(return_type->flags >> 27)) {
+    SimpleTypeBlob rt = pike_signature[0];
+    if (!rt->blob && !(rt->flags >> 27)) {
       // Special case to avoid type='any'.
       buf->add("<void/>");
     } else {
@@ -902,7 +1002,7 @@ class SignatureBlob {
         buf->add("<or><zero/>");
       }
       // FIXME: introspectable, nullable, closure, destroy, skip, allow-none.
-      return_type->render_autodoc_type(buf, header);
+      rt->render_autodoc_type(buf, header);
       if (flags->get() & 0x01) { // may_return_null
         buf->add("</or>");
       }
@@ -1090,7 +1190,11 @@ class ArrayTypeBlob {
       buf->add(" zero-terminated='1'");
     }
     if (length->get() != 0xffff) {
-      buf->sprintf(" fixed-size='%d'", length->get());
+      if (pointer_and_tag->get() & 0x0200) {
+        buf->sprintf(" length='%d'", length->get());
+      } else {
+        buf->sprintf(" fixed-size='%d'", length->get());
+      }
     }
     buf->add(">\n");
     type->render_xml(buf, indent + 2, header);
@@ -1100,12 +1204,15 @@ class ArrayTypeBlob {
   void render_autodoc_type(String.Buffer buf, Header|void header)
   {
     buf->add("<array>");
-    if (length->get() != 0xffff) {
-      // FIXME: We could support this.
-      // buf->sprintf(" fixed-size='%d'", length->get());
+    if ((pointer_and_tag->get() & 0x0400) &&
+        (length->get() != 0xffff)) {
+      // Array of fixed size.
+      buf->sprintf("<length><int><min>%d</min><max>%d</max></int></length>",
+                   length->get(), length->get());
     }
+    buf->add("<valuetype>");
     type->render_autodoc_type(buf, header);
-    buf->add("</array>");
+    buf->add("</valuetype></array>");
   }
 }
 
@@ -1240,6 +1347,7 @@ class FieldBlob {
 #endif
     (embedded_type || type)->render_autodoc_type(buf, header);
     buf->sprintf(#"\
+</type>
 %*n  </variable>
 %*n</docgroup>
 ",
@@ -1344,7 +1452,7 @@ class StructBlob {
       buf->sprintf("%*n<module name='%sFactory'>\n",
                    indent, name->get());
       buf->sprintf(#"\
-%*n  <doc><text><p>Constructors for %s.</p>
+%*n  <doc><text><p>Constructors for <ref>%s</ref>.</p>
 %*n  </text></doc>
 ",
                    indent, name->get(),
@@ -1366,7 +1474,7 @@ class StructBlob {
     }
     buf->sprintf(#"\
 %*n<docgroup homogen-name='GBoxed' homogen-type='inherit'>
-%*n  <inherit name='GBoxed'><classname>predef::__GI.GBoxed</classname></inherit>
+%*n  <inherit name='GBoxed'><classname>predef::___GI.GBoxed</classname></inherit>
 %*n</docgroup>
 ",
                    indent + 2,
@@ -1849,7 +1957,7 @@ class ObjectBlob {
       buf->sprintf("%*n<module name='%sFactory'>\n",
                    indent, name->get());
       buf->sprintf(#"\
-%*n  <doc><text><p>Constructors for %s.</p>
+%*n  <doc><text><p>Constructors for <ref>%s</ref>.</p>
 %*n  </text></doc>
 ",
                    indent, name->get(),
@@ -1889,7 +1997,7 @@ class ObjectBlob {
     } else {
       buf->sprintf(#"\
 %*n<docgroup homogen-name='GObject' homogen-type='inherit'>
-%*n  <inherit name='GObject'><classname>predef::__GI.GObject</classname></inherit>
+%*n  <inherit name='GObject'><classname>predef::___GI.GObject</classname></inherit>
 %*n</docgroup>
 ",
                    indent + 2,
@@ -2132,7 +2240,7 @@ class InterfaceBlob {
 
     buf->sprintf(#"\
 %*n<docgroup homogen-name='GObjectMixin' homogen-type='inherit'>
-%*n  <inherit name='GObjectMixin'><classname>predef::__GI.GObjectMixin</classname></inherit>
+%*n  <inherit name='GObjectMixin'><classname>predef::___GI.GObjectMixin</classname></inherit>
 %*n</docgroup>
 ",
                  indent + 2,
