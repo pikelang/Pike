@@ -1397,6 +1397,8 @@ o Added @enum/@endenum markup.
 
 o Support undocumented enums with documented constants.
 
+o Added @h for custom section headers.
+
 o Lots of previously undocumented symbols are now documented.
 
 o Add some support for documenting annotations.
@@ -1441,4 +1443,4 @@ Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3658, #3681, #4312,
   #10179, #10180, #10181, #10182, #10183, #10185, #10187, #10188, #10191,
   #10192, #10195, #10196, #10197, #10198, #10200, #10202, #10203, #10204,
   #10205, #10206, #10207, #10208, #10209, #10210, #10213, #10214, #10217,
-  #10219, #10220, #10221
+  #10219, #10220, #10221, #10225
