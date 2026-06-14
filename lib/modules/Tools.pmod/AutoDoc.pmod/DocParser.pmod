@@ -92,6 +92,7 @@ mapping(string : DocTokenType) keywordtype =
   "copyright" : DELIMITERKEYWORD,
   "example" : DELIMITERKEYWORD,
   "fixme" : DELIMITERKEYWORD,
+  "h" : DELIMITERKEYWORD,
   "note" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
   "returns" : DELIMITERKEYWORD,
@@ -118,6 +119,7 @@ mapping(string : DocTokenType) keywordtype =
 
 mapping(string : array(string)) attributenames =
 ([
+  "h" : ({ "name" }),
   "item" : ({ "name" }),
   "param" : ({ "name" }),
   "mapping" : ({ "name" }),
@@ -133,6 +135,7 @@ mapping(string : array(string)) attributenames =
 
 mapping(string:array(string)) required_attributes =
 ([
+  "h" : ({ "name" }),
   "param" : ({ "name" }),
 ]);
 
@@ -140,7 +143,7 @@ multiset(string) auto_ref_keywords = (< "value" >);
 
 protected constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
-  "copyright", "thanks", "obsolete",
+  "copyright", "thanks", "obsolete", "h",
 >);
 
 mapping(string : multiset(string)) allowedChildren =

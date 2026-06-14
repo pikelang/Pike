@@ -67,6 +67,18 @@ class Struct
 {
   inherit ADT.Struct;
 
+  string `pike_name()
+  {
+    string name = this->name;
+
+    if (!name || !sizeof(name) || (name[0] > '9')) {
+      return name;
+    }
+    name = this->gtype_name;
+    if (name) return name;
+    return "_" + this->name;
+  }
+
   string read_cstring_at(Stdio.InputBlockFile file, int offset)
   {
     int pos = file->tell();
@@ -471,6 +483,12 @@ class DirEntry {
 
   Item blob;
 
+  string `pike_name()
+  {
+    if (blob) return blob->pike_name;
+    return ::`pike_name();
+  }
+
   void low_decode(Stdio.InputBlockFile file, mixed... state)
   {
     ::low_decode(file, @state);
@@ -543,7 +561,7 @@ class DirEntry {
 
   string get_pike_name(Header header)
   {
-    string res = name->get();
+    string res = pike_name;
     string ns = offset->get();
     if (stringp(ns)) {
       res = ns + "." + res;
@@ -1159,7 +1177,7 @@ class InterfaceTypeBlob {
   void render_autodoc_type(String.Buffer buf, Header|void header)
   {
     DirEntry entry = header->entries[interface->get()-1];
-    string name = entry->name;
+    string name = entry->pike_name;
     if (stringp(entry->offset)) {
       name = entry->offset + "." + name;
       foreach(header->dependencies/"|", string dep) {
@@ -1504,7 +1522,9 @@ class UnionBlob {
   Item size = guint32();
 
   Item n_fields = guint16();
+  array(FieldBlob) fields;
   Item n_functions = guint16();
+  array(FunctionBlob) functions;
 
   Item copy_func = gstring();
   Item free_func = gstring();
@@ -1512,13 +1532,91 @@ class UnionBlob {
   Item discriminator_offset = guint32();
   SimpleTypeBlob discriminator_type = SimpleTypeBlob();
 
+  void low_decode(Stdio.InputBlockFile file,
+                  mapping(int:array(AttributeBlob)) attribute_lookup,
+                  mixed... state)
+  {
+    ::low_decode(file, attribute_lookup, @state);
+
+    fields = ({});
+    for (int i = 0; i < n_fields->get(); i++) {
+      fields += ({ FieldBlob(file, attribute_lookup, @state) });
+    }
+
+    functions = ({});
+    for (int i = 0; i < n_functions->get(); i++) {
+      functions += ({ FunctionBlob(file, attribute_lookup, @state) });
+    }
+  }
+
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
-      ::render_xml(buf, indent, header);
+    if (sizeof(fields) || sizeof(functions)) {
+      buf->sprintf("%*n<union name='%s'>\n", indent, name->get());
+      foreach(fields, FieldBlob field) {
+        field->render_xml(buf, indent + 2, header);
+      }
+      foreach(functions, FunctionBlob func) {
+        func->render_xml(buf, indent + 2, header);
+      }
+      buf->sprintf("%*n</union>\n", indent);
     } else {
       buf->sprintf("%*n<union name='%s'/>\n", indent, name->get());
     }
+  }
+
+  void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
+  {
+    //
+    // First: Consolidate any constructors in a Factory module.
+    //
+    array(FunctionBlob) constructors =
+      filter(functions, lambda(FunctionBlob f) {
+        if (f->flags & 0x0008) {
+          return 1;
+        }
+        return 0;
+      });
+    if (sizeof(constructors)) {
+      buf->sprintf("%*n<module name='%sFactory'>\n",
+                   indent, name->get());
+      buf->sprintf(#"\
+%*n  <doc><text><p>Constructors for <ref>%s</ref>.</p>
+%*n  </text></doc>
+",
+                   indent, name->get(),
+                   indent);
+      constructors->render_autodoc(buf, indent + 2, header);
+      buf->sprintf("%*n</module>\n", indent);
+    }
+
+    //
+    // Second: Output the actual class.
+    //
+    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+    if (flags->get() & 0x0001) { // deprecated
+      buf->sprintf(#"\
+%*n  <attributes><attribute><prefix/><attribute>\"deprecated\"</attribute>
+%*n              </attribute></attributes>
+",
+                   indent, indent);
+    }
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='GBoxed' homogen-type='inherit'>
+%*n  <inherit name='GBoxed'><classname>predef::___GI.GBoxed</classname></inherit>
+%*n</docgroup>
+",
+                   indent + 2,
+                   indent + 2,
+                 indent + 2);
+    foreach(fields, FieldBlob field) {
+      field->render_autodoc(buf, indent + 2, header);
+    }
+    foreach(functions, FunctionBlob func) {
+      if (func->flags & 0x0008) continue;
+      func->render_autodoc(buf, indent + 2, header);
+    }
+    buf->sprintf("%*n</class>\n", indent);
   }
 }
 
@@ -1598,13 +1696,13 @@ class EnumBlob {
 %*n  </doc>
 %*n  <enum name='%s'>
 ",
-                 indent, name->get(),
-                 indent, name->get(), name->get(),
+                 indent, pike_name,
+                 indent, pike_name, pike_name,
                  indent,
-                 indent, name->get(), name->get(), name->get(),
+                 indent, pike_name, pike_name, pike_name,
                  indent,
                  indent,
-                 indent, name->get());
+                 indent, pike_name);
 
     if (flags->get() & 0x0001) { // deprecated
       buf->sprintf(#"\
@@ -1634,11 +1732,19 @@ class EnumBlob {
 %*n  <typedef name='%sType'><type><object>%s.%s</object></type></typedef>
 %*n</docgroup>
 ",
-                 indent, name->get(),
-                 indent, name->get(), name->get(),
-                 indent, name->get(), name->get(),
+                 indent, pike_name,
+                 indent, pike_name, pike_name,
+                 indent, pike_name, pike_name,
                  indent,
-                 indent, name->get(), name->get(), name->get(),
+                 indent, pike_name, pike_name, pike_name,
+                 indent);
+    buf->sprintf(#"\
+%*n<docgroup homogen-name='%s' homogen-type='import'>
+%*n  <import name='%s'><classname>%s</classname></import>
+%*n</docgroup>
+",
+                 indent, pike_name,
+                 indent, pike_name, pike_name,
                  indent);
   }
 }
