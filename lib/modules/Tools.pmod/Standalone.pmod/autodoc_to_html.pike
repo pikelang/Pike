@@ -1012,6 +1012,9 @@ string parse_doc(Node n, void|int no_text) {
       }
       break;
 
+    case "h":
+      name = header->get_attributes()->name;
+      // FALL_THROUGH
     case "bugs":
     case "copyright":
     case "note":
