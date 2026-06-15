@@ -8,4 +8,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 gi.o: $(SRCDIR)/gi.c
 
+generate_autodoc: $(SRCDIR)/gen_doc.pike
+	cd "$(SRCDIR)" && $(RUNPIKE) gen_doc.pike refdoc/
+
 @dependencies@
