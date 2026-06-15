@@ -24,6 +24,26 @@ if test x$with_gi = xyes ; then
       GI_CFLAGS="`${ac_tool_prefix}pkg-config gobject-introspection-1.0 --cflags`"
       GI_LIBS="`${ac_tool_prefix}pkg-config gobject-introspection-1.0 --libs`"
       gi_lib="1.0"
+
+      if test "x$pike_cv_sys_os" = "xNetBSD"; then
+        # The packages are linked against the system /usr/lib/libintl.so.1,
+        # but the pkg-config files say to link against the GNU version
+        # /usr/pkg/lib/libintl.so.8. They should be compatible but it
+        # causes ld(1) to complain with:
+        #
+        #   ld: warning: libintl.so.1, needed by /usr/pkg/lib/libglib-2.0.so,
+        #   may conflict with libintl.so.8
+        case "$GI_LIBS" in
+          *-lglib-2.0\ -lintl*)
+            if /usr/bin/ldd "/usr/pkg/lib/libglib-2.0.so" 2>/dev/null | \
+              grep "/usr/lib/libintl.so" >/dev/null; then
+                # Remove the redundant attempts to link with
+                # the GNU version of libintl.
+                GI_LIBS="`echo '' $GI_LIBS '' | sed -e 's/ -lintl / /g'`"
+              fi
+            ;;
+        esac
+      fi
     else
       AC_CHECK_LIB(girepository-1.0, g_irepository_get_default, [
                      GI_LIBS=-lgirepository-1.0
