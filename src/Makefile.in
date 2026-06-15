@@ -1012,6 +1012,9 @@ master-stamp: master.pike
 # Documentation related stuff.
 #
 
+generate_autodoc:
+	( cd "post_modules/GI" && $(MAKE) generate_autodoc )
+
 onepage.xml: autodoc.xml $(DOCDIR)/structure/onepage.xml
 	(cd "$(DOCDIR)" && \
 	  $(RUNPIKE) -x assemble_autodoc structure/onepage.xml \

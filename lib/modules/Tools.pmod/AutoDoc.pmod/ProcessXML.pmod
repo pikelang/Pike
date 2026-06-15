@@ -1354,6 +1354,7 @@ class NScope
   string type;
   string path;
   mapping(string:int(1..1)|NScope) symbols = ([]);
+  mapping(string:string|NScope) imported_symbols;
   mapping(string:string|NScope) inherits;
   multiset(string|NScope) imports;
 
@@ -1496,8 +1497,13 @@ class NScope
 	    SimpleNode imp = thing->get_first_element("classname");
 	    string scope = imp->value_of_node();
 	    if (!n) n = scope;
+            mapping(string:string) attrs = thing->get_attributes();
 	    // We can't lookup the import yet, so put a place holder for it.
-	    if (imports) {
+            if (attrs->symbol) {
+              if (!imported_symbols) imported_symbols = ([]);
+              imported_symbols[(scope/".")[-1]] =
+                (attrs->recurse? "\0": "") + scope;
+            } else if (imports) {
 	      imports[scope] = 1;
 	    } else {
 	      imports = (< scope >);
@@ -1618,6 +1624,13 @@ class NScope
 
     if (!scope) {
       // Not immediately available in this scope.
+      if (imported_symbols && (scope = imported_symbols[path[0]])) {
+        if (objectp(scope)) {
+          string res = scope->lookup(path[1..], 1, seen);
+          if (res) return res;
+        }
+      }
+
       if (inherits) {
 	foreach(inherits; string inh; scope) {
 	  if (objectp(scope)) {
@@ -1646,6 +1659,7 @@ class NScope
     } else if (!objectp(scope)) {
       return 0;
     }
+
     return scope->lookup(path[1..], 1);
   }
 
@@ -1725,6 +1739,11 @@ class NScope
           }
           return 0;	// Either not resolved yet or not found.
         }
+      }
+
+      if (imported_symbols && (scope = imported_symbols[path[0]])) {
+        return scope->lookup_scope(path[1..], LOOKUP_NO_IMPORTS | lookup_flags,
+                                   seen);
       }
 
       if (inherits) {
@@ -1871,8 +1890,9 @@ class NScopeStack
 
   protected void _destruct()
   {
+    logfile = logfile || "resolution.log";
+    rm(logfile);
     if (sizeof(failures)) {
-      logfile = logfile || "resolution.log";
       warn("Resolution failed for %d symbols. Logging to %s\n",
 	   sizeof(failures), logfile);
       Stdio.File f = Stdio.File(logfile, "cwt");
@@ -2204,6 +2224,40 @@ void resolveInherits(NScope root)
       NScope scope = todo->get();
       int(1bit) scope_is_pending;
 
+      if (sizeof(scope->imported_symbols || ([]))) {
+        foreach(scope->imported_symbols; string s; string|NScope scope_or_sym) {
+          if (objectp(scope_or_sym)) continue;
+          string sym = scope_or_sym;
+          if (init_namespaces && !has_suffix(sym, "::")) {
+            scope_is_pending = 1;
+            continue;
+          }
+          scope->imported_symbols[s] = 0;	// Temporary removal.
+          if (has_prefix(sym, "\0")) sym = sym[1..];
+          NScope val = scope->resolve(root, sym);
+          if (objectp(val)) {
+            scope->imported_symbols[s] = val;
+            state = 0;
+            if (has_prefix(scope_or_sym, "\0")) {
+              // Recursion marker.
+              // Copy any new symbol imports from val to us.
+              foreach(val->imported_symbols || ([]);
+                      string i; string|NScope ns) {
+                if (!scope->imported_symbols[i]) {
+                  scope->imported_symbols[i] = ns;
+                  if (!objectp(ns)) {
+                    scope_is_pending = 1;
+                  }
+                }
+              }
+            }
+            continue;
+          }
+          scope->imported_symbols[s] = scope_or_sym;	// Restore.
+          scope_is_pending = 1;
+        }
+      }
+
       if (sizeof(scope->imports || (<>))) {
         foreach((array)scope->imports, string|NScope sym) {
           if (objectp(sym)) continue;
@@ -2276,6 +2330,11 @@ void resolveInherits(NScope root)
       foreach(scope->inherits || ([]); string inh; string|NScope sym) {
         if (stringp(sym)) {
           werror("%O: inherit %O:%O\n", scope->name, sym, inh);
+        }
+      }
+      foreach(scope->imported_symbols || ([]); string s; string|NScope sym) {
+        if (stringp(sym)) {
+          werror("%O: import symbol %O:%O\n", scope->name, sym, s);
         }
       }
       foreach((array)(scope->imports || (<>)), string|NScope sym) {
