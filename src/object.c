@@ -619,10 +619,12 @@ PMOD_EXPORT struct object *get_master(void)
 
     /* fprintf(stderr, "Master file: \"%s\"\n", master_file); */
 
-    tmp=xalloc(strlen(master_file)+3);
-
-    memcpy(tmp, master_file, strlen(master_file)+1);
-    strcat(tmp,".o");
+    {
+      size_t master_len = strlen(master_file);
+      tmp=xalloc(master_len+3);
+      memcpy(tmp, master_file, master_len);
+      memcpy(tmp+master_len, ".o", 3);
+    }
 
     s = NULL;
     if (!fd_stat(tmp, &stat_buf)) {
