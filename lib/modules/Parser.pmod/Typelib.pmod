@@ -429,6 +429,7 @@ __experimental__ class Header {
                  indent, indent, indent);
 
     foreach(dependencies->get()/"|", string dep) {
+      if (!sizeof(dep)) continue;
       array(string) a = dep/"-";
       string sym = "predef::GI.repository.";
       if (sizeof(a) > 1) {
@@ -732,7 +733,7 @@ class ArgBlob {
   {
     int f = flags->get();
 
-    buf->sprintf("%*n<argument name='%s'>\n", indent, name->get());
+    buf->sprintf("%*n<argument name='%s'>\n", indent, pike_name);
     buf->sprintf("%*n  <type>", indent);
 
     if (!closure_type) {
@@ -1091,14 +1092,20 @@ class FunctionBlob {
 
   void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- Function: flags: 0x%04x, name: %q, sym: %q,\n"
+                 "%*n     sign: %d, more: 0x%04x, fin: 0x%04x -->\n",
+                 indent, flags->get(), pike_name, symbol->get(),
+                 indent, signature_offset->get(), more_flags->get(), finish->get());
+#endif
     int fl = flags->get();
     int mfl = more_flags->get();
     buf->sprintf(#"\
 %*n<docgroup homogen-name='%s' homogen-type='method'>
 %*n  <method keep='' name='%s'>
 ",
-                 indent, name->get(),
-                 indent, name->get());
+                 indent, pike_name,
+                 indent, pike_name);
     if (fl & 0x0001) {
       buf->sprintf("%*n<attributes><attribute><prefix/>"
                    "<attribute>\"deprecated\"</attribute>"
@@ -1147,8 +1154,8 @@ class CallbackBlob {
     buf->sprintf(#"\
 %*n<docgroup homogen-name='%s' homogen-type='typedef'>
 %*n  <typedef name='%s'><type>",
-                 indent, name->get(),
-                 indent, name->get());
+                 indent, pike_name,
+                 indent, pike_name);
     signature->render_autodoc_type(buf, header);
     buf->sprintf(#"</type></typedef>
 %*n</docgroup>
@@ -1302,9 +1309,9 @@ class ValueBlob {
 %*n  <constant name='%s'/>
 %*n</docgroup>
 ",
-                 indent, name->get(),
+                 indent, pike_name,
                  indent,
-                 indent, name->get(),
+                 indent, pike_name,
                  indent);
   }
 }
@@ -1353,9 +1360,9 @@ class FieldBlob {
 %*n  <doc><text/></doc>
 %*n  <variable name='%s'>
 %*n    <type>",
-                 indent, name->get(),
+                 indent, pike_name,
                  indent,
-                 indent, name->get(),
+                 indent, pike_name,
                  indent);
 #if 0
     // FIXME: Read-only, etc.
@@ -1467,13 +1474,13 @@ class StructBlob {
         return 0;
       });
     if (sizeof(constructors)) {
-      buf->sprintf("%*n<module name='%sFactory'>\n",
-                   indent, name->get());
+      buf->sprintf("%*n<module name='%s_Factory' keep=''>\n",
+                   indent, pike_name);
       buf->sprintf(#"\
 %*n  <doc><text><p>Constructors for <ref>%s</ref>.</p>
 %*n  </text></doc>
 ",
-                   indent, name->get(),
+                   indent, pike_name,
                    indent);
       constructors->render_autodoc(buf, indent + 2, header);
       buf->sprintf("%*n</module>\n", indent);
@@ -1482,7 +1489,7 @@ class StructBlob {
     //
     // Second: Output the actual class.
     //
-    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+    buf->sprintf("%*n<class name='%s' keep=''>\n", indent, pike_name);
     if (flags->get() & 0x0001) { // deprecated
       buf->sprintf(#"\
 %*n  <attributes><attribute><prefix/><attribute>\"deprecated\"</attribute>
@@ -1578,13 +1585,13 @@ class UnionBlob {
         return 0;
       });
     if (sizeof(constructors)) {
-      buf->sprintf("%*n<module name='%sFactory'>\n",
-                   indent, name->get());
+      buf->sprintf("%*n<module name='%s_Factory' keep=''>\n",
+                   indent, pike_name);
       buf->sprintf(#"\
 %*n  <doc><text><p>Constructors for <ref>%s</ref>.</p>
 %*n  </text></doc>
 ",
-                   indent, name->get(),
+                   indent, pike_name,
                    indent);
       constructors->render_autodoc(buf, indent + 2, header);
       buf->sprintf("%*n</module>\n", indent);
@@ -1593,7 +1600,7 @@ class UnionBlob {
     //
     // Second: Output the actual class.
     //
-    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+    buf->sprintf("%*n<class name='%s' keep=''>\n", indent, pike_name);
     if (flags->get() & 0x0001) { // deprecated
       buf->sprintf(#"\
 %*n  <attributes><attribute><prefix/><attribute>\"deprecated\"</attribute>
@@ -1688,10 +1695,10 @@ class EnumBlob {
   void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
   {
     buf->sprintf(#"\
-%*n<module name='%s'>
+%*n<module name='%s' keep=''>
 %*n  <doc><text><p>Module wrapper for the <ref>%s.%s</ref> enum.</p>
 %*n    </text>
-%*n    <group><seealso/><text><p><ref>%sType</ref>, <ref>%s.%s</ref></p>
+%*n    <group><seealso/><text><p><ref>%s_Type</ref>, <ref>%s.%s</ref></p>
 %*n    </text></group>
 %*n  </doc>
 %*n  <enum name='%s'>
@@ -1725,11 +1732,11 @@ class EnumBlob {
 %*n</module>
 ", indent, indent);
     buf->sprintf(#"\
-%*n<docgroup homogen-name='%sType' homogen-type='typedef'>
+%*n<docgroup homogen-name='%s_Type' homogen-type='typedef'>
 %*n  <doc><text><p>Type of the <ref>%s.%s</ref> enum.</p></text>
 %*n    <group><seealso/><text><p><ref>%s.%s</ref></p>
 %*n  </text></group></doc>
-%*n  <typedef name='%sType'><type><object>%s.%s</object></type></typedef>
+%*n  <typedef name='%s_Type'><type><object>%s.%s</object></type></typedef>
 %*n</docgroup>
 ",
                  indent, pike_name,
@@ -1830,7 +1837,7 @@ class SignalBlob {
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
 #ifdef PARSER_TYPELIB_DEBUG
-    buf->sprintf("%*n<!-- StructBlob, flags: 0x%04x -->\n",
+    buf->sprintf("%*n<!-- SignalBlob, flags: 0x%04x -->\n",
                  indent, flags->get());
 #endif
     int fl = flags->get();
@@ -1991,7 +1998,7 @@ class ObjectBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
-    buf->sprintf("%*n<class name='%s'", indent, name->get());
+    buf->sprintf("%*n<class name='%s' keep=''", indent, name->get());
 
     int p = parent->get();
     if (p > 0) {
@@ -2060,13 +2067,13 @@ class ObjectBlob {
         return 0;
       });
     if (sizeof(constructors)) {
-      buf->sprintf("%*n<module name='%sFactory'>\n",
-                   indent, name->get());
+      buf->sprintf("%*n<module name='%s_Factory' keep=''>\n",
+                   indent, pike_name);
       buf->sprintf(#"\
 %*n  <doc><text><p>Constructors for <ref>%s</ref>.</p>
 %*n  </text></doc>
 ",
-                   indent, name->get(),
+                   indent, pike_name,
                    indent);
       constructors->render_autodoc(buf, indent + 2, header);
       buf->sprintf("%*n</module>\n", indent);
@@ -2075,13 +2082,13 @@ class ObjectBlob {
     //
     // Second: Generate the main class.
     //
-    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+    buf->sprintf("%*n<class name='%s' keep=''>\n", indent, pike_name);
 
     if (sizeof(constructors)) {
       buf->sprintf("%*n  <doc><group><seealso/><text><p>\n", indent);
       foreach(constructors; int i; FunctionBlob f) {
-        buf->sprintf("%*n    %s <ref>%sFactory.%s</ref>\n",
-                     indent, i?",":"", name->get(), f->name);
+        buf->sprintf("%*n    %s <ref>%s_Factory.%s</ref>\n",
+                     indent, i?",":"", pike_name, f->name);
       }
       buf->sprintf("%*n  </p></text></group></doc>\n", indent);
     }
@@ -2116,8 +2123,8 @@ class ObjectBlob {
           DirEntry entry = header->entries[entryno - 1];
           string mixin = entry->get_pike_name(header);
           buf->sprintf(#"\
-%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
-%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n<docgroup homogen-name='%s_Mixin' homogen-type='inherit'>
+%*n  <inherit name='%s_Mixin'><classname>%s_Mixin</classname></inherit>
 %*n</docgroup>
 ",
                        indent + 2, entry->name,
@@ -2154,7 +2161,7 @@ class ObjectBlob {
     //
     // Third: Generate the Mixin class.
     //
-    buf->sprintf("%*n<class name='%sMixin'>\n", indent, name->get());
+    buf->sprintf("%*n<class name='%s_Mixin' keep=''>\n", indent, pike_name);
 
     p = parent->get();
     if (p > 0) {
@@ -2162,8 +2169,8 @@ class ObjectBlob {
         DirEntry entry = header->entries[p-1];
         string parent = entry->get_pike_name(header);
         buf->sprintf(#"\
-%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
-%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n<docgroup homogen-name='%s_Mixin' homogen-type='inherit'>
+%*n  <inherit name='%s_Mixin'><classname>%s_Mixin</classname></inherit>
 %*n</docgroup>
 ",
                      indent + 2, entry->name,
@@ -2177,8 +2184,8 @@ class ObjectBlob {
           DirEntry entry = header->entries[entryno - 1];
           string mixin = entry->get_pike_name(header);
           buf->sprintf(#"\
-%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
-%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n<docgroup homogen-name='%s_Mixin' homogen-type='inherit'>
+%*n  <inherit name='%s_Mixin'><classname>%s_Mixin</classname></inherit>
 %*n</docgroup>
 ",
                        indent + 2, entry->name,
@@ -2318,13 +2325,13 @@ class InterfaceBlob {
         return 0;
       });
     if (sizeof(constructors)) {
-      buf->sprintf("%*n<module name='%sFactory'>\n",
-                   indent, name->get());
+      buf->sprintf("%*n<module name='%s_Factory' keep=''>\n",
+                   indent, pike_name);
       buf->sprintf(#"\
 %*n  <doc><text><p>Constructors for %s.</p>
 %*n  </text></doc>
 ",
-                   indent, name->get(),
+                   indent, pike_name,
                    indent);
       constructors->render_autodoc(buf, indent + 2, header);
       buf->sprintf("%*n</module>\n", indent);
@@ -2333,20 +2340,20 @@ class InterfaceBlob {
     //
     // Second: Generate the Mixin class.
     //
-    buf->sprintf("%*n<class name='%sMixin'>\n", indent, name->get());
+    buf->sprintf("%*n<class name='%s_Mixin' keep=''>\n", indent, pike_name);
 
     if (sizeof(constructors)) {
       buf->sprintf("%*n  <doc><group><seealso/><text><p>\n", indent);
       foreach(constructors; int i; FunctionBlob f) {
-        buf->sprintf("%*n    %s <ref>%sFactory.%s</ref>\n",
-                     indent, i?",":"", name->get(), f->name);
+        buf->sprintf("%*n    %s <ref>%s_Factory.%s</ref>\n",
+                     indent, i?",":"", pike_name, f->name);
       }
       buf->sprintf("%*n  </p></text></group></doc>\n", indent);
     }
 
     buf->sprintf(#"\
-%*n<docgroup homogen-name='GObjectMixin' homogen-type='inherit'>
-%*n  <inherit name='GObjectMixin'><classname>predef::___GI.GObjectMixin</classname></inherit>
+%*n<docgroup homogen-name='GObject_Mixin' homogen-type='inherit'>
+%*n  <inherit name='GObject_Mixin'><classname>predef::___GI.GObject_Mixin</classname></inherit>
 %*n</docgroup>
 ",
                  indent + 2,
@@ -2358,8 +2365,8 @@ class InterfaceBlob {
           DirEntry entry = header->entries[entryno - 1];
           string mixin = entry->get_pike_name(header);
           buf->sprintf(#"\
-%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
-%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n<docgroup homogen-name='%s_Mixin' homogen-type='inherit'>
+%*n  <inherit name='%s_Mixin'><classname>%s_Mixin</classname></inherit>
 %*n</docgroup>
 ",
                        indent + 2, entry->name,
@@ -2395,15 +2402,15 @@ class InterfaceBlob {
     //
     // Third: Generate the instance class.
     //
-    buf->sprintf("%*n<class name='%s'>\n", indent, name->get());
+    buf->sprintf("%*n<class name='%s' keep=''>\n", indent, pike_name);
 
     buf->sprintf(#"\
-%*n<docgroup homogen-name='%sMixin' homogen-type='inherit'>
-%*n  <inherit name='%sMixin'><classname>%sMixin</classname></inherit>
+%*n<docgroup homogen-name='%s_Mixin' homogen-type='inherit'>
+%*n  <inherit name='%s_Mixin'><classname>%s_Mixin</classname></inherit>
 %*n</docgroup>
 ",
-                 indent + 2, name->get(),
-                 indent + 2, name->get(), name->get(),
+                 indent + 2, pike_name,
+                 indent + 2, pike_name, pike_name,
                  indent + 2);
 
     buf->sprintf(#"\
@@ -2518,9 +2525,9 @@ class ConstantBlob {
 %*n  <doc><text/></doc>
 %*n  <constant name='%s'>
 ",
-                 indent, name->get(),
+                 indent, pike_name,
                  indent,
-                 indent, name->get());
+                 indent, pike_name);
     type->render_xml(buf, indent + 4, header);
     buf->sprintf(#"\
 %*n  </constant>
