@@ -360,7 +360,7 @@ static void signal_func_wrapper(struct signal_data *d,
  *     Wrapper for GIBaseInfo. Typically present in
  *     constant #-2 in the current inherit in derived classes.
  *
- *   * GObjectMixin
+ *   * GObject_Mixin
  *
  *     Base class for GObject and for GObjects in mixin mode.
  *
@@ -392,10 +392,16 @@ static void signal_func_wrapper(struct signal_data *d,
  *     interfaces that they implement (as per
  *     g_object_info_get_interface() et al).
  *
- *     Note: There is also a parallel class for the corresponding
- *           interface that does NOT inherit the GObject base class.
- *           This is needed due to it being possible for interfaces
- *           to have GObjects as prerequisites.
+ *     Note: There is also a parallel class with the suffix "_Mixin"
+ *           for the corresponding interface that does NOT inherit
+ *           the GObject base class, but instead the GObject_Mixin
+ *           base class. This is needed due to it being possible for
+ *           interfaces to have GObject classes as prerequisites.
+ *
+ *     Note: Constructor functions are NOT members of their
+ *           corresponding class, but instead of a parallel
+ *           submodule with the name of the class suffixed
+ *           with "_Factory".
  *
  *   * GBoxed
  *
@@ -404,38 +410,48 @@ static void signal_func_wrapper(struct signal_data *d,
  *     (aka getters/setters) and no parent or interface
  *     relations.
  *
- *   * Interfaces
+ *   * Pure Interfaces classes
  *
- *     These inherit the classes corresponding to their
- *     g_interface_info_get_prerequisite()s, and are
- *     intended to be used as mixin in GObject classes.
+ *     These inherit the Mixin classes corresponding to their
+ *     g_interface_info_get_prerequisite()s, and are intended
+ *     to be used as mixin in GObject classes. They get the
+ *     suffix "_Mixin".
  *
- *   * Interface Objects
+ *   * Interface Object classes
  *
  *     These inherit GObject and the corresponsing Interface class.
  *     They are used when an interface object is returned from
  *     some method.
- *     NOTE: They receive the name suffix Wrapper to avoid
- *           a name clash with the plain Interfaces above.
+ *
+ *     Note: For ease of use, these do not have a suffix.
  *
  *   * Namespaces
  *
- *     GIObjectInfo, GIStructInfo, GIUnionInfo compile
- *     to getters that compile the corresponding class
- *     on demand, cacheing their result in constant #-2.
- *     Other symbols are stored directly in the class.
- *     Namespace objects are singletons and are present
- *     as placeholder objects during their compilation.
+ *     Future: GIObjectInfo, GIStructInfo, GIUnionInfo compile
+ *             to getters that compile the corresponding class
+ *             on demand, cacheing their result in constant #-2.
+ *             Other symbols are stored directly in the class.
+ *             Namespace objects are singletons and are present
+ *             as placeholder objects during their compilation.
  *
  *   * Constructors (aka factory functions)
  *
  *     GObjects that have constructor functions also receive
- *     an adjoining object with the suffix Factory, that
- *     contains the constructor functions (usually named
- *     new*()).
+ *     an adjoining submodule with the suffix _Factory, that
+ *     contains the constructor functions (usually named new*()).
  *
  *   Naming
  *   ------
+ *
+ *   * In general
+ *
+ *     The base entity gets the name from GI unless it starts
+ *     with a digit (seen with a few namespaces eg NM-1.0),
+ *     in which case the gtype_name is used instead.
+ *
+ *     Symbols added by Pike typically receive a suffix
+ *     starting with an '_'. This is to ensure that they
+ *     do not conflict with GI symbols.
  *
  *   * GObject and Interface Object classes
  *
@@ -443,7 +459,12 @@ static void signal_func_wrapper(struct signal_data *d,
  *
  *   * GObject interfaces and Interface classes
  *
- *     Suffixed with "Mixin" in the Namespace object.
+ *     Suffixed with "_Mixin" in the Namespace object.
+ *
+ *   * GObject constructor functions
+ *
+ *     Located in a submodule with the name of the main class
+ *     suffixed with "_Factory".
  *
  *   * Methods and functions
  *
@@ -464,7 +485,7 @@ static void signal_func_wrapper(struct signal_data *d,
  *
  *     Enums are added as constants to a subclass of the
  *     same name as the enum. The enum type gets the name
- *     of the enum suffixed with "Type".
+ *     of the enum suffixed with "_Type".
  *
  *   Program fields (where p is Pike_fp->context->prog)
  *   --------------------------------------------------
@@ -493,14 +514,14 @@ static void signal_func_wrapper(struct signal_data *d,
  *   Compilation on demand
  *   ---------------------
  *
- *   * A global lookup mapping from program_id to the
- *     corresponding getter in a Namespace object is
- *     used by a C function that has been registered
- *     with add_program_id_callback() to compile
- *     classes on demand. The getter will remove the
- *     entry from the mapping as soon as it has
- *     started compilation of the class (at the same
- *     time as it updates the corresponding cache entry).
+ *   * Future: A global lookup mapping from program_id to the
+ *             corresponding getter in a Namespace object is
+ *             used by a C function that has been registered
+ *             with add_program_id_callback() to compile
+ *             classes on demand. The getter will remove the
+ *             entry from the mapping as soon as it has
+ *             started compilation of the class (at the same
+ *             time as it updates the corresponding cache entry).
  *
  *   Lookup tables
  *   -------------
@@ -641,12 +662,12 @@ PIKECLASS BaseInfo
 /*! @endclass
  */
 
-/*! @class GObjectMixin
+/*! @class GObject_Mixin
  *!
  *!   Class with prototypes for @[GObject].
  */
 
-PIKECLASS GObjectMixin
+PIKECLASS GObject_Mixin
 {
 #ifndef tObjImpl_OBJECTINFO
 /* Break circular class dependency... */
@@ -720,9 +741,9 @@ PIKECLASS GObject
 
   static int gi_gobject_base_info_fun_num;
 
-  /*! @decl inherit GObjectMixin
+  /*! @decl inherit GObject_Mixin
    */
-  INHERIT GObjectMixin;
+  INHERIT GObject_Mixin;
 
   EXTRA
   {
@@ -730,8 +751,7 @@ PIKECLASS GObject
     OBJ2_GI_BASEINFO(Pike_sp[-1].u.object)->info = NULL;
     /* NB: Protected but not private, so that it can be overloaded. */
     gi_gobject_base_info_fun_num =
-      add_constant(MK_STRING("__pike_gi_base_info__"), Pike_sp-1,
-                   ID_PROTECTED);
+      add_constant(MK_STRING("__pike_gi_base_info__"), Pike_sp-1, ID_PROTECTED);
     pop_stack();
   }
 
@@ -1079,9 +1099,9 @@ static void push_name_from_info(GIBaseInfo *info, int mixin_or_factory)
   push_text(g_base_info_get_name(info));
   if (mixin_or_factory) {
     if (mixin_or_factory == 1) {
-      push_text("Mixin");
+      push_text("_Mixin");
     } else {
-      push_text("FactoryProgram");
+      push_text("_FactoryProgram");
     }
     f_add(5);
     return;
@@ -2953,9 +2973,9 @@ static struct program *program_from_info(struct mapping *namespace,
 
     push_text(type_name);
     if (mixin_or_factory == 1) {
-      push_text("Mixin");
+      push_text("_Mixin");
     } else {
-      push_text("FactoryProgram");
+      push_text("_FactoryProgram");
     }
     f_add(2);
 
@@ -2980,9 +3000,9 @@ static struct program *program_from_info(struct mapping *namespace,
     push_text(type_name);
     if (mixin_or_factory) {
       if (mixin_or_factory == 1) {
-        push_text("Mixin");
+        push_text("_Mixin");
       } else {
-        push_text("FactoryProgram");
+        push_text("_FactoryProgram");
       }
       f_add(2);
     }
@@ -3011,16 +3031,16 @@ static struct program *program_from_info(struct mapping *namespace,
         }
         push_text(g_object_info_get_type_name(parentinfo));
         if (mixin_or_factory) {
-          push_text("Mixin");
+          push_text("_Mixin");
           f_add(2);
         }
       } else if (mixin_or_factory) {
         /* FIXME: If mixin the base class is the prototype-only
          *        variant of GI_GObject_program.
          */
-        parent_prog = GI_GObjectMixin_program;
+        parent_prog = GI_GObject_Mixin_program;
         add_ref(parent_prog);
-        push_text("GObjectMixin");
+        push_text("GObject_Mixin");
       } else {
         parent_prog = GI_GObject_program;
         add_ref(parent_prog);
@@ -3051,7 +3071,7 @@ static struct program *program_from_info(struct mapping *namespace,
 
       /* Inherit the mixin class. */
       push_text(g_base_info_get_name(info));
-      push_text("Mixin");
+      push_text("_Mixin");
       f_add(2);
       low_inherit(parent_prog, NULL, -1, 0, 0, Pike_sp[-1].u.string, NULL);
       free_program(parent_prog);
@@ -3098,9 +3118,9 @@ static struct program *program_from_info(struct mapping *namespace,
   push_text(g_base_info_get_name(info));
   if (mixin_or_factory) {
     if (mixin_or_factory == 1) {
-      push_text("Mixin");
+      push_text("_Mixin");
     } else {
-      push_text("FactoryProgram");
+      push_text("_FactoryProgram");
     }
     f_add(5);
   } else {
@@ -3125,9 +3145,9 @@ static struct program *program_from_info(struct mapping *namespace,
   push_text(type_name);
   if (mixin_or_factory) {
     if (mixin_or_factory == 1) {
-      push_text("Mixin");
+      push_text("_Mixin");
     } else {
-      push_text("FactoryProgram");
+      push_text("_FactoryProgram");
     }
     f_add(2);
   }
@@ -3153,6 +3173,15 @@ static struct program *program_from_info(struct mapping *namespace,
       pop_stack();
       g_base_info_unref(valinfo);
     }
+
+    /* Add the enum type symbol too. */
+    push_text(g_base_info_get_name(info));
+    type_stack_mark();
+    push_gi_interface_type(namespace, info);
+    push_type_value(pop_unfinished_type());
+    simple_add_constant(Pike_sp[-2].u.string->str, Pike_sp-1, 0);
+    pop_stack();
+    pop_stack();
 
     p = end_program();
 
@@ -4177,7 +4206,7 @@ PIKECLASS Repository
       push_type_value(pop_unfinished_type());
 
       push_text(g_base_info_get_name(info));
-      push_text("Type");
+      push_text("_Type");
       f_add(2);
 
       simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
@@ -4204,7 +4233,7 @@ PIKECLASS Repository
       switch(mixin_or_factory) {
       case 1:
         push_text(g_base_info_get_name(info));
-        push_text("Mixin");
+        push_text("_Mixin");
         f_add(2);
         simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
         pop_stack();
@@ -4213,7 +4242,7 @@ PIKECLASS Repository
       case 2:
         if (p) {
           push_text(g_base_info_get_name(info));
-          push_text("FactoryProgram");
+          push_text("_FactoryProgram");
           f_add(2);
           simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2,
                               ID_PROTECTED);
@@ -4221,7 +4250,7 @@ PIKECLASS Repository
 
           f_call_function(1);	/* Clone the factory object. */
           push_text(g_base_info_get_name(info));
-          push_text("Factory");
+          push_text("_Factory");
           f_add(2);
           simple_add_constant(Pike_sp[-1].u.string->str, Pike_sp-2, 0);
           pop_stack();
