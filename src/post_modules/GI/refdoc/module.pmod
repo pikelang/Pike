@@ -11,7 +11,7 @@
 //!
 //! @seealso
 //!   @[3.0.Gdk], @[4.0.Gdk],
-//!   @url{https://docs.gtk.org/gtd3@}, @url{https://docs.gtk.org/gtd4@}
+//!   @url{https://docs.gtk.org/gdk3@}, @url{https://docs.gtk.org/gdk4@}
 
 //! @endmodule
 
