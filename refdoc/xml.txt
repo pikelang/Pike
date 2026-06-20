@@ -120,7 +120,10 @@ of:
 
   <class>
   <constant>
+  <directive>
   <enum>
+  <generic>
+  <import>
   <inherit>
   <method>
   <modifier>    
@@ -203,6 +206,9 @@ entities:
    Has a name attribute. Contains optional <type> and
    <source-position> child elements.
 
+<directive>
+   Has a name attribute. Used to document cpp directives.
+
 <enum>
    Works as a container. Has a <doc> child element with the documentation of
    the enum itself, and <docgroup> elements with a <constant> for each enum
@@ -236,6 +242,19 @@ entities:
      
    Both the <enum> element and the <constant> elements could have 
    <source-position> children, of course.
+
+<generic>
+   Has a name attribute and an index attribute. The index attribute
+   specifies the attribute number (starting with 0).
+
+<import>
+   Has a name attribute. The name of the imported module is given
+   in a <classname> child. For compatibility with other dependency
+   systems, there is also support for the symbol and recurse attributes
+   both of which may be set to the value '1'. The symbol attribute
+   causes only the imported module to appear under its shortened name.
+   The recurse attribute causes symbol imports from the imported
+   module to also be added (only valid for symbol imports).
 
 <inherit> 
    The name="..." attribute gives the name after the colon, if any. The name
@@ -385,6 +404,9 @@ An argument to a method can be of the varargs type:
 ======================================================================
 f) Other XML tags
 ----------------------------------------------------------------------
+
+h
+   Heading.
 
 p
    Paragraph.
