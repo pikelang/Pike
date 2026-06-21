@@ -1145,7 +1145,7 @@ int use_cache = 1;
 int session_lifetime = 600;
 
 //! Maximum number of sessions to keep in the cache.
-int max_sessions = 300;
+int max_sessions = 1000;
 
 mapping(string:Session) session_cache = ([]);
 
@@ -1227,21 +1227,23 @@ object(Session)|zero decode_ticket(string(8bit) ticket)
 array(string(8bit)|int)|zero encode_ticket(Session session)
 {
   if (!use_cache) return 0;
-  string(8bit) ticket = [string(8bit)] session->ticket;
-  if (!sizeof(ticket||"")) {
-    do {
-      ticket = random(32);
-    } while(session_cache[ticket]);
-    // FIXME: Should we update the fields here?
-    //        Consider moving this to the caller.
-    session->ticket = ticket;
-    session->ticket_expiry_time = time(1) + 3600;
-  }
+  // Always generate a fresh ticket for new sessions. encode_ticket() is
+  // only called for new (non-resumed) sessions; the resumption path
+  // re-sends the existing ticket directly. Reusing session->ticket here
+  // would incorrectly reuse a ticket the client presented from a previous
+  // server run (e.g. after a restart), causing other concurrent connections
+  // presenting the same old ticket to find this new session in the cache
+  // and attempt resumption with a mismatched master secret.
+  string(8bit)|zero ticket;
+  do {
+    ticket = random(32);
+  } while(session_cache[ticket]);
+  session->ticket = ticket;
+  session->ticket_expiry_time = time(1) + 3600;
   string(8bit)|zero orig_id = session->identity;
   session->identity = ticket;
   record_session(session);
   session->identity = orig_id;
-  // FIXME: Calculate the lifetime from the ticket_expiry_time field?
   return ({ ticket, 3600 });
 }
 
@@ -1299,6 +1301,11 @@ void purge_session(Session s)
                  String.string2hex(s->identity || ""));
   if (s->identity)
     m_delete (session_cache, s->identity);
+  // Ticket sessions store the cache entry under the ticket key, not under
+  // identity (which is set to "" during the abbreviated handshake path).
+  // Remove the ticket entry separately to avoid ghost entries.
+  if (s->ticket)
+    m_delete (session_cache, s->ticket);
   /* RFC 4346 7.2:
    *   In this case [fatal alert], other connections corresponding to
    *   the session may continue, but the session identifier MUST be
