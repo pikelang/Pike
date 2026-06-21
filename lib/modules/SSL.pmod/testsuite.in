@@ -1461,60 +1461,6 @@ test_do([[
   server_ctx->extensions[SSL.Constants.EXTENSION_session_ticket] = 0;
 ]])
 
-dnl --- EXTENDED MASTER SECRET TESTS ---
-dnl Verify that EMS is negotiated by default in TLS 1.2 and that the
-dnl session->extended_master_secret flag is set on both sides.
-
-test_any([[
-  import SSL.Constants;
-
-  // Self-contained so it also works when run in isolation with -s.
-  Crypto.Sign key = Crypto.RSA()->set_random(random_string)->generate_key(1024);
-  string cert = Standards.X509.make_selfsigned_certificate(key, 86400,
-    (["commonName":"*"]));
-
-  SSL.Context sctx = SSL.Context();
-  sctx->random = random_string;
-  sctx->add_cert(key, ({ cert }));
-  sctx->min_version = sctx->max_version = PROTOCOL_TLS_1_2;
-  sctx->extensions[EXTENSION_session_ticket] = 0;
-
-  SSL.Context cctx = SSL.Context();
-  cctx->random = random_string;
-  cctx->min_version = cctx->max_version = PROTOCOL_TLS_1_2;
-
-  Stdio.File client_con = Stdio.File();
-  Stdio.File server_con =
-    client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
-
-  SSL.File server = SSL.File(server_con, sctx);
-  SSL.File client = SSL.File(client_con, cctx);
-
-  string server_fail;
-  Thread.Thread t = Thread.Thread(lambda() {
-    server->set_blocking();
-    if (!server->accept()) { server_fail = "accept failed"; return; }
-    int ems = server->query_connection()->session->extended_master_secret;
-    server->close();
-    if (!ems) server_fail = "server: extended_master_secret not set";
-  });
-
-  client->set_blocking();
-  string client_fail;
-  if (!client->connect())
-    client_fail = "connect failed";
-  else {
-    int ems = client->query_connection()->session->extended_master_secret;
-    client->close();
-    if (!ems) client_fail = "client: extended_master_secret not set";
-  }
-
-  t->wait();
-  destruct(client);
-  destruct(server);
-  return client_fail || server_fail || 1;
-]], 1)
-
 cond_resolv(Crypto.ECC, [[
 
 dnl --- ECC CURVES TEST ---

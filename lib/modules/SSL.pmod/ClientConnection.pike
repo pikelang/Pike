@@ -160,6 +160,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   };
 
   ext (EXTENSION_extended_master_secret,
+       context->extended_master_secret &&
        ( has_value(context->supported_versions, PROTOCOL_TLS_1_0) ||
          has_value(context->supported_versions, PROTOCOL_TLS_1_1) ||
          has_value(context->supported_versions, PROTOCOL_TLS_1_2) )) {

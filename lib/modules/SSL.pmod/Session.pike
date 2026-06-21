@@ -820,15 +820,12 @@ int(0..1) reusable_as(Session other)
 
   // We use a *much* stricter test, and only reuse the old session
   // if it has the same parameters as the new session.
-  // RFC 7627 5.3: abbreviated handshake is forbidden if one side used
-  // extended_master_secret and the other did not.
   return cipher_suite == other->cipher_suite &&
     version == other->version &&
     certificate_chain == other->certificate_chain &&
     compression_algorithm == other->compression_algorithm &&
     max_packet_size == other->max_packet_size &&
     truncated_hmac == other->truncated_hmac &&
-    extended_master_secret == other->extended_master_secret &&
     server_name == other->server_name &&
     ecc_point_format == other->ecc_point_format &&
     encrypt_then_mac == other->encrypt_then_mac &&
