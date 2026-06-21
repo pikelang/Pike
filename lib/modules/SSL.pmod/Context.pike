@@ -193,6 +193,10 @@ Alert alert_factory(object con,
 //!   @value Constants.EXTENSION_padding
 //!     This extension is required to avoid a bug in some f5 SSL
 //!     terminators for certain sizes of client handshake messages.
+//!   @value Constants.EXTENSION_extended_master_secret
+//!     Binds the master secret to important session parameters to
+//!     protect against triple handshake and related man-in-the-middle
+//!     attacks (@rfc{7627@}).
 //! @endint
 //!
 //! The following supported values are not included by default.
@@ -206,9 +210,6 @@ Alert alert_factory(object con,
 //!     over the connection. Intended to keep TCP connections
 //!     alive. Required to be set to use @[heartbleed_probe]
 //!     (@rfc{6520@}).
-//!   @value Constants.EXTENSION_extended_master_secret
-//!     Binds the master secret to important session parameters to
-//!     protect against man in the middle attacks (@rfc{7627@}).
 //! @endint
 //!
 //! @seealso
@@ -218,6 +219,7 @@ multiset(int) extensions = (<
   EXTENSION_max_fragment_length,
   EXTENSION_ec_point_formats,
   EXTENSION_encrypt_then_mac,
+  EXTENSION_extended_master_secret,
   EXTENSION_application_layer_protocol_negotiation,
   EXTENSION_signature_algorithms,
   EXTENSION_elliptic_curves,
