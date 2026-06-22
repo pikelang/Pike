@@ -13,7 +13,7 @@ void usage()
 {
   Stdio.stdout->write(#"\
 Usage:
-  pike -c typelib-to-gir [--help] namespace[-version[.typelib]]*
+  pike -c typelib-to-gir [--help] [--autodoc] namespace[-version[.typelib]]*
 ");
 }
 
@@ -50,13 +50,24 @@ string find_typelib_file(string fn)
 
 int main(int arg, array(string) argv)
 {
+  int autodoc_mode;
+  string|zero output_filename;
+
   foreach(Getopt.find_all_options(argv, ({
-    ({ "help", Getopt.NO_ARG, "--help" }),
+    ({ "help", Getopt.NO_ARG, ({ "-h", "--help" }), }),
+    ({ "autodoc", Getopt.NO_ARG, ({ "--autodoc" }), }),
+    ({ "output", Getopt.HAS_ARG, ({ "-o", "--out", "--output" }), }),
   })), array(string|int) opt) {
     switch(opt[0]) {
     case "help":
       usage();
       return 0;
+    case "autodoc":
+      autodoc_mode = 1;
+      break;
+    case "output":
+      output_filename = opt[1];
+      break;
     }
   }
 
@@ -67,6 +78,7 @@ int main(int arg, array(string) argv)
     return 1;
   }
 
+  Stdio.File output;
   foreach(argv, string fn) {
     string file_path = find_typelib_file(fn);
 
@@ -80,11 +92,23 @@ int main(int arg, array(string) argv)
           exit(3);
         }
 
-        out_buf->add("<?xml version='1.0'>\n");
+        out_buf->add("<?xml version='1.0'?>\n");
 
-        header->render_xml(out_buf);
+        if (autodoc_mode) {
+          header->render_autodoc(out_buf);
+        } else {
+          header->render_xml(out_buf);
+        }
 
-        Stdio.stdout.write("%s", string_to_utf8(out_buf->get()));
+        if (!output) {
+          if (output_filename) {
+            output = Stdio.File(output_filename, "cwt");
+          } else {
+            output = Stdio.stdout;
+          }
+        }
+
+        output->write("%s", string_to_utf8(out_buf->get()));
       };
     if (err) {
       werror("%s: Error: Unsupported typelib format: %s",
