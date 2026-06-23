@@ -178,11 +178,11 @@ protected constant global_groupings = ([ "{":"}", "(":")", "[":"]" ]);
 //!   corresponding values mark where the block ends. The sub arrays
 //!   will start and end in these tokens. If no groupings mapping is
 //!   provided, {}, () and [] are used as block boundaries.
-array(Token|array) group(array(string|Token) tokens,
-			 void|mapping(string:string) groupings)
+array(Token|array|string) group(array(string|Token) tokens,
+                                void|mapping(string:string) groupings)
 {
   ADT.Stack stack=ADT.Stack();
-  array(Token) ret=({});
+  array(Token|array|string) ret=({});
   mapping actions=([]);
 
   if(!groupings) groupings=global_groupings;
@@ -214,16 +214,17 @@ array(Token|array) group(array(string|Token) tokens,
     }
   }
   while (sizeof(stack)) {
-    Token token = ret[0];
+    string|Token token = ret[0];
 #if 0
     werror("%s:%d: Missing %O.\n",
-	   token->file||"-", token->line,
+           (!stringp(token) && token->file) || "-",
+           (!stringp(token) && token->line),
            groupings[(string)token]);
 #endif
     ret = stack->pop() +
       ({ ret +
-         ({ Token(groupings[(string)token], !stringp(token) && token->line,
-                  !stringp(token) && token->file) }) });
+         ({ stringp(token) ? groupings[(string)token] :
+            Token(groupings[(string)token], token->line, token->file) }) });
   }
   return ret;
 }
