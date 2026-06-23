@@ -21,6 +21,8 @@
 // This file contains experimental code...
 #pragma no_experimental_warnings
 
+// #define PARSER_TYPELIB_DEBUG
+
 //! Magic cookie value for the @[Header()->magic] field.
 constant G_IR_MAGIC = "GOBJ\nMETADATA\r\n\032";
 
@@ -371,6 +373,15 @@ __experimental__ class Header {
     foreach(entries, object entry) {
       entry->render_xml(buf, indent + 4, this);
     }
+#ifdef PARSER_TYPELIB_DEBUG
+    if (sizeof(attribute_array)) {
+      buf->sprintf("%*n<attributes>\n", indent + 4);
+      foreach(attribute_array, object attr) {
+        attr->render_xml(buf, indent + 6, this);
+      }
+      buf->sprintf("%*n</attributes>\n", indent + 4);
+    }
+#endif
     buf->sprintf(#"\
 %*n</namespace>
 %*n</repository>
@@ -652,6 +663,10 @@ class SimpleTypeBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- SimpleType, flags: 0x%08x -->\n",
+                 indent, flags->get());
+#endif
     if (blob) {
       blob->render_xml(buf, indent, header);
     } else {
@@ -664,6 +679,9 @@ class SimpleTypeBlob {
 
   void render_autodoc_type(String.Buffer buf, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("<!-- SimpleType, flags: 0x%08x -->", flags->get());
+#endif
     if (blob) {
       blob->render_autodoc_type(buf, header);
     } else {
@@ -687,6 +705,10 @@ class ArgBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- ArgBlob, flags: 0x%08x -->\n",
+                 indent, flags->get());
+#endif
     int f = flags->get();
 
     buf->sprintf("%*n<parameter name='%s' transfer-ownership='%s'",
@@ -731,6 +753,10 @@ class ArgBlob {
   void render_autodoc(String.Buffer buf, int|void indent, Header|void header,
                       int(0..2)|void closure_type)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- ArgBlob, flags: 0x%08x -->\n",
+                 indent, flags->get());
+#endif
     int f = flags->get();
 
     buf->sprintf("%*n<argument name='%s'>\n", indent, pike_name);
@@ -878,6 +904,10 @@ class SignatureBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- Signature Flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
     buf->sprintf("%*n<return-value transfer-ownership='%s'",
                  indent,
                  (flags->get() & 0x0002)? "full": "none");
@@ -952,6 +982,10 @@ class SignatureBlob {
   // This renders the signature as a method entry.
   void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- Signature Flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
     array pike_signature = get_pike_signature();
     if (sizeof(pike_signature) > 1) {
       buf->sprintf("%*n<arguments>\n", indent);
@@ -992,6 +1026,10 @@ class SignatureBlob {
   // Rendering as a type (ie function(...:...)
   void render_autodoc_type(String.Buffer buf, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- Signature Flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
     buf->add("<function>");
 
     array pike_signature = get_pike_signature();
@@ -1068,6 +1106,12 @@ class FunctionBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- Function: flags: 0x%04x, name: %q, sym: %q,\n"
+                 "%*n     sign: %d, more: 0x%04x, fin: 0x%04x -->\n",
+                 indent, flags->get(), name->get(), symbol->get(),
+                 indent, signature_offset->get(), more_flags->get(), finish->get());
+#endif
     int fl = flags->get();
     int mfl = more_flags->get();
     string tag = "method";
@@ -1431,6 +1475,10 @@ class StructBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- StructBlob, flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
     string tag = "record";
     if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
       buf->sprintf("%*n<glib:boxed glib:name='%s'"
@@ -1449,9 +1497,17 @@ class StructBlob {
     }
     if (n_fields->get() || n_methods->get()) {
       buf->add(">\n");
+#ifdef PARSER_TYPELIB_DEBUG
+      buf->sprintf("%*n<!-- Num fields: %d -->\n",
+                   indent + 2, n_fields->get());
+#endif
       foreach(fields, FieldBlob field) {
         field->render_xml(buf, indent + 2, header);
       }
+#ifdef PARSER_TYPELIB_DEBUG
+      buf->sprintf("%*n<!-- Num methods: %d -->\n",
+                   indent + 2, n_methods->get());
+#endif
       foreach(methods, FunctionBlob method) {
         method->render_xml(buf, indent + 2, header);
       }
@@ -1463,6 +1519,11 @@ class StructBlob {
 
   void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- StructBlob, flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
+
     //
     // First: Consolidate any constructors in a Factory module.
     //
@@ -1574,6 +1635,11 @@ class UnionBlob {
 
   void render_autodoc(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- UnionBlob, flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
+
     //
     // First: Consolidate any constructors in a Factory module.
     //
@@ -1886,6 +1952,10 @@ class VFuncBlob {
   void render_xml(String.Buffer buf, int|void indent, Header|void header,
                   array(FunctionBlob)|void methods)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- VFuncBlob, flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
     int fl = flags->get();
 
     buf->sprintf("%*n<virtual-method name='%s'", indent, name->get());
@@ -2285,6 +2355,10 @@ class InterfaceBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- InterfaceBlob, flags: 0x%04x -->\n",
+                 indent, flags->get());
+#endif
     buf->sprintf("%*n<interface name='%s'", indent, name->get());
     if (sizeof(gtype_name->get()) || sizeof(gtype_init->get())) {
       buf->sprintf(" glib:type-name='%s' glib:get-type='%s'",
@@ -2500,6 +2574,10 @@ class ConstantBlob {
 
   void render_xml(String.Buffer buf, int|void indent, Header|void header)
   {
+#ifdef PARSER_TYPELIB_DEBUG
+    buf->sprintf("%*n<!-- ConstantBlob, flags: 0x%04x, size: 0x%08x, off: 0x%08x -->\n",
+                 indent, flags->get(), size->get(), offset->get());
+#endif
     buf->sprintf("%*n<constant name='%s'", indent, name->get());
     if (stringp(value)) {
       if (has_suffix(value, "\0")) {
