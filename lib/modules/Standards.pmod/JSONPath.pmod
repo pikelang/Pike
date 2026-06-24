@@ -236,10 +236,40 @@ class Query
     }
   }
 
-  protected string parse_string_token(string token)
+  protected string normalize_token(string token)
   {
-    // FIXME: Do something better.
-    return token[1..<1];
+    if (token[0] == '\'') {
+      if (!has_value(token, "\"")) {
+        return "\"" + token[1..<1] + "\"";
+      }
+
+      string new_token = "\"";
+      int q = 0;
+      foreach((token/1)[1..<1], string s) {
+        if ((s == "\"") && !q) {
+          new_token += "\\";
+        } else if (q) {
+          q = 0;
+        } else if (s == "\\") {
+          q = 1;
+        }
+        new_token += s;
+      }
+      if (q) {
+        // Shouldn't happen...
+        new_token += "\\";
+      }
+
+      return new_token + "\"";
+    }
+
+    return token;
+  }
+
+  protected mixed eval_token(string token)
+  {
+    token = normalize_token(token);
+    return Standards.JSON.decode(token);
   }
 
   protected int parse_int(ADT.Stack tokens)
@@ -272,7 +302,7 @@ class Query
       break;
     case "\"": case "\'":
       // name-selector
-      return parse_string_token(tokens->pop());
+      return eval_token(tokens->pop());
     case "?":
       // filter-selector
       tokens->pop();
