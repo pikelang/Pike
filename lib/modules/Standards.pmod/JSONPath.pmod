@@ -6,16 +6,34 @@
 //!   @rfc{9535@}
 
 local protected {
+
+  //! Base class for all expressions.
   class Expression
   {
+    //! Apply the expression on a JSON value.
+    //!
+    //! @returns
+    //!   Returns an array with the matching values.
+    //!   If no values matched the empty array @expr{({})@} will be returned.
     array apply(mixed json_value, mixed root_value)
     {
       return ({ json_value });
     }
   }
 
+  //! Type for selectors.
+  //! @mixed
+  //!    @type int|string
+  //!      Integers and strings are short hand for indexing
+  //!      the current @tt{json_value@}(s) with the same.
+  //!
+  //!    @type Expression
+  //!      @[Expression()->apply()] is called and its return
+  //!      value becomes the new @tt{json_value@}(s).
+  //! @endmixed
   typedef int|string|Expression Selector;
 
+  //! Expresion selecting the @tt{root_value@}.
   class RootExpression
   {
     inherit Expression;
@@ -33,6 +51,56 @@ local protected {
 
   RootExpression Dollar = RootExpression();
 
+  //! Expression evaluating to a literal value.
+  class LiteralExpression(mixed value)
+  {
+    array apply(mixed json_value, mixed root_value)
+    {
+      if (undefinedp(value)) return ({});
+      return ({ value });
+    }
+
+    protected string _sprintf(int|void c)
+    {
+      if (stringp(value)) {
+        return sprintf("%%%q", value);
+      } else {
+        return sprintf("%%%O", value);
+      }
+    }
+  }
+
+  class LogicalOrExpression(Expression e1, Expression e2)
+  {
+    array apply(mixed json_value, mixed root_value)
+    {
+      array ret = e1->apply(json_value, root_value);
+      if (sizeof(ret)) return ret;
+      return e2->apply(json_value, root_value);
+    }
+  }
+
+  class LogicalAndExpression(Expression e1, Expression e2)
+  {
+    array apply(mixed json_value, mixed root_value)
+    {
+      array ret = e1->apply(json_value, root_value);
+      if (!sizeof(ret)) return ret;
+      return e2->apply(json_value, root_value);
+    }
+  }
+
+  class NotExpression(Expression e)
+  {
+    array apply(mixed json_value, mixed root_value)
+    {
+      array ret = e->apply(json_value, root_value);
+      if (sizeof(ret)) return ({});
+      return ({ Val.true });
+    }
+  }
+
+  //! Expression evaluating to all values at the current level.
   class WildExpression
   {
     inherit Expression;
@@ -58,6 +126,7 @@ local protected {
 
   WildExpression Wild = WildExpression();
 
+  //! Expression evaluating to all values at all depths.
   class DescendantExpression
   {
     inherit Expression;
@@ -92,7 +161,9 @@ local protected {
     }
   }
 
-  class Filter(Expression filter)
+  //! Expression evaluating to @tt{json_value@} when
+  //! the @[filter]-expression matches anything.
+  class FilterExpression(Expression filter)
   {
     inherit Expression;
 
@@ -166,6 +237,7 @@ local protected {
     return json_value;
   }
 
+  //! Select multiple values in sequence.
   class MultiSelectExpression(array(Selector) selectors)
   {
     inherit Expression;
@@ -173,6 +245,62 @@ local protected {
     array apply(mixed json_value, mixed root_value)
     {
       return map(selectors/1, apply_selector, json_value, root_value) * ({});
+    }
+  }
+
+  //! Slice an array.
+  class SliceExpression(int start, int end, int step)
+  {
+    inherit Expression;
+
+    array apply(mixed json_value, mixed root_value)
+    {
+      if (arrayp(json_value)) {
+        int s = start;
+        if (undefinedp(s)) {
+          s = (step >= 0) ? 0 : -1;
+        }
+        if (s < 0) s += sizeof(json_value);
+        if (s < 0) s = 0;
+        if (s > sizeof(json_value)) s = sizeof(json_value);
+
+        int e = end;
+        if (undefinedp(end)) {
+          e = (step >= 0) ? sizeof(json_value)-1 : 0;
+        } else {
+          if (e < 0) {
+            e += sizeof(json_value);
+          }
+          if (step > 0) {
+            e--;
+          } else {
+            e++;
+          }
+        }
+
+        if (step > 0) {
+          if (s > e) {
+            return ({});
+          }
+          json_value = json_value[s..e];
+          if (step == 1) {
+            return json_value;
+          }
+          return column(json_value/step, 0);
+        }
+        if (s < e) {
+          return ({});
+        }
+        if (step == -1) {
+          return reverse(json_value[e..s]);
+        }
+        array ret = ({});
+        for(int i = s; i >= e; i += step) {
+          ret += json_value[i..i];
+        }
+        return ret;
+      }
+      return ({});
     }
   }
 }
@@ -228,12 +356,28 @@ class Query
     selectors = parse_tokens(token_stack, is_expr);
   }
 
-  protected void expect(ADT.Stack tokens, string expected)
+  protected void syntax_error(ADT.Stack tokens, string|void expected)
   {
-    string t = tokens->pop();
-    if (t != expected) {
+    if (!sizeof(tokens)) {
+      if (expected) {
+        error("Unexpected end of expression. Expected %q.\n", expected);
+      }
+      error("Unexpected end of expression.\n");
+    }
+    if (expected) {
       error("Invalid expression. Expected %q.\n", expected);
     }
+    error("Invalid expression. Unexpected %O.\n", tokens->peek());
+  }
+
+  protected void expect(ADT.Stack tokens, string expected)
+  {
+    string t = sizeof(tokens) && tokens->peek();
+    if (t == expected) {
+      tokens->pop();
+      return;
+    }
+    syntax_error(tokens, expected);
   }
 
   protected string normalize_token(string token)
@@ -281,43 +425,142 @@ class Query
     return (int)token;
   }
 
-  protected Expression parse_filter_expression(ADT.Stack tokens)
+  protected Expression parse_basic_expr(ADT.Stack tokens)
   {
+    // Parse basic-expr or paren-expr or comparison-expr or test-expr
+    // or filter-query
+
+    string|array token = tokens->peek();
+    switch(token) {
+    case "!": // paren-expr or test-expr
+      tokens->pop();
+      return NotExpression(parse_basic_expr(tokens));
+
+    case "false":
+      return LiteralExpression(UNDEFINED);
+    case "true":
+    case "null":
+      return LiteralExpression(eval_token(tokens->pop()));
+
+    case "-":
+      tokens->pop();
+      // NB: Always followed by an unsigned number.
+      return LiteralExpression(-eval_token(tokens->pop()));
+
+    case "$":
+    case "@":
+      return Query(tokens, 1);
+
+    default:
+      if (arrayp(token) && (token[0] == "(")) {
+        // paren-expr
+        tokens->pop();
+        ADT.Stack token_stack = ADT.Stack();
+        token_stack->set_stack(reverse(token[1..<1]));
+        return parse_logical_expr(token_stack);
+      }
+      if (stringp(token)) {
+        int c = token[0];
+        if ((c == '\'') || (c == '\"') ||
+            ((token[0] >= '0') && (token[0] <= '9'))) {
+          // string literal or number.
+          return LiteralExpression(eval_token(tokens->pop()));
+        }
+      }
+      break;
+    }
+    syntax_error(tokens);
+  }
+
+  protected Expression parse_logical_and_expr(ADT.Stack tokens)
+  {
+    // Parse logical-and-expr
+
+    Expression e = parse_basic_expr(tokens);
+    while (sizeof(tokens) && tokens->peek() == "&&") {
+      tokens->pop();
+      Expression e2 = parse_basic_expr(tokens);
+      e = LogicalAndExpression(e, e2);
+    }
+    return e;
+  }
+
+  protected Expression parse_logical_expr(ADT.Stack tokens)
+  {
+    // Parse logical-expr or logical-or-expr
+
+    Expression e = parse_logical_and_expr(tokens);
+    while (sizeof(tokens) && tokens->peek() == "||") {
+      tokens->pop();
+      Expression e2 = parse_logical_and_expr(tokens);
+      e = LogicalOrExpression(e, e2);
+    }
+    if (sizeof(tokens)) {
+      syntax_error(tokens);
+    }
+    return e;
   }
 
   protected Selector parse_selector(ADT.Stack tokens)
   {
+    // Parse selector or name-selector or wildcard-selector
+    // or slice-selector or index-selector or filter-selector
+    // or string-literal
+    int val = UNDEFINED;
     switch(tokens->peek()[0..0]) {
     case "0": case "1": case "2": case "3": case "4":
     case "5": case "6": case "7": case "8": case "9": case "-":
       // index-selector/slice-selector
-      int val = parse_int(tokens);
+      val = parse_int(tokens);
+    case ":":
+      // Potential slice-selector
       switch (sizeof(tokens) && tokens->peek()) {
       case ":":
-        // slice-selector
-        break;
+        tokens->pop();
+        int end = UNDEFINED;
+        if (sizeof(tokens) && (tokens->peek() != ":") &&
+            (tokens->peek() != ",")) {
+          end = parse_int(tokens);
+        }
+        int step = 1;
+        if (sizeof(tokens) && (tokens->peek() == ":")) {
+          tokens->pop();
+          if (sizeof(tokens) && (tokens->peek() != ",")) {
+            step = parse_int(tokens);
+          }
+        }
+        if (!step) {
+          return LiteralExpression(UNDEFINED);
+        }
+        return SliceExpression(val, end, step);
+
       default:
         return val;
       }
       break;
     case "\"": case "\'":
-      // name-selector
+      // name-selector or string-literal
       return eval_token(tokens->pop());
     case "?":
       // filter-selector
       tokens->pop();
-      return parse_filter_expression(tokens);
+      return FilterExpression(parse_logical_expr(tokens));
     case "*":
       // wildcard-selector
       tokens->pop();
       return Wild;
+    case "$":
+    case "@":
+    case "%":
+      return Query(tokens, 1);
     }
-    error("Invalid expression.\n");
+    syntax_error(tokens);
   }
 
-  protected Selector compile_segment(ADT.Stack tokens)
+  protected Selector compile_segment(ADT.Stack tokens,
+                                     int(1bit)|void is_expr)
   {
-    // Parse child-segment or descendant-segment
+    // Parse child-segment or descendant-segment or bracketed-selection
 
     array(string)|string t = tokens->pop();
     switch(t[0..0]) {
@@ -329,11 +572,16 @@ class Query
         // descendant-segment
         return DescendantExpression(tokens);
       case "*":
+        // wildcard-selector
         return Wild;
       default:
-        if (stringp(t)) return t;
-        error("Invalid expression.\n");
+        if (stringp(t)) {
+          // If valid, this is a member-name-shorthand.
+          return t;
+        }
       }
+      tokens->push(t);
+      syntax_error(tokens);
       break;
 
     default:
@@ -352,21 +600,22 @@ class Query
         if (sizeof(selectors) == 1) {
           return selectors[0];
         }
-        if (!sizeof(selectors)) {
-          // Probably not reached.
-          error("Invalid expression.\n");
-        }
         return MultiSelectExpression(selectors);
-      } else {
-        error("Invalid expression.\n");
       }
       break;
     }
+    tokens->push(t);
+    if (!is_expr) {
+      syntax_error(tokens);
+    }
+    return UNDEFINED;
   }
 
   protected array(Selector) parse_tokens(ADT.Stack tokens,
                                          int(1bit)|void is_expr)
   {
+    // Parse a jsonpath-query or rel-query (aka filter-query).
+    // Also supports the Pike literal value rooted extension.
     array(Selector) res = ({});
 
     string|array(string|array) token = tokens->pop();
@@ -376,7 +625,8 @@ class Query
       break;
     case "@":
       if (!is_expr) {
-        error("Invalid expression!\n");
+        tokens->push(token);
+        syntax_error(tokens);
       }
       // NB: Current node is the default.
       break;
@@ -386,13 +636,16 @@ class Query
         token_stack->set_stack(reverse(token[1..<1]));
         res = parse_tokens(token_stack, is_expr);
       } else {
-        error("Invalid expression.\n");
+        tokens->push(token);
+        syntax_error(tokens);
       }
       break;
     }
 
     while (sizeof(tokens)) {
-      res += ({ compile_segment(tokens) });
+      Selector s = compile_segment(tokens, is_expr);
+      if (!s) break;
+      res += ({ s });
     }
 
     return res;
