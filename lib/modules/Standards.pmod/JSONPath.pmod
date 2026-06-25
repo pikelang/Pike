@@ -6,16 +6,34 @@
 //!   @rfc{9535@}
 
 local protected {
+
+  //! Base class for all expressions.
   class Expression
   {
+    //! Apply the expression on a JSON value.
+    //!
+    //! @returns
+    //!   Returns an array with the matching values.
+    //!   If no values matched the empty array @expr{({})@} will be returned.
     array apply(mixed json_value, mixed root_value)
     {
       return ({ json_value });
     }
   }
 
+  //! Type for selectors.
+  //! @mixed
+  //!    @type int|string
+  //!      Integers and strings are short hand for indexing
+  //!      the current @tt{json_value@}(s) with the same.
+  //!
+  //!    @type Expression
+  //!      @[Expression()->apply()] is called and its return
+  //!      value becomes the new @tt{json_value@}(s).
+  //! @endmixed
   typedef int|string|Expression Selector;
 
+  //! Expresion selecting the @tt{root_value@}.
   class RootExpression
   {
     inherit Expression;
@@ -33,6 +51,7 @@ local protected {
 
   RootExpression Dollar = RootExpression();
 
+  //! Expression evaluating to all values at the current level.
   class WildExpression
   {
     inherit Expression;
@@ -58,6 +77,7 @@ local protected {
 
   WildExpression Wild = WildExpression();
 
+  //! Expression evaluating to all values at all depths.
   class DescendantExpression
   {
     inherit Expression;
@@ -92,7 +112,9 @@ local protected {
     }
   }
 
-  class Filter(Expression filter)
+  //! Expression evaluating to @tt{json_value@} when
+  //! the @[filter]-expression matches anything.
+  class FilterExpression(Expression filter)
   {
     inherit Expression;
 
@@ -166,6 +188,7 @@ local protected {
     return json_value;
   }
 
+  //! Select multiple values in sequence.
   class MultiSelectExpression(array(Selector) selectors)
   {
     inherit Expression;
