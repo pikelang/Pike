@@ -108,7 +108,12 @@ local protected {
     protected array json_values(mixed val)
     {
       if (arrayp(val) || mappingp(val)) {
-        return values(val);
+        array ret = values(val);
+        if (mappingp(val)) {
+          // Extension: Use a stable order.
+          sort(indices(val), ret);
+        }
+        return ret;
       }
       return ({});
     }
@@ -148,7 +153,12 @@ local protected {
         array v = sub_expression->apply(json_value, root_value);
         ret += v;
 
-        foreach(values(json_value), mixed j) {
+        array vals = values(json_value);
+        if (mappingp(json_value)) {
+          // Extension: Use a stable order.
+          sort(indices(json_value), vals);
+        }
+        foreach(vals, mixed j) {
           ret += apply(j, root_value);
         }
       }
@@ -169,8 +179,16 @@ local protected {
 
     array apply(mixed json_value, mixed root_value)
     {
-      return sizeof(filter->apply(json_value, root_value)) ?
-        ({ json_value }) : ({});
+      if (!arrayp(json_value)) {
+        json_value = ({ json_value });
+      }
+      array ret = ({});
+      foreach(json_value, mixed val) {
+        if (sizeof(filter->apply(val, root_value))) {
+          ret += ({ val });
+        }
+      }
+      return ret;
     }
   }
 
