@@ -179,8 +179,16 @@ local protected {
 
     array apply(mixed json_value, mixed root_value)
     {
-      return sizeof(filter->apply(json_value, root_value)) ?
-        ({ json_value }) : ({});
+      if (!arrayp(json_value)) {
+        json_value = ({ json_value });
+      }
+      array ret = ({});
+      foreach(json_value, mixed val) {
+        if (sizeof(filter->apply(val, root_value))) {
+          ret += ({ val });
+        }
+      }
+      return ret;
     }
   }
 
