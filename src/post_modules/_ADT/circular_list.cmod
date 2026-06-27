@@ -498,11 +498,11 @@ PIKECLASS CircularList
 		(char *)(ITEM(THIS->a)+(THIS->pos)),
 		(endpos) * sizeof(struct svalue));
 	THIS->pos = size-endpos;
-      }
-      while(elements) {
-	SET_SVAL(ITEM(THIS->a)[THIS->pos - elements], T_INT, NUMBER_NUMBER,
-		 integer, 0);
-	elements--;
+        while(elements) {
+            SET_SVAL(ITEM(THIS->a)[THIS->pos - elements], T_INT, NUMBER_NUMBER,
+                     integer, 0);
+            elements--;
+        }
       }
       THIS->a->type_field |= BIT_INT;
     }
