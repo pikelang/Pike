@@ -869,7 +869,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             SSL3_DEBUG_MSG("Missing ticket expiry time in session.\n");
           } else {
             SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
-            int lifetime_hint = [int](session->ticket_expiry_time - time(1));
+            int lifetime_hint = max(0, [int](session->ticket_expiry_time - time(1)));
             string(8bit) ticket = [string(8bit)]session->ticket;
             send_packet(new_session_ticket_packet(lifetime_hint, ticket));
           }
