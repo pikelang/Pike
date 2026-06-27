@@ -2076,8 +2076,11 @@ protected int direct_write()
 
 protected void ssl_timeout_callback()
 {
-  SSL3_DEBUG_MSG("Timeout waiting on peer - simulating peer fatal.\n");
-  conn && conn->handle_alert(ALERT_fatal, ALERT_internal_error);
+  SSL3_DEBUG_MSG("Timeout waiting on peer - sending fatal alert.\n");
+  if (conn) {
+    conn->send_packet(conn->alert(ALERT_fatal, ALERT_internal_error));
+    direct_write();
+  }
 }
 
 protected int ssl_read_callback (int ignored, string input)
