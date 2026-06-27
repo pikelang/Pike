@@ -2402,7 +2402,7 @@ protected int ssl_close_callback (int ignored)
 //! The application protocol chosen by the client during application layer
 //! protocol negotiation (ALPN).
 string `->application_protocol() {
-    return conn->application_protocol;
+    return conn->?application_protocol;
 }
 
 //! Return the currently active cipher suite.
