@@ -507,7 +507,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           case EXTENSION_max_fragment_length:
             // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
             int mfsz = extension_data->read_int(1);
-            if (size) mfsz = 0;
+            if (sizeof(extension_data)) mfsz = 0;
             switch(mfsz) {
             case FRAGMENT_512:  session->max_packet_size = 512; break;
             case FRAGMENT_1024: session->max_packet_size = 1024; break;
