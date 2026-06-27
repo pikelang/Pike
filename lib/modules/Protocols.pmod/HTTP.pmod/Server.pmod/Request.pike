@@ -1094,8 +1094,15 @@ void finish(int clean)
        this_program r =
 	 server_port ? server_port->request_program() : this_program();
        r->attach_fd(my_fd,server_port,request_callback,buf,error_callback);
-     } else
-       my_fd->set_blocking();  // Setup for close, disable callbacks
+     } else {
+       if (my_fd->query_version)
+         // close() sends close_notify and drives shutdown(); set_blocking()
+         // alone leaves stream callbacks that form a GC cycle, stalling the
+         // peer ~30 s until cycle-collecting GC finally frees the object.
+         my_fd->close();
+       else
+         my_fd->set_blocking();
+     }
 
      my_fd = 0; // and drop this object
    }
