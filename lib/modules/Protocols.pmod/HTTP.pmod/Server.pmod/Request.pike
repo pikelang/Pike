@@ -626,7 +626,10 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 {
    void radd( mixed ... args )
    {
-      res->add(@(array(string))args,"\r\n");
+      foreach(args; int i; mixed m) {
+        args[i] = (string)m-"\n"-"\r";
+      }
+      res->add(@args,"\r\n");
    };
 
    if (protocol!="HTTP/1.0")
@@ -882,7 +885,7 @@ void response_and_finish(mapping m, function|void _log_cb)
    }
 
    void radd(sprintf_format fmt, mixed ... rest) {
-     send_buf->sprintf(fmt + "\r\n", @rest);
+     send_buf->add(sprintf(fmt, @rest)-"\n"-"\r", "\r\n");
    };
 
    if (protocol!="HTTP/1.0") {
