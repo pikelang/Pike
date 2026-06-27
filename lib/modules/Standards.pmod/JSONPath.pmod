@@ -526,6 +526,18 @@ class Query
     syntax_error(tokens);
   }
 
+  protected Expression parse_basic_expr(ADT.Stack tokens)
+  {
+    // Parse basic-expr or paren-expr or comparison-expr or test-expr
+    // or filter-query
+
+    Expression e = parse_comparable(tokens);
+    if (!sizeof(tokens) || (< ",", "&&", "||" >)[tokens->peek()]) {
+      return e;
+    }
+    syntax_error(tokens);
+  }
+
   protected Expression parse_logical_and_expr(ADT.Stack tokens)
   {
     // Parse logical-and-expr
