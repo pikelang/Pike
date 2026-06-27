@@ -323,7 +323,7 @@ class CipherSpec {
       }
     }
 
-    if (signature_hash == -1)
+    if (hash_id == -1)
       error("No acceptable hash algorithm.\n");
     signature_hash = hash_id;
 
