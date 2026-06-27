@@ -505,12 +505,12 @@ PIKECLASS CircularList
 		(char *)(ITEM(THIS->a)+(THIS->pos)),
 		(endpos) * sizeof(struct svalue));
 	THIS->pos = size-endpos;
-      }
-      while(elements) {
-	ITEM(THIS->a)[THIS->pos - elements].type=T_INT;
-	ITEM(THIS->a)[THIS->pos - elements].subtype=NUMBER_NUMBER;
-	ITEM(THIS->a)[THIS->pos - elements].u.integer=0;
-	elements--;
+        while(elements) {
+          ITEM(THIS->a)[THIS->pos - elements].type = T_INT;
+          ITEM(THIS->a)[THIS->pos - elements].subtype = NUMBER_NUMBER;
+          ITEM(THIS->a)[THIS->pos - elements].u.integer = 0;
+          elements--;
+        }
       }
       THIS->a->type_field |= BIT_INT;
     }
