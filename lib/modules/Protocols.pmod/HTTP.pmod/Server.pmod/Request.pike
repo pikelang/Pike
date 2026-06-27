@@ -225,8 +225,19 @@ protected object(Stdio.File)|zero send_fd = 0;
 protected int send_stop;
 protected int keep_alive=0;
 
-protected void flatten_headers()
+protected int flatten_headers()
 {
+  int bad;
+
+  array|string|zero ct = request_headers["content-length"];
+  if ( arrayp(ct) && sizeof(ct) > 1 )
+  {
+    string value = ct[0];
+    foreach(ct, string v)
+      if( v != value )
+        bad = 1;
+  }
+
   foreach( singular_headers, string x )
     if( arrayp(request_headers[x]) )
       request_headers[x] = request_headers[x][-1];
@@ -234,6 +245,14 @@ protected void flatten_headers()
   foreach( singular_use_headers, string x )
     if( arrayp(request_headers[x]) )
       request_headers[x] = request_headers[x]*";";
+
+
+  ct = request_headers["content-length"];
+  if( !bad && ct && !sizeof(array_sscanf(String.trim(ct), "%d")) ) {
+    return 1;
+  }
+
+  return bad;
 }
 
 //! Called when the client is attempting opportunistic TLS on this
@@ -457,7 +476,13 @@ protected int parse_variables()
   if (query!="")
     .http_decode_urlencoded_query(query,variables);
 
-  flatten_headers();
+  if (flatten_headers())
+  {
+    // RFC 9110 §8.6: multiple Content-Length headers
+    my_fd->write(protocol + " 400 Bad Request\r\n\r\n");
+    finish(0);
+    return 0;
+  }
 
   if ( request_headers->expect )
   {
