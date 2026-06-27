@@ -10,6 +10,19 @@ local protected {
   //! Base class for all expressions.
   class Expression
   {
+    protected array json_values(mixed val)
+    {
+      if (arrayp(val) || mappingp(val)) {
+        array ret = values(val);
+        if (mappingp(val)) {
+          // Extension: Use a stable order.
+          sort(indices(val), ret);
+        }
+        return ret;
+      }
+      return ({});
+    }
+
     //! Apply the expression on a JSON value.
     //!
     //! @returns
@@ -50,6 +63,24 @@ local protected {
   }
 
   RootExpression Dollar = RootExpression();
+
+  //! Expresion selecting the @tt{root_value@}.
+  class HereExpression
+  {
+    inherit Expression;
+
+    array apply(mixed json_value, mixed root_value)
+    {
+      return json_values(json_value);
+    }
+
+    protected string _sprintf(int|void c)
+    {
+      return "@";
+    }
+  }
+
+  HereExpression At = HereExpression();
 
   //! Expression evaluating to a literal value.
   class LiteralExpression(mixed value)
@@ -105,22 +136,10 @@ local protected {
   {
     inherit Expression;
 
-    protected array json_values(mixed val)
-    {
-      if (arrayp(val) || mappingp(val)) {
-        array ret = values(val);
-        if (mappingp(val)) {
-          // Extension: Use a stable order.
-          sort(indices(val), ret);
-        }
-        return ret;
-      }
-      return ({});
-    }
-
     array apply(mixed json_value, mixed root_value)
     {
-      return map(json_values(json_value), json_values) * ({});
+      if (arrayp(json_value)) return json_value;
+      return json_values(json_value);
     }
 
     protected string _sprintf(int|void c)
@@ -136,28 +155,16 @@ local protected {
   {
     inherit Expression;
 
-    Query sub_expression;
-
-    protected void create(ADT.Stack tokens)
-    {
-      // Prepend "@." to the token stream.
-      tokens->push(".");
-      tokens->push("@");
-      sub_expression = Query(tokens, 1);
-    }
-
     array apply(mixed json_value, mixed root_value)
     {
-      array ret = ({});
+      array ret = ({ json_value });
       if (mappingp(json_value) || arrayp(json_value)) {
-        array v = sub_expression->apply(json_value, root_value);
-        ret += v;
-
         array vals = values(json_value);
         if (mappingp(json_value)) {
           // Extension: Use a stable order.
           sort(indices(json_value), vals);
         }
+
         foreach(vals, mixed j) {
           ret += apply(j, root_value);
         }
@@ -167,25 +174,24 @@ local protected {
 
     protected string _sprintf(int|void c)
     {
-      return sprintf(".%O", sub_expression);
+      return "..";
     }
   }
 
-  //! Expression evaluating to @tt{json_value@} when
-  //! the @[filter]-expression matches anything.
+  DescendantExpression Descend = DescendantExpression();
+
+  //! Expression filtering the contents of @tt{json_value@}
+  //! with respect to if the @[filter]-expression matches.
   class FilterExpression(Expression filter)
   {
     inherit Expression;
 
     array apply(mixed json_value, mixed root_value)
     {
-      if (!arrayp(json_value)) {
-        json_value = ({ json_value });
-      }
       array ret = ({});
-      foreach(json_value, mixed val) {
+      foreach(json_values(json_value)/1, mixed val) {
         if (sizeof(filter->apply(val, root_value))) {
-          ret += ({ val });
+          ret += val;
         }
       }
       return ret;
@@ -201,11 +207,13 @@ local protected {
       return ({ val });
     }
 
-    if (arrayp(val)) {
+    if (arrayp(val) || stringp(val)) {
       if (intp(s)) {
-        return val[s..s];
+        if (s < 0) s += sizeof(val);
+        val = val[s..s];
+        if (!arrayp(val)) val = ({ val });
+        return val;
       }
-      return map(val, index_value, s) * ({});
     }
 
     return ({});
@@ -273,7 +281,7 @@ local protected {
 
     array apply(mixed json_value, mixed root_value)
     {
-      if (arrayp(json_value)) {
+      if (arrayp(json_value) || stringp(json_value)) {
         int s = start;
         if (undefinedp(s)) {
           s = (step >= 0) ? 0 : -1;
@@ -289,6 +297,7 @@ local protected {
           if (e < 0) {
             e += sizeof(json_value);
           }
+          // Adjust e to be the last (potentially) included element.
           if (step > 0) {
             e--;
           } else {
@@ -302,16 +311,36 @@ local protected {
           }
           json_value = json_value[s..e];
           if (step == 1) {
+            if (stringp(json_value)) {
+              return ({ json_value });
+            }
             return json_value;
           }
-          return column(json_value/step, 0);
+          if (arrayp(json_value)) {
+            return column(json_value/step, 0);
+          } else {
+            return ({ map(json_value/step, `[], 0, 0) * "" });
+          }
         }
         if (s < e) {
           return ({});
         }
         if (step == -1) {
-          return reverse(json_value[e..s]);
+          json_value = reverse(json_value[e..s]);
+          if (stringp(json_value)) {
+            return ({ json_value });
+          }
+          return json_value;
         }
+
+        if (stringp(json_value)) {
+          string ret = "";
+          for(int i = s; i >= e; i += step) {
+            ret += json_value[i..i];
+          }
+          return ({ ret });
+        }
+
         array ret = ({});
         for(int i = s; i >= e; i += step) {
           ret += json_value[i..i];
@@ -382,10 +411,14 @@ class Query
       }
       error("Unexpected end of expression.\n");
     }
-    if (expected) {
-      error("Invalid expression. Expected %q.\n", expected);
+    string|array token = tokens->peek();
+    if (arrayp(token)) {
+      token = token[0];
     }
-    error("Invalid expression. Unexpected %O.\n", tokens->peek());
+    if (expected) {
+      error("Invalid expression. Expected %q, got %q.\n", expected, token);
+    }
+    error("Invalid expression. Unexpected %q.\n", token);
   }
 
   protected void expect(ADT.Stack tokens, string expected)
@@ -443,21 +476,23 @@ class Query
     return (int)token;
   }
 
-  protected Expression parse_basic_expr(ADT.Stack tokens)
+  protected Expression parse_comparable(ADT.Stack tokens)
   {
-    // Parse basic-expr or paren-expr or comparison-expr or test-expr
-    // or filter-query
+    // Parse literal or singular-query or function-expr
+    // or number or string-literal or true or false or null
 
     string|array token = tokens->peek();
     switch(token) {
     case "!": // paren-expr or test-expr
       tokens->pop();
-      return NotExpression(parse_basic_expr(tokens));
+      return NotExpression(parse_comparable(tokens));
 
     case "false":
+      tokens->pop();
       return LiteralExpression(UNDEFINED);
+
+    case "null": // RFC 9535 2.6
     case "true":
-    case "null":
       return LiteralExpression(eval_token(tokens->pop()));
 
     case "-":
@@ -467,6 +502,7 @@ class Query
 
     case "$":
     case "@":
+      // singular-query or filter-query.
       return Query(tokens, 1);
 
     default:
@@ -513,7 +549,7 @@ class Query
       Expression e2 = parse_logical_and_expr(tokens);
       e = LogicalOrExpression(e, e2);
     }
-    if (sizeof(tokens)) {
+    if (sizeof(tokens) && (tokens->peek() != ",")) {
       syntax_error(tokens);
     }
     return e;
@@ -551,11 +587,9 @@ class Query
           return LiteralExpression(UNDEFINED);
         }
         return SliceExpression(val, end, step);
-
-      default:
-        return val;
       }
-      break;
+      return val;
+
     case "\"": case "\'":
       // name-selector or string-literal
       return eval_token(tokens->pop());
@@ -588,7 +622,10 @@ class Query
       switch(t) {
       case ".":
         // descendant-segment
-        return DescendantExpression(tokens);
+        if (sizeof(tokens) && !arrayp(tokens->peek())) {
+          tokens->push(".");
+        }
+        return Descend;
       case "*":
         // wildcard-selector
         return Wild;
@@ -646,7 +683,7 @@ class Query
         tokens->push(token);
         syntax_error(tokens);
       }
-      // NB: Current node is the default.
+      res += ({ At });
       break;
     default:
       if (arrayp(token) && (token[0] == "(")) {
@@ -662,7 +699,7 @@ class Query
 
     while (sizeof(tokens)) {
       Selector s = compile_segment(tokens, is_expr);
-      if (!s) break;
+      if (undefinedp(s)) break;
       res += ({ s });
     }
 
@@ -704,11 +741,18 @@ class Query
 //! Handles text substitutions where the template
 //! text contains embedded JSONPath queries inside
 //! @expr{"{{"@} and @expr{"}}"@}-braces.
+//!
+//! @seealso
+//!   @[Query]
 class EmbeddedQuery
 {
   //! Interleaved string fragments and JSONPath queries.
-  array(string|Query) fragments = ({});
+  protected array(string|Query) fragments = ({});
 
+  //! Compile a template with @tt{{{}}@}-embedded JSONPath queries.
+  //!
+  //! @param template
+  //!   Template to compile.
   protected void create(string template)
   {
     // FIXME: Quick and dirty. Does not consider nesting or quoting.
@@ -726,20 +770,35 @@ class EmbeddedQuery
     }
   }
 
-  string dwim_encode(mixed val)
+  protected string dwim_encode(mixed val)
   {
     if (stringp(val)) return val;
     return Standards.JSON.encode(val);
   }
 
-  string apply(mixed json_val)
+  //! Apply the compiled template on a JSON value.
+  //!
+  //! @param json_val
+  //!   JSON-value to apply the template on.
+  //!
+  //! @param separator
+  //!   Separator in case of multiple values.
+  //!   Defaults to @expr{", "@}.
+  //!
+  //! @note
+  //!   Values that are not strings are inserted as JSON values.
+  //!
+  //! @returns
+  //!   Returns the template applied on @[json_val].
+  string apply(mixed json_val, string|void separator)
   {
+    if (!separator) separator = ", ";
     String.Buffer buf = String.Buffer();
     foreach(fragments, string|Query frag) {
       if (stringp(frag)) {
         buf->add(frag);
       } else {
-        buf->add(map(frag->apply(json_val), dwim_encode) * ", ");
+        buf->add(map(frag->apply(json_val), dwim_encode) * separator);
       }
     }
     return buf->get();
