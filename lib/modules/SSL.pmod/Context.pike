@@ -1249,6 +1249,11 @@ array(string(8bit)|int)|zero encode_ticket(Session session)
 
 //! Signals if the context @b{will@} offer a session ticket via
 //! @[encode_ticket()].
+//!
+//! @note
+//!   If @[encode_ticket()] is overridden to return @expr{0@}, this method
+//!   must also be overridden to return @expr{0@}, otherwise the server will
+//!   advertise session ticket support to clients but never issue a ticket.
 int(0..1) offers_tickets()
 {
     return !!use_cache;
