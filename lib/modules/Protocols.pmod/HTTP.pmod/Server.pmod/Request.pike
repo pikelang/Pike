@@ -390,6 +390,12 @@ private void read_cb_chunked( mixed dummy, string data )
 	array(int) a = content_buffer->sscanf( "%x%*[^\r\n]\r\n");
 	chunk_size = sizeof(a) && a[0];
 
+        if( max_request_size && chunk_size > max_request_size )
+        {
+          my_fd->write(protocol + " 413 Request Entity Too Large\r\n\r\n");
+          finish(0);
+          return;
+        }
 	if( chunk_size == 0 )
 	  chunked_state = READ_TRAILER;
 	else
@@ -400,6 +406,12 @@ private void read_cb_chunked( mixed dummy, string data )
 	int l = min( sizeof(content_buffer), chunk_size );
 	chunk_size -= l;
 	actual_data->add(content_buffer->read(l));
+        if( max_request_size && sizeof(actual_data) > max_request_size )
+        {
+          my_fd->write(protocol + " 413 Request Entity Too Large\r\n\r\n");
+          finish(0);
+          return;
+        }
 	if( !chunk_size )
 	  chunked_state = READ_POSTNL;
 	break;
