@@ -266,12 +266,11 @@ void opportunistic_tls(string s)
   close_cb();
 }
 
-int http_error(int err)
+void http_error(int err)
 {
   string message = Protocols.HTTP.response_codes[err] || "500 Internal Server Error";
   my_fd->write(sprintf("%s %s\r\n\r\n", protocol, message));
   finish(0);
-  return 0;
 }
 
 //! Appends data to raw and feeds the header parse with data. Once the
@@ -507,7 +506,8 @@ protected int parse_variables()
   if (flatten_headers())
   {
     // RFC 9110 §8.6: multiple Content-Length headers
-    return http_error(400);
+    http_error(400);
+    return 0;
   }
 
   if ( request_headers->expect )
@@ -528,7 +528,8 @@ protected int parse_variables()
   int l = (int)request_headers["content-length"];
   if (l < 0)
   {
-    return http_error(400);
+    http_error(400);
+    return 0;
   }
   if (l <= sizeof(content_buffer))                 // Completely received yet?
   {
