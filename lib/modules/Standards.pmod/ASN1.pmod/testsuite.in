@@ -56,6 +56,7 @@ test_eval_error(Standards.ASN1.Decode.simple_der_decode("\1\0"))
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090380fb05"))),"Real(0.15625)")
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090390fe0a"))),"Real(0.15625)")
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("0903acfe05"))),"Real(0.15625)")
+test_eval_error(Standards.ASN1.Decode.simple_der_decode(String.hex2string("09028301")))
 
 test_decode("180f31393932303532313030303030305a", "GeneralizedTime(19920521000000Z)")
 test_decode("180f31393932303632323132333432315a", "GeneralizedTime(19920622123421Z)")

@@ -496,17 +496,22 @@ class Real
     switch(first & 0b00000011)
     {
     case 0b00:
+      if (sizeof(contents) < 3) error("Truncated real encoding.\n");
       sscanf(contents, "%*1c%+1c%+"+(sizeof(contents)-2)+"c", exp, num);
       break;
     case 0b01:
+      if (sizeof(contents) < 4) error("Truncated real encoding.\n");
       sscanf(contents, "%*1c%+2c%+"+(sizeof(contents)-3)+"c", exp, num);
       break;
     case 0b10:
+      if (sizeof(contents) < 5) error("Truncated real encoding.\n");
       sscanf(contents, "%*1c%+3c%+"+(sizeof(contents)-4)+"c", exp, num);
       break;
     case 0b11:
+      if (sizeof(contents) < 2) error("Truncated real encoding.\n");
       int e_size = contents[1];
       int n_size = sizeof(contents)-2-e_size;
+      if (n_size < 0) error("Truncated real encoding.\n");
       sscanf(contents, "%*2c%+"+e_size+"c%+"+n_size+"c", exp, num);
       break;
     }
