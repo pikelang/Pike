@@ -622,7 +622,8 @@ protected void close_cb()
 {
 // closed by peer before request read
    if (my_fd) {
-     my_fd->set_blocking();
+     if (!my_fd->query_version)
+       my_fd->set_blocking();
      my_fd->close();
      my_fd = 0;
    }
