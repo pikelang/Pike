@@ -1196,7 +1196,7 @@ void send_write()
    if(my_fd->query_version) {
      if( n == 0 && send_stop == sent)
         finish(1);
-     else if(n <= 0)
+     else if(n < 0)
         finish(sent == send_stop);
      else
         sent += n;
