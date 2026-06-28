@@ -42,6 +42,7 @@
 //! @endcode
 
 #define BLOCKSIZE	2048
+#define MAX_HEADER_SIZE	16384
 
 //! Current maximum request size set via @[set_max_request_size()].
 int max_request_size = 0;
@@ -303,7 +304,15 @@ protected void read_cb(mixed dummy,string s)
          finalize();
    }
    else
-      call_out(connection_timeout,connection_timeout_delay);
+   {
+     if (sizeof(raw_buffer) > MAX_HEADER_SIZE)
+     {
+       my_fd->write(protocol+" 431 Request Header Fields Too Large\r\n\r\n");
+       finish(0);
+       return;
+     }
+     call_out(connection_timeout,connection_timeout_delay);
+   }
 }
 
 protected void connection_timeout()
