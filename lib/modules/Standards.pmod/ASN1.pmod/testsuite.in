@@ -285,6 +285,12 @@ test_eval_error(Standards.ASN1.Decode.simple_der_decode(Standards.ASN1.Types.Ide
 test_true(Types.asn1_IA5_valid("user@example.com"))
 test_eq(Types.Set(({}))->compare_octet_strings("foo", "foobar"), -1)
 
+dnl Test Constructed
+test_any([[
+  string der = "\145\3\1\1\377";
+  return Standards.ASN1.Decode.simple_der_decode(der)->get_der();
+]], "\145\3\1\1\377")
+
 test_do( add_constant("P"); )
 test_do( add_constant("Types"); )
 
