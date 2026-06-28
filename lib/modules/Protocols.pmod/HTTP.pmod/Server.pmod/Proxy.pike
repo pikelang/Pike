@@ -88,22 +88,30 @@ class Proxify
 //       werror("%O\n",mkmapping(indices(rid),values(rid)));
 
       Standards.URI url;
+      mixed err = catch {
 // normal Proxy URL
-      if (rid->not_query[..6]=="http://")
-	 url=Standards.URI(rid->not_query);
+        if (rid->not_query[..6]=="http://")
+           url=Standards.URI(rid->not_query);
 // if we're transparent, we at least get a host header (hopefully)
-      else if (rid->request_headers->host)
-      {
-	 url=Standards.URI("http://"+
-			   rid->request_headers->host+"/"+rid->not_query);
-      }
-      else
-      {
-	 rid->response_and_finish( (["error":"500",
-				     "type":"text/html",
-				     "data":"500 Internal error (Proxy) "
-				     "can't understand URL (not http?)"]) );
-	 return;
+        else if (rid->request_headers->host)
+        {
+           url=Standards.URI("http://"+
+                             rid->request_headers->host+"/"+rid->not_query);
+        }
+        else
+        {
+           rid->response_and_finish( (["error":"500",
+                                       "type":"text/html",
+                                       "data":"500 Internal error (Proxy) "
+                                       "can't understand URL (not http?)"]) );
+           return;
+        }
+      };
+      if (err) {
+         rid->response_and_finish( (["error":400,
+                                     "type":"text/html",
+                                     "data":"400 Bad Request"]) );
+         return;
       }
 
       string path=url->path;
