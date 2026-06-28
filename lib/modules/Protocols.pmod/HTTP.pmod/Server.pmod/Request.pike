@@ -501,7 +501,7 @@ protected int parse_variables()
   if ( request_headers->expect )
   {
     if ( lower_case(request_headers->expect) == "100-continue" )
-	my_fd->write("HTTP/1.1 100 Continue\r\n\r\n");
+	my_fd->write(protocol + " 100 Continue\r\n\r\n");
   }
 
   if( request_headers["transfer-encoding"] &&
