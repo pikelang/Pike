@@ -315,7 +315,7 @@ protected void read_cb(mixed dummy,string s)
    {
      if (sizeof(raw_buffer) > MAX_HEADER_SIZE)
      {
-       http_error(431);
+       http_error(413);
        return;
      }
      call_out(connection_timeout,connection_timeout_delay);
@@ -410,7 +410,7 @@ private void read_cb_chunked( mixed dummy, string data )
 
         if( max_request_size && chunk_size > max_request_size )
         {
-          http_error(431);
+          http_error(413);
           return;
         }
 	if( chunk_size == 0 )
@@ -425,7 +425,7 @@ private void read_cb_chunked( mixed dummy, string data )
 	actual_data->add(content_buffer->read(l));
         if( max_request_size && sizeof(actual_data) > max_request_size )
         {
-          http_error(431);
+          http_error(413);
           return;
         }
 	if( !chunk_size )
