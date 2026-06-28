@@ -572,7 +572,7 @@ class BitString
   this_program set_length(int len) {
     if (len)
     {
-      value = value[..(len + 7)/8];
+      value = value[..(len + 7)/8 - 1];
       unused = [int(0..7)]((- len) % 8);
       value[-1] &= [int(8bit)](256-(1<<unused));
     } else {
