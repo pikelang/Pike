@@ -771,9 +771,11 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
             radd(String.capitalize(name),": ",value);
 
 // FIXME: insert cookies here?
-   string cc = lower_case(request_headers["connection"]||"");
+   array(string) cc_tokens =
+     map(lower_case(request_headers["connection"]||"")/",", String.trim_whites);
 
-   if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
+   if( (protocol=="HTTP/1.1" && !has_value(cc_tokens,"close")) ||
+       has_value(cc_tokens,"keep-alive") )
    {
        radd("Connection: keep-alive");
        keep_alive=1;
