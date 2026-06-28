@@ -2341,4 +2341,32 @@ test_any([[
   return map("123"/1, q)*"-";
 ]], "1ba-2ba-3ba")
 
+dnl - Thread.Mutex co_broadcast()/co_destroy() race (on NT)
+cond([[ all_constants()->thread_create ]],
+[[
+  test_any([[
+    // Potential trigger for LysGitlab#10199
+    // TODO: Takes a few s, move to slow-test when verified
+    for (int i = 0; i < 200; i++) {
+      Thread.Mutex m = Thread.Mutex();
+      object key = m->lock();
+      array(Thread.Thread) threads = allocate(8);
+      for (int j = 0; j < sizeof(threads); j++) {
+        threads[j] = Thread.Thread(lambda(Thread.Mutex mm) {
+            catch {
+              object k = mm->lock();
+              destruct(k);
+            };
+          }, m);
+      }
+      sleep(0.005);
+      destruct(m);
+      destruct(key);
+      threads->wait();
+    }
+    return 1;
+  ]], 1)
+]])
+
+
 END_MARKER
