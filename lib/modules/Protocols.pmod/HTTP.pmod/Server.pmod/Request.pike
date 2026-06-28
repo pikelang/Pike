@@ -561,7 +561,7 @@ protected void parse_post()
       if(part->disp_params->filename) {
         update_mime_var(name, part->getdata());
         update_mime_var(name+".filename", part->disp_params->filename);
-        update_mime_var(name+".mimetype", part->disp_params->filename);
+        update_mime_var(name+".mimetype", part->type + "/" + part->subtype);
       }
       else
 	variables[name] = part->getdata();
