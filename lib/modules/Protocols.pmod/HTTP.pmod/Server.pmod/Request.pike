@@ -188,9 +188,11 @@ void attach_fd(Stdio.NonblockingStream _fd, object(Port)|zero server,
    if (already_data && strlen(already_data)) {
       read_cb(0,already_data);
    }
-   my_fd->set_nonblocking(read_cb,0,close_cb);
-   my_fd->set_nodelay(1);
-   call_out(connection_timeout,connection_timeout_delay);
+   if (my_fd) {
+      my_fd->set_nonblocking(read_cb,0,close_cb);
+      my_fd->set_nodelay(1);
+      call_out(connection_timeout,connection_timeout_delay);
+   }
 }
 
 //! Flag for @[set_mode()] to enable @[Shuffler] mode.
