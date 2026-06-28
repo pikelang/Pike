@@ -64,6 +64,11 @@ else
       -e '/^[ 	]*\\$/d'
 fi >"$1/dependencies"
 
+if ! grep -q '\.o' "$1/dependencies"; then
+  echo "ERROR: cc -MM produced no output; header dependencies not updated." >&2
+  exit 1
+fi
+
 # Perform filtering. This step is needed due to gcc 3.3. The reason is
 # that it tells system and user includes apart by where they are found
 # and not by the #include syntax. Thus missing system includes remain
