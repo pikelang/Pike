@@ -899,7 +899,7 @@ class Set
 
     for(int i = 0;; i++) {
       if (i == sizeof(r))
-	return (i = sizeof(s)) ? 0 : -1;
+        return (i == sizeof(s)) ? 0 : -1;
       if (i == sizeof(s))
 	return 1;
       if (r[i] < s[i])
