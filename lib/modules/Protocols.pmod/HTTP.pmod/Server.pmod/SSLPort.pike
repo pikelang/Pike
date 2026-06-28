@@ -11,8 +11,6 @@ function(Request:void) callback;
 
 constant default_port = 443;
 constant default_rsa_bits = 4096;
-constant default_dsa_p_bits = 4096;
-constant default_dsa_q_bits = 160;
 
 //!
 object|function|program request_program=Request;
@@ -82,7 +80,7 @@ protected void new_connection()
 
 protected void set_default_keycert()
 {
-  foreach(({ Crypto.RSA(), Crypto.DSA(),
+  foreach(({ Crypto.RSA(),
 #if constant(Crypto.ECC.Curve)
              Crypto.ECC.SECP_521R1.ECDSA(),
 #endif
@@ -96,9 +94,6 @@ protected void set_default_keycert()
     switch(private_key->name()) {
     case "RSA":
       private_key->generate_key(default_rsa_bits);
-      break;
-    case "DSA":
-      private_key->generate_key(default_dsa_p_bits, default_dsa_q_bits);
       break;
     default:
       // ECDSA.
