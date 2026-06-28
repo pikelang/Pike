@@ -90,6 +90,7 @@ test_decode("02 02 00 80", "Integer(8 128)")
 test_decode("02 02 01 00", "Integer(9 256)")
 test_decode("02 01 80", "Integer(8 -128)")
 test_decode("02 02 ff 7f", "Integer(8 -129)")
+test_eval_error(Standards.ASN1.Decode.simple_der_decode("\2\0"))
 
 dnl 5.8
 test_decode("05 00", "Null()")
@@ -100,6 +101,7 @@ dnl 5.9
 test_decode("06 06 2a 86 48 86 f7 0d", "Identifier(1.2.840.113549)")
 test_eq(Types.Identifier(1,2,840,113549)->get_der(),
   String.hex2string("06062a864886f70d"))
+test_eval_error(Standards.ASN1.Decode.simple_der_decode("\6\0"))
 
 dnl 5.10
 test_decode("04 08 01 23 45 67 89 ab cd ef", "OCTET STRING(\1#Eg\211\253\315\357)")

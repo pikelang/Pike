@@ -379,6 +379,8 @@ class Integer
                                          Object)|void decoder,
                                 mapping(int:program(Object))|void types,
                                 void|int(0..1) secure) {
+    if (!sizeof(contents))
+      error("Empty integer encoding.\n");
     if ( (secure && (sizeof(contents)>1)) &&
 	 (((contents[0]==0) && !(contents[1] & 0x80)) ||
 	  ((contents[0] == 255) && (contents[1] & 0x80))) ) {
@@ -728,6 +730,8 @@ class Identifier
                                 mapping(int:program(Object))|void types,
                                 void|int(0..1) secure) {
     // Max size of OID according to RFC 2578
+    if (!sizeof(contents))
+      error("Empty object identifier.\n");
     if (sizeof(contents) > 586)
       error("Illegal object identifier.\n");
     if (contents[0] < 120)
