@@ -350,6 +350,165 @@ local protected {
       return ({});
     }
   }
+
+  class FunctionCallExpression
+  {
+    inherit Expression;
+
+    string fun_name;
+    array(Expression) fun_args = ({});
+
+    // RFC 9535 2.3.5.2.2
+    array jsonpath__eq(array arg1, array arg2)
+    {
+      if (equal(arg1, arg2)) {
+        return ({ Val.true });
+      }
+      return ({});
+    }
+
+    array jsonpath__ne(array arg1, array arg2)
+    {
+      if (!equal(arg1, arg2)) {
+        return ({ Val.true });
+      }
+      return ({});
+    }
+
+    array jsonpath__ge(array arg1, array arg2)
+    {
+      if (equal(arg1, arg2)) {
+        return ({ Val.true });
+      }
+      if (arg1 && sizeof(arg1) && arg2 && sizeof(arg2)) {
+        catch {
+          if (arg1[0] >= arg2[0]) {
+            return ({ Val.true });
+          }
+        };
+      }
+      return ({});
+    }
+
+    array jsonpath__le(array arg1, array arg2)
+    {
+      if (equal(arg1, arg2)) {
+        return ({ Val.true });
+      }
+      if (arg1 && sizeof(arg2) && arg2 && sizeof(arg2)) {
+        catch {
+          if (arg1[0] <= arg2[0]) {
+            return ({ Val.true });
+          }
+        };
+      }
+      return ({});
+    }
+
+    array jsonpath__gt(array arg1, array arg2)
+    {
+      if (!arg1 || !sizeof(arg1) || !arg2 || !sizeof(arg2)) {
+        return ({});
+      }
+      catch {
+        if (arg1[0] > arg2[0]) {
+          return ({ Val.true });
+        }
+      };
+      return ({});
+    }
+
+    array jsonpath__lt(array arg1, array arg2)
+    {
+      if (!arg1 || !sizeof(arg1) || !arg2 || !sizeof(arg2)) {
+        return ({});
+      }
+      catch {
+        if (arg1[0] < arg2[0]) {
+          return ({ Val.true });
+        }
+      };
+      return ({});
+    }
+
+    // RFC 9535 2.4.4
+    array jsonpath_length(array arg)
+    {
+      if (!arg || !sizeof(arg)) return ({});
+      mixed x = arg[0];
+      if (arrayp(x) || stringp(x) || mappingp(x)) {
+        return ({ sizeof(x) });
+      }
+      return ({});
+    }
+
+    // RFC 9535 2.4.5
+    array jsonpath_count(array arg)
+    {
+      if (!arg) return ({});	// Too few arguments.
+      return ({ sizeof(arg) });
+    }
+
+#if constant(Regexp.PCRE.Widestring)
+    // RFC 9535 2.4.6
+    array jsonpath_match(array str_arg, array regexp_arg)
+    {
+      if (!str_arg || !sizeof(str_arg)) return ({});
+      string str = str_arg[0];
+      if (!stringp(str)) return ({});
+      if (!regexp_arg || !sizeof(regexp_arg)) return ({});
+      string regexp = regexp_arg[0];
+      if (!stringp(regexp)) return ({});
+      catch {
+        Regexp.PCRE pcre = Regexp.PCRE.Widestring("^" + regexp + "$");
+        if (pcre->match(str)) {
+          return ({ Val.true });
+        }
+      };
+      return ({});
+    }
+
+    // RFC 9535 2.4.7
+    array jsonpath_search(array str_arg, array regexp_arg)
+    {
+      if (!str_arg || !sizeof(str_arg)) return ({});
+      string str = str_arg[0];
+      if (!stringp(str)) return ({});
+      if (!regexp_arg || !sizeof(regexp_arg)) return ({});
+      string regexp = regexp_arg[0];
+      if (!stringp(regexp)) return ({});
+      catch {
+        Regexp.PCRE pcre = Regexp.PCRE.Widestring(regexp);
+        if (pcre->match(str)) {
+          return ({ Val.true });
+        }
+      };
+      return ({});
+    }
+#endif // Regexp.PCRE.Widestring
+
+    // RFC 9535 2.4.8
+    array jsonpath_value(array arg)
+    {
+      if (!arg) return ({});
+      return arg[..1];
+    }
+
+    protected void create(string fun_name, array(Expression) fun_args)
+    {
+      this::fun_name = "jsonpath_" + fun_name;
+      this::fun_args = fun_args;
+      if (!this[this::fun_name]) {
+        error("Unimplemented function: %s().\n", fun_name);
+      }
+    }
+
+    array apply(mixed json_value, mixed root_value)
+    {
+      array args = fun_args->apply(json_value, root_value);
+      return this[fun_name](@args);
+    }
+  }
 }
 
 //! JSONPath compiler and runtime.
@@ -520,6 +679,27 @@ class Query
           // string literal or number.
           return LiteralExpression(eval_token(tokens->pop()));
         }
+        if ((c >= 'a') && (c <= 'z')) {
+          // function-name.
+          string fun_name = token;
+          tokens->pop();
+          token = tokens->pop();
+          if (!arrayp(token) || (token[0] != "(")) {
+            tokens->push(token);
+            syntax_error(tokens, "(");
+          }
+          ADT.Stack token_stack = ADT.Stack();
+          token_stack->set_stack(reverse(token[1..<1]));
+          if (sizeof(token_stack)) {
+            token_stack->push(",");
+          }
+          array(Expression) fun_args = ({});
+          while (sizeof(token_stack)) {
+            expect(token_stack, ",");
+            fun_args += ({ parse_logical_expr(token_stack) });
+          }
+          return FunctionCallExpression(fun_name, fun_args);
+        }
       }
       break;
     }
@@ -532,6 +712,22 @@ class Query
     // or filter-query
 
     Expression e = parse_comparable(tokens);
+    while (sizeof(tokens)) {
+      string|array token = tokens->peek();
+      string cmp_op = ([
+        "==": "_eq",
+        "!=": "_ne",
+        "<=": "_le",
+        ">=": "_ge",
+        "<": "_lt",
+        ">": "_gt",
+      ])[token];
+      if (!cmp_op) break;
+
+      tokens->pop();
+      e = FunctionCallExpression(cmp_op,
+                                 ({ e, parse_comparable(tokens) }));
+    }
     if (!sizeof(tokens) || (< ",", "&&", "||" >)[tokens->peek()]) {
       return e;
     }
