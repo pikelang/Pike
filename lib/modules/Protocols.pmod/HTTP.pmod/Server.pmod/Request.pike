@@ -507,6 +507,7 @@ protected int parse_variables()
   if( request_headers["transfer-encoding"] &&
       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
   {
+    m_delete(request_headers, "content-length");
     my_fd->set_read_callback(read_cb_chunked);
     read_cb_chunked(0,"");
     return 0;
