@@ -3223,12 +3223,20 @@ void exit_mutex_obj(struct object *UNUSED(o))
     if(m->num_waiting)
     {
       THREADS_FPRINTF(1, "Destructed mutex is being waited on.\n");
-      THREADS_ALLOW();
       /* exit_mutex_key_obj has already signalled, but since the
        * waiting threads will throw an error instead of making a new
        * lock we need to double it to a broadcast. The last thread
-       * that stops waiting will destroy m->condition. */
+       * that stops waiting will destroy m->condition.
+       *
+       * NB: Broadcast while we still hold the interpreter lock, so that we
+       *     are serialized against the co_destroy() of m->condition. Otherwise
+       *     another thread may co_destroy() the condition (which on NT closes
+       *     the underlying handle) in the window between THREADS_ALLOW() and
+       *     co_broadcast() acquiring the condition lock, causing co_broadcast()
+       *     to operate on an invalid handle.
+       */
       co_broadcast (&m->condition);
+      THREADS_ALLOW();
 
       /* Try to wake up the waiting thread(s) immediately
        * in an attempt to avoid starvation.
@@ -3336,8 +3344,16 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
     THIS_KEY->mutex_obj = NULL;
 
     if (mut->num_waiting) {
-      THREADS_ALLOW();
+      /* NB: Broadcast while we still hold the interpreter lock, so that we
+       *     are serialized against the co_destroy() of mut->condition in the
+       *     exit hook of the last key. Otherwise another thread may
+       *     co_destroy() the condition (which on NT closes the underlying
+       *     handle) in the window between THREADS_ALLOW() and co_broadcast()
+       *     acquiring the condition lock, causing co_broadcast() to operate
+       *     on an invalid handle.
+       */
       co_broadcast(&mut->condition);
+      THREADS_ALLOW();
 
       /* Try to wake up the waiting thread(s) immediately
        * in an attempt to avoid starvation.
