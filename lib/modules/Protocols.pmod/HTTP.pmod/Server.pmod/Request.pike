@@ -513,6 +513,12 @@ protected int parse_variables()
   }
 
   int l = (int)request_headers["content-length"];
+  if (l < 0)
+  {
+    my_fd->write(protocol + " 400 Bad Request\r\n\r\n");
+    finish(0);
+    return 0;
+  }
   if (l <= sizeof(content_buffer))                 // Completely received yet?
   {
     body_raw = content_buffer->read(l);            // Body only
