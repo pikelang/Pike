@@ -966,7 +966,7 @@ protected Regexp asn1_IA5_invalid_chars = Regexp ("([\200-\377])");
 int(0..1) asn1_IA5_valid (string s)
 {
   if (global.String.width(s)!=8) return 0;
-  return !asn1_printable_invalid_chars->match (s);
+  return !asn1_IA5_invalid_chars->match (s);
 }
 
 //! IA5 String object

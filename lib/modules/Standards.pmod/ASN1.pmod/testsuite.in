@@ -275,6 +275,7 @@ test_eq(Types.GeneralizedTime()->set_posix(1<<33)->get_der(), "\30\17""224203161
 test_do(Standards.ASN1.Decode.simple_der_decode(Standards.ASN1.Types.Identifier(@allocate(587,1))->get_der()))
 test_eval_error(Standards.ASN1.Decode.simple_der_decode(Standards.ASN1.Types.Identifier(@allocate(588,1))->get_der()))
 
+test_true(Types.asn1_IA5_valid("user@example.com"))
 test_eq(Types.Set(({}))->compare_octet_strings("foo", "foobar"), -1)
 
 test_do( add_constant("P"); )
