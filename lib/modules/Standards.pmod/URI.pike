@@ -219,6 +219,9 @@ string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
 void reparse_uri(this_program|string|void base_uri)
 {
   string uri = raw_uri;
+  if (has_value(uri, "\r") || has_value(uri, "\n") || has_value(uri, "\0"))
+    error("Invalid character in URI %O.\n", uri);
+
   if(stringp(base_uri))
   {
     WERR("cloning base URI %O", base_uri);
