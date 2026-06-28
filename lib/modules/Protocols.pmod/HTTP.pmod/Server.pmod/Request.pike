@@ -1010,7 +1010,7 @@ void response_and_finish(mapping m, function|void _log_cb)
        radd("Connection: close");
    }
 
-   if (m->start < stop)
+   if (m->error == 206 && m->start < stop)
      radd("Content-Range: bytes %d-%d/%s", m->start,stop,
           undefinedp(m->instance_size) ? "*" : (string)m->instance_size);
 
