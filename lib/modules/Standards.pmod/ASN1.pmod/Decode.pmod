@@ -40,7 +40,7 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
   constant type_name = "CONSTRUCTED";
 
   //! Get raw encoded contents of object
-  string(8bit) get_der_content() { return [string(8bit)](elements->get_der()*"" + raw); }
+  string(8bit) get_der_content() { return elements->get_der()*"" + raw; }
 }
 
 protected int read_varint(Stdio.Buffer data,
