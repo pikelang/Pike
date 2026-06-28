@@ -266,6 +266,14 @@ void opportunistic_tls(string s)
   close_cb();
 }
 
+int http_error(int err)
+{
+  string message = Protocols.HTTP.response_codes[err] || "500 Internal Server Error";
+  my_fd->write(sprintf("%s %s\r\n\r\n", protocol, message));
+  finish(0);
+  return 0;
+}
+
 //! Appends data to raw and feeds the header parse with data. Once the
 //! header parser has enough data @[parse_request()] and @[parse_variables()]
 //! are called. If @[parse_variables()] deems the request to be finished
@@ -307,8 +315,7 @@ protected void read_cb(mixed dummy,string s)
    {
      if (sizeof(raw_buffer) > MAX_HEADER_SIZE)
      {
-       my_fd->write(protocol+" 431 Request Header Fields Too Large\r\n\r\n");
-       finish(0);
+       http_error(431);
        return;
      }
      call_out(connection_timeout,connection_timeout_delay);
@@ -403,8 +410,7 @@ private void read_cb_chunked( mixed dummy, string data )
 
         if( max_request_size && chunk_size > max_request_size )
         {
-          my_fd->write(protocol + " 413 Request Entity Too Large\r\n\r\n");
-          finish(0);
+          http_error(431);
           return;
         }
 	if( chunk_size == 0 )
@@ -419,8 +425,7 @@ private void read_cb_chunked( mixed dummy, string data )
 	actual_data->add(content_buffer->read(l));
         if( max_request_size && sizeof(actual_data) > max_request_size )
         {
-          my_fd->write(protocol + " 413 Request Entity Too Large\r\n\r\n");
-          finish(0);
+          http_error(431);
           return;
         }
 	if( !chunk_size )
@@ -502,9 +507,7 @@ protected int parse_variables()
   if (flatten_headers())
   {
     // RFC 9110 §8.6: multiple Content-Length headers
-    my_fd->write(protocol + " 400 Bad Request\r\n\r\n");
-    finish(0);
-    return 0;
+    return http_error(400);
   }
 
   if ( request_headers->expect )
@@ -525,9 +528,7 @@ protected int parse_variables()
   int l = (int)request_headers["content-length"];
   if (l < 0)
   {
-    my_fd->write(protocol + " 400 Bad Request\r\n\r\n");
-    finish(0);
-    return 0;
+    return http_error(400);
   }
   if (l <= sizeof(content_buffer))                 // Completely received yet?
   {
