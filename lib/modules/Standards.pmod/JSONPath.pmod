@@ -1,6 +1,11 @@
 #pike __REAL_VERSION__
 
-//! Parser and evaluator of the JSONPath syntax.
+//! Parser and evaluator of the @rfc{9335@} JSONPath syntax.
+//!
+//! @note
+//!   Syntax is extended with it being possible to specify a
+//!   literal JSON constant as a root by prefixing it with a
+//!   single @tt{'%'@}.
 //!
 //! @seealso
 //!   @rfc{9535@}
@@ -626,6 +631,24 @@ class Query
     return Standards.JSON.decode(token);
   }
 
+  protected string fold_token(string|array token, String.Buffer|void buf)
+  {
+    if (!buf) {
+      if (stringp(token)) return normalize_token(token);
+      buf = String.Buffer();
+      map(token, fold_token, buf);
+      return buf->get();
+    }
+    if (stringp(token)) {
+      buf->add(normalize_token(token));
+      buf->add(" ");
+    } else {
+      map(token, fold_token, buf);
+    }
+
+    return "";
+  }
+
   protected int parse_int(ADT.Stack tokens)
   {
     string token = tokens->pop();
@@ -661,6 +684,7 @@ class Query
 
     case "$":
     case "@":
+    case "%":
       // singular-query or filter-query.
       return Query(tokens, 1);
 
@@ -892,6 +916,10 @@ class Query
         syntax_error(tokens);
       }
       res += ({ At });
+      break;
+    case "%": // Pike extension: Literal value.
+      token = fold_token(tokens->pop());
+      res += ({ LiteralExpression(Standards.JSON.decode(token)) });
       break;
     default:
       if (arrayp(token) && (token[0] == "(")) {
