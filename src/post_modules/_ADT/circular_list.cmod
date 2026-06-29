@@ -511,6 +511,15 @@ PIKECLASS CircularList
           ITEM(THIS->a)[THIS->pos - elements].u.integer = 0;
           elements--;
         }
+      } else {
+        /* Empty list. */
+        THIS->pos = 0;
+        while(elements) {
+          ITEM(THIS->a)[size - elements].type = T_INT;
+          ITEM(THIS->a)[size - elements].subtype = NUMBER_NUMBER;
+          ITEM(THIS->a)[size - elements].u.integer = 0;
+          elements--;
+        }
       }
       THIS->a->type_field |= BIT_INT;
     }
