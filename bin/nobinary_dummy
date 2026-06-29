@@ -17,6 +17,7 @@ case "$1" in
     prog="a.out"
     compile=""
     source=""
+    mkdeps=""
 
     while test 0 -lt "$#"
     do
@@ -34,6 +35,9 @@ case "$1" in
 	-[ILRDUx])
 	  shift
 	  ;;
+        -M*)
+          mkdeps=yes
+          ;;
 	-*)
           ;;
         +*)
@@ -49,11 +53,15 @@ case "$1" in
       prog="`echo \"$source\" | sed -e 's/\\..\$//'`.o"
     fi
 
-    test x"$prog" = x || {
-      rm -f "$prog" 2>/dev/null
-      echo "#! /bin/sh" > "$prog"
-      chmod 775 "$prog"
-    }
+    if test "x$mkdeps" = "xyes"; then
+      echo "MAKE_FIXDEPENDS_HAPPY.o:"
+    else
+      test x"$prog" = x || {
+        rm -f "$prog" 2>/dev/null
+        echo "#! /bin/sh" > "$prog"
+        chmod 775 "$prog"
+      }
+    fi
     ;;
 
   *)

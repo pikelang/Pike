@@ -90,6 +90,7 @@ done
 # Perform final cleanup.
 sed <"$1/dependencies" -e '/^[ 	]*\\$/d' | sed \
   -e '/\\$/{;N;/\n[ 	]*$/s/\\\(\n\)/\1/;P;D;}' \
+  -e '/MAKE_FIXDEPENDS_HAPPY/d'
     >"$1/dependencies.tmp" && \
   mv "$1/dependencies.tmp" "$1/dependencies"
 
