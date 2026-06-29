@@ -361,7 +361,7 @@ test_jsonpath([["$[?@[?@.b]""]"]], [[({ json_val->a })]])
 test_jsonpath([["$.o[?@<3, ?@<3]"]], [[({ 1, 2, 1, 2 })]])
 // Array value logical OR
 test_jsonpath([["$.a[?@<2 || @.b == \"k\"]"]], [[({ 1, ([ "b": "k" ]) })]])
-cond([[Regexp.PCRE.Widestring]], [[
+cond_resolv([[Regexp.PCRE.Widestring]], [[
   // Array value regular expression match
   test_jsonpath([["$.a[?match(@.b, \"[jk]\")]"]],
                 [[({ ([ "b": "j" ]), ([ "b": "k" ])})]])
