@@ -69,6 +69,386 @@ class A {
 }
 A(); )
 
+// - Standards.JSONPath (RFC 9535)
+define(test_jsonpath, [[
+  test_equal([[
+    Standards.JSONPath.Query($1)->apply(]]ifelse([[$3]],,json_val,[[$3]])[[);
+  ]], [[ $2 ]])
+]])
+
+test_do([[
+  // RFC 9535 1.5 Figure 1
+  add_constant("json_val", ([
+    "store": ([
+      "book": ({
+        ([ "category": "reference",
+           "author": "Nigel Rees",
+           "title": "Sayings of the Century",
+           "price": 8.95
+        ]),
+        ([ "category": "fiction",
+           "author": "Evelyn Waugh",
+           "title": "Sword of Honour",
+           "price": 12.99
+        ]),
+        ([ "category": "fiction",
+           "author": "Herman Melville",
+           "title": "Moby Dick",
+           "isbn": "0-553-21311-3",
+           "price": 8.99
+        ]),
+        ([ "category": "fiction",
+           "author": "J. R. R. Tolkien",
+           "title": "The Lord of the Rings",
+           "isbn": "0-395-19395-8",
+           "price": 22.99
+        ])
+      }),
+      "bicycle": ([
+        "color": "red",
+        "price": 399
+      ])
+    ])
+  ]));
+]])
+
+// Tests from RFC 9535 1.5 Table 2:
+// The authors of all books in the store
+test_jsonpath([["$.store.book[*].author"]], json_val->store->book->author)
+// All authors
+test_jsonpath([["$..author"]], json_val->store->book->author)
+// All things in the store, which are some books and a red bicycle
+test_jsonpath([["$.store.*"]], ({
+  json_val->store->bicycle,
+  json_val->store->book,
+}))
+  // The prices of everything in the store
+test_jsonpath([["$.store..price"]], ({
+  json_val->store->bicycle->price,
+  @json_val->store->book->price,
+}))
+  // The third book
+test_jsonpath([["$..book[2]"]], [[({
+  json_val->store->book[2],
+})]])
+  // The third book's author
+test_jsonpath([["$..book[2].author"]], [[({
+  json_val->store->book[2]->author,
+})]])
+  // Empty result: the third book does not have a "publisher" member
+test_jsonpath([["$..book[2].publisher"]], ({}))
+  // The last book in order
+test_jsonpath([["$..book[-1]"]], [[({
+  json_val->store->book[-1],
+})]])
+  // The first two books (1)
+test_jsonpath([["$..book[0,1]"]], [[({
+  json_val->store->book[0],
+  json_val->store->book[1],
+})]])
+  // The first two books (2)
+test_jsonpath([["$..book[:2]"]], [[({
+  @json_val->store->book[..1],
+})]])
+  // All books with an ISBN number
+test_jsonpath([["$..book[?@.isbn]"]], [[({
+  @filter(json_val->store->book, has_index, "isbn"),
+})]])
+  // All books cheaper than 10
+test_jsonpath([["$..book[?@.price<10]"]], [[({
+  @filter(json_val->store->book, lambda(mapping b) {
+    return b->price < 10;
+  }),
+})]])
+  // All member values and array elements contained in the input value
+test_jsonpath([["$..*]"]], [[({
+  json_val->store,
+  json_val->store->bicycle,
+  json_val->store->book,
+  "red",
+  399,
+  @values(json_val->store->book),
+  "Nigel Rees",
+  "reference",
+  8.95,
+  "Sayings of the Century",
+  "Evelyn Waugh",
+  "fiction",
+  12.99,
+  "Sword of Honour",
+  "Herman Melville",
+  "fiction",
+  "0-553-21311-3",
+  8.99,
+  "Moby Dick",
+  "J. R. R. Tolkien",
+  "fiction",
+  "0-395-19395-8",
+  22.99,
+  "The Lord of the Rings",
+})]])
+
+test_do([[
+  // RFC 9535 2.2.3
+  add_constant("json_val", ([ "k": "v" ]));
+]])
+
+// Tests from RFC 9535 Table 3
+// Root node
+test_jsonpath([["$"]], ({ json_val }))
+
+test_do([[
+  // RFC 9535 2.3.1.3
+  add_constant("json_val", ([
+    "o": ([ "j j": ([ "k.k": 3 ]) ]),
+    "'": ([ "@": 2 ]),
+  ]));
+]])
+
+// Tests from RFC 9535 Table 5
+// Named value in a nested object
+test_jsonpath([["$.o['j j']"]], [[({(["k.k": 3])})]])
+// Nesting further down
+test_jsonpath([["$.o['j j']['k.k']"]], ({ 3 }))
+// Different delimiter in the query, unchanged Normalized Path
+test_jsonpath([["$.o[\"j j\"][\"k.k\"]"]], ({ 3 }))
+// Unusual member names
+test_jsonpath([["$[\"'\"][\"@\"]"]], ({ 2 }))
+
+test_do([[
+  // RFC 9535 2.3.23
+  add_constant("json_val", ([
+    "o": ([ "j": 1, "k": 2 ]),
+    "a": ({ 5, 3 }),
+  ]));
+]])
+
+// Tests from RFC 9535 Table 6
+// Object values
+test_jsonpath([["$[*]"]], [[({ ({5, 3}), (["j": 1, "k": 2]) })]])
+// Object values
+test_jsonpath([["$.o[*]"]], [[({1, 2})]])
+// Non-deterministic ordering (NB: Deterministic in Pike!)
+test_jsonpath([["$.o[*, *]"]], [[({ 1, 2, 1, 2 })]])
+// Array members
+test_jsonpath([["$.a[*]"]], [[({ 5, 3 })]])
+
+test_do([[
+  // RFC 9535 2.3.3.3
+  add_constant("json_val", ({ "a", "b" }));
+]])
+
+// Tests from RFC 9535 Table 7
+// Element of array
+test_jsonpath([["$[1]"]], ({ "b" }))
+// Element of array, from the end.
+test_jsonpath([["$[-2]"]], ({ "a" }))
+
+test_do([[
+  // RFC 9535 2.3.4.3
+  add_constant("json_val", ({ "a", "b", "c", "d", "e", "f", "g" }));
+]])
+
+// Tests from RFC 9535 Table 9
+// Slice with default step
+test_jsonpath([["$[1:3]"]], ({ "b", "c" }))
+// Slice with no end index
+test_jsonpath([["$[5:]"]], ({ "f", "g" }))
+// Slice with step 2
+test_jsonpath([["$[1:5:2]"]], ({ "b", "d" }))
+// Slice with negative step
+test_jsonpath([["$[5:1:-2]"]], ({ "f", "d" }))
+// Slice in reverse order
+test_jsonpath([["$[::-1]"]], reverse(json_val))
+
+test_do([[
+  // RFC 9535 2.3.5.3
+  add_constant("json_val", ([
+    "obj": ([ "x": "y" ]),
+    "arr": ({ 2, 3 }),
+  ]));
+]])
+
+// Tests from RFC 9535 Table 11
+// NB: These tests use the %-Pike-extension in order to give nice values.
+// Empty nodelists
+test_jsonpath([["%[1][?$.absent1 == $.absent2]"]], ({ 1 }))
+// == implies <=
+test_jsonpath([["%[1][?$.absent1 <= $.absent2]"]], ({ 1 }))
+// Empty nodelist
+test_jsonpath([["%[1][?$.absent == 'g']"]], ({}))
+// Empty nodelists
+test_jsonpath([["%[1][?$.absent1 != $.absent2]"]], ({}))
+// Empty nodelist
+test_jsonpath([["%[1][?$.absent != 'g']"]], ({ 1 }))
+// Numeric comparison
+test_jsonpath([["%[1][?1 <= 2]"]], ({ 1 }))
+// Numeric comparison
+test_jsonpath([["%[1][?1 > 2]"]], ({}))
+// Type mismatch
+test_jsonpath([["%[1][?13 == '13']"]], ({}))
+// String comparison
+test_jsonpath([["%[1][?'a' <= 'b']"]], ({ 1 }))
+// String comparison
+test_jsonpath([["%[1][?'a' > 'b']"]], ({}))
+// Type mismatch
+test_jsonpath([["%[1][?$.obj == $.arr]"]], ({}))
+// Type mismatch
+test_jsonpath([["%[1][?$.obj != $.arr]"]], ({ 1 }))
+// Object comparison
+test_jsonpath([["%[1][?$.obj == $.obj]"]], ({ 1 }))
+// Object comparison
+test_jsonpath([["%[1][?$.obj != $.obj]"]], ({}))
+// Array comparison
+test_jsonpath([["%[1][?$.arr == $.arr]"]], ({ 1 }))
+// Array comparison
+test_jsonpath([["%[1][?$.arr != $.arr]"]], ({}))
+// Type mismatch
+test_jsonpath([["%[1][?$.obj == 17]"]], ({}))
+// Type mismatch
+test_jsonpath([["%[1][?$.obj != 17]"]], ({ 1 }))
+// Objects and arrays do not offer < comparison
+test_jsonpath([["%[1][?$.obj <= $.arr]"]], ({}))
+// Objects and arrays do not offer < comparison
+test_jsonpath([["%[1][?$.obj < $.arr]"]], ({}))
+// == implies <=
+test_jsonpath([["%[1][?$.obj <= $.obj]"]], ({ 1 }))
+// == implies <=
+test_jsonpath([["%[1][?$.arr <= $.arr]"]], ({ 1 }))
+// Arrays do not offer < comparison
+test_jsonpath([["%[1][?1 <= $.arr]"]], ({}))
+// Arrays do not offer < comparison
+test_jsonpath([["%[1][?1 >= $.arr]"]], ({}))
+// Arrays do not offer < comparison
+test_jsonpath([["%[1][?1 > $.arr]"]], ({}))
+// Arrays do not offer < comparison
+test_jsonpath([["%[1][?1 < $.arr]"]], ({}))
+// == implies <=
+test_jsonpath([["%[1][?true <= true]"]], ({ 1 }))
+// Booleans do not offer < comparison
+test_jsonpath([["%[1][?true > true]"]], ({}))
+
+test_do([[
+  // RFC 9535 2.3.53 (2)
+  add_constant("json_val", ([
+    "a": ({ 3, 5, 1, 2, 4, 6,
+            ([ "b": "j" ]),
+            ([ "b": "k" ]),
+            ([ "b": ([]) ]),
+            ([ "b": "kilo" ]),
+         }),
+     "o": ([ "p": 1, "q": 2, "r": 3, "s": 5, "t": ([ "u": 6 ]) ]),
+     "e": "f",
+  ]));
+]])
+
+// Tests from RFC 9535 Table 12
+// Member value comparison
+test_jsonpath([["$.a[?@.b == 'kilo']"]], [[({([ "b": "kilo" ])})]])
+// Equivalent query with enclosing parentheses
+test_jsonpath([["$.a[?(@.b == 'kilo')]"]], [[({([ "b": "kilo" ])})]])
+// Array value comparison
+test_jsonpath([["$.a[?@>3.5]"]], [[({ 5, 4, 6 })]])
+// Array value existence
+test_jsonpath([["$.a[?@.b]"]],
+              [[({ ([ "b": "j" ]), ([ "b": "k" ]), ([ "b": ([])]),
+                   ([ "b": "kilo" ]) })]])
+// Existence of non-singular queries
+test_jsonpath([["$[?@.*]"]], [[({ json_val->a, json_val->o })]])
+// Nested filters
+test_jsonpath([["$[?@[?@.b]""]"]], [[({ json_val->a })]])
+// Non-deterministic ordering (NB: Deterministic in Pike!)
+test_jsonpath([["$.o[?@<3, ?@<3]"]], [[({ 1, 2, 1, 2 })]])
+// Array value logical OR
+test_jsonpath([["$.a[?@<2 || @.b == \"k\"]"]], [[({ 1, ([ "b": "k" ]) })]])
+cond([[Regexp.PCRE.Widestring]], [[
+  // Array value regular expression match
+  test_jsonpath([["$.a[?match(@.b, \"[jk]\")]"]],
+                [[({ ([ "b": "j" ]), ([ "b": "k" ])})]])
+  // Array value regular expression search
+  test_jsonpath([["$.a[?search(@.b, \"[jk]\")]"]],
+                [[({ ([ "b": "j" ]), ([ "b": "k" ]), ([ "b": "kilo" ]) })]])
+]])
+// Object value logical AND
+test_jsonpath([["$.o[?@>1 && @<4]"]], [[({ 2, 3 })]])
+// Object value logical OR
+test_jsonpath([["$.o[?@.u || @.x]"]], [[({ ([ "u": 6 ])})]])
+// Comparison of queries with no values
+test_jsonpath([["$.a[?@.b == $.x]"]], [[({ 3, 5, 1, 2, 4, 6 })]])
+// Comparisons of primitive and of structured values
+test_jsonpath([["$.a[?@ == @]"]], [[({ @json_val->a })]])
+
+test_do([[
+  // RFC 9535 2.5.1.3
+  add_constant("json_val", ({ "a", "b", "c", "d", "e", "f", "g" }));
+]])
+
+// Tests from RFC 9535 Table 15
+// Indices
+test_jsonpath([["$[0, 3]"]], [[({ "a", "d" })]])
+// Slice and index
+test_jsonpath([["$[0:2, 5]"]], [[({ "a", "b", "f" })]])
+// Duplicated entries
+test_jsonpath([["$[0, 0]"]], [[({ "a", "a" })]])
+
+test_do([[
+  // RFC 9535 2.5.2.3
+  add_constant("json_val", ([
+    "o": ([ "j": 1, "k": 2 ]),
+    "a": ({ 5, 3, ({ (["j": 4]), ([ "k": 6 ]) }) }),
+  ]));
+]])
+
+// Tests from RFC 9535 Table 16
+// Object values (NB: Deterministic in Pike!)
+test_jsonpath([["$..j"]], [[({ 4, 1 })]])
+// Array values
+test_jsonpath([["$..[0]"]], [[({ 5, ([ "j": 4 ]) })]])
+// All values
+test_jsonpath([["$..[*]"]],
+              [[({ json_val["a"], json_val["o"], 5, 3,
+                   json_val["a"][2], @json_val["a"][2], 4, 6, 1, 2,
+                })]])
+// All values
+test_jsonpath([["$..*"]],
+              [[({ json_val["a"], json_val["o"], 5, 3,
+                   json_val["a"][2], @json_val["a"][2], 4, 6, 1, 2,
+                })]])
+// Input value is visited
+test_jsonpath([["$..o"]], [[({ json_val["o"] })]])
+// Non-deterministic ordering (NB: Deterministic in Pike!)
+test_jsonpath([["$.o..[*, *]"]], [[({ 1, 2, 1, 2 })]])
+// Multiple segments
+test_jsonpath([["$.a..[0, 1]"]], [[({ 5, 3, ([ "j": 4 ]), ([ "k": 6 ]) })]])
+
+test_do([[
+  // RFC 9535 2.6.1
+  add_constant("json_val", ([
+    "a": Val.null, "b": ({ Val.null }), "c": ({([])}), "null": 1,
+  ]));
+]])
+
+// Tests from RFC 9535 Table 17
+// Object value
+test_jsonpath([["$.a"]], [[({ Val.null })]])
+// null used as array
+test_jsonpath([["$.a[0]"]], [[({})]])
+// null used as object
+test_jsonpath([["$.a.d"]], [[({})]])
+// Array value
+test_jsonpath([["$.b[0]"]], [[({ Val.null })]])
+// Array value
+test_jsonpath([["$.b[*]"]], [[({ Val.null })]])
+// Existence
+test_jsonpath([["$.b[?@]"]], [[({ Val.null })]])
+// Comparison
+test_jsonpath([["$.b[?@==null]"]], [[({ Val.null })]])
+// Comparison with "missing" value
+test_jsonpath([["$.c[?@.d==null]"]], [[({})]])
+// Not JSON null at all, just a member name string
+test_jsonpath([["$.null"]], [[({ 1 })]])
+
+test_do([[ add_constant("json_val"); ]])
 
 // - Standards.PEM
 test_any_equal([[
