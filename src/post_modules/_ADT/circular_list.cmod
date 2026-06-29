@@ -503,6 +503,14 @@ PIKECLASS CircularList
                      integer, 0);
             elements--;
         }
+      } else {
+        /* Empty list. */
+        THIS->pos = 0;
+        while(elements) {
+          SET_SVAL(ITEM(THIS->a)[size - elements], T_INT, NUMBER_NUMBER,
+                   integer, 0);
+          elements--;
+        }
       }
       THIS->a->type_field |= BIT_INT;
     }
