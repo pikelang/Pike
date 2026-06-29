@@ -261,6 +261,7 @@ array(string) split(string data)
     case ':': case ';':
     case '~':
     case ',':
+    case '@': // Not valid in Javascript, but used in eg JSONPath.
       pos++;
       break;
 
