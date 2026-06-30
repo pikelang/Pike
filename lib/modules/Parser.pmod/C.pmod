@@ -257,7 +257,7 @@ array(Token|array|string) group(array(string|Token) tokens,
     actions[y]=2;
   }
 
-  foreach(tokens, Token token)
+  foreach(tokens, string|Token token)
   {
     switch(actions[(string)token])
     {
@@ -269,7 +269,8 @@ array(Token|array|string) group(array(string|Token) tokens,
 #if 0
 	  // Mismatch
 	  werror ("%s:%d: Expected %O, got %O\n",
-		  token->file||"-", token->line,
+                  (!stringp(token) && token->file) || "-",
+                  (!stringp(token) && token->line),
                   groupings[(string)ret[0]], (string) token);
 #endif
 	  return ret;
