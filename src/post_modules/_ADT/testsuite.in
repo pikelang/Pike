@@ -1079,6 +1079,23 @@ test_any_equal(_ADT.CircularList a = _ADT.CircularList(5);
 	       a->allocate(5);
                return values(a), ({1,2,3,4}))
 
+// Issue #10193: "ADT.CircularList testsuite fails intermittently"
+// Trashes the heap, so run with --with-rtldebug to catch consistently
+test_any_equal([[
+  // Regression test for a negative-index write in allocate() when the
+  // list is empty. The first allocate() goes through the else-branch and
+  // over-allocates, leaving spare malloced_size; the second small
+  // allocate() then takes the in-place branch while the list is still
+  // empty (THIS->size == 0, THIS->pos == 0), which used to zero-fill at
+  // ITEM(a)[-elements .. -1], corrupting the array header.
+  _ADT.CircularList a = _ADT.CircularList(4);
+  a->allocate(1);      // else-branch: builds spare malloced_size.
+  a->allocate(1);      // in-place branch with an empty list.
+  array ret = ({ a->max_size(), sizeof(a) });
+  for (int i = 0; i < a->max_size(); i++) a->push_back(i);
+  return ret + values(a);
+]], ({ 6, 0, 0, 1, 2, 3, 4, 5 }))
+
 // LysLysKOM 20179471/Pike mailinglist 13520.
 test_any(
 #define BLOCKSIZE 2048
