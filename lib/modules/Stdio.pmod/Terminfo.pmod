@@ -903,8 +903,9 @@ Termcap getTerm(string|void term)
       string tc = [string]getenv("TERMCAP");
       if (mixed err = catch {
 	t = tc && sizeof(tc) && tc[0] != '/' && Termcap(tc);
-      })
-	werror("%s", describe_backtrace(err));
+        }) {
+        master()->handle_error(err);
+      }
       if (!t)
 	t = getTerm(getenv("TERM") || "dumb");
       LOCK;
