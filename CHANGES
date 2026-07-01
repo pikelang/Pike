@@ -456,6 +456,10 @@ o predef::{en,de}code_value()
 
   Several fixes related to encoding and decoding of programs.
 
+o ADT.CircularList
+
+  Fixed long standing buffer underrun issue.
+
 o Charset
 
   - Updated Unicode translation table for ISO IR-181 to follow n1818.
@@ -792,6 +796,10 @@ o Parser.ECMAScript
   This module simply provides a token splitter for
   ECMAScript/JavaScript.
 
+o Parser.Typelib
+
+  This module parses GObject-Introspection-style typelib files.
+
 o Pike.Annotations
 
   Multiple common annotations are available.
@@ -847,6 +855,11 @@ o Web.EngineIO & Web.SocketIO
 o Protocols.HTTP2
 o Bittorrent.DHT
 o Standards.MsgPack
+
+o Standards.JSONPath
+
+  Implementation of the RFC 9535 standard for addressing stuff
+  in JSON data.
 
 o System.Memory
 
@@ -1437,10 +1450,11 @@ Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3658, #3681, #4312,
   #10097, #10098, #10104, #10105, #10107, #10109, #10111, #10112, #10113,
   #10114, #10117, #10118, #10119, #10121, #10122, #10125, #10128, #10129,
   #10130, #10131, #10132, #10133, #10134, #10135, #10136, #10137, #10139,
-  #10142, #10143, #10144, #10146, #10147, #10150, #10151, #10154, #10155,
-  #10156, #10158, #10159, #10160, #10161, #10162, #10163, #10164, #10165,
-  #10167, #10170, #10171, #10173, #10174, #10175, #10176, #10177, #10178,
-  #10179, #10180, #10181, #10182, #10183, #10185, #10187, #10188, #10191,
-  #10192, #10195, #10196, #10197, #10198, #10200, #10202, #10203, #10204,
-  #10205, #10206, #10207, #10208, #10209, #10210, #10213, #10214, #10217,
-  #10219, #10220, #10221, #10225
+  #10142, #10143, #10144, #10146, #10147, #10149, #10150, #10151, #10154,
+  #10155, #10156, #10158, #10159, #10160, #10161, #10162, #10163, #10164,
+  #10165, #10167, #10168, #10170, #10171, #10173, #10174, #10175, #10176,
+  #10177, #10178, #10179, #10180, #10181, #10182, #10183, #10185, #10187,
+  #10188, #10191, #10192, #10193, #10195, #10196, #10197, #10198, #10200,
+  #10201, #10202, #10203, #10204, #10205, #10206, #10207, #10208, #10209,
+  #10210, #10211, #10212, #10213, #10214, #10216, #10217, #10218, #10219,
+  #10220, #10221, #10222, #10223, #10224, #10225
