@@ -5172,6 +5172,7 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
       }
 
       if (numargs + varargs) {
+        ptrdiff_t i;
 	bf->args = allocate_array_no_init(numargs + varargs, 0);
 	bf->args->type_field =
 	  assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
@@ -5181,8 +5182,18 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 				   f->locals[numargs].u.array->item,
 				   varargs, BIT_MIXED);
 	}
+        for (i = bf->args->size; i--;) {
+          if (TYPEOF(ITEM(bf->args)[i]) == PIKE_T_FREE) {
+            /* Free svalues are invalid in arrays.
+             *
+             * Replace with UNDEFINED.
+             */
+            SET_SVAL(ITEM(bf->args)[i], PIKE_T_INT, NUMBER_UNDEFINED,
+                     integer, 0);
+            bf->args->type_field |= BIT_INT;
+          }
+        }
 	if (bf->args->type_field & BIT_OBJECT) {
-	  ptrdiff_t i;
 	  for (i = 0; i < bf->args->size; i++) {
 	    struct svalue *s = ITEM(bf->args) + i;
 	    if ((TYPEOF(*s) == T_OBJECT) &&
