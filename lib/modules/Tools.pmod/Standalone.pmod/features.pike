@@ -282,7 +282,7 @@ int main(int num, array(string) args) {
     sscanf(client_info, "%s/%s", flavor, version);
     sscanf(flavor, "%s(%s)", flavor, license);
   }
-  if ((licence == "Unknown") && (flavor == "MariaDB")) {
+  if ((license == "Unknown") && (flavor == "MariaDB")) {
     license = "LGPL-2.1";
   }
   item("Flavor:  " + flavor, !!client_info);
