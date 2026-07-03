@@ -273,12 +273,19 @@ int main(int num, array(string) args) {
   // Classic:	"MySQL (Copyright Abandoned)/3.23.49"
   // Mysql GPL:	"MySQL Community Server (GPL)/5.5.30"
   // MariaDB:	"MySQL (Copyright Abandoned)/5.5.0"
+  // MariaDB:	"MariaDB/10.8.8"		      mariadb-connector-c/3.4.7
+  string flavor = "Unknown";
   string license = "Unknown";
   string version = "Unknown";
   string client_info = mysql_obj[?"client_info"] && mysql_obj["client_info"]();
   if (client_info) {
-    sscanf(client_info, "%*s(%s)%*s/%s", license, version);
+    sscanf(client_info, "%s/%s", flavor, version);
+    sscanf(flavor, "%s(%s)", flavor, license);
   }
+  if ((licence == "Unknown") && (flavor == "MariaDB")) {
+    license = "LGPL-2.1";
+  }
+  item("Flavor:  " + flavor, !!client_info);
   item("Version: " + version, !!client_info);
   item("License: " + license, !!client_info);
   mysql_obj = master()->resolv("Mysql.mysql");
