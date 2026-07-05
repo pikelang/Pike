@@ -127,6 +127,43 @@ int test_unicode() {
   return 0;
 }
 
+int test_tzdata() {
+  string timezones_html = Protocols.HTTP.
+    get_url_data("http://www.iana.org/time-zones");
+  string|zero found_div;
+  foreach((timezones_html/"<div id=")[1..], string div_id) {
+    if (has_prefix(div_id[1..], "timezone_version")) {
+      found_div = ((div_id/"</div>")[0]/">")[1..] * ">";
+    }
+  }
+  string|zero found_version;
+  string|zero found_date;
+  if (found_div) {
+    foreach((found_div/"<span id=")[1..], string span_id) {
+      if (has_prefix(span_id[1..], "version")) {
+        found_version = ((span_id/"</span>")[0]/">")[1..] * ">";
+      }
+      if (has_prefix(span_id[1..], "date")) {
+        found_date = ((span_id/"</span>")[0]/">")[1..] * ">";
+      }
+    }
+  }
+  if (!found_version || !found_date) {
+    write("Failed to find latest tzdata version and date.\n");
+    return 1;
+  }
+
+  string pike_tzdata_version =
+    String.trim_all_whites(Stdio.read_file("lib/modules/Calendar.pmod/"
+                                           "tzdata/version"));
+  if (pike_tzdata_version != found_version) {
+    write("Calendar tzdata version %s is outdated. Latest: %s %s\n",
+          pike_tzdata_version, found_version, found_date);
+    return 1;
+  }
+  return 0;
+}
+
 int test_realpike() {
   int status = 0;
 
@@ -361,8 +398,7 @@ int main(int args)
   failures += test_charset_table("tables.c");
   failures += test_charset_table("misc.c");
   failures += test_unicode();
-  // FIXME: Consider verifying that lib/modules/Calendar.pmod/tzdata
-  //        is up to date.
+  failures += test_tzdata();
   failures += test_realpike();
   failures += test_version();
   failures += test_generic_debug("lib/modules");
