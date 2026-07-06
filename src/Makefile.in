@@ -975,6 +975,9 @@ feature_list:
 run_bench:
 	$(RUNPIKE) $(ARGS) -x benchmark $(BENCHARGS)
 
+release_checks:
+	$(RUNPIKE) $(ARGS) $(SRCDIR)/../tools/release_checks.pike
+
 lib: Makefile
 	@for d in lib lib/modules lib/include; do \
 	  if [ -d $$d/. ]; then : ; else \
