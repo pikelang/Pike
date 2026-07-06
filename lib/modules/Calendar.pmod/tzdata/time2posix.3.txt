@@ -20,12 +20,12 @@ DESCRIPTION
 
        If the time package is configured with leap-second support enabled,
        however, no such adjustment is needed and time_t values continue to
-       increase over leap events (as a true "seconds since..." value).  This
+       increase over leap events (as a true “seconds since...” value).  This
        means that these values will differ from those required by POSIX by the
        net number of leap seconds inserted since the Epoch.
 
        Typically this is not a problem as the type time_t is intended to be
-       (mostly) opaque - time_t values should only be obtained-from and
+       (mostly) opaque – time_t values should only be obtained-from and
        passed-to functions such as time(2), localtime(3), mktime(3), and
        difftime(3).  However, POSIX gives an arithmetic expression for
        directly computing a time_t value from a given date/time, and the same
