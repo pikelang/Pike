@@ -1553,27 +1553,23 @@ PIKEFUN string(8bit) read(int(0..)|void len, int(0..1)|void not_all)
     mark_file_busy(THIS);
     SET_ONERROR(err, mark_file_idle, THIS);
 
-    pop_n_elems(args);
-
 #ifdef HAVE_PIKE_SEND_FD
     /* Check if there's any need to use recvmsg(2). */
     if ((file->open_mode & fd_SEND_FD) &&
         (file->flags & FILE_HAVE_RECV_FD)) {
-      if ((tmp = do_recvmsg(fd, count, mode, & file->my_errno)))
-        push_string(tmp);
-      else {
-        errno = file->my_errno;
-        push_int(0);
-      }
+      tmp = do_recvmsg(fd, count, mode, & file->my_errno);
     } else
 #endif /* HAVE_PIKE_SEND_FD */
     {
-      if((tmp=do_read(fd, count, mode, & file->my_errno)))
-        push_string(tmp);
-      else {
-        errno = file->my_errno;
-        push_int(0);
-      }
+      tmp = do_read(fd, count, mode, & file->my_errno);
+    }
+
+    pop_n_elems(args);
+    if (tmp) {
+      push_string(tmp);
+    } else {
+      errno = file->my_errno;
+      push_int(0);
     }
   }
 
