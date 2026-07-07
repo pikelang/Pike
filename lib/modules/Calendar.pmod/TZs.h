@@ -137,7 +137,7 @@ class Africa_Ndjamena
          return tz3 || (tz3=Rule.Timezone(-7200,"WAST"));
       if (ux>=-1830387612) // from 1912 Jan  1
          return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      // N'Djamena
+      // Fort-Lamy
       return tz1 || (tz1=Rule.Timezone(-3612,"LMT"));
    }
 }
@@ -5319,14 +5319,10 @@ class America_Tijuana
          return tz8 || (tz8=TZrules.US(28800,"P%sT"));
       if (ux>=820425600) // from 1996
          return tz9 || (tz9=TZrules.Mexico(28800,"P%sT"));
-      if (ux>=189331200) // from 1976
+      if (ux>=-94723200) // from 1967
          return tz8 || (tz8=TZrules.US(28800,"P%sT"));
-      if (ux>=-284025600) // from 1961
-         return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-504892800) // from 1954
-         return tz7 || (tz7=TZrules.CA(28800,"P%sT"));
       if (ux>=-544633200) // from 1952 Sep 28  2:00
-         return tz3 || (tz3=Rule.Timezone(28800,"PST"));
+         return tz7 || (tz7=TZrules.CA(28800,"P%sT"));
       if (ux>=-557935200) // from 1952 Apr 27  2:00
          return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
       if (ux>=-576082800) // from 1951 Sep 30  2:00

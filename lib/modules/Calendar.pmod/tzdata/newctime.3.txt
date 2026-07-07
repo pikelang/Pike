@@ -36,7 +36,7 @@ SYNOPSIS
 
 DESCRIPTION
        The localtime and gmtime functions convert an integer, pointed to by
-       clock, and return pointers to "tm" structures, described below.  If the
+       clock, and return pointers to “tm” structures, described below.  If the
        integer is out of range for conversion, these functions return a null
        pointer.  The localtime function corrects for the time zone and any
        time zone adjustments (such as Daylight Saving Time in the United
@@ -77,7 +77,7 @@ DESCRIPTION
        The difftime function returns the difference between two calendar
        times, (time1 - time0), expressed in seconds.
 
-       The asctime function converts a time value contained in a "tm"
+       The asctime function converts a time value contained in a “tm”
        structure to a pointer to a string of the form
                             Thu Nov 24 18:22:48 1986\n\0
        Years requiring fewer than four characters are padded with leading
@@ -108,18 +108,18 @@ DESCRIPTION
        should not be freed until after all uses (e.g., by calls to strftime)
        of the filled-in tm_zone fields.
 
-       Declarations of all the functions and externals, and the "tm"
+       Declarations of all the functions and externals, and the “tm”
        structure, are in the <time.h> header file.  The structure (of type)
        struct tm includes the following fields:
 
-                int tm_sec;      /* seconds (0-60) */
-                int tm_min;      /* minutes (0-59) */
-                int tm_hour;     /* hours (0-23) */
-                int tm_mday;     /* day of month (1-31) */
-                int tm_mon;      /* month of year (0-11) */
+                int tm_sec;      /* seconds (0–60) */
+                int tm_min;      /* minutes (0–59) */
+                int tm_hour;     /* hours (0–23) */
+                int tm_mday;     /* day of month (1–31) */
+                int tm_mon;      /* month of year (0–11) */
                 int tm_year;     /* year - 1900 */
                 int tm_wday;     /* day of week (Sunday = 0) */
-                int tm_yday;     /* day of year (0-365) */
+                int tm_yday;     /* day of year (0–365) */
                 int tm_isdst;    /* is daylight saving time in effect? */
                 char *tm_zone;   /* time zone abbreviation (optional) */
                 long tm_gmtoff;  /* offset from UT in seconds (optional) */
