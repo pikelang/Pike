@@ -4243,12 +4243,12 @@ class Moldova
       [int y,int yjd,int leap]=gregorian_yjd(jd);
       switch (y)
       {
-         default: // ..1996:
-            return ({({0           ,0         ,0    ,""    })});// ?
-         case 1997..:
+         case 1997..2021:
             return ({({0           ,0         ,0    ,""    }),
                      ({LDAYL(90,7) ,UO+7200   ,3600 ,"S"   }),  // Mar lastSun
                      ({LDAYL(304,7),UO+7200   ,0    ,""    })});// Oct lastSun
+         default: // ..1996 and 2022..
+            return ({({0           ,0         ,0    ,""    })});
       }
    }
 }

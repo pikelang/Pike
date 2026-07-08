@@ -2980,9 +2980,11 @@ class Europe_Malta
 class Europe_Chisinau
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz10,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
+   Rule.Timezone tz1,tz10,tz11,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
+      if (ux>=1641002400) // from 2022
+         return tz11 || (tz11=TZrules.EU(-7200,"EE%sT"));
       if (ux>=852084000) // from 1997
          return tz10 || (tz10=TZrules.Moldova(-7200,"EE%sT"));
       if (ux>=694231200) // from 1992

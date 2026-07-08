@@ -5143,6 +5143,12 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
     }
 
     if (f->locals) {
+      /* Frame field	PIKE_FUNCTION		C_FUNCTION
+       * -----------	----------------------	-------------
+       * args		Actual number of args.	Same.
+       * num_args	Args except MANY.	Same as args.
+       * num_locals	Sval stack frame size.	Not used.
+       */
       INT32 numargs = f->num_args;
       INT32 varargs = 0;
 
@@ -5155,8 +5161,10 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 	   *
 	   * possibly because f->num_args was uninitialized for c_initializers
 	   *  /arne
+           *
+           * It may also be due to some C-funs popping their arguments early
+           * (like eg file_read() did previously). /grubba
 	   * */
-
 	  numargs = (INT32)MINIMUM(numargs, of->locals - f->locals);
 	}
 
@@ -5165,8 +5173,17 @@ void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 	numargs = MINIMUM(numargs, f->locals[-1].u.array->size);
       }
 
-      /* Handle varargs... */
-      if (function && (function->identifier_flags & IDENTIFIER_VARARGS) &&
+      /* Handle varargs...
+       *
+       * Note: The varargs variable is NOT counted among num_args.
+       *       C-functions typically do NOT aggregate the varargs.
+       *
+       * Also: For C-functions num_args is set to args by apply_low,
+       *       so this is NOT relevant then.
+       */
+      if (function &&
+          (function->identifier_flags & IDENTIFIER_VARARGS) &&
+          IDENTIFIER_IS_PIKE_FUNCTION(function->identifier_flags) &&
 	  (TYPEOF(f->locals[numargs]) == T_ARRAY)) {
 	varargs = f->locals[numargs].u.array->size;
       }
