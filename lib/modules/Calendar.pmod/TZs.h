@@ -153,7 +153,6 @@ class Africa_Abidjan
       return tz1 || (tz1=Rule.Timezone(968,"LMT"));
    }
 }
-constant Iceland=Africa_Abidjan;
 constant Africa_Accra=Africa_Abidjan;
 constant Africa_Bamako=Africa_Abidjan;
 constant Africa_Banjul=Africa_Abidjan;
@@ -222,7 +221,6 @@ constant Africa_Mogadishu=Africa_Nairobi;
 constant Indian_Antananarivo=Africa_Nairobi;
 constant Indian_Comoro=Africa_Nairobi;
 constant Indian_Mayotte=Africa_Nairobi;
-constant Africa_Asmera=Africa_Nairobi;
 
 class Africa_Monrovia
 {
@@ -733,7 +731,6 @@ class Asia_Shanghai
 constant PRC=Asia_Shanghai;
 constant Asia_Chongqing=Asia_Shanghai;
 constant Asia_Harbin=Asia_Shanghai;
-constant Asia_Chungking=Asia_Shanghai;
 
 class Asia_Urumqi
 {
@@ -2173,7 +2170,6 @@ class Pacific_Auckland
 }
 constant NZ=Pacific_Auckland;
 constant Antarctica_McMurdo=Pacific_Auckland;
-constant Antarctica_South_Pole=Pacific_Auckland;
 
 class Pacific_Chatham
 {
@@ -2275,8 +2271,6 @@ class Pacific_Port_Moresby
 }
 constant Antarctica_DumontDUrville=Pacific_Port_Moresby;
 constant Pacific_Chuuk=Pacific_Port_Moresby;
-constant Pacific_Yap=Pacific_Port_Moresby;
-constant Pacific_Truk=Pacific_Port_Moresby;
 
 class Pacific_Bougainville
 {
@@ -2361,7 +2355,6 @@ class Pacific_Guadalcanal
    }
 }
 constant Pacific_Pohnpei=Pacific_Guadalcanal;
-constant Pacific_Ponape=Pacific_Guadalcanal;
 
 class Pacific_Fakaofo
 {
@@ -2799,7 +2792,6 @@ class Europe_Berlin
       return tz1 || (tz1=Rule.Timezone(-3208,"LMT"));
    }
 }
-constant Arctic_Longyearbyen=Europe_Berlin;
 constant Europe_Copenhagen=Europe_Berlin;
 constant Europe_Oslo=Europe_Berlin;
 constant Europe_Stockholm=Europe_Berlin;
@@ -5612,7 +5604,6 @@ class America_Puerto_Rico
       return tz1 || (tz1=Rule.Timezone(15865,"LMT"));
    }
 }
-constant America_Virgin=America_Puerto_Rico;
 constant America_Anguilla=America_Puerto_Rico;
 constant America_Antigua=America_Puerto_Rico;
 constant America_Aruba=America_Puerto_Rico;
@@ -5621,12 +5612,8 @@ constant America_Curacao=America_Puerto_Rico;
 constant America_Dominica=America_Puerto_Rico;
 constant America_Grenada=America_Puerto_Rico;
 constant America_Guadeloupe=America_Puerto_Rico;
-constant America_Kralendijk=America_Puerto_Rico;
-constant America_Lower_Princes=America_Puerto_Rico;
-constant America_Marigot=America_Puerto_Rico;
 constant America_Montserrat=America_Puerto_Rico;
 constant America_Port_of_Spain=America_Puerto_Rico;
-constant America_St_Barthelemy=America_Puerto_Rico;
 constant America_St_Kitts=America_Puerto_Rico;
 constant America_St_Lucia=America_Puerto_Rico;
 constant America_St_Thomas=America_Puerto_Rico;
