@@ -13,6 +13,10 @@
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
 
+// This script alters the zones and abbr2zones tables in TZnames.pmod,
+// and generates the files TZs.h and TZrules.pmod (neither of which is
+// currently used).
+
 #charset iso-8859-1
 #pike __REAL_VERSION__
 
@@ -29,6 +33,7 @@ object tzrules; // needed to make timezones, compiled below
 mapping rules=([]);
 mapping zones=([]);
 mapping links=([]);
+mapping links_backward=([]);
 array arules=({});
 array azones=({});
 
@@ -750,8 +755,13 @@ void collect_rules(string file)
 	    else if (sscanf(line,"Link%*[ \t]%[^ \t]%*[ \t]%[^ \t]",s,t)==4)
 	    {
 	 // link t to s
+               if (links_backward[t]) {
+                  // Remove old link.
+                  links[links_backward[t]] -= ({ t });
+               }
 	       if (links[s]) links[s]+=({t});
 	       else links[s]=({t});
+               links_backward[t] = s;
 	    }
 	    else if (sscanf(line,"%*[ \t]%[-0-9]%s",s,t)==3 && sizeof(s))
 	    {
@@ -793,7 +803,8 @@ int main(int ac,array(string) am)
                         return 1;
                      });
       // Sort and move backzone to last as it references
-      // rules defined in the other files.
+      // rules defined in the other files. It also contains
+      // overrides for rules and aliases in the other files.
       files = sort(files);
       if (has_value(files, "backzone")) {
          files = (files - ({ "backzone" })) + ({ "backzone" });
