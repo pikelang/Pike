@@ -466,6 +466,11 @@ mapping(string:object)|zero get_objects(string lang)
 string translate(string project, string lang, string|int id, string fallback)
   //! Returns a translation for the given id, or the fallback string
 {
+  if (!id) {
+    // Id number 0 is reserved for not allocated yet.
+    // This is common in projects that have not been translated (yet).
+    return fallback;
+  }
   LocaleObject locale_object = get_object(project, lang);
   if(locale_object) {
     string t_str = locale_object->translate(id, fallback);
@@ -591,7 +596,7 @@ class DeferredLocale( protected string project,
       case 's':
 	return lookup();
       case 'O':
-	return sprintf("%O(%O)", this_program, lookup());
+        return sprintf("%O(%O:%O:%O)", this_program, project, key, fallback);
     }
   }
 
