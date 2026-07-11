@@ -155,7 +155,7 @@ void run_tests()
      }
      else if( comparison )
      {
-       int on = comparison[id]->n_over_time;
+       int on = comparison[id]->?n_over_time;
        if( !on )
          write( dot(res->readable,19,false,odd)+"\n");
        else
@@ -164,7 +164,7 @@ void run_tests()
          float pct = diff*100.0 / on;
          total_pct += pct;
          if( isatty )
-           write( color( pct ) );
+           write( color( -pct ) );
          write("%42s%s %5.1f%%\n",
                dot(id,42,true,odd=!odd),
                dot(res->readable,16,false,odd),
@@ -182,10 +182,13 @@ void run_tests()
      write( "\n}\n");
    else if( comparison )
    {
+     float pct = total_pct / n_tests;
+     if( isatty ) write(color(-pct));
      write("-"*65+"\n"+
            " "*40+"%24.1f%%\n"+
            "-"*65+"\n",
-           total_pct / n_tests);
+           pct);
+     if( isatty ) write( "\e[0m" );
    }
    else
      write("-"*59+"\n");
