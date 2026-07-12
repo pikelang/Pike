@@ -167,6 +167,7 @@ mapping(string:int|float|string) run(Test test, int maximum_seconds,
     mixed err = catch {
       return Standards.JSON.decode( fd->read() );
     };
+    werror("Test %O failed:\n", test);
     master()->handle_error(err);
     // JSON decoding failed. Likely due to not having received any data from
     // the subprocess. The most common cause for this is that the subprocess
