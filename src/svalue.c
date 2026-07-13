@@ -531,7 +531,7 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
         break;
       }
     }
-    q = hash_ptr(s->u.ptr);
+    q = hash_ptr(s->u.ptr) + SUBTYPEOF(*s);
     break;
   }
 
