@@ -291,15 +291,15 @@ class PFX
 
   /* passwd is assumed to be latin 1 */
   void set_passwd(string s) {
-    passwd = latin1_to_bmp(passwd);
+    passwd = latin1_to_bmp(s);
   }
 
   string string_pad(string d, int block_size) {
     int s = sizeof(d);
 
     if (s)
-    { /* Extend to a multiple of the block soze */
-      int n = (s + 63) / block_size; // number of blocks
+    { /* Extend to a multiple of the block size */
+      int n = (s + block_size - 1) / block_size; // number of blocks
       int k = (n+s-1) / s;
       d = (d * k) [..n*block_size-1];
     }
@@ -352,6 +352,7 @@ class PFX
       } else {
 	error("Only passwd authentication supported\n");
       }
+      return ::get_der();
     }
 
   int uses_passwd_integrity()
