@@ -55,6 +55,7 @@ Crypto.Sign.State parse_public_key(Sequence seq)
       ECDSA = master()->resolv("Standards.PKCS.ECDSA");
     Crypto.ECC.Curve curve =
       ECDSA->parse_ec_parameters(seq->elements[0]->elements[1]);
+    if (!curve) return UNDEFINED;
     return ECDSA->parse_public_key(seq->elements[1]->value, curve);
   }
 #endif /* Nettle.ECC_Curve */
