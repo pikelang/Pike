@@ -37,6 +37,9 @@ string private_key(Crypto.RSA rsa)
   Gmp.mpz p = rsa->get_p();
   Gmp.mpz q = rsa->get_q();
 
+  if (!p || !q)
+    error("RSA key has no prime factors.\n");
+
   return Sequence(map(
     ({ 0, n, e, d,
        p, q,
