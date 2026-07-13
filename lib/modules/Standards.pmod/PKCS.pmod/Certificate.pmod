@@ -244,36 +244,43 @@ array(mapping(string(7bit):string)) decode_distinguished_name(Sequence dn)
 //!  all attribute types are understood.
 string get_dn_string(Sequence dnsequence)
 {
-  string dn="";
-  array rdns=({});
+  array rdns = ({});
 
   foreach(reverse(dnsequence->elements), Set att)
   {
     foreach(att->elements, Sequence val)
     {
-      array value = ({});
       string t = short_name_ids[val[0]];
-      string v = val[1]->value;
+      if (!t)
+        t = ((array(string))val[0]->id) * ".";
 
-      // we must escape characters now.
+      mixed raw = val[1]->value;
+      string v;
+      if (!stringp(raw)) {
+        // RFC 4514 §2.4: non-string values encoded as #<hex BER>.
+        v = "#" + string2hex(val[1]->get_der());
+        rdns += ({ t + "=" + v });
+        continue;
+      }
+      v = raw;
+
       v = replace(v,
           ({",", "+", "\"", "\\", "<", ">", ";"}),
           ({"\\,", "\\+", "\\\"", "\\\\", "\\<", "\\>", "\\;"}) );
 
-      if(v[0..0] == " ")
-         v="\\" + v;
-      else if(v[0..0] == "#")
-         v="\\" + v;
+      // Check trailing space before leading-space escape to prevent
+      // the leading backslash from triggering the trailing-space path.
+      if (sizeof(v) && v[sizeof(v)-1..sizeof(v)-1] == " ")
+        v = v[..sizeof(v)-2] + "\\ ";
 
-      if(v[(sizeof(v)-1)..(sizeof(v)-1)] == " ")
-         v=v[0..(sizeof(v)-2)] + "\\ ";
+      if (v[0..0] == " " || v[0..0] == "#")
+        v = "\\" + v;
 
-      rdns += ({ (t + "=" + v) });
+      rdns += ({ t + "=" + v });
     }
   }
 
-  dn = rdns * ",";
-  return dn;
+  return rdns * ",";
 }
 
 //!
