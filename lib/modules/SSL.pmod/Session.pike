@@ -822,7 +822,7 @@ int(0..1) reusable_as(Session other)
   // if it has the same parameters as the new session.
   return cipher_suite == other->cipher_suite &&
     version == other->version &&
-    certificate_chain == other->certificate_chain &&
+    equal(certificate_chain, other->certificate_chain) &&
     compression_algorithm == other->compression_algorithm &&
     max_packet_size == other->max_packet_size &&
     truncated_hmac == other->truncated_hmac &&
