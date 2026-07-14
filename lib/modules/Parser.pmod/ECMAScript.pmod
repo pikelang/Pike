@@ -125,7 +125,27 @@ array(string) split(string data)
       break;
 
     case '`':
-      while( !(data[++pos]=='`' && data[pos-1]!='\\') );
+      array stack = ({ "template" });
+      while( pos++ < sizeof(data) ) {
+        switch( data[pos] ) {
+        case '`':
+          if( data[pos-1]!='\\' && stack[-1] == "template" )
+            stack = stack[..<1];
+          else if( stack[-1] == "expr" )
+            stack += ({ "template" });
+          break;
+        case '{':
+          if( data[pos-1]=='$' )
+            stack += ({ "expr" });
+          break;
+        case '}':
+          if( data[pos-1]!='\\' && stack[-1] == "expr" )
+            stack = stack[..<1];
+          break;
+        }
+        if( !sizeof(stack) )
+          break;
+      }
       pos++;
       break;
 
