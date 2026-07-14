@@ -45,7 +45,7 @@ string(8bit) decrypt_body(string(8bit) dek_info, string(8bit) body,
   array(string(8bit)) d = dek_info/",";
   if (sizeof(d) != 2) error("Unsupported DEK-Info.\n");
   string(8bit) method = lower_case(String.trim(d[0]));
-  object(Crypto.AES.CBC._Buffer)|zero cipher = ([
+  object(Crypto.BufferedCipher._Buffer)|zero cipher = ([
     "des-cbc": Crypto.DES.CBC.Buffer,
     "des-ede3-cbc": Crypto.DES3.CBC.Buffer,
     "aes-128-cbc": Crypto.AES.CBC.Buffer,
@@ -60,7 +60,7 @@ string(8bit) decrypt_body(string(8bit) dek_info, string(8bit) body,
   ])[method] || 24;
   string(8bit) iv = String.hex2string(d[1]);
   key = derive_key(key, iv[..7], key_size);
-  Crypto.AES.CBC.Buffer.State decoder = cipher();
+  Crypto.BufferedCipher._Buffer.State decoder = cipher();
   decoder->set_decrypt_key(key);
   return decoder->unpad(iv + body, Crypto.PAD_PKCS7)[sizeof(iv)..];
 }
@@ -191,7 +191,8 @@ class Messages
       if(objectp(part))
       {
         Message msg = [object(Message)]part;
-        parts[msg->pre] += ({ msg });
+        if (msg->pre)
+          parts[msg->pre] += ({ msg });
       }
   }
 
