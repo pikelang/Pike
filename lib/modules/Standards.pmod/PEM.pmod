@@ -118,16 +118,18 @@ class Message
     else
       lines = [array(string(8bit))]data;
 
-    if( sscanf(lines[0], "%*[ \t]-----BEGIN %s-----", pre)!=2 )
+    if( !sizeof(lines) ||
+        sscanf(lines[0], "%*[ \t]-----BEGIN %s-----", pre)!=2 )
       return;
 
     lines = lines[1..];
-    if( sscanf(lines[-1], "%*[ \t]-----END %s-----", post)==2 )
+    if( sizeof(lines) &&
+        sscanf(lines[-1], "%*[ \t]-----END %s-----", post)==2 )
     {
       lines = lines[..<1];
     }
 
-    if( sizeof(lines[-1]) && lines[-1][0]=='=' )
+    if( sizeof(lines) && sizeof(lines[-1]) && lines[-1][0]=='=' )
     {
       string(8bit) trailing = lines[-1][1..];
       if( String.bits(trailing) > 7 ) {
