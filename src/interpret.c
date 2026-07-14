@@ -2412,14 +2412,16 @@ struct pike_frame *alloc_pike_frame(void)
     PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
     free_pike_frame = res->next;
     PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
-    memset(res, 0, sizeof(struct pike_frame));
-    gc_init_marker(res);
+#ifdef PIKE_DEBUG
+    memset(res, 0xa5, sizeof(struct pike_frame));
+#endif
     res->refs=0;
     add_ref(res);	/* For DMALLOC... */
-    res->flags=0;
+    gc_init_marker(res);
     res->next=0;
     res->scope=0;
     res->pc = NULL;
+    res->flags=0;
 
     return res;
 }
