@@ -344,6 +344,19 @@ protected mapping(int:program(Object)) x509_types = ([
     make_combined_tag(2, 2):SubjectId,
   ]);
 
+protected UTC time_object(int t)
+{
+  if( !t )
+  {
+    // This is the "no well-known expiration date".
+    return GeneralizedTime("99991231235959Z");
+  }
+  Calendar.ISO_UTC.Second s = Calendar.ISO_UTC.Second(t);
+  if( s->year_no()<1950 || s->year_no()>=2050 )
+    return GeneralizedTime(s);
+  return UTC(s);
+}
+
 //! Represents a TBSCertificate.
 //!
 //! @note
@@ -492,19 +505,6 @@ class TBSCertificate
   Sequence `validity()
   {
     return low_get_sequence(3);
-  }
-
-  protected UTC time_object(int t)
-  {
-    if( !t )
-    {
-      // This is the "no well-known expiration date".
-      return GeneralizedTime("99991231235959Z");
-    }
-    Calendar.ISO_UTC.Second s = Calendar.ISO_UTC.Second(t);
-    if( s->year_no()<1950 || s->year_no()>=2050 )
-      return GeneralizedTime(s);
-    return UTC(s);
   }
 
   //!
@@ -1228,8 +1228,8 @@ variant TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 				array|int(0..0)|void extensions)
 {
   int now = time();
-  Sequence validity = Sequence( ({ UTC(now),
-                                   UTC(now + ttl) }) );
+  Sequence validity = Sequence( ({ time_object(now),
+                                   time_object(now + ttl) }) );
 
   return make_tbs(issuer, algorithm, subject, keyinfo,
 		  serial, validity, extensions);
