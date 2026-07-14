@@ -733,7 +733,7 @@ class TBSCertificate
 
       if( extensions[id] )
       {
-	DBG("TBSCertificate: Extension %O sent twice.\n");
+	DBG("TBSCertificate: Extension %O sent twice.\n", id);
         return;
       }
 
@@ -848,7 +848,7 @@ class TBSCertificate
     return m || i;
   }
 
-  string fmt_extensions()
+  void fmt_extensions()
   {
     foreach(extensions; Identifier i; Object o)
       write("%O : %O\n", .PKCS.Identifiers.reverse_ce_ids[i]||i, o);
