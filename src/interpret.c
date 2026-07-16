@@ -2417,7 +2417,7 @@ struct pike_frame *alloc_pike_frame(void)
 #endif
     res->refs=0;
     add_ref(res);	/* For DMALLOC... */
-    gc_init_marker(res);
+    gc_fast_init_marker(res);
     res->next=0;
     res->scope=0;
     res->pc = NULL;

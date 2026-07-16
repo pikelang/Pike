@@ -262,7 +262,7 @@ static void init_mapping(struct mapping *m,
     }
   }
   add_ref(md);
-  gc_init_marker(md);
+  gc_fast_init_marker(md);
   m->data=md;
 #ifdef MAPPING_SIZE_DEBUG
   m->debug_size = md->size;
@@ -716,7 +716,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
   nmd=(struct mapping_data *)xalloc(size);
   memcpy(nmd, md, size);
-  gc_init_marker(nmd);
+  gc_fast_init_marker(nmd);
   off=((char *)nmd) - ((char *)md);
 
   RELOC(nmd->free_list);
@@ -1902,7 +1902,7 @@ PMOD_EXPORT void clear_mapping(struct mapping *m)
    *    NB: init_mapping() doesn't do this.
    */
   add_ref(md);
-  /* gc_init_marker(md); */
+  /* gc_fast_init_marker(md); */
 
   m->data = md;
 #ifdef MAPPING_SIZE_DEBUG
