@@ -469,6 +469,7 @@ void pike_do_exit(int num)
   new_frame->current_object = NULL;
   new_frame->context = NULL;
   new_frame->current_program = NULL;
+  new_frame->locals = new_frame->save_sp = Pike_sp;
 #ifdef PROFILING
   new_frame->children_base = Pike_interpreter.accounted_time;
   new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
