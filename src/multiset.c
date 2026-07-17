@@ -283,7 +283,7 @@ static struct multiset_data *low_alloc_multiset_data (int allocsize, int flags)
 #endif
 
   msd = xalloc ( NODE_OFFSET (msnode_ind, allocsize) );
-  gc_init_marker(msd);
+  gc_fast_init_marker(msd);
   msd->refs = msd->noval_refs = 0;
   msd->root = NULL;
   msd->allocsize = allocsize;

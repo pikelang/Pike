@@ -3814,7 +3814,7 @@ PMOD_EXPORT struct program *low_allocate_program(INT32 id)
 {
   struct program *p=alloc_program();
   memset(p, 0, sizeof(struct program));
-  gc_init_marker(p);
+  gc_fast_init_marker(p);
   p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
 
@@ -3937,7 +3937,7 @@ PMOD_EXPORT void low_start_new_program(struct program *p,
   }
   /* Can't use GC_ALLOC on fake objects, but still it's good to know
    * that they never take over a stale gc marker. */
-  gc_init_marker(Pike_compiler->fake_object);
+  gc_fast_init_marker(Pike_compiler->fake_object);
   if (Pike_in_gc) remove_marker(Pike_compiler->fake_object);
 
   Pike_compiler->fake_object->next=Pike_compiler->fake_object;

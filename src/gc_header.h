@@ -57,6 +57,15 @@ struct marker
 #define GC_HEADER_INIT(REFS) (REFS), 0, NULL, 0, 0, 0
 #endif
 
+/* NB: A gc_generation of zero causes get_marker() et al
+ *     to consider this an uninitialized or invalid marker
+ *     causing it to be fully initialized on demand.
+ */
+static inline void gc_fast_init_marker(void *ptr) {
+    struct marker *m = ptr;
+    m->gc_generation = 0;
+}
+
 static inline void gc_init_marker(void *ptr) {
     struct marker *m = ptr;
     m->gc_refs = 0;

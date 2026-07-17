@@ -346,7 +346,7 @@ ATTRIBUTE((malloc))
 PMOD_EXPORT struct pike_type * alloc_pike_type(void) {
     struct pike_type *t = ba_alloc(&type_allocator);
     dmalloc_register(t, sizeof(struct pike_type), DMALLOC_LOCATION());
-    gc_init_marker(t);
+    gc_fast_init_marker(t);
     return t;
 }
 

@@ -103,7 +103,7 @@ extern int gc_keep_markers;
 #define LOW_GC_ALLOC(OBJ) do {						\
  num_objects++;								\
  num_allocs++;								\
- gc_init_marker(OBJ);                                                   \
+ gc_fast_init_marker(OBJ);                                              \
  DO_IF_DEBUG(								\
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
    if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
