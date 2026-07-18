@@ -1936,8 +1936,6 @@ PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processin
   }
   if(!a->size) return 1;
 
-  if ((a->flags ^ b->flags) & ARRAY_WEAK_FLAG) return 0;
-
 #ifdef PIKE_DEBUG
   if(d_flag > 1)
   {
