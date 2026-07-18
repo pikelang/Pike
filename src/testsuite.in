@@ -8405,6 +8405,7 @@ test_true([[Pike.count_memory (-1, class {constant f = 0.0;}()) ==
 	    Pike.count_memory (-1, class {}())]])
 test_true([[Pike.count_memory (-1, "foo") > 0]])
 test_true([[Pike.count_memory (-1, typeof (map)) > 0]])
+test_true([[Pike.count_memory (0, class { int foo(auto x) { return 1; } }) > 0]])
 test_true([[Pike.count_memory (-1, 17) == 0]])
 test_true([[Pike.count_memory (-1, ({"some string with no other ref in memory "+
 				     Standards.UUID.make_version4()->str()})) ==
