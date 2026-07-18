@@ -1560,7 +1560,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 #ifdef MAPPING_SIZE_DEBUG
 	  if(m->data ==md)
 	  {
-	    m->debug_size++;
+	    m->debug_size--;
 	    debug_malloc_touch(m);
 	  }
 #endif
