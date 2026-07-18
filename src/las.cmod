@@ -691,7 +691,7 @@ void debug_free_node(node *n)
 
 
 /* here starts routines to make nodes */
-static node *debug_mkemptynode(void)
+static node *debug_mkemptynode(enum Pike_opcodes token, int token_flags)
 {
   node *res=alloc_node_s();
 
@@ -705,7 +705,8 @@ static node *debug_mkemptynode(void)
 
   res->refs = 0;
   add_ref(res);	/* For DMALLOC... */
-  res->token=0;
+  res->token = token;
+  res->token_flags = token_flags;
   res->line_number=THIS_COMPILATION->lex.current_line;
   copy_shared_string(res->current_file, THIS_COMPILATION->lex.current_file);
   res->type=0;
@@ -716,7 +717,8 @@ static node *debug_mkemptynode(void)
   return res;
 }
 
-#define mkemptynode()	dmalloc_touch(node *, debug_mkemptynode())
+#define mkemptynode(TOKEN, TOKEN_FLAGS)                                 \
+  dmalloc_touch(node *, debug_mkemptynode((TOKEN), (TOKEN_FLAGS)))
 
 
 static int is_automap_arg_list(node *n)
@@ -924,7 +926,7 @@ node *debug_mknode(int token, node *a, node *b)
   check_tree(a,0);
   check_tree(b,0);
 
-  res = mkemptynode();
+  res = mkemptynode(token, 0);
   _CAR(res) = dmalloc_touch(node *, a);
   _CDR(res) = dmalloc_touch(node *, b);
   if(a) {
@@ -933,9 +935,6 @@ node *debug_mknode(int token, node *a, node *b)
   if(b) {
     b->parent = res;
   }
-
-  res->token = token;
-  res->type = 0;
 
   switch(token)
   {
@@ -1259,8 +1258,7 @@ node *mkgeneric_selection(node *expr, node *assocs)
 
 node *debug_mkstrnode(struct pike_string *str)
 {
-  node *res = mkemptynode();
-  res->token = F_CONSTANT;
+  node *res = mkemptynode(F_CONSTANT, TOKEN_FLAG_IS_LEAF);
   SET_SVAL(res->u.sval, T_STRING, 0, string, str);
   add_ref(str);
   res->type = get_type_of_svalue(&res->u.sval);
@@ -1270,8 +1268,7 @@ node *debug_mkstrnode(struct pike_string *str)
 
 node *debug_mkintnode(INT_TYPE nr)
 {
-  node *res = mkemptynode();
-  res->token = F_CONSTANT;
+  node *res = mkemptynode(F_CONSTANT, TOKEN_FLAG_IS_LEAF);
   SET_SVAL(res->u.sval, T_INT, NUMBER_NUMBER, integer, nr);
   res->type=get_type_of_svalue( & res->u.sval);
   res->tree_info = OPT_SAFE;
@@ -1281,8 +1278,7 @@ node *debug_mkintnode(INT_TYPE nr)
 
 node *debug_mknewintnode(INT_TYPE nr)
 {
-  node *res = mkemptynode();
-  res->token = F_CONSTANT;
+  node *res = mkemptynode(F_CONSTANT, TOKEN_FLAG_IS_LEAF);
   SET_SVAL(res->u.sval, T_INT, NUMBER_NUMBER, integer, nr);
   res->type=get_type_of_svalue( & res->u.sval);
   res->tree_info = OPT_SAFE;
@@ -1291,8 +1287,7 @@ node *debug_mknewintnode(INT_TYPE nr)
 
 node *debug_mkfloatnode(FLOAT_TYPE foo)
 {
-  node *res = mkemptynode();
-  res->token = F_CONSTANT;
+  node *res = mkemptynode(F_CONSTANT, TOKEN_FLAG_IS_LEAF);
   copy_pike_type(res->type, float_type_string);
   SET_SVAL(res->u.sval, T_FLOAT, 0, float_number, foo);
   res->tree_info = OPT_SAFE;
@@ -1406,8 +1401,7 @@ node *debug_mkopernode(char *oper_id, node *arg1, node *arg2)
 
 node *debug_mkversionnode(int major, int minor)
 {
-  node *res = mkemptynode();
-  res->token = F_VERSION;
+  node *res = mkemptynode(F_VERSION, TOKEN_FLAG_IS_LEAF);
 #ifdef __CHECKER__
   _CDR(res) = 0;
 #endif
@@ -1433,8 +1427,7 @@ node *internal_mklocalnode(struct compiler_frame *f, int var)
   }
 #endif
 
-  res = mkemptynode();
-  res->token = F_LOCAL_INDIRECT;
+  res = mkemptynode(F_LOCAL_INDIRECT, TOKEN_FLAG_IS_LEAF);
   res->node_info = OPT_NOT_CONST;
   res->tree_info = res->node_info;
 #ifdef __CHECKER__
@@ -1513,8 +1506,7 @@ node *debug_mklocalnode(int var, int depth)
   def->u.integer.b = -1;
   f->local_shared[def->u.integer.a>>4] |= 1 << (def->u.integer.a & 0xf);
 
-  res = mkemptynode();
-  res->token = F_LOCAL;
+  res = mkemptynode(F_LOCAL, TOKEN_FLAG_IS_LEAF);
   res->node_info = def->node_info;
   res->tree_info = def->tree_info;
 #ifdef __CHECKER__
@@ -1539,9 +1531,8 @@ node *debug_mkidentifiernode(int i)
 node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
 {
   struct compiler_frame *f;
-  node *res = mkemptynode();
+  node *res = mkemptynode(F_TRAMPOLINE, TOKEN_FLAG_IS_LEAF);
 
-  res->token = F_TRAMPOLINE;
   copy_pike_type(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
 
   /* FIXME */
@@ -1571,7 +1562,7 @@ node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
 
 node *debug_mkgeneratornode(int i)
 {
-  node *res = mkemptynode();
+  node *res = mkemptynode(F_GENERATOR, TOKEN_FLAG_NO_CDR);
 
   res->token = F_GENERATOR;
   _CAR(res) = mktrampolinenode(i, Pike_compiler->compiler_frame);
@@ -1587,8 +1578,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   return mkidentifiernode(add_ext_ref(Pike_compiler, parent_prog, i));
 
 #else /* !0 */
-  node *res = mkemptynode();
-  res->token = F_EXTERNAL;
+  node *res = mkemptynode(F_EXTERNAL, TOKEN_FLAG_IS_LEAF);
 
   if (i == IDREF_MAGIC_THIS) {
     type_stack_mark();
@@ -1677,8 +1667,7 @@ node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
   }
 #endif /* PIKE_DEBUG */
 
-  res = mkemptynode();
-  res->token = F_THIS;
+  res = mkemptynode(F_THIS, TOKEN_FLAG_IS_LEAF);
   type_stack_mark();
   if (inherit_num >= 0) {
     push_object_type(1, parent_prog->inherits[inherit_num].prog->id);
@@ -1727,8 +1716,7 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
   if(type==n->type) return n;
 #endif
 
-  res = mkemptynode();
-  res->token = F_CAST;
+  res = mkemptynode(F_CAST, 0);
 
   /* FIXME: Consider strengthening the node type [bug 4435].
    *        E.g. the cast in the code
@@ -1793,8 +1781,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
     }
   }
 
-  res = mkemptynode();
-  res->token = F_SOFT_CAST;
+  res = mkemptynode(F_SOFT_CAST, 0);
   if (result_type) {
     res->type = result_type;
   } else {
@@ -2346,8 +2333,7 @@ int node_is_eq(node *a,node *b)
 
 node *debug_mktypenode(struct pike_type *t)
 {
-  node *res = mkemptynode();
-  res->token = F_CONSTANT;
+  node *res = mkemptynode(F_CONSTANT, TOKEN_FLAG_IS_LEAF);
   if (t) {
     SET_SVAL(res->u.sval, T_TYPE, 0, type, t);
     add_ref(t);
@@ -2368,8 +2354,7 @@ node *debug_mktypenode(struct pike_type *t)
 
 node *low_mkconstantsvaluenode(const struct svalue *s)
 {
-  node *res = mkemptynode();
-  res->token = F_CONSTANT;
+  node *res = mkemptynode(F_CONSTANT, TOKEN_FLAG_IS_LEAF);
   assign_svalue_no_free(& res->u.sval, s);
   if(TYPEOF(*s) == T_OBJECT ||
      (TYPEOF(*s) == T_FUNCTION && SUBTYPEOF(*s) != FUNCTION_BUILTIN))
