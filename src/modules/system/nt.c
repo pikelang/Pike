@@ -621,6 +621,140 @@ void f_RegGetValues(INT32 args)
   f_aggregate_mapping(i*2);
 }
 
+/*! @decl void RegSetValue(int hkey, string key, string index, @
+ *!                        string|int value)
+ *!
+ *!   Set a single value in the register.
+ *!
+ *!   The registry key @[key] is created if it does not already exist.
+ *!
+ *! @param hkey
+ *!   One of the following:
+ *!   @int
+ *!     @value HKEY_CLASSES_ROOT
+ *!     @value HKEY_LOCAL_MACHINE
+ *!     @value HKEY_CURRENT_USER
+ *!     @value HKEY_USERS
+ *!   @endint
+ *!
+ *! @param key
+ *!   Registry key path (relative to @[hkey]).
+ *!
+ *! @param index
+ *!   Value name.
+ *!
+ *! @param value
+ *!   Value to store. A string is stored as @expr{REG_SZ@}, and an
+ *!   integer as @expr{REG_DWORD@}.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetValue()], @[RegDeleteKey()]
+ */
+void f_RegSetValue(INT32 args)
+{
+  INT_TYPE hkey_num;
+  struct pike_string *key, *ind;
+  struct svalue *value;
+  p_wchar1 *utf16;
+  HKEY new_key;
+  ONERROR tmp;
+  long ret;
+
+  get_all_args(NULL, args, "%i%t%t%*", &hkey_num, &key, &ind, &value);
+
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
+  }
+
+  if ((TYPEOF(*value) != T_STRING) && (TYPEOF(*value) != T_INT)) {
+    SIMPLE_ARG_TYPE_ERROR("RegSetValue", 4, "string|int");
+  }
+
+  utf16 = pike_string_to_utf16(key, 1);
+  ret = RegCreateKeyExW(hkeys[hkey_num], utf16, 0, NULL,
+                        REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, NULL,
+                        &new_key, NULL);
+  free(utf16);
+
+  if (ret != ERROR_SUCCESS)
+    throw_nt_error(ret);
+
+  SET_ONERROR(tmp, do_regclosekey, new_key);
+
+  utf16 = pike_string_to_utf16(ind, 1);
+
+  if (TYPEOF(*value) == T_STRING) {
+    p_wchar1 *data = pike_string_to_utf16(value->u.string, 1);
+    DWORD cb;
+    /* Byte count including the terminating NUL. */
+    for (cb = 0; data[cb]; cb++)
+      ;
+    cb = (cb + 1) * sizeof(p_wchar1);
+    ret = RegSetValueExW(new_key, utf16, 0, REG_SZ, (const BYTE *)data, cb);
+    free(data);
+  } else {
+    DWORD data = (DWORD)value->u.integer;
+    ret = RegSetValueExW(new_key, utf16, 0, REG_DWORD,
+                         (const BYTE *)&data, sizeof(data));
+  }
+  free(utf16);
+
+  CALL_AND_UNSET_ONERROR(tmp);
+
+  if (ret != ERROR_SUCCESS)
+    throw_nt_error(ret);
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+/*! @decl void RegDeleteKey(int hkey, string key)
+ *!
+ *!   Delete a key (and its values) from the register.
+ *!
+ *! @param hkey
+ *!   One of the @[HKEY_CLASSES_ROOT], @[HKEY_LOCAL_MACHINE],
+ *!   @[HKEY_CURRENT_USER] or @[HKEY_USERS] constants.
+ *!
+ *! @param key
+ *!   Registry key path to delete (relative to @[hkey]).
+ *!
+ *! @note
+ *!   The key must not have any subkeys.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegSetValue()]
+ */
+void f_RegDeleteKey(INT32 args)
+{
+  INT_TYPE hkey_num;
+  struct pike_string *key;
+  p_wchar1 *utf16;
+  long ret;
+
+  get_all_args(NULL, args, "%i%t", &hkey_num, &key);
+
+  if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
+  }
+
+  utf16 = pike_string_to_utf16(key, 1);
+  ret = RegDeleteKeyW(hkeys[hkey_num], utf16);
+  free(utf16);
+
+  if (ret != ERROR_SUCCESS)
+    throw_nt_error(ret);
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
 /*! @decl int FreeConsole()
  *!
  *! Detaches the calling process from its console.
@@ -3838,6 +3972,13 @@ void init_nt_system_calls(void)
 
   ADD_FUNCTION("RegGetKeyNames", f_RegGetKeyNames,
                tFunc(tInt tStr, tArr(tStr)), OPT_EXTERNAL_DEPEND);
+
+  ADD_FUNCTION("RegSetValue", f_RegSetValue,
+               tFunc(tInt tStr tStr tOr(tStr, tInt), tVoid),
+               OPT_SIDE_EFFECT);
+
+  ADD_FUNCTION("RegDeleteKey", f_RegDeleteKey,
+               tFunc(tInt tStr, tVoid), OPT_SIDE_EFFECT);
 
 /* function(void:int) */
 #ifdef HAVE_FREECONSOLE
