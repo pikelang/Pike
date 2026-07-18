@@ -8406,6 +8406,11 @@ test_true([[Pike.count_memory (-1, class {constant f = 0.0;}()) ==
 test_true([[Pike.count_memory (-1, "foo") > 0]])
 test_true([[Pike.count_memory (-1, typeof (map)) > 0]])
 test_true([[Pike.count_memory (0, class { int foo(auto x) { return 1; } }) > 0]])
+// These auto with a non-trivial inferred/argument used to crash
+// the compiler with a in pike_type_allow_premature_toss()
+test_compile_any([[int f(){ auto x = ({1,2}); return sizeof(x); }]])
+test_compile_any([[auto g(auto y){ return y+1; }]])
+test_compile_any([[mapping(string:auto) m = ([]); auto h(auto ... a){ return a; }]])
 test_true([[Pike.count_memory (-1, 17) == 0]])
 test_true([[Pike.count_memory (-1, ({"some string with no other ref in memory "+
 				     Standards.UUID.make_version4()->str()})) ==

@@ -15927,6 +15927,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
 
     case T_OBJECT:
     case T_MIXED:
+    case PIKE_T_AUTO:	/* Treated as mixed; cf low_type_binop(). */
     case T_FUNCTION:
     case T_MANY:
     case PIKE_T_OPERATOR:
@@ -16493,6 +16494,12 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
       visit_type_ref(t->car, REF_TYPE_INTERNAL, extra);
       break;
 
+    case PIKE_T_AUTO:
+      if (t->car) {
+	visit_type_ref(t->car, REF_TYPE_INTERNAL, extra);
+      }
+      break;
+
 #ifdef PIKE_DEBUG
     case '0':
     case '1':
@@ -16556,6 +16563,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case T_NOT:
       case PIKE_T_TYPE:
       case PIKE_T_PROGRAM:
+      case PIKE_T_AUTO:
 	if (t->car) gc_mark_type_as_referenced(t->car);
 	break;
       case PIKE_T_OPERATOR:
