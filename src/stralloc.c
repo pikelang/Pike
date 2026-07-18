@@ -980,13 +980,14 @@ static ptrdiff_t count_surrogate_pairs(const p_wchar1 *s, ptrdiff_t len)
 static void convert_surrogate_pairs(p_wchar2 *dest, const p_wchar1 *s,
                                     ptrdiff_t slen)
 {
-  const p_wchar1 *e = s + slen - 1;
+  const p_wchar1 *e = s + slen;
 
   while (s < e) {
     p_wchar2 c = *s++;
-    if ((c & 0xfc00) == 0xdc00) {
-      p_wchar1 c2 = *s++ & 0x3ff;
-      c = ((c & 0x3ff) | c2) + 0x10000;
+    /* UTF-16: the high surrogate (0xd800..0xdbff) comes first, followed
+     * by the low surrogate (0xdc00..0xdfff). */
+    if (((c & 0xfc00) == 0xd800) && (s < e) && ((*s & 0xfc00) == 0xdc00)) {
+      c = (((c & 0x3ff) << 10) | (*s++ & 0x3ff)) + 0x10000;
     }
     *dest++ = c;
   }
@@ -2053,9 +2054,8 @@ PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s,
         p_wchar2 c = STR2(s)[i];
         if (c & 0xffff0000) {
           c -= 0x10000;
-          res[j++] = 0xd8c00 | (c & 0x3ff);
-          c >>= 10;
-          c |= 0xd800;
+          res[j++] = 0xd800 | (c >> 10);	/* High surrogate first. */
+          c = 0xdc00 | (c & 0x3ff);		/* Low surrogate second. */
         }
         res[j] = c;
       }
