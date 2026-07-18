@@ -232,13 +232,13 @@ PMOD_EXPORT void really_free_multiset (struct multiset *l) {
 # if DEBUG_MALLOC
 	describe_something (l, T_MULTISET, 0,2,0, NULL);
 # endif
-	Pike_fatal ("Too few refs %d to multiset.n", l->refs);
+	Pike_fatal ("Too few refs %d to multiset.\n", l->refs);
     }
     if (l->node_refs) {
 # if DEBUG_MALLOC
 	describe_something (l, T_MULTISET, 0,2,0, NULL);
 # endif
-	Pike_fatal ("Freeing multiset with %d node refs.n", l->node_refs);
+	Pike_fatal ("Freeing multiset with %d node refs.\n", l->node_refs);
     }
 #endif
     if (!sub_ref (l->msd)) free_multiset_data (l->msd);
