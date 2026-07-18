@@ -2336,6 +2336,48 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 }
 
 /*** init/exit memory ***/
+#ifdef PIKE_DEBUG
+/* Self-test for the UTF-16 surrogate conversion.
+ *
+ * convert_surrogate_pairs() (decode) and pike_string_to_utf16() (encode) are
+ * only reachable via Windows-specific APIs (registry/SID lookups), so there is
+ * no Pike-level way to exercise them from the testsuite. Test them directly.
+ *
+ * U+1F600 ("grinning face") encodes as the UTF-16 surrogate pair D83D DE00.
+ */
+static void check_utf16_surrogates(void)
+{
+  static const p_wchar1 utf16_pair[2] = { 0xd83d, 0xde00 };
+  static const p_wchar2 wide_char[1] = { 0x1f600 };
+  struct pike_string *s;
+
+  /* Decode: make_utf16_string() -> end_shared_string() ->
+   * convert_surrogate_pairs(). Reachable on all platforms. */
+  s = make_utf16_string(utf16_pair, 2);
+  if ((s->len != 1) || (s->size_shift != thirtytwobit) ||
+      (index_shared_string(s, 0) != wide_char[0])) {
+    Pike_fatal("UTF-16 surrogate decoding is broken: "
+               "len=%ld shift=%d char=0x%lx (expected 1 2 0x1f600).\n",
+               (long)s->len, s->size_shift, (long)index_shared_string(s, 0));
+  }
+  free_string(s);
+
+#ifdef __NT__
+  /* Encode: pike_string_to_utf16(). Only compiled on Windows. */
+  {
+    p_wchar1 *u;
+    s = make_shared_binary_string2(wide_char, 1);
+    u = pike_string_to_utf16(s, 0);
+    if (!u || (u[0] != 0xd83d) || (u[1] != 0xde00) || (u[2] != 0)) {
+      Pike_fatal("UTF-16 surrogate encoding is broken.\n");
+    }
+    free(u);
+    free_string(s);
+  }
+#endif /* __NT__ */
+}
+#endif /* PIKE_DEBUG */
+
 void init_shared_string_table(void)
 {
   SET_HSIZE(BEGIN_HASH_SIZE);
@@ -2343,6 +2385,10 @@ void init_shared_string_table(void)
 
   empty_pike_string = make_shared_string("");
   empty_pike_string->flags |= STRING_IS_LOWERCASE | STRING_IS_UPPERCASE;
+
+#ifdef PIKE_DEBUG
+  check_utf16_surrogates();
+#endif
 }
 
 #ifdef DO_PIKE_CLEANUP
