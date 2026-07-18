@@ -23,6 +23,7 @@
 #include "opcodes.h"
 #include "pike_cpulib.h"
 #include "bignum.h"
+#include "bignum_type_bits.h"
 
 /* Average number of keypairs per slot when allocating. */
 #define AVG_LINK_LENGTH 4
@@ -152,21 +153,11 @@ static void check_mapping_type_fields(const struct mapping *m)
       if (TYPEOF(k->val) > MAX_TYPE)
 	Pike_fatal("Invalid mapping keypair value type: %s\n",
 		   get_name_of_type(TYPEOF(k->val)));
-      val_types |= 1 << TYPEOF(k->val);
-      if (!(val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
-        if (is_bignum_object(k->val.u.object)) {
-          val_types |= BIT_INT;
-        }
-      }
+      val_types |= bignum_type_bits(&k->val);
       if (TYPEOF(k->ind) > MAX_TYPE)
 	Pike_fatal("Invalid maping keypair index type: %s\n",
 		   get_name_of_type(TYPEOF(k->ind)));
-      ind_types |= 1 << TYPEOF(k->ind);
-      if (!(ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
-        if (is_bignum_object(k->ind.u.object)) {
-          ind_types |= BIT_INT;
-        }
-      }
+      ind_types |= bignum_type_bits(&k->ind);
     }
 
   if(val_types & ~(m->data->val_types))
@@ -431,18 +422,8 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
     md->hash[h]=k;
 
     /* update */
-    md->ind_types |= 1<< (TYPEOF(k->ind));
-    if (!(md->ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
-      if (is_bignum_object(k->ind.u.object)) {
-        md->ind_types |= BIT_INT;
-      }
-    }
-    md->val_types |= 1<< (TYPEOF(k->val));
-    if (!(md->val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
-      if (is_bignum_object(k->val.u.object)) {
-        md->val_types |= BIT_INT;
-      }
-    }
+    md->ind_types |= bignum_type_bits(&k->ind);
+    md->val_types |= bignum_type_bits(&k->val);
     md->size++;
   }
 }
@@ -538,18 +519,8 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
     md->hash[h]=k;
 
     /* update */
-    md->ind_types |= 1<< (TYPEOF(k->ind));
-    if (!(md->ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
-      if (is_bignum_object(k->ind.u.object)) {
-        md->ind_types |= BIT_INT;
-      }
-    }
-    md->val_types |= 1<< (TYPEOF(k->val));
-    if (!(md->val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
-      if (is_bignum_object(k->val.u.object)) {
-        md->val_types |= BIT_INT;
-      }
-    }
+    md->ind_types |= bignum_type_bits(&k->ind);
+    md->val_types |= bignum_type_bits(&k->val);
     md->size++;
   }
 }
@@ -929,18 +900,8 @@ PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
 
   NEW_MAPPING_LOOP(m->data)
     {
-      val_types |= 1 << TYPEOF(k->val);
-      if (!(val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
-        if (is_bignum_object(k->val.u.object)) {
-          val_types |= BIT_INT;
-        }
-      }
-      ind_types |= 1 << TYPEOF(k->ind);
-      if (!(ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
-        if (is_bignum_object(k->ind.u.object)) {
-          ind_types |= BIT_INT;
-        }
-      }
+      val_types |= bignum_type_bits(&k->val);
+      ind_types |= bignum_type_bits(&k->ind);
     }
 
 #ifdef PIKE_DEBUG
@@ -1098,18 +1059,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
   k->next=md->hash[h];
   md->hash[h]=k;
-  md->ind_types |= 1 << TYPEOF(*key);
-  if (!(md->ind_types & BIT_INT) && (TYPEOF(*key) == PIKE_T_OBJECT)) {
-    if (is_bignum_object(key->u.object)) {
-      md->ind_types |= BIT_INT;
-    }
-  }
-  md->val_types |= 1 << TYPEOF(*val);
-  if (!(md->val_types & BIT_INT) && (TYPEOF(*val) == PIKE_T_OBJECT)) {
-    if (is_bignum_object(val->u.object)) {
-      md->val_types |= BIT_INT;
-    }
-  }
+  md->ind_types |= bignum_type_bits(key);
+  md->val_types |= bignum_type_bits(val);
   assign_svalue_no_free(& k->ind, key);
   assign_svalue_no_free(& k->val, val);
   k->hval = h2;
@@ -1248,12 +1199,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   assign_svalue_no_free(& k->ind, key);
   SET_SVAL(k->val, T_INT, NUMBER_NUMBER, integer, 0);
   k->hval = h2;
-  md->ind_types |= 1 << TYPEOF(*key);
-  if (!(md->ind_types & BIT_INT) && (TYPEOF(*key) == PIKE_T_OBJECT)) {
-    if (is_bignum_object(key->u.object)) {
-      md->ind_types |= BIT_INT;
-    }
-  }
+  md->ind_types |= bignum_type_bits(key);
   md->val_types |= BIT_INT;
   md->size++;
 #ifdef MAPPING_SIZE_DEBUG
@@ -1486,18 +1432,8 @@ PMOD_EXPORT void map_atomic_get_set(struct mapping *m,
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
   k->next=md->hash[h];
   md->hash[h]=k;
-  md->ind_types |= 1 << TYPEOF(*key);
-  if (!(md->ind_types & BIT_INT) && (TYPEOF(*key) == PIKE_T_OBJECT)) {
-    if (is_bignum_object(key->u.object)) {
-      md->ind_types |= BIT_INT;
-    }
-  }
-  md->val_types |= 1 << TYPEOF(*from_to);
-  if (!(md->val_types & BIT_INT) && (TYPEOF(*from_to) == PIKE_T_OBJECT)) {
-    if (is_bignum_object(from_to->u.object)) {
-      md->val_types |= BIT_INT;
-    }
-  }
+  md->ind_types |= bignum_type_bits(key);
+  md->val_types |= bignum_type_bits(from_to);
   assign_svalue_no_free(& k->ind, key);
   k->val = *from_to;
   k->hval = h2;
@@ -1566,18 +1502,8 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 #endif
 	  debug_malloc_touch(md);
 	}else{
-	  val_types |= 1 << TYPEOF(k->val);
-          if (!(val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
-            if (is_bignum_object(k->val.u.object)) {
-              val_types |= BIT_INT;
-            }
-          }
-	  ind_types |= 1 << TYPEOF(k->ind);
-          if (!(ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
-            if (is_bignum_object(k->ind.u.object)) {
-              ind_types |= BIT_INT;
-            }
-          }
+	  val_types |= bignum_type_bits(&k->val);
+	  ind_types |= bignum_type_bits(&k->ind);
 	  prev=&k->next;
 	}
       }

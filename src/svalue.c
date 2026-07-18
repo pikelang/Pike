@@ -25,6 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 #include "pike_float.h"
+#include "bignum_type_bits.h"
 
 PMOD_EXPORT const struct svalue svalue_undefined = SVALUE_INIT (T_INT, NUMBER_UNDEFINED, 0);
 PMOD_EXPORT const struct svalue svalue_int_zero = SVALUE_INIT_INT (0);
@@ -2497,12 +2498,7 @@ PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
 		      GC_DO_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, GC_DO_MARK,
 		      DO_MARK_STRING, GC_DO_MARK, continue);
-    t |= BITOF(*s);
-    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
-	(s->u.object->prog == bignum_program)) {
-      /* Lie, and claim that the array contains integers too. */
-      t |= BIT_INT;
-    }
+    t |= bignum_type_bits(s);
   }
   return freed ? t : 0;
 }
@@ -2519,12 +2515,7 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
 		      GC_DONT_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, DO_MARK_OBJ_WEAK,
 		      DO_MARK_STRING, GC_DO_MARK, continue);
-    t |= BITOF(*s);
-    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
-	(s->u.object->prog == bignum_program)) {
-      /* Lie, and claim that the array contains integers too. */
-      t |= BIT_INT;
-    }
+    t |= bignum_type_bits(s);
   }
   return freed ? t : 0;
 }
@@ -2603,12 +2594,7 @@ PMOD_EXPORT TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
 		      DO_CYCLE_CHECK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK,
 		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, continue);
-    t |= BITOF(*s);
-    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
-	(s->u.object->prog == bignum_program)) {
-      /* Lie, and claim that the array contains integers too. */
-      t |= BIT_INT;
-    }
+    t |= bignum_type_bits(s);
   }
   return freed ? t : 0;
 }
@@ -2625,12 +2611,7 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
 		      DO_CYCLE_CHECK_WEAK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK_WEAK,
 		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, continue);
-    t |= BITOF(*s);
-    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
-	(s->u.object->prog == bignum_program)) {
-      /* Lie, and claim that the array contains integers too. */
-      t |= BIT_INT;
-    }
+    t |= bignum_type_bits(s);
   }
   return freed ? t : 0;
 }
