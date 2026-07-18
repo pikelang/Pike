@@ -157,15 +157,26 @@ struct node_s
   INT_TYPE line_number;
   unsigned INT32 node_info;
   unsigned INT32 tree_info;
-  unsigned INT16 pad;
-  /* The stuff from this point on is hashed. */
+#if PIKE_BYTEORDER != 1234
+  /* NB: We move this field so that it is the most significant
+   *     16 bits of token_flags and token when they are merged.
+   */
+  unsigned INT16 token_flags;
+#endif
 #ifdef PIKE_DEBUG
   enum Pike_opcodes token : 16;
 #else
   unsigned INT16 token;
 #endif
+#if PIKE_BYTEORDER == 1234
+  unsigned INT16 token_flags;
+#endif
   union node_data u;
 };
+
+#define TOKEN_FLAG_NO_CAR	1
+#define TOKEN_FLAG_NO_CDR	2
+#define TOKEN_FLAG_IS_LEAF	3
 
 #define SCOPE_LOCAL 1
 #define SCOPE_SCOPED 2
