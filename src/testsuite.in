@@ -9243,6 +9243,20 @@ test_any([[int a=10->pow(30); int b=1000000000000000000000000000000;
           return sizeof( ({a})-({b}) )]],0);
 test_any([[int a=10->pow(30); int b=1000000000000000000000000000000;
           return sizeof( ({a})&({b}) )]],1);
+
+// Weak-flag handling in equal() (array_equal_p / mapping_equal_p).
+test_true([[  equal(({1}), ({1}))  ]])
+test_false([[ equal(set_weak_flag(({1}),1), ({1}))  ]])
+test_true([[  equal(set_weak_flag(({1}),1), set_weak_flag(({1}),1))  ]])
+test_true([[  equal(set_weak_flag(({}),1),  set_weak_flag(({}),1))   ]])
+test_false([[ equal(set_weak_flag(([1:2]),1), ([1:2]))  ]])
+test_true([[  equal(set_weak_flag(([1:2]),1), set_weak_flag(([1:2]),1))  ]])
+
+// A small bignum (Gmp.mpz(5) == 5) mixed with native ints exercises the
+// bignum-as-int type-field handling in arrays.
+test_equal([[ ({Gmp.mpz(5), 2}) - ({5}) ]], ({2}))
+test_any([[ array a = ({ Gmp.mpz(5) }); return search(a, 5); ]], 0)
+test_any([[ array a = ({ Gmp.mpz(5) }); return has_value(a, 5); ]], 1)
 test_any([[int k=10->pow(30);
 	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
           return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
