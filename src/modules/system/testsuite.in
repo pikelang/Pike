@@ -35,6 +35,22 @@ test_equal(System.LookupAccountName(UNDEFINED, "LocalService")[0]->account(),
 // RegGetKeyNames	__NT__
 // RegGetValue		__NT__
 // RegGetValues		__NT__
+// RegSetValue		__NT__
+// RegDeleteKey		__NT__
+// Round-trip an astral character (U+1F600) through the registry to
+// exercise the UTF-16 surrogate encoder (pike_string_to_utf16) and
+// decoder (convert_surrogate_pairs) in stralloc.c.
+test_any([[
+  int hk = System.HKEY_CURRENT_USER;
+  string k = "Software\\Pike\\test_surrogate";
+  string v = "x" + sprintf("%c", 0x1F600) + "y";
+  System.RegSetValue(hk, k, "surrogate", v);
+  string got;
+  mixed err = catch { got = System.RegGetValue(hk, k, "surrogate"); };
+  System.RegDeleteKey(hk, k);
+  if (err) throw(err);
+  return got == v;
+]], 1)
 // SetFileAttributes	__NT__
 // SetNamedSecurityInfo	__NT__
 // cp			__NT__
