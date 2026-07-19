@@ -52,60 +52,19 @@ extern char *get_type_name(int);
 
 int car_is_node(node *n)
 {
-  switch(n->token)
-  {
-  case F_EXTERNAL:
-  case F_GET_SET:
-  case F_TRAMPOLINE:
-  case F_CONSTANT:
-  case F_LOCAL:
-  case F_LOCAL_INDIRECT:
-  case F_THIS:
-  case F_VERSION:
-    return 0;
-
-  default:
-    return !!_CAR(n);
-  }
+  if (n->token_flags & TOKEN_FLAG_NO_CAR) return 0;
+  return !!_CAR(n);
 }
 
 int cdr_is_node(node *n)
 {
-  switch(n->token)
-  {
-  case F_EXTERNAL:
-  case F_GET_SET:
-  case F_TRAMPOLINE:
-  case F_CONSTANT:
-  case F_LOCAL:
-  case F_LOCAL_INDIRECT:
-  case F_THIS:
-  case F_VERSION:
-  case F_GENERATOR:
-    return 0;
-
-  default:
-    return !!_CDR(n);
-  }
+  if (n->token_flags & TOKEN_FLAG_NO_CDR) return 0;
+  return !!_CDR(n);
 }
 
 int node_is_leaf(node *n)
 {
-  switch(n->token)
-  {
-  case F_EXTERNAL:
-  case F_GET_SET:
-  case F_TRAMPOLINE:
-  case F_CONSTANT:
-  case F_LOCAL:
-  case F_LOCAL_INDIRECT:
-  case F_VERSION:
-    return 1;
-  default:
-    /* Inform gcc that we don't care about most values of the enum. */
-    break;
-  }
-  return 0;
+  return (n->token_flags & TOKEN_FLAG_IS_LEAF) == TOKEN_FLAG_IS_LEAF;
 }
 
 #ifdef PIKE_DEBUG
