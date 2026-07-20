@@ -25,6 +25,73 @@ string format_big_number(int i)
 }
 
 //! Run a single benchmark test in the current process and
+//! return the result as a mapping.
+//!
+//! @param test
+//!   Benchmark to run.
+//!
+//! @param maximum_seconds
+//!   Number of seconds to run the test before terminating it.
+//!
+//! @param overhead
+//!   Ignored, obsolete.
+//!
+//! @returns
+//!   Returns a mapping with the following fields on success:
+//!   @mapping
+//!     @member float "time"
+//!       Actual number of seconds that the test ran.
+//!     @member int "loops"
+//!       Number of times that the test ran.
+//!     @member int "n"
+//!       Number of sub tests that were run.
+//!     @member string "readable"
+//!       Description of the test result.
+//!     @member int "n_over_time"
+//!       Number of sub tests per second.
+//!   @endmapping
+//!   On benchmark failure a mapping with the single entry
+//!   @expr{"readable"@} set to @expr{"FAIL"@} is returned.
+//!
+//! @note
+//!   This is the function that is called by @[run_sub()].
+//!
+//! @seealso
+//!   @[run()], @[run_sub()], @[tests()]
+mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
+                                           __deprecated__(float)|void overhead)
+{
+    float tg=0.0;
+    int testntot=0;
+    int nloops = 0;
+    int norm;
+    for (;;nloops++)
+    {
+        mixed context = 0;
+        if (test->prepare)
+            context = test->prepare();
+        int start_cpu = gethrvtime();
+        testntot += test->perform(context);
+        tg += (gethrvtime()-start_cpu) / 1000000.0;
+        if (tg >= maximum_seconds) break;
+    }
+
+    norm = (int)(testntot/tg);
+
+    string res = (test->present_n ?
+                  test->present_n(testntot,nloops,tg,tg,1) :
+                  format_big_number(norm)+"/s");
+
+    return ([
+             "time":tg,
+             "loops":nloops,
+             "n":testntot,
+             "readable":res,
+             "n_over_time":norm,
+        ]);
+}
+
+//! Run a single benchmark test in the current process and
 //! return the result as JSON on stdout.
 //!
 //! @param test
@@ -54,36 +121,19 @@ string format_big_number(int i)
 //!   @expr{"readable"@} set to @expr{"FAIL"@} is written to stdout.
 //!
 //! @note
-//!   This is the funcction that is called in a sub-process by @[run()].
+//!   This is the function that is called in a sub-process by @[run()].
 //!
 //! @seealso
-//!   @[run()], @[tests()]
+//!   @[run()], @[run_sync()], @[tests()]
 void run_sub( Test test, int maximum_seconds,
               __deprecated__(float)|void overhead)
 {
-    float tg=0.0;
-    int testntot=0;
-    int nloops = 0;
-    int norm;
-    for (;;nloops++)
-    {
-        mixed context = 0;
-        if (test->prepare)
-            context = test->prepare();
-        int start_cpu = gethrvtime();
-        testntot += test->perform(context);
-        tg += (gethrvtime()-start_cpu) / 1000000.0;
-        if (tg >= maximum_seconds) break;
-    }
+    write( Standards.JSON.encode( run_sync(test, maximum_seconds, overhead ) ) +
+          "\n");
 
-    norm = (int)(testntot/tg);
-
-    string res = (test->present_n ?
-                  test->present_n(testntot,nloops,tg,tg,1) :
-                  format_big_number(norm)+"/s");
-
-
-    write( Standards.JSON.encode( ([ "time":tg,"loops":nloops,"n":testntot,"readable":res,"n_over_time":norm ]) )+"\n" );
+#if constant(Debug.generate_perf_map)
+    Debug.generate_perf_map();
+#endif
 }
 
 private mapping(string:Test) _tests;
@@ -148,7 +198,7 @@ mapping(string:Test) tests()
 //!   @expr{"readable"@} set to @expr{"FAIL"@} is returned.
 //!
 //! @seealso
-//!   @[run_sub()], @[tests()]
+//!   @[run_sub()], @[run_sync()], @[tests()]
 mapping(string:int|float|string) run(Test test, int maximum_seconds,
                                      __deprecated__(float)|void overhead)
 {
