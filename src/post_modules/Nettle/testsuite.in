@@ -522,6 +522,60 @@ test_umac(Crypto.AES, 6162636465666768696a6b6c6d6e6f70, 6263646566676869,
 	ABF3A3A0, D4D7B9F6BD4FBFCF, 883C3D4B97A61976FFCF2323,
 	883c3d4b97a61976ffcf232308cba5a5)
 
+dnl Test that the MAC State `()` call operator (update+digest shorthand) agrees
+dnl with explicit update->digest for both POLY1305 and UMAC.
+
+cond_resolv(Crypto.AES.POLY1305, [[
+  dnl Same vector as the first POLY1305 test above.
+  test_any([[
+    object state = Crypto.AES.POLY1305.State(
+      H("ec074c835580741701425b623235add6851fc40c3467ac0be05cc20404f3f700"));
+    state->set_iv(H("fb447350c4e868c52ac3275cf9d4327e"));
+    return S(state(H("f3f6")));
+  ]], "f4c633c3044fc145f84f335cb81953de")
+
+  dnl Verify `()` and update->digest agree on a longer message.
+  test_any([[
+    string key = H("6acb5f61a7176dd320c5c1eb2edcdc7448443d0bb0d21109c89a100b5ce2c208");
+    string nonce = H("ae212a5539972959 5dea458bc621ff0e"-" ");
+    string msg = H("663cea190ffb83d89593f3f476b6bc24"
+                   "d7e679107ea26adb8caf6652d0656136");
+    object s1 = Crypto.AES.POLY1305.State(key);
+    s1->set_iv(nonce);
+    string r1 = s1(msg);
+    object s2 = Crypto.AES.POLY1305.State(key);
+    s2->set_iv(nonce);
+    s2->update(msg);
+    string r2 = s2->digest();
+    return r1 == r2;
+  ]], 1)
+]])
+
+cond_resolv(Crypto.AES.UMAC32, [[
+  dnl Same vector as the first UMAC test above (empty message).
+  test_any([[
+    object state = Crypto.AES.UMAC32.State(
+      H("6162636465666768696a6b6c6d6e6f70"));
+    state->set_iv(H("6263646566676869"));
+    return S(state(""));
+  ]], lower_case("113145FB"))
+
+  dnl Non-empty message, verify `()` and update->digest agree.
+  test_any([[
+    string key = H("6162636465666768696a6b6c6d6e6f70");
+    string nonce = H("6263646566676869");
+    string msg = H("616263");
+    object s1 = Crypto.AES.UMAC32.State(key);
+    s1->set_iv(nonce);
+    string r1 = s1(msg);
+    object s2 = Crypto.AES.UMAC32.State(key);
+    s2->set_iv(nonce);
+    s2->update(msg);
+    string r2 = s2->digest();
+    return r1 == r2;
+  ]], 1)
+]])
+
 // Ciphers
 
 dnl Crypto, key, plain, cipher, force/ekb

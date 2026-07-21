@@ -329,10 +329,10 @@ PIKECLASS MAC
 
       NO_WIDE_STRING(data);
 
-      meta->update(&THIS->ctx, data->len, STR0(data));
+      meta->update(THIS->ctx, data->len, STR0(data));
 
       digest = begin_shared_string(meta->digest_size);
-      meta->digest(&THIS->ctx, meta->digest_size, STR0(digest));
+      meta->digest(THIS->ctx, meta->digest_size, STR0(digest));
 
       push_string(end_shared_string(digest));
     }
