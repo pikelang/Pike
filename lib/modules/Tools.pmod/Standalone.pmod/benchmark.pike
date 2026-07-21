@@ -31,6 +31,7 @@ string dot( string a, int width, bool al, bool odd )
 {
   string pre="",post="";
   int wanted = (width-strlen(a));
+  if (wanted < 0) wanted = 0;
   string pad = " ."*(wanted/2+1);
   if( al )
     return pre+a+" "+pad[wanted&1..wanted-1-!(wanted&1)]+post;
@@ -157,7 +158,9 @@ void run_tests()
      {
        int on = comparison[id]->?n_over_time;
        if( !on )
-         write( dot(res->readable,19,false,odd)+"\n");
+         write("%42s%s   N/A\n",
+               dot(id,42,true,odd=!odd),
+               dot(res->readable,16,false,odd));
        else
        {
          int diff = res->n_over_time - on;
