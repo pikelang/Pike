@@ -1841,7 +1841,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != (THIS->block_size * 2))
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size);
+	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size * 2);
 	RETURN this_object();
       }
 
@@ -2222,7 +2222,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != (THIS->block_size * 2))
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size);
+	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size * 2);
 	RETURN this_object();
       }
 
