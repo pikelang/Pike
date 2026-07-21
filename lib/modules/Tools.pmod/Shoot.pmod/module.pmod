@@ -1,3 +1,4 @@
+#charset utf-8
 /* -*- mode: C; c-basic-offset: 4; -*-
  *
  *    Shootouts
@@ -49,6 +50,8 @@ string format_big_number(int i)
 //!       Description of the test result.
 //!     @member int "n_over_time"
 //!       Number of sub tests per second.
+//!     @member float "n_over_time_variance"
+//!       Variance of sub tests per second.
 //!   @endmapping
 //!   On benchmark failure a mapping with the single entry
 //!   @expr{"readable"@} set to @expr{"FAIL"@} is returned.
@@ -63,24 +66,36 @@ mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
 {
     float tg=0.0;
     int testntot=0;
+    float testnorm = 0.0;
+    float testn2tot = 0.0;
     int nloops = 0;
-    int norm;
     for (;;nloops++)
     {
         mixed context = 0;
         if (test->prepare)
             context = test->prepare();
         int start_cpu = gethrvtime();
-        testntot += test->perform(context);
-        tg += (gethrvtime()-start_cpu) / 1000000.0;
+        int n = test->perform(context);
+        float dtg = (gethrvtime()-start_cpu) / 1000000.0;
+        float dnorm = n/dtg;
+        float delta = dnorm - testnorm;
+        tg += dtg;
+        testntot += n;
+        testnorm = testntot/tg;
+        testn2tot += dtg * delta * (dnorm - testnorm);
         if (tg >= maximum_seconds) break;
     }
 
-    norm = (int)(testntot/tg);
+    int norm = (int)testnorm;
+    float var = sqrt(testn2tot/tg);
 
     string res = (test->present_n ?
                   test->present_n(testntot,nloops,tg,tg,1) :
-                  format_big_number(norm)+"/s");
+                  format_big_number(norm)+"/s")
+#if 0
+        + " ±" + format_big_number((int)var) + "/s²"
+#endif
+        ;
 
     return ([
              "time":tg,
@@ -88,6 +103,7 @@ mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
              "n":testntot,
              "readable":res,
              "n_over_time":norm,
+             "n_over_time_variance":var,
         ]);
 }
 
@@ -128,7 +144,8 @@ mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
 void run_sub( Test test, int maximum_seconds,
               __deprecated__(float)|void overhead)
 {
-    write( Standards.JSON.encode( run_sync(test, maximum_seconds, overhead ) ) +
+    write(string_to_utf8(Standards.JSON.encode(run_sync(test, maximum_seconds,
+                                                        overhead))) +
           "\n");
 
 #if constant(Debug.generate_perf_map)
