@@ -554,7 +554,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define AES128_KEY_SIZE	(128>>3)
 #endif
 
-  static void ctr_debug_update(char *data)
+  static void ctr_drbg_update(char *data)
   {
     uint8_t tmp_key[16];
     INCREMENT(16, THIS->ctr);
@@ -590,7 +590,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     if( data->len!=32 )
       Pike_error("Illegal entropy size.\n");
     NO_WIDE_STRING(data);
-    ctr_debug_update(data->str);
+    ctr_drbg_update(data->str);
     THIS->reseed_counter = 1;
   }
 
@@ -675,7 +675,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
       if( !(stored % (1<<19)) )
       {
-        ctr_debug_update(NULL);
+        ctr_drbg_update(NULL);
         THIS->reseed_counter++;
         if(THIS->reseed_counter>THIS->reseed_interval)
           apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
@@ -694,7 +694,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
       memcpy(str, buf, len-stored);
     }
 
-    ctr_debug_update(NULL);
+    ctr_drbg_update(NULL);
     THIS->reseed_counter++;
 
     RETURN end_shared_string(s);
