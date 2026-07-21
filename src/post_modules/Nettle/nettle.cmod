@@ -409,6 +409,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
   CVAR struct sha256_ctx sha_ctx;
   CVAR uint8_t *key;
   CVAR uint8_t *ctr;
+  CVAR int seeded;
 
   DECLARE_STORAGE;
 
@@ -451,6 +452,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
 #endif
     INCREMENT(16, THIS->ctr);
+    THIS->seeded = 1;
   }
 
   /*! @decl string(8bit) random_string(int(0..) len)
@@ -467,6 +469,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     uint8_t *str;
 
     if(len<0) Pike_error("Length has to be positive.\n");
+    if(!THIS->seeded) Pike_error("Random generator not seeded.\n");
 
     s = begin_shared_string(len);
     str = (uint8_t *)s->str;
