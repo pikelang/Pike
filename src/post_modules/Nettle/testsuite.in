@@ -942,6 +942,73 @@ cond_resolv( Nettle.AES, [[
 
 ]])
 
+cond_resolv( Nettle.AES, [[
+  test_any([[
+    string key   = "\0"*16;
+    string plain = "\0"*32;
+    object c1 = Crypto.AES.IGE();
+    c1->set_encrypt_key(key);
+    c1->set_iv("\0"*16 + "\x10"*16);
+    object c2 = Crypto.AES.IGE();
+    c2->set_encrypt_key(key);
+    c2->set_iv("\0"*32);
+    return c1->crypt(plain) != c2->crypt(plain);
+  ]], 1)
+
+  test_any([[
+    string key = H("000102030405060708090a0b0c0d0e0f");
+    string x0  = H("000102030405060708090a0b0c0d0e0f");
+    string y0  = H("101112131415161718191a1b1c1d1e1f");
+    string p1  = "\0"*16;
+    string p2  = "\0"*16;
+    object ecb = Nettle.AES()();
+    ecb->set_encrypt_key(key);
+    string c1 = ecb->crypt(p1 ^ y0) ^ x0;
+    string c2 = ecb->crypt(p2 ^ c1) ^ p1;
+    object ige = Crypto.AES.IGE();
+    ige->set_encrypt_key(key);
+    ige->set_iv(x0 + y0);
+    return ige->crypt(p1 + p2) == c1 + c2;
+  ]], 1)
+]])
+
+cond_resolv( Nettle.AES, [[
+  dnl Regression test for ABC set_iv() truncation: the second half of the IV
+  dnl (y0, the initial previous-ciphertext value) must be stored and used,
+  dnl not silently zeroed.
+
+  dnl A non-zero y0 must produce different ciphertext than y0=zeros.
+  test_any([[
+    string key   = "\0"*16;
+    string plain = "\0"*16;
+    object c1 = Crypto.AES.ABC();
+    c1->set_encrypt_key(key);
+    c1->set_iv("\0"*16 + "\x10"*16);
+    object c2 = Crypto.AES.ABC();
+    c2->set_encrypt_key(key);
+    c2->set_iv("\0"*32);
+    return c1->crypt(plain) != c2->crypt(plain);
+  ]], 1)
+
+  dnl Cross-check: with x0=zeros the ABC formula for the first block reduces to
+  dnl C[1] = E(P[1] XOR y0), verifiable with a raw AES-ECB call.
+  dnl ABC: C = E((P XOR prev_enc) XOR rotl1(prev_dec)) XOR prev_dec
+  dnl      With prev_dec=x0=0: rotl1(0)=0 and the outer XOR vanishes.
+  test_any([[
+    string key = H("000102030405060708090a0b0c0d0e0f");
+    string x0  = "\0"*16;
+    string y0  = H("101112131415161718191a1b1c1d1e1f");
+    string p1  = "\0"*16;
+    object ecb = Nettle.AES()();
+    ecb->set_encrypt_key(key);
+    string expected = ecb->crypt(p1 ^ y0);
+    object abc = Crypto.AES.ABC();
+    abc->set_encrypt_key(key);
+    abc->set_iv(x0 + y0);
+    return abc->crypt(p1) == expected;
+  ]], 1)
+]])
+
 // ARCFOUR
 test_generic_cipher(Crypto.Arcfour)
 
