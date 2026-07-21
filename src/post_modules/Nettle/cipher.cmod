@@ -1550,6 +1550,7 @@ PIKECLASS BlockCipher
 		    STR0(data), data->len - block_size);
 	  }
 
+          add_ref(data);
 	  pop_stack();
 	  push_string(propagated);	/* NB: Not shared! */
 
@@ -1558,6 +1559,7 @@ PIKECLASS BlockCipher
 	  /* Update the iv with the last block of the plaintext. */
 	  memxor(STR0(cbc_state->iv), STR0(data) + data->len - block_size,
 		 block_size);
+          free_string(data);
 	} else {
 	  ptrdiff_t offset;
 
