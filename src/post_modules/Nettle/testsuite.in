@@ -2234,13 +2234,16 @@ cond_resolv( Nettle.Yarrow, [[
 ]])
 
 test_do( add_constant("F",Nettle.Fortuna()); )
-dnl Fortuna starts with "\0"*32 as key and "\0"*16 as counter.
-test_equal( Crypto.AES()->set_encrypt_key("\0"*32)->crypt("\0"*16), F->random_string(16) )
-dnl One rekey event. Counter is 3.
+dnl After reseed("\0"*32): key=SHA256("\0"*64), counter=1.
+test_any_equal([[
+  F->reseed("\0"*32);
+  return F->random_string(16);
+]], Crypto.AES()->set_encrypt_key(Crypto.SHA256.hash("\0"*64))->crypt("\0"*15+"\1") )
+dnl One rekey event. Counter is 4.
 test_any([[
-  object aes=Crypto.AES()->set_encrypt_key("\0"*32);
-  string key = aes->crypt("\0"*15+"\1") + aes->crypt("\0"*15+"\2");
-  return aes->set_encrypt_key(key)->crypt("\0"*15+"\3");
+  object aes=Crypto.AES()->set_encrypt_key(Crypto.SHA256.hash("\0"*64));
+  string key = aes->crypt("\0"*15+"\2") + aes->crypt("\0"*15+"\3");
+  return Crypto.AES()->set_encrypt_key(key)->crypt("\0"*15+"\4");
 ]], F->random_string(16))
 test_eq( sizeof(F->random_string(0)), 0)
 test_eq( sizeof(F->random_string(1)), 1)
