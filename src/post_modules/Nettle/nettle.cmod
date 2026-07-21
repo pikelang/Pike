@@ -655,6 +655,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     uint8_t *str;
 
     if(len<0) Pike_error("Length has to be positive.\n");
+    if(!THIS->reseed_counter) Pike_error("Random generator not seeded.\n");
     if(THIS->reseed_counter>THIS->reseed_interval)
       apply_current(f_Nettle_AES128_CTR_DRBG_entropy_underflow_fun_num, 0);
 
@@ -703,7 +704,6 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     THIS->ctr = xcalloc(1,16);
     THIS->key = xcalloc(1,16);
-    THIS->reseed_counter = 1;
     THIS->reseed_interval = ((INT64)1)<<48;
 #ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes128_set_encrypt_key(&THIS->aes128_ctx, THIS->key);
