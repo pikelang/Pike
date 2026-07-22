@@ -74,9 +74,13 @@ mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
         mixed context = 0;
         if (test->prepare)
             context = test->prepare();
+        int n = 0;
+        float dtg = 0.0;
         int start_cpu = gethrvtime();
-        int n = test->perform(context);
-        float dtg = (gethrvtime()-start_cpu) / 1000000.0;
+        do {
+          n += test->perform(context);
+          dtg = (gethrvtime()-start_cpu) / 1000000.0;
+        } while ((dtg == 0.0) && ++nloops);
         float dnorm = n/dtg;
         float delta = dnorm - testnorm;
         tg += dtg;
