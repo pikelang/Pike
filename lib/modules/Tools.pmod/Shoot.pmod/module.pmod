@@ -50,8 +50,8 @@ string format_big_number(int i)
 //!       Description of the test result.
 //!     @member int "n_over_time"
 //!       Number of sub tests per second.
-//!     @member float "n_over_time_variance"
-//!       Variance of sub tests per second.
+//!     @member float "n_over_time_deviation"
+//!       Deviation of sub tests per second.
 //!   @endmapping
 //!   On benchmark failure a mapping with the single entry
 //!   @expr{"readable"@} set to @expr{"FAIL"@} is returned.
@@ -91,13 +91,13 @@ mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
     }
 
     int norm = (int)testnorm;
-    float var = sqrt(testn2tot/tg);
+    float dev = sqrt(testn2tot/tg);
 
     string res = (test->present_n ?
                   test->present_n(testntot,nloops,tg,tg,1) :
                   format_big_number(norm)+"/s")
-#if 0
-        + " ±" + format_big_number((int)var) + "/s²"
+#if 1
+        + " ±" + format_big_number((int)dev) + "/s²"
 #endif
         ;
 
@@ -107,7 +107,7 @@ mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
              "n":testntot,
              "readable":res,
              "n_over_time":norm,
-             "n_over_time_variance":var,
+             "n_over_time_deviation":dev,
         ]);
 }
 
