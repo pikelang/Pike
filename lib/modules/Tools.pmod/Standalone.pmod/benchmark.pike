@@ -19,11 +19,14 @@ Arguments:
   Only run the specified tests.
 
 --json, -j
-  Output result as JSON instead of human readable text
+  Output result as JSON instead of human readable text.
+
+--load=<file>, -L <file>
+  Load a set of results from a previously saved JSON file.
 
 --compare=<file>, -c <file>
   Read a result previously created by saving the output of --json and
-  print relative results
+  print relative results.
 ";
 
 
@@ -55,6 +58,7 @@ string color( float pct )
 
 mapping(string:Tools.Shoot.Test) tests;
 bool json;
+mapping(string:mixed)|zero results;
 mapping comparison;
 int seconds_per_test = 3;
 array(string) test_globs = ({"*"});
@@ -68,6 +72,7 @@ int main(int num, array(string) args)
      ({ "tests",   Getopt.HAS_ARG, "-t,--tests"/"," }),
      ({ "json",    Getopt.NO_ARG,  "-j,--json"/"," }),
      ({ "compare", Getopt.HAS_ARG, "-c,--compare"/"," }),
+     ({ "load",    Getopt.HAS_ARG, "-L,--load"/"," }),
      ({ "list",    Getopt.NO_ARG,  "-l,--list"/"," }),
    })), array opt)
    {
@@ -77,6 +82,7 @@ int main(int num, array(string) args)
         json = true;
         break;
       case "compare":
+      case "load":
         /* Convenience: When using make benchmark there will be some
            junk output before the actual json.
         */
@@ -86,7 +92,11 @@ int main(int num, array(string) args)
                combine_path( getcwd(), opt[1] ));
         if( sscanf( data, "%*[^{]{%s", data ) )
           data = "{"+data;
-        comparison = Standards.JSON.decode( data );
+        if (opt[0] == "compare") {
+          comparison = Standards.JSON.decode( data );
+        } else {
+          results = Standards.JSON.decode( data );
+        }
         break;
       case "help":
         write(help, sizeof(tests));
@@ -137,7 +147,9 @@ void run_tests()
    foreach (to_run; int i; string id)
    {
      n_tests++;
-     res = Tools.Shoot.run( tests[id], seconds_per_test );
+     if (!results || !(res = results[id])) {
+       res = Tools.Shoot.run_sync( tests[id], seconds_per_test );
+     }
 
      if (res->readable == "FAIL") failed = 1;
 
