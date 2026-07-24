@@ -43,7 +43,10 @@ xenofarm_post_build() {
 
   if [ "x$SKIP_BENCHMARK" = "x" ]; then
       log_start benchmark
-      $MAKE benchmark > xenofarm_result/benchmark.txt 2>&1
+      {
+          bin/pike -x benchmark --json >xenofarm_result/benchmark.json && \
+              bin/pike -x benchmark --load xenofarm_result/benchmark.json
+      } > xenofarm_result/benchmark.txt 2>&1
       log_end $?
       [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
   fi
