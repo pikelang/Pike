@@ -6,7 +6,8 @@ constant dont_dump_program = 1;
 
 int arr_size = 10000000;
 
-array prepare() { return enumerate(arr_size); }
+array a;
+array prepare() { return a || (a = enumerate(arr_size)); }
 
 int perform(array const_array)
 {
