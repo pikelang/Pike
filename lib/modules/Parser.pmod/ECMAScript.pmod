@@ -22,7 +22,7 @@ protected constant punctuators = (<
 
 //! Return whether @[c] is a white-space character or not.
 int(0..1) is_whitespace(int c) {
-  return (< 0x9, 0xa, 0xb, 0xc, 0x20, 0xa0, 0x1680, 0x2000, 0x2001, 0x2002,
+  return (< 0x9, 0xa, 0xb, 0xc, 0xd, 0x20, 0xa0, 0x1680, 0x2000, 0x2001, 0x2002,
             0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009,
             0x200a, 0x202f, 0x205f, 0x3000, 0xfeff >)[c];
 }
@@ -61,7 +61,14 @@ array(string) split(string data)
         break;
       }
       if( data[pos]<'0' || data[pos]>'9' ) break;
-      // fallthrough
+      // .NNN literal: leading dot already consumed
+      while( (< '0','1','2','3','4','5','6','7','8','9' >)[data[++pos]] );
+      if( (< 'e', 'E' >)[data[pos]] ) {
+        pos++;
+        if( (< '+', '-' >)[data[pos]] ) pos++;
+        while( (< '0','1','2','3','4','5','6','7','8','9' >)[data[++pos]] );
+      }
+      break;
     case '0'..'9':
       // Hexdigit
       if( data[pos]=='0' && (< 'x', 'X' >)[data[pos+1]] ) {
@@ -81,9 +88,10 @@ array(string) split(string data)
         if( data[pos]=='0' && (< 'o', 'O' >)[data[pos+1]] )
           pos += 2;
 
-	// Octal, decimal and floats except exponent.
-	while( (< '0','1','2','3','4','5','6','7','8','9',
-		  '.' >)[data[++pos]] );
+        // Decimal point handled separately to not consume 5.. as one token.
+        while( (< '0','1','2','3','4','5','6','7','8','9' >)[data[++pos]] );
+        if( data[pos]=='.' )
+          while( (< '0','1','2','3','4','5','6','7','8','9' >)[data[++pos]] );
       }
 
       if( (< 'e', 'E' >)[data[pos]] ) {
@@ -225,6 +233,9 @@ array(string) split(string data)
       // FIXME: Leading character can be UnicodeEscapeSequence ( \u%x
       // or \u{%x} )
       // FIXME: Should include all UnicodeIDStart
+    case '#':
+      pos++;
+      // fallthrough
     case 'a'..'z':
     case 'A'..'Z':
     case '_':
