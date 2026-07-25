@@ -254,12 +254,7 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
     for(e=0;e<data->size;e++)
     {
       index_no_free(&sval, ITEM(data)+e, index);
-      types |= 1 << TYPEOF(sval);
-      if (!(types & BIT_INT) && (TYPEOF(sval) == PIKE_T_OBJECT) &&
-	  (sval.u.object->prog == bignum_program)) {
-	/* Lie, and claim that the array contains integers too. */
-	types |= BIT_INT;
-      }
+      types = accumulate_type_field(&sval, types);
       free_svalue(ITEM(data)+e);
       move_svalue (ITEM(data) + e, &sval);
     }
@@ -277,12 +272,7 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
 
     for(e=0;e<a->size;e++) {
       index_no_free(ITEM(a)+e, ITEM(data)+e, index);
-      types |= 1 << TYPEOF(ITEM(a)[e]);
-      if (!(types & BIT_INT) && (TYPEOF(ITEM(a)[e]) == PIKE_T_OBJECT) &&
-	  (ITEM(a)[e].u.object->prog == bignum_program)) {
-	/* Lie, and claim that the array contains integers too. */
-	types |= BIT_INT;
-      }
+      types = accumulate_type_field(ITEM(a) + e, types);
     }
     a->type_field = types;
 
@@ -536,12 +526,7 @@ void o_append_array(INT32 args)
         for( i = 0; i<args; i++,from++ )
         {
           v->item[v->size++] = *from;
-          v->type_field |= 1<<TYPEOF(*from);
-	  if (!(v->type_field & BIT_INT) && (TYPEOF(*from) == PIKE_T_OBJECT) &&
-	      (from->u.object->prog == bignum_program)) {
-	    /* Lie, and claim that the array contains integers too. */
-	    v->type_field |= BIT_INT;
-	  }
+          v->type_field = accumulate_type_field(from, v->type_field);
         }
         Pike_sp -= args;
         stack_pop_2_elems_keep_top();
@@ -911,12 +896,7 @@ PMOD_EXPORT void check_array_for_destruct(struct array *v)
 
 	types |= BIT_INT;
       }else{
-	types |= 1<<TYPEOF(ITEM(v)[e]);
-	if (!(types & BIT_INT) && (TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
-	    (ITEM(v)[e].u.object->prog == bignum_program)) {
-	  /* Lie, and claim that the array contains integers too. */
-	  types |= BIT_INT;
-	}
+        types = accumulate_type_field(ITEM(v) + e, types);
       }
     }
     v->type_field = types;
@@ -945,12 +925,7 @@ PMOD_EXPORT INT32 array_find_destructed_object(struct array *v)
 	   SUBTYPEOF(ITEM(v)[e]) != FUNCTION_BUILTIN)) &&
 	 (!ITEM(v)[e].u.object->prog))
 	return e;
-      types |= 1<<TYPEOF(ITEM(v)[e]);
-      if (!(types & BIT_INT) && (TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
-	  (ITEM(v)[e].u.object->prog == bignum_program)) {
-	/* Lie, and claim that the array contains integers too. */
-	types |= BIT_INT;
-      }
+      types = accumulate_type_field(ITEM(v) + e, types);
     }
     v->type_field = types;
   }
@@ -1640,13 +1615,7 @@ PMOD_EXPORT void array_check_type_field(const struct array *v)
     if(TYPEOF(ITEM(v)[e]) > MAX_TYPE)
       Pike_fatal("Type is out of range.\n");
 
-    t |= 1 << TYPEOF(ITEM(v)[e]);
-
-    if (!(t & BIT_INT) && (TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
-	(ITEM(v)[e].u.object->prog == bignum_program)) {
-      /* Lie, and claim that the array contains integers too. */
-      t |= BIT_INT;
-    }
+    t = accumulate_type_field(ITEM(v) + e, t);
   }
 
   if(t & ~(v->type_field))
@@ -2124,12 +2093,7 @@ PMOD_EXPORT struct array *subtract_array_svalue(struct array *a,
     for( to=0; to<from; to++, ip++, dp++)
     {
       assign_svalue_no_free(dp, ip);
-      type_field |= 1<<TYPEOF(*dp);
-      if (!(type_field & BIT_INT) && (TYPEOF(*dp) == PIKE_T_OBJECT) &&
-	  (dp->u.object->prog == bignum_program)) {
-	/* Lie, and claim that the array contains integers too. */
-	type_field |= BIT_INT;
-      }
+      type_field = accumulate_type_field(dp, type_field);
     }
     a->size = from;
   }
@@ -2137,12 +2101,7 @@ PMOD_EXPORT struct array *subtract_array_svalue(struct array *a,
 #define MATCH_COPY(X)  do {                                                 \
     if( X )                                                                 \
     {  /* include entry */                                                  \
-      type_field|=1<<TYPEOF(*ip);                                           \
-      if (!(type_field & BIT_INT) && (TYPEOF(*ip) == PIKE_T_OBJECT) &&	    \
-	  (ip->u.object->prog == bignum_program)) {			    \
-	/* Lie, and claim that the array contains integers too. */	    \
-	type_field |= BIT_INT;						    \
-      }									    \
+      type_field = accumulate_type_field(ip, type_field);                   \
       if(!destructive)                                                      \
         assign_svalue_no_free(dp,ip);                                       \
       else if(ip!=dp)                                                       \
@@ -2762,12 +2721,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
       Pike_sp+=args;
       /* FIXME: Don't throw apply errors from apply_svalue here. */
       apply_svalue(ITEM(a)+e, args);
-      new_types |= 1 << TYPEOF(Pike_sp[-1]);
-      if (!(new_types & BIT_INT) && (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) &&
-	  (Pike_sp[-1].u.object->prog == bignum_program)) {
-	/* Lie, and claim that the array contains integers too. */
-	new_types |= BIT_INT;
-      }
+      new_types = accumulate_type_field(Pike_sp - 1, new_types);
       assign_svalue(ITEM(aa)+e, &Pike_sp[-1]);
       pop_stack();
     }

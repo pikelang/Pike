@@ -8,6 +8,7 @@
 #define OBJECT_H
 
 #include "global.h"
+#include "bignum.h"
 #include "svalue.h"
 #include "program.h"
 #include "gc_header.h"
@@ -37,6 +38,27 @@ struct object
 					 * soon as the inhibit_destruct
 					 * counter is back down to zero.
 					 */
+
+/**
+ * Accumulate TYPE_FIELD bits for a single svalue.
+ *
+ * Similar to acc |= 1 << TYPEOF(*s), but has a special
+ * case for bignums.
+ *
+ * Returns the updated TYPE_FIELD.
+ */
+static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE
+accumulate_type_field(const struct svalue *s, TYPE_FIELD acc)
+{
+  TYPE_FIELD bit;
+  acc |= (bit = (TYPE_FIELD)(1 << TYPEOF(*s)));
+  if (!(acc & BIT_INT) && (bit & BIT_OBJECT) &&
+      is_bignum_object(s->u.object)) {
+    /* Lie, and claim that is is an integer too. */
+    acc |= BIT_INT;
+  }
+  return acc;
+}
 
 PMOD_EXPORT extern struct object *first_object;
 extern struct object *gc_internal_object;
