@@ -27,6 +27,10 @@ Arguments:
 --compare=<file>, -c <file>
   Read a result previously created by saving the output of --json and
   print relative results.
+
+--single-process, --sync
+  Run all tests in the same process. This is useful when eg running
+  in a debugger.
 ";
 
 
@@ -58,6 +62,7 @@ string color( float pct )
 
 mapping(string:Tools.Shoot.Test) tests;
 bool json;
+bool sync_mode;
 mapping(string:mixed)|zero results;
 mapping comparison;
 int seconds_per_test = 3;
@@ -74,12 +79,16 @@ int main(int num, array(string) args)
      ({ "compare", Getopt.HAS_ARG, "-c,--compare"/"," }),
      ({ "load",    Getopt.HAS_ARG, "-L,--load"/"," }),
      ({ "list",    Getopt.NO_ARG,  "-l,--list"/"," }),
+     ({ "sync",    Getopt.NO_ARG,  "--sync,--single-process"/"," }),
    })), array opt)
    {
     switch(opt[0])
     {
       case "json":
         json = true;
+        break;
+      case "sync":
+        sync_mode = true;
         break;
       case "compare":
       case "load":
@@ -141,14 +150,29 @@ void run_tests()
    mapping res;
    float total_pct;
    int n_tests;
-   bool odd;
    bool isatty = Stdio.Terminfo.is_tty();
+
+   if( json ) {
+     write("{\n");
+   } else if( !comparison ) {
+     write(string_to_utf8("\xfeff"));
+     write("-"*59+"\n%-40s%19s\n"+"-"*59+"\n",
+           "Test","Result");
+   } else {
+     write(string_to_utf8("\xfeff"));
+     write("-"*66+"\n%-40s%18s%8s\n"+"-"*66+"\n",
+           "Test","Result","Change");
+   }
 
    foreach (to_run; int i; string id)
    {
      n_tests++;
      if (!results || !(res = results[id])) {
-       res = Tools.Shoot.run_sync( tests[id], seconds_per_test );
+       if (sync_mode) {
+         res = Tools.Shoot.run_sync( tests[id], seconds_per_test );
+       } else {
+         res = Tools.Shoot.run( tests[id], seconds_per_test );
+       }
      }
 
      if (res->readable == "FAIL") failed = 1;
