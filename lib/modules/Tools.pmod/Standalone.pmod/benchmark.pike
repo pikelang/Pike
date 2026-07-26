@@ -125,15 +125,6 @@ int main(int num, array(string) args)
     }
   }
 
-  if( json )
-    write("{\n");
-  else if( !comparison )
-    write("-"*59+"\n%-40s%19s\n"+"-"*59+"\n",
-          "Test","Result");
-  else
-    write("-"*65+"\n%-40s%18s%7s\n"+"-"*65+"\n",
-          "Test","Result","Change");
-
 #if constant(Thread.Thread)
   call_out(Thread.Thread, 0, run_tests);
 #else
