@@ -195,8 +195,8 @@ void run_tests()
        int on = comparison[id]->?n_over_time;
        if( !on )
          write("%42s%s   N/A\n",
-               dot(id,42,true,odd=!odd),
-               dot(res->readable,16,false,odd));
+               dot(id,42,true,0),
+               dot(res->readable,16,false,0));
        else
        {
          int diff = res->n_over_time - on;
@@ -205,16 +205,16 @@ void run_tests()
          if( isatty )
            write( color( -pct ) );
          write("%42s%s %5.1f%%\n",
-               dot(id,42,true,odd=!odd),
-               dot(res->readable,16,false,odd),
+               dot(id,42,true,0),
+               dot(res->readable,16,false,0),
                pct);
          if( isatty ) write( "\e[0m" );
        }
      }
      else
      {
-       write(dot(id,42,true,odd=!odd) +
-             dot(res->readable,17,false,odd)+"\n");
+       write(dot(id,42,true,0) +
+             dot(res->readable,17,false,0)+"\n");
      }
    }
    if( json )
