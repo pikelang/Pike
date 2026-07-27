@@ -34,15 +34,17 @@ Arguments:
 ";
 
 
-string dot( string a, int width, bool al, bool odd )
+void dot_align_right(String.Buffer buf, string text, int width)
 {
-  string pre="",post="";
-  int wanted = (width-strlen(a));
-  if (wanted < 0) wanted = 0;
-  string pad = " ."*(wanted/2+1);
-  if( al )
-    return pre+a+" "+pad[wanted&1..wanted-1-!(wanted&1)]+post;
-  return pre+pad[1..wanted-1]+" "+a+post;
+  int pos = sizeof(buf);
+  if (!(pos & 1)) {
+    buf->add(" ");
+    pos++;
+  }
+  int wanted = width - (pos + sizeof(text) + 1);
+  if (wanted < 1) wanted = 1;
+  string pad = (" ." * (wanted / 2) + " ")[..wanted-1];
+  buf->add(pad, " ", text);
 }
 
 string color( float pct )
@@ -184,10 +186,12 @@ void run_tests()
      else if( comparison )
      {
        int on = comparison[id]->?n_over_time;
-       if( !on )
-         write("%42s%s   N/A\n",
-               dot(id,42,true,0),
-               dot(res->readable,16,false,0));
+       if( !on ) {
+         String.Buffer buf = String.Buffer(80);
+         buf->add(id);
+         dot_align_right(buf, res->readable, 58);
+         write("%s    N/A\n", string_to_utf8(buf->get()));
+       }
        else
        {
          int diff = res->n_over_time - on;
@@ -195,17 +199,19 @@ void run_tests()
          total_pct += pct;
          if( isatty )
            write( color( -pct ) );
-         write("%42s%s %5.1f%%\n",
-               dot(id,42,true,0),
-               dot(res->readable,16,false,0),
-               pct);
+         String.Buffer buf = String.Buffer(80);
+         buf->add(id);
+         dot_align_right(buf, res->readable, 58);
+         write("%s %6.1f%%\n", string_to_utf8(buf->get()), pct);
          if( isatty ) write( "\e[0m" );
        }
      }
      else
      {
-       write(dot(id,42,true,0) +
-             dot(res->readable,17,false,0)+"\n");
+       String.Buffer buf = String.Buffer(80);
+       buf->add(id);
+       dot_align_right(buf, res->readable, 59);
+       write("%s\n", string_to_utf8(buf->get()));
      }
    }
    if( json )
@@ -214,9 +220,9 @@ void run_tests()
    {
      float pct = total_pct / n_tests;
      if( isatty ) write(color(-pct));
-     write("-"*65+"\n"+
-           " "*40+"%24.1f%%\n"+
-           "-"*65+"\n",
+     write("-"*66+"\n"+
+           " "*40+"%25.1f%%\n"+
+           "-"*66+"\n",
            pct);
      if( isatty ) write( "\e[0m" );
    }
