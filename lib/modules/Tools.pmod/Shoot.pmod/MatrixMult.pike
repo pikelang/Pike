@@ -1,4 +1,6 @@
+/* -*- Mode: pike; c-basic-offset: 3; -*- */
 #pike __REAL_VERSION__
+#charset utf-8
 inherit Tools.Shoot.Test;
 
 constant size = 100;
@@ -34,7 +36,7 @@ int perform()
    return 200 * 100 * 100 * 100;
 }
 
-string present_n( int ntot, int nruns, float real, float user )
+string present_n( int ntot, int nruns, float ndev, float seconds )
 {
-    return sprintf("%.2f GF/s", (ntot/real/1000000000));
+   return sprintf("%.2f±%.2fGF/s", (ntot/seconds/1000000000), ndev/1000000000);
 }
