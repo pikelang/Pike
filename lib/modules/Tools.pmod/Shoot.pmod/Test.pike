@@ -19,4 +19,4 @@ int perform(mixed|void context);
 //! not count towards the test.
 optional mixed prepare();
 
-optional string present_n(int ntot, int nruns, float tseconds, float useconds,  int memusage);
+optional string present_n(int ntot, int nruns, float ndev, float seconds);

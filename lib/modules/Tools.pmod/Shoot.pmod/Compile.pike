@@ -1,4 +1,5 @@
 /* -*- mode: Pike; c-basic-offset: 3; -*- */
+#charset utf-8
 
 /*
  * Compile & Exec
@@ -66,7 +67,7 @@ int perform()
    return (ops+ops/5+12)*runs;
 }
 
-string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
+string present_n(int ntot, int nruns, float ndev, float useconds)
 {
-   return sprintf("%.0fk lines/s",ntot/useconds/1000);
+   return sprintf("%.0fk±%.0fk lines/s", ntot/useconds/1000, ndev/1000);
 }

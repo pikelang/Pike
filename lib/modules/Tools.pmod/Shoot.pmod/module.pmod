@@ -93,13 +93,8 @@ mapping(string:int|float|string) run_sync( Test test, int maximum_seconds,
     int norm = (int)testnorm;
     float dev = sqrt(testn2tot/tg);
 
-    string res = (test->present_n ?
-                  test->present_n(testntot,nloops,tg,tg,1) :
-                  format_big_number(norm)+"/s")
-#if 1
-        + " ±" + format_big_number((int)dev) + "/s²"
-#endif
-        ;
+    string res = test->present_n ? test->present_n(testntot,nloops,dev,tg) :
+      (format_big_number(norm) + "±" + format_big_number((int)dev) + "/s");
 
     return ([
              "time":tg,
