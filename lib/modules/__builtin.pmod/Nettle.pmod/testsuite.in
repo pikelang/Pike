@@ -76,6 +76,18 @@ test_eq(S(SHA256->pbkdf2("aaaa","bbbb",64,16)),
         "458592c0b81415bd3d752d5bd2a894b0")
 test_eq(S(SHA256->HKDF("aaaa","bbbb")->expand("cccc",16)),
         "57ccec229e98b315ab330a97d7fcfedf")
+dnl RFC 5869 Appendix A.1 full chain via create()+expand()
+test_eq(S(SHA256->HKDF(H("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"),
+                        H("000102030405060708090a0b0c"))->expand(
+          H("f0f1f2f3f4f5f6f7f8f9"), 42)),
+        "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865")
+dnl verify extract() returns the PRK actually used by expand()
+test_do([[
+  object h = SHA256->HKDF("aaaa", "bbbb");
+  string prk = h->extract("cccc");
+  if (SHA256->HMAC(prk)("dddd\1")[..15] != h->expand("dddd", 16))
+    error("expand() result doesn't match PRK returned by extract()\n");
+]])
 test_eq(S(SHA256->openssl_pbkdf("aaaa","bbbb",64,16)),
         "098c455f22f5a62b1047982b4dd2481c")
 test_eq(S(SHA256->P_hash("aaaa","bbbb",64,16)),

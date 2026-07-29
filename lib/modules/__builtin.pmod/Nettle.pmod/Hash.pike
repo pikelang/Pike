@@ -794,6 +794,7 @@ class HKDF
   {
     prk = HMAC(prk)(password);
     hmac = HMAC(prk);
+    return [string(8bit)]prk;
   }
 
   //! This is similar to the RFC 5869 2.3 HKDF-Expand(PRK, info, L)
