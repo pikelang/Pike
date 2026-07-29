@@ -800,6 +800,9 @@ class HKDF
   //! function, but PRK is taken from the object.
   string(8bit) expand(string(8bit) info, int bytes)
   {
+    if (bytes > 255 * digest_size())
+      error("Requested output length %d exceeds RFC 5869 limit of %d.\n",
+            bytes, 255 * digest_size());
     string(8bit) t = "";
     string(8bit) res = "";
     if(!info) info = "";
