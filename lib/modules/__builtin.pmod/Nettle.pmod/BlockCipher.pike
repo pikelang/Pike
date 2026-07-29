@@ -96,6 +96,7 @@ protected class _CTR
     {
       String.secure(iv);
       this::iv = Gmp.mpz(iv, 256);
+      return this;
     }
 
     string(8bit) crypt(string(8bit) data)
