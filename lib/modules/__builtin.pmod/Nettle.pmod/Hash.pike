@@ -1383,7 +1383,10 @@ class SCRAM
     string(7bit) request =
       sprintf("n,,n=%s,r=%s",
 	      username && username != "" ?
-	      [string(7bit)]Standards.IDNA.to_ascii([string]username, 1) : "",
+              // FIXME: SASLprep (RFC 4013) should be applied to username.
+              // Escape '=' and ',' per RFC 5802 §5.1.
+              [string(7bit)]replace([string]username,
+                                    ([ "=":"=3D", ",":"=2C" ])) : "",
 	      nonce);
     first = request;
     return request;
@@ -1404,12 +1407,17 @@ class SCRAM
     constant format = "n,,n=%s,r=%s";
     string|zero username;
     catch {
-      first = line[3..];
       [username, string(8bit) r] =
         [array(2: string(8bit))]array_sscanf(line, format);
       if (!(nonce = validate_nonce(r)))
 	return 0;
-      username = [string]Standards.IDNA.to_unicode(username);
+      // Validate and unescape username per RFC 5802 §5.1.
+      // FIXME: SASLprep (RFC 4013) should also be applied.
+      string raw = [string]username;
+      if (search(raw - "=2C" - "=3D", "=") >= 0)
+        return 0;
+      username = replace(raw, ([ "=2C":",", "=3D":"=" ]));
+      first = line[3..];
     };
     return username;
   }
@@ -1451,7 +1459,7 @@ class SCRAM
   //!   @[client_3]
   string(7bit)|zero client_2(string(8bit) line, string pass) {
     constant format = "r=%s,s=%s,i=%d";
-    string(7bit) punypass = "";
+    string(8bit) punypass = "";
     string(7bit)|zero validated_r;
     string(7bit)|zero response;
     if (!catch([string(8bit)|zero r, string(8bit) salt, int iters] =
@@ -1462,10 +1470,8 @@ class SCRAM
       string(7bit) newline = sprintf("c=biws,r=%s", validated_r);
       first = sprintf("%s,r=%s,s=%s,i=%d,%s",
 		      first[3..], validated_r, salt, iters, newline);
-      if (pass != "")
-	punypass = [string(7bit)]Standards.IDNA.to_ascii(pass);
-      else
-	punypass = "";
+      // FIXME: SASLprep (RFC 4013) should be applied to pass.
+      punypass = pass != "" ? string_to_utf8([string]pass) : "";
       salt = MIME.decode_base64([string(7bit)]salt);
       string(8bit) key = sprintf("%s,%s,%d", punypass, salt, iters);
       if (!(r = SCRAM_get_salted_password(key))) {
