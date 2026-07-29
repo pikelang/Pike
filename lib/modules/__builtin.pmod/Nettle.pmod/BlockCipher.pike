@@ -94,7 +94,6 @@ protected class _CTR
 
     this_program set_iv(string(8bit) iv)
     {
-      String.secure(iv);
       this::iv = Gmp.mpz(iv, 256);
       return this;
     }
