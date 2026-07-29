@@ -225,5 +225,5 @@ class Point {
 
 protected string _sprintf(int type)
 {
-  return type=='O' && sprintf("%O(%s)", this_program, name() || "UNKOWN");
+  return type=='O' && sprintf("%O(%s)", this_program, name() || "UNKNOWN");
 }
