@@ -103,10 +103,18 @@ int main(int num, array(string) args)
                combine_path( getcwd(), opt[1] ));
         if( sscanf( data, "%*[^{]{%s", data ) )
           data = "{"+data;
-        if (opt[0] == "compare") {
-          comparison = Standards.JSON.decode( data );
-        } else {
-          results = Standards.JSON.decode( data );
+        if (catch {
+            if (opt[0] == "compare") {
+              comparison = Standards.JSON.decode_utf8( data );
+            } else {
+              results = Standards.JSON.decode_utf8( data );
+            }
+          }) {
+          if (opt[0] == "compare") {
+            comparison = Standards.JSON.decode( data );
+          } else {
+            results = Standards.JSON.decode( data );
+          }
         }
         break;
       case "help":
@@ -181,7 +189,7 @@ void run_tests()
          }
        }
        write( "%s%-40s", (i?",\n  ":"  "),"\""+id+"\":" );
-       write( Standards.JSON.encode( res ) );
+       write( string_to_utf8(Standards.JSON.encode( res )) );
      }
      else if( comparison )
      {

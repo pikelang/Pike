@@ -231,7 +231,7 @@ mapping(string:int|float|string) run(Test test, int maximum_seconds,
                                         test_name, maximum_seconds ) }),
                         (["stdout":fd->pipe()]));
     mixed err = catch {
-      return Standards.JSON.decode( fd->read() );
+      return Standards.JSON.decode_utf8( fd->read() );
     };
     werror("Test %O failed:\n", test);
     master()->handle_error(err);
