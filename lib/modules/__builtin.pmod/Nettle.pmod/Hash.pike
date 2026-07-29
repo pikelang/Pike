@@ -212,6 +212,8 @@ protected class _HMAC
     //! Generate the digest for the current state.
     string digest(int(0..)|void length)
     {
+      if (!h)
+        error("digest() called without any update().\n");
       string res = hash(okey + h->digest());
       h = 0;
 
