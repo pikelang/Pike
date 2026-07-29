@@ -334,22 +334,23 @@ string nameprep(string s, int(0..1)|void allow_unassigned)
      != sizeof(s))
     error("Nameprep failed: Prohibited character encountered\n");
 
-  // Bidirectional check
-  // FIXME!
-#if 0
-  if(array_sscanf(s, "%*[^\x5be\x5c0\x5c3\x5d0-\x5ea\x5f0-\x5f4"
-		  "\x61b\x61f\x621-\x63a\x640-\x64a\x66d-\x66f"
-		  "\x671-\x6d5\x6dd\x6e5-\x6e6\x6fa-\x6fe\x700-\x70d"
-		  "\x710\x712-\x72c\x780-\x7ac\x7b1\x200f\xfb1d"
-		  "\xfb1f-\xfb28\xfb2a-\xfb36\xfb38-\xfb3c\xfb3e"
-		  "\xfb40\xfb41\xfb43\xfb44\xfb46-\xfbb1\xfbd3-\xfd3d"
-		  "\xfd50-\xfd8f\xfd92-\xfdc7\xfdf0-\xfdfc\xfe70-\fe74"
-		  "\xfe76-\xfefc]%n")[0] != sizeof(s)) {
-    // s contains RandALCat characters
-    // Check that it does not contain any LCat characters
-    // and that it both starts and ends with an RandALCat character.
+  // Bidirectional check (RFC 3454 §6)
+  {
+    int has_rtl = 0;
+    foreach (s; ; int c)
+      if (Unicode.is_rtlchar(c)) { has_rtl = 1; break; }
+    if (has_rtl) {
+      if (!Unicode.is_rtlchar(s[0]) || !Unicode.is_rtlchar(s[-1]))
+        error("Nameprep failed: Bidirectional violation\n");
+      // FIXME: Unicode.is_wordchar() also matches digits (EN/AN) and
+      // non-spacing marks (NSM) which are bidi-neutral, not LCat.
+      // This may incorrectly reject RTL labels with Arabic-Indic digits
+      // (U+0660-U+0669, U+06F0-U+06F9) or vowel-mark combining chars.
+      foreach (s; ; int c)
+        if (!Unicode.is_rtlchar(c) && Unicode.is_wordchar(c))
+          error("Nameprep failed: Bidirectional violation\n");
+    }
   }
-#endif
 
   // Unassigned check
   if(!allow_unassigned) {
