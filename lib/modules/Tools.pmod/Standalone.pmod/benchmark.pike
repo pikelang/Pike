@@ -49,15 +49,15 @@ void dot_align_right(String.Buffer buf, string text, int width)
 
 string color( float pct )
 {
-  if( pct > 0 )
+  if( pct < 0 )
   {
-    if( pct > 20 )
+    if( pct < -20 )
       return "\e[31;1m";
-    if( pct > 10 )
+    if( pct < -10 )
       return "\e[33;1m";
     return "";
   }
-  if( pct < -10 )
+  if( pct > 10 )
     return  "\e[32;1m" ;
   return "";
 }
@@ -206,7 +206,7 @@ void run_tests()
          float pct = diff*100.0 / on;
          total_pct += pct;
          if( isatty )
-           write( color( -pct ) );
+           write( color( pct ) );
          String.Buffer buf = String.Buffer(80);
          buf->add(id);
          dot_align_right(buf, res->readable, 58);
@@ -227,7 +227,7 @@ void run_tests()
    else if( comparison )
    {
      float pct = total_pct / n_tests;
-     if( isatty ) write(color(-pct));
+     if( isatty ) write(color(pct));
      write("-"*66+"\n"+
            " "*40+"%25.1f%%\n"+
            "-"*66+"\n",
