@@ -4339,6 +4339,7 @@ static struct pike_type *remap_markers(struct pike_type *t,
 {
   if (!t) return NULL;
 
+#ifdef PIKE_DEBUG
   if (flags & PT_FLAG_REMAP_TRACE) {
     fprintf(stderr, "remap_markers(");
     simple_describe_type(t);
@@ -4347,15 +4348,19 @@ static struct pike_type *remap_markers(struct pike_type *t,
     simple_describe_mapping(remap?remap->markers[1]:NULL);
     fprintf(stderr, "}, %p, 0x%02x)\n", remap, flags);
   }
+#endif
 
   type_stack_mark();
   push_remap_markers(t, remap, flags);
 
+#ifdef PIKE_DEBUG
   if (flags & PT_FLAG_REMAP_TRACE) {
     fprintf(stderr, "remap ==> ");
     simple_describe_type(peek_type_stack());
     fprintf(stderr, "\n");
   }
+#endif
+
   return pop_unfinished_type();
 }
 
@@ -4675,6 +4680,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   }
   SET_CYCLIC_RET(1);
 
+#ifdef PIKE_DEBUG
   if (remap_flags & PT_FLAG_REMAP_TRACE) {
     fprintf(stderr, "low_type_binop(0x%04x, ", op);
     simple_describe_type(a);
@@ -4693,6 +4699,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     END_CYCLIC();
     return ret;
   }
+#endif
 
   ret = debug_malloc_pass(lower_type_binop(op, a, b, remap,
 					   aflags, bflags, remap_flags));
@@ -4809,12 +4816,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			   PT_FLAG_REMAP_EVAL_MARKERS);
 
       marker = alloc_remap_marker(remap, m->type, remap_flags);
+#ifdef PIKE_DEBUG
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "$%d = ", marker);
 	simple_describe_type(tmp);
 	fprintf(stderr, "\n");
 	simple_describe_remap_state(remap);
       }
+#endif
       /* Marker value */
       store_marker(remap, marker, tmp, remap_flags);
 
@@ -4832,12 +4841,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
       }
 
+#ifdef PIKE_DEBUG
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "$%d = ", marker | 0x100);
 	simple_describe_type(tmp);
 	fprintf(stderr, " (backpatch value)\n");
 	simple_describe_remap_state(remap);
       }
+#endif
       /* Value to backpatch. */
       store_marker(remap, marker | 0x100, tmp, remap_flags);
 
@@ -4862,12 +4873,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
       marker = alloc_remap_marker(remap, m->type,
 				  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+#ifdef PIKE_DEBUG
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "$%d = ", marker);
 	simple_describe_type(tmp);
 	fprintf(stderr, "\n");
 	simple_describe_remap_state(remap);
       }
+#endif
       /* Marker value */
       store_marker(remap, marker, tmp,
 		   remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
@@ -4886,12 +4899,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
       }
 
+#ifdef PIKE_DEBUG
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "$%d = ", marker | 0x100);
 	simple_describe_type(tmp);
 	fprintf(stderr, " (backpatch value)\n");
 	simple_describe_remap_state(remap);
       }
+#endif
       /* Value to backpatch. */
       store_marker(remap, marker | 0x100, tmp,
 		   remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
@@ -5096,6 +5111,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	 */
 	tmp2 = remap_markers(b->cdr, remap,
 			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+#ifdef PIKE_DEBUG
 	if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	  fprintf(stderr, "tmp: ");
 	  simple_describe_type(tmp);
@@ -5103,16 +5119,19 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  simple_describe_type(tmp2);
 	  fprintf(stderr, "\nop: 0x%04x\n", op);
 	}
+#endif
 	ret = low_type_binop(op, tmp, tmp2, remap, aflags, bflags,
 			     remap_flags | PT_FLAG_REMAP_INHIBIT);
         if (!ret && (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES)) {
           pop_n_elems(Pike_sp - save_sp);
         }
+#ifdef PIKE_DEBUG
 	if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	  fprintf(stderr, "tmp op tmp2: ");
 	  simple_describe_type(ret);
 	  fprintf(stderr, "\n");
 	}
+#endif
 	if (orig_markers) {
 	  do_free_mapping(remap->markers[marker_set]);
 	  remap->markers[marker_set] = orig_markers;
@@ -5997,11 +6016,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    break;
 	  }
 
+#ifdef PIKE_DEBUG
 	  if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	    fprintf(stderr, "tmp: ");
 	    simple_describe_type(tmp);
 	    fprintf(stderr, "\n");
 	  }
+#endif
 
 	  push_finished_type(tmp);
 	  free_type(tmp);
@@ -6017,11 +6038,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 				 PT_FLAG_CMP_VOID_IS_ZERO,
 				 remap_flags);
 
+#ifdef PIKE_DEBUG
 	    if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	      fprintf(stderr, "ret_tmp: ");
 	      simple_describe_type(tmp);
 	      fprintf(stderr, "\n");
 	    }
+#endif
 	    if (!tmp) goto function_fail;
 
 	    nargs = peek_stack_mark();
@@ -6755,6 +6778,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
       }
 
+#ifdef PIKE_DEBUG
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "bounds: ");
 	for (i = 0; i < nbounds; i++) {
@@ -6766,6 +6790,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  fprintf(stderr, "==> NULL\n");
 	}
       }
+#endif
 
       nbounds = peek_stack_mark();
       if (!nbounds) {
@@ -6785,11 +6810,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	push_type(T_OR);
       }
 
+#ifdef PIKE_DEBUG
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "==> ");
 	simple_describe_type(peek_type_stack());
 	fprintf(stderr, "\n");
       }
+#endif
 
       if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
         ref_push_type_value(a);
