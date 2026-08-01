@@ -3282,6 +3282,7 @@ static void bind_local_variables(struct compiler_frame *frame, node *n)
 {
   if (!n) return;
 
+ loop:
   switch(n->token) {
   case F_LOCAL_INDIRECT:
     low_bind_local(frame, n);
@@ -3300,10 +3301,15 @@ static void bind_local_variables(struct compiler_frame *frame, node *n)
       break;
     }
     if (car_is_node(n)) {
+      if (!cdr_is_node(n)) {
+        n = CAR(n);
+        goto loop;
+      }
       bind_local_variables(frame, CAR(n));
     }
     if (cdr_is_node(n)) {
-      bind_local_variables(frame, CDR(n));
+      n = CDR(n);
+      goto loop;
     }
     break;
   }
