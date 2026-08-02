@@ -6,12 +6,17 @@
 
 #include "global.h"
 #include "pike_cpulib.h"
-#include "svalue.h"
+#include "bitvector.h"
 
 #ifdef HAVE_X86_ASM
 
-#if !defined (CL_X86_ASM_STYLE) && !defined (GCC_X86_ASM_STYLE)
-#error Dont know how to inline assembler with this compiler
+#if !defined(CL_X86_ASM_STYLE) && !defined(CL_X86_64_ASM_STYLE) && \
+    !defined(GCC_X86_ASM_STYLE)
+#error "Don't know how to call CPUID with this compiler"
+#endif
+
+#ifdef CL_X86_64_ASM_STYLE
+#include <intrin.h>
 #endif
 
 /** Query the x86 CPU for features using the CPUID opcode.
@@ -25,10 +30,6 @@
  *
  */
 PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
-/* eax -> cpuid_ptr[0]
- * ebx -> cpuid_ptr[1]
- * edx -> cpuid_ptr[2]
- * ecx -> cpuid_ptr[3] */
 {
 #ifdef CL_X86_ASM_STYLE
   __asm {
@@ -40,6 +41,16 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
     mov [edi+8], edx;
     mov [edi+12], ecx;
   };
+#elif defined(CL_X86_64_ASM_STYLE)
+  /* MSVC x64 does not support inline assembly; use the __cpuid intrinsic.
+   * __cpuid stores EAX/EBX/ECX/EDX in info[0..3], so EDX and ECX must be
+   * swapped to match our EAX/EBX/EDX/ECX layout. */
+  int info[4];
+  __cpuid(info, oper);
+  cpuid_ptr[0] = info[0]; /* EAX */
+  cpuid_ptr[1] = info[1]; /* EBX */
+  cpuid_ptr[2] = info[3]; /* EDX */
+  cpuid_ptr[3] = info[2]; /* ECX */
 #else  /* GCC_X86_ASM_STYLE */
 
 #if SIZEOF_CHAR_P == 4
@@ -68,7 +79,7 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
 #endif /* CL_X86_ASM_STYLE */
 }
 
-#endif	/* HAVE_IA32_ASM */
+#endif	/* HAVE_X86_ASM */
 
 /* Number of log2 per second:
 

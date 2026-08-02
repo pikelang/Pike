@@ -31,7 +31,6 @@
 #  elif defined (_M_X64)
 #    define HAVE_X86_ASM
 #    define HAVE_X86_64_ASM
-#    define CL_X86_ASM_STYLE
 #    define CL_X86_64_ASM_STYLE
 #  endif
 #endif
