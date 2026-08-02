@@ -15,6 +15,7 @@
 #include "image.h"
 #include "assembly.h"
 #include "image_machine.h"
+#include "pike_cpulib.h"
 
 #include "encodings/encodings.h"
 
@@ -170,15 +171,17 @@ int image_cpuid;
 #ifdef ASSEMBLY_OK
 static void init_cpuidflags( )
 {
-  unsigned int a, b, c, d;
-  char *data = alloca(20);
-  memset( data, 0, 20 );
+  INT32 regs[4];
+  char data[13];
 
-  image_get_cpuid( 0, &a, &b, &c, &d );
+  /* regs: [0]=EAX [1]=EBX [2]=EDX [3]=ECX */
+  x86_get_cpuid( 0, regs );
 
-  ((int *)data)[0] = a;
-  ((int *)data)[1] = b;
-  ((int *)data)[2] = c;
+  /* Vendor string is EBX:EDX:ECX */
+  memcpy( data,     &regs[1], 4 );
+  memcpy( data + 4, &regs[2], 4 );
+  memcpy( data + 8, &regs[3], 4 );
+  data[12] = '\0';
 
   if( strncmp( data, "GenuineIntel", 12 ) )
   {
@@ -186,36 +189,36 @@ static void init_cpuidflags( )
     {
       if( !strncmp( data, "CyrixInstead", 12 ) )
       {
-        if( d != 2 )
+        if( regs[0] != 2 )
           goto normal_test;
-        image_get_cpuid( 0x80000000, &a, &b, &c, &d );
-        if( d < 0x80000000 )
+        x86_get_cpuid( 0x80000000, regs );
+        if( (unsigned INT32)regs[0] < 0x80000000u )
           goto normal_test;
-        image_get_cpuid( 0x80000001, &a, &b, &c, &d );
+        x86_get_cpuid( 0x80000001, regs );
 
-        if( b & 0x00800000 ) image_cpuid |= IMAGE_MMX;
-        if( b & 0x02000000 ) image_cpuid |= IMAGE_SSE;
-        if( b & 0x01000000 ) image_cpuid |= IMAGE_EMMX;
-        if( b & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
+        if( regs[2] & 0x00800000 ) image_cpuid |= IMAGE_MMX;
+        if( regs[2] & 0x02000000 ) image_cpuid |= IMAGE_SSE;
+        if( regs[2] & 0x01000000 ) image_cpuid |= IMAGE_EMMX;
+        if( regs[2] & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
       }
     } else {
       /* It's an AMD cpu. */
-      image_get_cpuid( 0x80000000, &a, &b, &c, &d );
-      if( d < 0x80000000 )
+      x86_get_cpuid( 0x80000000, regs );
+      if( (unsigned INT32)regs[0] < 0x80000000u )
         goto normal_test;
-      image_get_cpuid( 0x80000001, &a, &b, &c, &d );
+      x86_get_cpuid( 0x80000001, regs );
 
-      if( b & 0x00800000 ) image_cpuid |= IMAGE_MMX;
-      if( b & 0x02000000 ) image_cpuid |= IMAGE_SSE;
-      if( b & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
+      if( regs[2] & 0x00800000 ) image_cpuid |= IMAGE_MMX;
+      if( regs[2] & 0x02000000 ) image_cpuid |= IMAGE_SSE;
+      if( regs[2] & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
     }
   } else {
   normal_test:
     /* It's an intel CPU. */
-    image_get_cpuid( 1, &a, &b, &c, &d );
-    if( b & 0x00800000 )
+    x86_get_cpuid( 1, regs );
+    if( regs[2] & 0x00800000 )
       image_cpuid |= IMAGE_MMX;
-    if( b & 0x02000000 )
+    if( regs[2] & 0x02000000 )
       image_cpuid |= IMAGE_SSE;
   }
 #if 0

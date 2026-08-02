@@ -11,58 +11,6 @@
  global image_clear_buffer_mmx_x86asm_eq
  global image_clear_buffer_mmx_x86asm_from
 
- global image_get_cpuid
-
-;  do not use the function from mmxlib, since that might be
-;  unavailable even when mmx is available.	
-;
-;  void image_get_cpuid(int oper,int *cpuid1,int *cpuid2,int *cpuid3,int *a )
-;
-image_get_cpuid:
-	push ebp
-	mov ebp, esp
-	pushf
-	pop  eax
-	mov  ecx, eax
-	xor  eax, 200000h
-	push eax
-	popf
-	pushf
-	pop  eax
-	xor  ecx, eax
-	test ecx, 200000h
-	jnz .ok
-
-	xor eax,eax
-	mov [ebp+12], eax	;  cpuid not supported
-	mov [ebp+16], eax
-	mov [ebp+20], eax
-
-	leave
-	ret
-
-.ok:
-	push ebx
- 	mov eax, [ebp+8]
-	cpuid
-	push ebx
-	mov ebx, [ebp+24]
-	mov [ebx], eax
-	pop ebx
-
-	mov eax, [ebp+12]
-	mov [eax], ebx
-
-	mov eax, [ebp+16]
-	mov [eax], edx
-
-	mov eax, [ebp+20]
-	mov [eax], ecx
-
-	pop ebx
-	leave
-	ret
-
 
 ;  Clear an image to a solid color
 ;  void image_clear_buffer_mmx_x86asm_eq( char *d,

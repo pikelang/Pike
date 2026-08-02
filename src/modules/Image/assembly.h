@@ -29,8 +29,6 @@ void image_clear_buffer_mmx_x86asm_eq( void *d,
 
 void image_clear_buffer_mmx_x86asm_from( void *d, int npixels_div_8 );
 
-void image_get_cpuid( int oper, void *cpuid1, void *cpuid2, void *cpuid3, void *d );
-
 
 
 #define MCcol( A, B, C, D )   ((A<<24) | (B<<16) | (C<<8) | D)
