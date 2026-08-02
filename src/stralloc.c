@@ -2202,6 +2202,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 
   if( (len+start == s->len)
       && start < (s->len>>1)
+      && (len >= sizeof(struct pike_string))
       && (!s->size_shift
 	  || (s->size_shift==1 &&
 	      find_magnitude1(((p_wchar1*)s->str)+start,len)==1)
