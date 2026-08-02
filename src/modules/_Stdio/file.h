@@ -217,4 +217,8 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max);
 #define FILE_NOT_OPENED         0x0010
 #define FILE_HAVE_RECV_FD	0x0020
 
+/* Some symbols in efuns.c.
+ */
+extern struct pike_string *pike_current_path;
+
 #endif

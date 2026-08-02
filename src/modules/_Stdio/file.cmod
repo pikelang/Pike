@@ -2137,9 +2137,6 @@ PIKEFUN int(0..1) cd(string(8bit)|void relpath)
 
   if (!ret) goto fail;
 
-  SAFE_MAYBE_APPLY_MASTER("zap_getcwd_cache", 0);
-  args++;
-
   if (relpath) {
 #ifdef HAVE_OPENAT
     close(fd);
@@ -2148,6 +2145,11 @@ PIKEFUN int(0..1) cd(string(8bit)|void relpath)
 
     if (!ret) goto fail;
 #endif
+  }
+
+  if (pike_current_path) {
+    free_string(pike_current_path);
+    pike_current_path = NULL;
   }
 
   RETURN 1;

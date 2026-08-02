@@ -33,7 +33,6 @@
 // --- Some configurable parameters
 
 #define PIKE_AUTORELOAD
-#define GETCWD_CACHE
 //#define FILE_STAT_CACHE
 
 // This define is searched and replaced by bin/install.pike.
@@ -225,11 +224,6 @@ protected class Pike_7_8_master
   extern array(string) pike_include_path;
   extern array(string) pike_module_path;
   extern array(string) pike_program_path;
-#ifdef GETCWD_CACHE
-  extern string current_path;
-  int cd(string s);
-  string getcwd();
-#endif
   string combine_path_with_cwd(string path);
 #ifdef FILE_STAT_CACHE
   extern int invalidate_time;
@@ -1275,24 +1269,6 @@ string|zero master_read_file(string file)
   return 0;
 }
 
-#ifdef GETCWD_CACHE
-protected string current_path;
-void zap_getcwd_cache()
-{
-  current_path = 0;
-}
-int cd(string s)
-{
-  current_path=0;
-  return predef::cd(s);
-}
-
-string getcwd()
-{
-  return current_path || (current_path=predef::getcwd());
-}
-#endif // GETCWD_CACHE
-
 constant high_master_get_dir = predef::get_dir;
 
 string combine_path_with_cwd(string ... paths)
@@ -1704,7 +1680,6 @@ void zap_all_caches()
   m_clear(rev_programs);
   m_clear(rev_objects);
   m_clear(rev_fc);
-  zap_getcwd_cache();
 }
 
 string programs_reverse_lookup (program prog)
@@ -2461,11 +2436,6 @@ constant master_efuns = ({
   "zero",
   "getenv",
   "putenv",
-
-#ifdef GETCWD_CACHE
-  "cd",
-  "getcwd",
-#endif
 });
 
 //! Prefix for Pike-related C header files.

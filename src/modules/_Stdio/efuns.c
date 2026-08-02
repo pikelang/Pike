@@ -1275,6 +1275,8 @@ void f_get_dir(INT32 args)
 }
 #endif /* __NT__ */
 
+struct pike_string *pike_current_path = NULL;
+
 /*! @decl int cd(string s)
  *!
  *! Change the current directory for the whole Pike process.
@@ -1309,6 +1311,10 @@ void f_cd(INT32 args)
   i = fd_chdir(str->str) != -1;
   pop_n_elems(args);
   push_int(i);
+  if (i && pike_current_path) {
+    free_string(pike_current_path);
+    pike_current_path = NULL;
+  }
 }
 
 /*! @decl string getcwd()
@@ -1320,7 +1326,15 @@ void f_cd(INT32 args)
  */
 void f_getcwd(INT32 args)
 {
-  char *e = fd_get_current_dir_name();
+  char *e;
+
+  if (pike_current_path) {
+    pop_n_elems(args);
+    ref_push_string(pike_current_path);
+    return;
+  }
+
+  e = fd_get_current_dir_name();
   if (!e) {
     Pike_error("Failed to fetch current path.\n");
   }
@@ -1328,6 +1342,8 @@ void f_getcwd(INT32 args)
   pop_n_elems(args);
   push_text(e);
   free(e);
+
+  copy_shared_string(pike_current_path, Pike_sp[-1].u.string);
 }
 
 #ifdef HAVE_EXECVE
