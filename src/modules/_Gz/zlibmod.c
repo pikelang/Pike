@@ -421,6 +421,9 @@ void low_zlibmod_pack(struct memobj data, struct byte_buffer *buf,
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
+  if (data.len > (size_t)(unsigned INT32)~0u)
+    Pike_error("Input too large for pack.\n");
+
   z.gz.next_in = (Bytef *)data.ptr;
   z.gz.avail_in = (unsigned INT32)(data.len);
 
@@ -690,6 +693,9 @@ static void gz_deflate(INT32 args)
     flush=Z_FINISH;
   }
 
+  if (data.len > (size_t)(unsigned INT32)~0u)
+    Pike_error("Input too large for gz_deflate->deflate().\n");
+
   this->gz.next_in=(Bytef *)data.ptr;
   this->gz.avail_in = (unsigned INT32)(data.len);
 
@@ -937,6 +943,9 @@ void low_zlibmod_unpack(struct memobj data, struct byte_buffer *buf, int raw)
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
+  if (data.len > (size_t)(unsigned INT32)~0u)
+    Pike_error("Input too large for unpack.\n");
+
   z.gz.next_in=(Bytef *)data.ptr;
   z.gz.avail_in = (unsigned INT32)(data.len);
 
@@ -1108,6 +1117,9 @@ static void gz_inflate(INT32 args)
 
   if (data.shift)
     Pike_error("Cannot input wide string to gz_inflate->inflate()\n");
+
+  if (data.len > (size_t)(unsigned INT32)~0u)
+    Pike_error("Input too large for gz_inflate->inflate().\n");
 
   this->gz.next_in=(Bytef *)data.ptr;
   this->gz.avail_in = (unsigned INT32)(data.len);
