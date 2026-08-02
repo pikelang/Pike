@@ -7162,7 +7162,7 @@ const UNICHAR map_KPS_9566_97[] = {
 
   /* Some ligatures that aren't present in Unicode. */
   0x002e, 0x0029, 0x0000,	/* .) */
-  0x002e, 0x00bb, 0x0000,	/* .» */
+  0x002e, 0x00bb, 0x0000,	/* .Â» */
 
   0xd833, 0xdc81, 0x0000, /* 2:82: U1CC81 STRIPED UP-POINTING TRIANGLE */
 };

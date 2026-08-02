@@ -1141,7 +1141,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       cube.disttrig=(sf.r*SQ(255/cube.r)+
 		     sf.g*SQ(255/cube.g)+
 		     sf.b*SQ(255/cube.b))/4;
-  			 /* 4 is for /2², closest dot, always */
+  			 /* 4 is for /2Â², closest dot, always */
    else
       cube.disttrig=100000000;
 
@@ -1180,7 +1180,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
 			SQ((INT32)low.g-high.g)+
 			SQ((INT32)low.b-high.b))
 		/SQ(steps)) / ( 4 );
-  			 /* 4 is for /2², closest dot, always */
+  			 /* 4 is for /2Â², closest dot, always */
 			 /* 6 makes a suitable constant */
 	 if (mdist>cube.disttrig) mdist=cube.disttrig;
 
@@ -2909,7 +2909,7 @@ void image_colortable_rigid(INT32 args)
 **!	where n is numbers of colors and m is number of pixels
 **!
 **!	The arguments can be heavy trimmed for the usage
-**!	of your colortable; a large number (10×10×10 or bigger)
+**!	of your colortable; a large number (10Ã—10Ã—10 or bigger)
 **!	of cubicles is recommended when you use the colortable
 **!	repeatedly, since the calculation takes much
 **!	more time than usage.
@@ -2918,8 +2918,8 @@ void image_colortable_rigid(INT32 args)
 **!
 **!     <pre>
 **!	image size  setup
-**!	100×100	    cubicles(4,5,4) (default)
-**!	1000×1000   cubicles(12,12,12) (factor 2 faster than default)
+**!	100Ã—100	    cubicles(4,5,4) (default)
+**!	1000Ã—1000   cubicles(12,12,12) (factor 2 faster than default)
 **!     </pre>
 **!
 **!	In some cases, the <ref>full</ref> method is faster.
@@ -2943,13 +2943,13 @@ void image_colortable_rigid(INT32 args)
 **!     Note that the size of each cubicle is at least about 8b,
 **!     and that it takes time to calculate them. The number of
 **!     cubicles are <tt>r*g*b</tt>, and default is 4,5,4,
-**!     ie 80 cubicles. This works good for 200±100 colors.
+**!     ie 80 cubicles. This works good for 200Â±100 colors.
 **!
 **! arg int accuracy
 **!	Accuracy when checking sides of cubicles.
 **!	Default is 16. A value of 1 gives complete accuracy,
 **!	ie cubicle() method gives exactly the same result
-**!	as full(), but takes (in worst case) 16× the time
+**!	as full(), but takes (in worst case) 16Ã— the time
 **!	to calculate.
 **!
 **! note
@@ -3001,7 +3001,7 @@ static inline ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
 					   int r,int g,int b,
 					   rgbl_group sf)
 {
-   int mindist=256*256*100; /* max dist is 256²*3 */
+   int mindist=256*256*100; /* max dist is 256Â²*3 */
    int c = 0;
 
    while (n--)
@@ -3733,7 +3733,7 @@ void image_colortable_spacefactors(INT32 args)
 **!	<td><illustration> object c=Image.Colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
-**!	<td>floyd_steinberg to a 4×4×4 colorcube</td>
+**!	<td>floyd_steinberg to a 4Ã—4Ã—4 colorcube</td>
 **!	<td>floyd_steinberg to 16 chosen colors</td>
 **!	</tr></table>
 **!
@@ -3857,7 +3857,7 @@ void image_colortable_nodither(INT32 args)
 **! method object randomgrey(int err)
 **!	Set random cube dithering.
 **!	Color choosen is the closest one to color in picture
-**!	plus (flat) random error; <tt>color±random(error)</tt>.
+**!	plus (flat) random error; <tt>colorÂ±random(error)</tt>.
 **!
 **!	The randomgrey method uses the same random error on red, green
 **!	and blue and the randomcube method has three random errors.
@@ -4151,7 +4151,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **!
 **! arg int xsize
 **! arg int ysize
-**!	Size of error matrix. Default is 8×8.
+**!	Size of error matrix. Default is 8Ã—8.
 **!	Only values which factors to multiples of 2 and 3 are
 **!	possible to choose (2,3,4,6,8,12,...).
 **!

@@ -7,7 +7,7 @@
 /*
  * Machine code generator for sparc.
  *
- * Henrik Grubbström 20010720
+ * Henrik GrubbstrÃ¶m 20010720
  */
 
 #include "global.h"

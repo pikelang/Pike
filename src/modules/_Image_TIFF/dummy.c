@@ -7,7 +7,7 @@
 /*
  * Glue needed on WIN32 if tiff.lib needs the symbol _vfprintf.
  *
- * Henrik Grubbström 2008-11-03
+ * Henrik GrubbstrÃ¶m 2008-11-03
  */
 
 #include "global.h"

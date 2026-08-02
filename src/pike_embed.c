@@ -7,7 +7,7 @@
 /*
  * Pike embedding API.
  *
- * Henrik Grubbström 2004-12-27
+ * Henrik GrubbstrÃ¶m 2004-12-27
  */
 
 #include "module.h"

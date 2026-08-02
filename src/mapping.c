@@ -2191,7 +2191,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
     free(zipper);
   }
 
-  switch (op) /* no elements from »b» may be selected */
+  switch (op) /* no elements from Â»bÂ» may be selected */
   {
      case PIKE_ARRAY_OP_AND:
 	zipper=merge(b,ai,op);
