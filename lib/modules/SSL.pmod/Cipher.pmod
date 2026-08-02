@@ -1055,7 +1055,8 @@ class KeyExchangeDHEPSK
 			      string server_random)
   {
     hint = input->read_hstring(2);
-    DHE::parse_server_key_exchange(input);
+    if (!DHE::parse_server_key_exchange(input))
+      return ALERT_handshake_failure;
     return 0;
   }
 }
@@ -1408,7 +1409,8 @@ class KeyExchangeECDHEPSK
 			      string server_random)
   {
     hint = input->read_hstring(2);
-    ECDHE::parse_server_key_exchange(input);
+    if (!ECDHE::parse_server_key_exchange(input))
+      return ALERT_handshake_failure;
     return 0;
   }
 }
