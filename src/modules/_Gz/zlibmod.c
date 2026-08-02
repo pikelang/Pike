@@ -238,18 +238,19 @@ LVL_CHECK:
     if(TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Bad argument 2 to gz->create()\n");
     strategy=sp[1-args].u.integer;
-    if(strategy != Z_DEFAULT_STRATEGY &&
-       strategy != Z_FILTERED &&
+  }
+
+  if(strategy != Z_DEFAULT_STRATEGY &&
+     strategy != Z_FILTERED &&
 #ifdef Z_RLE
-       strategy != Z_RLE &&
+     strategy != Z_RLE &&
 #endif
 #ifdef Z_FIXED
-       strategy != Z_FIXED &&
+     strategy != Z_FIXED &&
 #endif
-       strategy != Z_HUFFMAN_ONLY)
-    {
-      Pike_error("Invalid compression strategy for gz_deflate->create()\n");
-    }
+     strategy != Z_HUFFMAN_ONLY)
+  {
+    Pike_error("Invalid compression strategy for gz_deflate->create()\n");
   }
 
   pop_n_elems(args);
