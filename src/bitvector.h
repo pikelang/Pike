@@ -237,6 +237,10 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz128(unsigned __int128 i) {
 }
 #endif /* __SIZEOF_INT128__ */
 
+/**
+ * Rounds the 64-bit integer v up to the nearest binary magnitude. If
+ * v > (1<<63) 0 will be returned.
+ */
 static inline UINT64 PIKE_UNUSED_ATTRIBUTE round_up64(UINT64 v) {
     unsigned INT32 i;
 
@@ -264,7 +268,8 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE fls64(UINT64 v) {
 }
 
 /**
- * Returns the integer 2 log of the 32-bit integer v. Returns -1 for 0.
+ * Returns the integer 2 log of the 64-bit integer v.
+ * Returns ((unsigned INT32)~0) for 0.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u64(UINT64 v) {
     return fls64(v) - 1;
