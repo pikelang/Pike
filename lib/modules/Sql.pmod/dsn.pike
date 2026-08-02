@@ -1,7 +1,7 @@
 /*
  * Glue for the ODBC-module
  *
- * Carl Grubbström 2005-01-26
+ * Carl GrubbstrÃ¶m 2005-01-26
  */
 
 #pike __REAL_VERSION__

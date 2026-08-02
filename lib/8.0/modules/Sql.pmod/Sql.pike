@@ -1,7 +1,7 @@
 /*
  * Implements the generic parts of the SQL-interface
  *
- * Henrik Grubbström 1996-01-09
+ * Henrik GrubbstrÃ¶m 1996-01-09
  */
 
 #pike 8.1

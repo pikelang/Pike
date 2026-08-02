@@ -2,7 +2,7 @@
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
  *
- * Henrik Grubbström 1999-07-01
+ * Henrik GrubbstrÃ¶m 1999-07-01
  */
 
 #pike __REAL_VERSION__

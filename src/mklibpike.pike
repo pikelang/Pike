@@ -2,7 +2,7 @@
  * Create strapping code for a list of symbols in pike.so,
  * and the pike headerfiles.
  *
- * Henrik Grubbström 2005-01-03
+ * Henrik GrubbstrÃ¶m 2005-01-03
  */
 
 constant default_headers = ({

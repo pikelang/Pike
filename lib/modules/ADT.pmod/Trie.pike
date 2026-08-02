@@ -3,7 +3,7 @@
 /*
  * An implementation of a trie.
  *
- * 2007-08-24 Henrik Grubbström
+ * 2007-08-24 Henrik GrubbstrÃ¶m
  */
 
 __generic__ ValueType;

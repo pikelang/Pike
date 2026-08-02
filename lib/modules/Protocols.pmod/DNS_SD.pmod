@@ -1,4 +1,4 @@
-//  Interface to DNS Service Discovery. Written by Jonas Walldén.
+//  Interface to DNS Service Discovery. Written by Jonas WalldÃ©n.
 
 #pike __REAL_VERSION__
 

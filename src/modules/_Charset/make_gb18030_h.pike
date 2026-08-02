@@ -2,7 +2,7 @@
 //
 // Create lookup tables and code for GB18030.
 //
-// 2006-01-13 Henrik Grubbström
+// 2006-01-13 Henrik GrubbstrÃ¶m
 //
 
 import Parser.XML.Tree;

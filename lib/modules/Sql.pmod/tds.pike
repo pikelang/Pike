@@ -1,7 +1,7 @@
 /*
  * A Pike implementation of the TDS protocol.
  *
- * Henrik Grubbström 2006-02-08.
+ * Henrik GrubbstrÃ¶m 2006-02-08.
  */
 
 #pike __REAL_VERSION__
