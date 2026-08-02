@@ -57,6 +57,24 @@ static inline unsigned char *image_ptr( struct object *img )
   return (unsigned char *)(((struct image  *)x)->img);
 }
 
+static inline int image_width( struct object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return ((struct image *)x)->xsize;
+}
+
+static inline int image_height( struct object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return ((struct image *)x)->ysize;
+}
+
 PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
 {
   int width, height, npix;
@@ -191,6 +209,187 @@ PIKEFUN object(Image.Image) decode( string data )
   ref_push_object( p->u.object );
   stack_unlink(1);
 }
+
+/*! @decl string(8bit) encode(Image.Image image, mapping(string:int|Image.Image)|void options)
+ *!
+ *! Encode an image as AVIF.
+ *!
+ *! @param options
+ *! @mapping
+ *!   @member int "quality"
+ *!     Quality 0 (worst) to 100 (lossless). Defaults to 60.
+ *!   @member int "quality_alpha"
+ *!     Alpha quality 0 (worst) to 100 (lossless). Defaults to 100.
+ *!   @member bool "lossless"
+ *!     Enable lossless encoding. Forces quality 100, YUV444, and
+ *!     identity matrix coefficients.
+ *!   @member int "speed"
+ *!     Encoder effort, 0 (slowest/best) to 10 (fastest/worst).
+ *!     Defaults to @[SPEED_DEFAULT].
+ *!   @member int "depth"
+ *!     Bit depth per channel, 8 or 10. Defaults to 8.
+ *!   @member Image.Image "alpha"
+ *!     Alpha channel image. The red component is used as alpha.
+ *!     Must be the same dimensions as @[image].
+ *! @endmapping
+ *!
+ *! @returns
+ *!   The encoded AVIF data as a string.
+ */
+PIKEFUN string(0..255) encode( object(Image.Image) img,
+                               mapping(string:int|object(Image.Image))|void options )
+{
+    avifImage *avif = NULL;
+    avifEncoder *encoder = NULL;
+    avifRGBImage rgb;
+    avifRWData output = AVIF_DATA_EMPTY;
+    avifResult result;
+    struct object *alpha_obj = NULL;
+    int width = image_width(img);
+    int height = image_height(img);
+    unsigned char *iptr = image_ptr(img);
+    int quality = 60;
+    int quality_alpha = 100;
+    int speed = AVIF_SPEED_DEFAULT;
+    int depth = 8;
+    int lossless = 0;
+    avifPixelFormat pix_fmt;
+
+    memset(&rgb, 0, sizeof(rgb));
+
+    if (!iptr || !width || !height)
+        Pike_error("Image argument is not a valid image.\n");
+
+    if (options) {
+        struct svalue *v;
+        if ((v = simple_mapping_string_lookup(options, "quality")) &&
+            TYPEOF(*v) == PIKE_T_INT)
+            quality = v->u.integer;
+        if ((v = simple_mapping_string_lookup(options, "quality_alpha")) &&
+            TYPEOF(*v) == PIKE_T_INT)
+            quality_alpha = v->u.integer;
+        if ((v = simple_mapping_string_lookup(options, "lossless")) &&
+            TYPEOF(*v) == PIKE_T_INT && v->u.integer)
+            lossless = 1;
+        if ((v = simple_mapping_string_lookup(options, "speed")) &&
+            TYPEOF(*v) == PIKE_T_INT)
+            speed = v->u.integer;
+        if ((v = simple_mapping_string_lookup(options, "depth")) &&
+            TYPEOF(*v) == PIKE_T_INT)
+            depth = v->u.integer;
+        if ((v = simple_mapping_string_lookup(options, "alpha")) &&
+            TYPEOF(*v) == PIKE_T_OBJECT)
+            alpha_obj = v->u.object;
+    }
+
+    if (depth != 8 && depth != 10)
+        Pike_error("Unsupported depth %d; must be 8 or 10.\n", depth);
+
+    if (lossless) {
+        quality = 100;
+        quality_alpha = 100;
+        pix_fmt = AVIF_PIXEL_FORMAT_YUV444;
+    } else {
+        pix_fmt = alpha_obj ? AVIF_PIXEL_FORMAT_YUV444 : AVIF_PIXEL_FORMAT_YUV420;
+    }
+
+    avif = avifImageCreate(width, height, depth, pix_fmt);
+    if (!avif)
+        Pike_error("Failed to create avifImage.\n");
+
+    if (lossless)
+        avif->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_IDENTITY;
+
+    avifRGBImageSetDefaults(&rgb, avif);
+    rgb.depth = 8;
+
+    if (alpha_obj) {
+        if (image_width(alpha_obj) != width || image_height(alpha_obj) != height) {
+            avifImageDestroy(avif);
+            Pike_error("Alpha channel must be the same dimensions as the image.\n");
+        }
+        if (!image_ptr(alpha_obj)) {
+            avifImageDestroy(avif);
+            Pike_error("Alpha channel is not a valid image.\n");
+        }
+        rgb.format = AVIF_RGB_FORMAT_RGBA;
+    } else {
+        rgb.format = AVIF_RGB_FORMAT_RGB;
+    }
+
+#if AVIF_VERSION >= 110101
+    result = avifRGBImageAllocatePixels(&rgb);
+    if (result != AVIF_RESULT_OK) {
+        avifImageDestroy(avif);
+        Pike_error("Failed to allocate pixel buffer: %s\n", avifResultToString(result));
+    }
+#else
+    avifRGBImageAllocatePixels(&rgb);
+#endif
+
+    {
+        int npix = width * height;
+        unsigned char *rp = rgb.pixels;
+        if (alpha_obj) {
+            unsigned char *aptr = image_ptr(alpha_obj);
+            while (npix--) {
+                *(rp++) = *(iptr++); /* R */
+                *(rp++) = *(iptr++); /* G */
+                *(rp++) = *(iptr++); /* B */
+                *(rp++) = aptr[0];   /* alpha from red channel */
+                aptr += 3;
+            }
+        } else {
+            while (npix--) {
+                *(rp++) = *(iptr++); /* R */
+                *(rp++) = *(iptr++); /* G */
+                *(rp++) = *(iptr++); /* B */
+            }
+        }
+    }
+
+    result = avifImageRGBToYUV(avif, &rgb);
+    avifRGBImageFreePixels(&rgb);
+    if (result != AVIF_RESULT_OK) {
+        avifImageDestroy(avif);
+        Pike_error("RGB to YUV conversion failed: %s\n", avifResultToString(result));
+    }
+
+    encoder = avifEncoderCreate();
+    if (!encoder) {
+        avifImageDestroy(avif);
+        Pike_error("Failed to create encoder.\n");
+    }
+
+    encoder->speed = speed;
+#ifdef AVIF_QUALITY_DEFAULT
+    encoder->quality      = quality;
+    encoder->qualityAlpha = quality_alpha;
+#else
+    {
+        int q  = ((100 - quality)       * AVIF_QUANTIZER_WORST_QUALITY + 50) / 100;
+        int qa = ((100 - quality_alpha) * AVIF_QUANTIZER_WORST_QUALITY + 50) / 100;
+        encoder->minQuantizer      = encoder->maxQuantizer      = q;
+        encoder->minQuantizerAlpha = encoder->maxQuantizerAlpha = qa;
+    }
+#endif
+
+    THREADS_ALLOW();
+    result = avifEncoderWrite(encoder, avif, &output);
+    THREADS_DISALLOW();
+
+    avifEncoderDestroy(encoder);
+    avifImageDestroy(avif);
+
+    if (result != AVIF_RESULT_OK) {
+        avifRWDataFree(&output);
+        Pike_error("Encoding failed: %s\n", avifResultToString(result));
+    }
+
+    pop_n_elems(args);
+    push_string(make_shared_binary_string((const char *)output.data, output.size));
+    avifRWDataFree(&output);
+}
 #endif
 
 PIKE_MODULE_INIT
@@ -198,6 +397,20 @@ PIKE_MODULE_INIT
   INIT
 #ifdef HAVE_LIBAVIF
   add_integer_constant("version", AVIF_VERSION, 0);
+  add_integer_constant("SPEED_DEFAULT", AVIF_SPEED_DEFAULT, 0);
+  add_integer_constant("SPEED_SLOWEST", AVIF_SPEED_SLOWEST, 0);
+  add_integer_constant("SPEED_FASTEST", AVIF_SPEED_FASTEST, 0);
+#ifdef AVIF_QUALITY_DEFAULT
+  add_integer_constant("QUALITY_DEFAULT",  AVIF_QUALITY_DEFAULT,  0);
+  add_integer_constant("QUALITY_LOSSLESS", AVIF_QUALITY_LOSSLESS, 0);
+  add_integer_constant("QUALITY_WORST",    AVIF_QUALITY_WORST,    0);
+  add_integer_constant("QUALITY_BEST",     AVIF_QUALITY_BEST,     0);
+#else
+  add_integer_constant("QUALITY_DEFAULT",  60,  0);
+  add_integer_constant("QUALITY_LOSSLESS", 100, 0);
+  add_integer_constant("QUALITY_WORST",    0,   0);
+  add_integer_constant("QUALITY_BEST",     100, 0);
+#endif
 #endif
 }
 
