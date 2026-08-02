@@ -142,6 +142,18 @@ mapping|zero _decode( string data, int(0..1)|void exif )
   }
 #endif
 
+#if constant(_Image_AVIF.decode)
+  if (!i && data[4..7] == "ftyp" &&
+      (data[8..11] == "avif" || data[8..11] == "avis")) {
+    catch {
+      mapping res = Image.AVIF._decode(data);
+      i = res->image;
+      a = res->alpha;
+      format = "AVIF";
+    };
+  }
+#endif
+
   if(!i) {
     catch {
       // PNM, (JPEG), XCF, PNG, (GIF), ILBM, BMP, RAS, PVR,
