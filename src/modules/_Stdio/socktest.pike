@@ -438,23 +438,59 @@ int portno2;
 
 int protocol_supported;
 
+//! Errno from the most recent call to @[connect_socket()].
+int connect_errno;
+
+//! Connect a socket to @[LOOPBACK] port @[portno].
+//!
+//! Returns the connected @[Stdio.File] on success and @expr{0@} on
+//! failure, in which case the errno is available in @[connect_errno].
+//!
+//! Note that the socket is deliberately left unbound; letting
+//! connect(2) select the local port allows the kernel to avoid local
+//! ports that would make the resulting 4-tuple collide with a
+//! connection in TIME_WAIT. Binding explicitly first (ie
+//! @[Stdio.File()->open_socket()]) makes such collisions possible,
+//! which shows up as intermittent EADDRINUSE from connect(2) on
+//! eg Solaris.
+//!
+//! Note also that no @[Socket] is created until the connect has
+//! succeeded; registering callbacks for a socket that failed to
+//! connect leaves the backend waiting for callbacks that never
+//! arrive (or, on some systems, delivers bogus ones).
+Stdio.File connect_socket(int portno)
+{
+  Stdio.File f = Stdio.File();
+  int connected;
+  // Note that connect() throws if it fails to even create the socket
+  // (eg no IPv6 support); the errno is available as usual in that case.
+  mixed err = catch { connected = f->connect(LOOPBACK, portno); };
+  if (connected) {
+    connect_errno = 0;
+    return f;
+  }
+  connect_errno = f->errno();
+  f->close();
+  destruct(f);
+  if (err && !connect_errno) throw(err);
+  return 0;
+}
+
 array(object) stdtest(program Socket)
 {
   object sock,sock2;
-  int warned = 0;
 
-  sock=Socket();
   int attempt;
   while(1)
   {
     got_callback();
     DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
-    int e;
-    if (sock->o->connect(LOOPBACK, portno2)) {
+    Stdio.File f = connect_socket(portno2);
+    int e = connect_errno;
+    if (f) {
       protocol_supported = 1;
+      sock = Socket(f);
       break;
-    } else {
-      e = sock->errno();
     }
 #if constant(System.EADDRNOTAVAIL)
     if (e == System.EADDRNOTAVAIL) {
@@ -488,25 +524,19 @@ array(object) stdtest(program Socket)
 #endif /* IPV6 */
     if (e == System.EADDRINUSE) {
       /* Out of sockets on the loopback interface? */
-      log_msg("Connect failed: Address in use. Dropping socket.\n");
-      // This is supposed to let go of the socket and consider this
-      // socket a success
-      sock->input_finished=sock->output_finished=1;
-      num_running++;	// Don't let finish end just yet.
-      sock->cleanup();	// Does a num_done++
+      log_msg("Connect failed: Address in use.\n");
       if (attempt++ < 10) {
 	log_msg("Retrying.\n");
 	sleep(0.1);
-        num_done++;
-	sock = Socket();
 	continue;
       }
+      // Consider this test a success and move on.
+      start();		// Matched by the finish() below.
       finish(Socket);
       return 0;
     }
     sleep(1);
-    fd_fail("Connect failed: (%d, %O)\n",
-	    sock->errno(), strerror(sock->errno()));
+    fd_fail("Connect failed: (%d, %O)\n", e, strerror(e));
   }
   got_callback();
   DEBUG_WERR("Accepting...\n");
@@ -623,7 +653,9 @@ void finish(program Socket)
       case 1:
         log_status("Beginning tests for Socket type %O", Socket);
 	log_status("Testing dup & assign");
-	sock1=stdtest(Socket)[0]->o;
+	socks = stdtest(Socket);
+	if (!socks) break;	// stdtest() has already advanced to the next test.
+	sock1 = socks[0]->o;
 	sock1->assign(sock1->dup());
 	break;
 	
@@ -633,23 +665,20 @@ void finish(program Socket)
         num_running++;	// Don't let finish end before the loop is done.
 	for(int e=0;e<10;e++)
 	{
-          do {
-            sock1=Socket();
-            if (sock1->o->connect(LOOPBACK, portno1)) break;
-
-            log_status("Socket %d: Connection failed with error %d: %s\n",
-                       sock1->num, sock1->errno(), strerror(sock1->errno()));
-            if (sock1->errno() == System.EADDRINUSE) {
-              log_msg("#### Socket %d fd=%d: Connect failed: Address in use. Dropping socket.\n",
-                      sock1->num,
-                      sock1->o->query_fd?sock1->o->query_fd():sock1->o);
-              // This is supposed to let go of the socket and consider this
-              // socket a success
-              sock1->input_finished = sock1->output_finished = 1;
-              sock1->cleanup();	// Does a num_done++
+          Stdio.File f;
+          for (int attempt = 0; !(f = connect_socket(portno1)); attempt++) {
+            // Note that no Socket has been created for the failed
+            // connect, so there is no bookkeeping to unwind and no
+            // unconnected fd left for the backend to wait on.
+            log_status("Connection failed with error %d: %s\n",
+                       connect_errno, strerror(connect_errno));
+            if (attempt >= 10) {
+              fd_fail("Connect failed: (%d, %O)\n",
+                      connect_errno, strerror(connect_errno));
             }
             sleep(0.1);
-          } while(1);
+          }
+          sock1 = Socket(f);
           DEBUG_WERR("Socket %d fd=%O: local: %s, remote: %s\n",
                      sock1->num,
                      sock1->o->query_fd?sock1->o->query_fd():sock1->o,
