@@ -31,6 +31,8 @@ struct zipper
 {
   int  level;
   int  state;
+  int  wbits;
+  int  strategy;
   struct z_stream_s gz;
   struct pike_string *epilogue, *dict;
 #ifdef _REENTRANT
@@ -272,6 +274,8 @@ LVL_CHECK:
   switch(tmp)
   {
   case Z_OK:
+    THIS->wbits = wbits;
+    THIS->strategy = strategy;
     if (THIS->dict) {
       int err;
       err = deflateSetDictionary(&THIS->gz, (const Bytef*)THIS->dict->str,
@@ -311,23 +315,30 @@ static void gz_deflate_clone(INT32 UNUSED(args)) {
 
   clone->level = THIS->level;
   clone->state = THIS->state;
-
-  push_object(ob);
+  clone->wbits = THIS->wbits;
+  clone->strategy = THIS->strategy;
+  if (THIS->dict) {
+    clone->dict = THIS->dict;
+    add_ref(clone->dict);
+  }
 
   switch(tmp = deflateCopy(&clone->gz, &THIS->gz)) {
     case Z_OK:
       break;
 
     case Z_MEM_ERROR:
+      free_object(ob);
       Pike_error ("Out of memory while cloning Gz.deflate.\n");
       break;
 
     default:
+      free_object(ob);
       if(THIS->gz.msg)
         Pike_error("Failed to clone Gz.deflate: %s\n",THIS->gz.msg);
       else
         Pike_error("Failed to clone Gz.deflate (%d).\n", tmp);
   }
+  push_object(ob);
 }
 
 #ifdef _REENTRANT
@@ -616,7 +627,8 @@ static void gz_deflate(INT32 args)
   {
     deflateEnd(& THIS->gz);
     THIS->gz.state = NULL;
-    fail = deflateInit(& THIS->gz, THIS->level);
+    fail = deflateInit2(& THIS->gz, THIS->level, Z_DEFLATED,
+                        THIS->wbits, 9, THIS->strategy);
     THIS->state=0;
     if (fail != Z_OK) {
       Pike_error("Failed to reinitialize for deflation.\n");
@@ -712,6 +724,8 @@ static void init_gz_deflate(struct object *UNUSED(o))
   THIS->gz.opaque=(void *)THIS;
   THIS->gz.state = NULL;
   THIS->state=0;
+  THIS->wbits=15;
+  THIS->strategy=Z_DEFAULT_STRATEGY;
   THIS->epilogue = NULL;
 }
 
@@ -940,8 +954,8 @@ void low_zlibmod_unpack(struct memobj data, struct byte_buffer *buf, int raw)
     break;
 
   case Z_MEM_ERROR:
-    Pike_error ("Out of memory while initializing Gz.uncompress.\n");
     inflateEnd(&z.gz);
+    Pike_error ("Out of memory while initializing Gz.uncompress.\n");
     break;
 
   default:
