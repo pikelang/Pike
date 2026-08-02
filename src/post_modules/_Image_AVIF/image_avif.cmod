@@ -80,7 +80,8 @@ PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
     goto cleanup;
   }
 
-  if( avifDecoderNextImage(decoder) != AVIF_RESULT_OK ) {
+  result = avifDecoderNextImage(decoder);
+  if( result != AVIF_RESULT_OK ) {
     goto cleanup;
   }
 
@@ -177,10 +178,10 @@ PIKEFUN object(Image.Image) decode( string data )
 
   apply(Pike_fp->current_object, "_decode", args);
 
-  m = Pike_sp[-1].u.mapping;
-
   if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
       Pike_error("Decoding failed\n");
+
+  m = Pike_sp[-1].u.mapping;
 
   p = simple_mapping_string_lookup(m,"image");
 
@@ -203,4 +204,10 @@ PIKE_MODULE_INIT
 PIKE_MODULE_EXIT
 {
   EXIT
+#ifdef HAVE_LIBAVIF
+  if (img_program) {
+    free_program(img_program);
+    img_program = NULL;
+  }
+#endif
 }
