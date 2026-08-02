@@ -162,9 +162,7 @@ static void gz_deflate_create(INT32 args)
 
   if(THIS->gz.state)
   {
-/*     mt_lock(& THIS->lock); */
     deflateEnd(&THIS->gz);
-/*     mt_unlock(& THIS->lock); */
   }
 
   do_free_string(THIS->dict);
@@ -259,7 +257,6 @@ LVL_CHECK:
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
 
-/*   mt_lock(& THIS->lock); */
   do {
     tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, strategy );
     if (tmp == Z_STREAM_ERROR) {
@@ -271,7 +268,6 @@ LVL_CHECK:
     }
     break;
   } while(1);
-/*   mt_unlock(& THIS->lock); */
   switch(tmp)
   {
   case Z_OK:
@@ -738,11 +734,9 @@ static void init_gz_deflate(struct object *UNUSED(o))
 
 static void exit_gz_deflate(struct object *UNUSED(o))
 {
-/*   mt_lock(& THIS->lock); */
   deflateEnd(&THIS->gz);
   do_free_string(THIS->epilogue);
   do_free_string(THIS->dict);
-/*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
 
@@ -803,9 +797,7 @@ static void gz_inflate_create(INT32 args)
   int tmp, *tmp_p = &tmp;
   if(THIS->gz.state)
   {
-/*     mt_lock(& THIS->lock); */
     inflateEnd(&THIS->gz);
-/*     mt_unlock(& THIS->lock); */
   }
 
 
@@ -842,8 +834,6 @@ static void gz_inflate_create(INT32 args)
   }
   pop_n_elems(args);
 
-/*    mt_lock(& THIS->lock);  */
-/*    mt_unlock(& THIS->lock); */
   switch(tmp)
   {
   case Z_OK:
@@ -1154,10 +1144,7 @@ static void gz_inflate(INT32 args)
 					  this->gz.avail_in));
     if(old_epilogue)
       f_add(2);
-    if(TYPEOF(sp[-1]) == PIKE_T_STRING)
-      this->epilogue = (--sp)->u.string;
-    else
-      pop_stack();
+    this->epilogue = (--sp)->u.string;
   }
 }
 
@@ -1191,11 +1178,9 @@ static void init_gz_inflate(struct object *UNUSED(o))
 
 static void exit_gz_inflate(struct object *UNUSED(o))
 {
-/*   mt_lock(& THIS->lock); */
   inflateEnd(& THIS->gz);
   do_free_string(THIS->epilogue);
   do_free_string(THIS->dict);
-/*   mt_unlock(& THIS->lock); */
   mt_destroy( & THIS->lock );
 }
 
