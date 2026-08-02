@@ -172,8 +172,8 @@ int test_tzdata() {
   }
 
   string pike_tzdata_version =
-    String.trim_all_whites(Stdio.read_file("lib/modules/Calendar.pmod/"
-                                           "tzdata/version"));
+    String.trim(Stdio.read_file("lib/modules/Calendar.pmod/"
+                                "tzdata/version"));
   if (pike_tzdata_version != found_version) {
     write("Calendar tzdata version %s is outdated. Latest: %s %s\n",
           pike_tzdata_version, found_version, found_date);
