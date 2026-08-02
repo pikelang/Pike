@@ -2479,6 +2479,7 @@ mapping abbr2zones =
      "America/Regina",
      "America/Swift_Current",
      "America/Tijuana",
+     "America/Vancouver",
      "America/Whitehorse",
      "America/Yellowknife",
      "Europe/Moscow",
