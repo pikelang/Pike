@@ -1803,4 +1803,9 @@ void exit_stdio_efuns(void)
   libzfs_fini(libzfs_handle);
 #endif
 #endif /* 0 */
+
+  if (pike_current_path) {
+    free_string(pike_current_path);
+    pike_current_path = NULL;
+  }
 }
