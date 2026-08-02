@@ -482,7 +482,7 @@ protected void async_failed()
 protected void async_timeout(void|bool force)
 {
    if (!force && !zero_type(timeout_watchdog)) {
-     int deltat = time(1) - (timeout_watchdog + (data_timeout || timeout));
+     int deltat = (timeout_watchdog + (data_timeout || timeout)) - time(1);
      if (deltat > 0) {
        call_out(this_function, deltat);
        return;
@@ -1084,7 +1084,7 @@ string data(int|void max_length)
                      if (!s || !sizeof(s)) {
                         if (timeout_co) {
                            DBG("remove timeout.\n");
-                           remove_call_out(timeout_co);
+                           remove_async_timeout();
                         }
                         if (!s) {
                            errno = con->errno();
@@ -1101,7 +1101,7 @@ string data(int|void max_length)
  	             // entity_headers=rbuf[..i-1];
                      if (timeout_co) {
                         DBG("remove timeout.\n");
-                        remove_call_out(timeout_co);
+                        remove_async_timeout();
                      }
 		     return lbuf;
 		  }
@@ -1117,7 +1117,7 @@ string data(int|void max_length)
                   if (!t || !sizeof(t)) {
                      if (timeout_co) {
                         DBG("remove timeout.\n");
-                        remove_call_out(timeout_co);
+                        remove_async_timeout();
                      }
                      if (!t) {
                         errno = con->errno();
@@ -1145,7 +1145,7 @@ string data(int|void max_length)
             if (!s || !sizeof(s)) {
                if (timeout_co) {
                   DBG("remove timeout.\n");
-                  remove_call_out(timeout_co);
+                  remove_async_timeout();
                }
                if (!s) {
                   errno = con->errno();
@@ -1184,7 +1184,7 @@ string data(int|void max_length)
        TOUCH_TIMEOUT_WATCHDOG();
        if (timeout_co) {
          DBG("remove timeout.\n");
-         remove_call_out(timeout_co);
+         remove_async_timeout();
        }
        if (!s) {
 	 errno = con->errno();
@@ -1208,7 +1208,7 @@ string data(int|void max_length)
              // Error and we have not received any data yet.
              if (timeout_co) {
                DBG("remove timeout.\n");
-               remove_call_out(timeout_co);
+               remove_async_timeout();
              }
              errno = con->errno();
              DBG ("<- (read error: %s)\n", strerror (errno));
@@ -1225,7 +1225,7 @@ string data(int|void max_length)
    }
    if (timeout_co) {
      DBG("remove timeout.\n");
-     remove_call_out(timeout_co);
+     remove_async_timeout();
    }
    if(undefinedp( len ))
      len = sizeof( buf ) - datapos;
