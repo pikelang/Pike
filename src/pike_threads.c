@@ -4228,7 +4228,11 @@ static void check_thread_interrupt(struct callback *foo,
       thread_interrupt_callback = NULL;
     }
     if (throw_severity == THROW_ERROR) {
-      Pike_error("Interrupted.\n");
+      if (TYPEOF(Pike_interpreter.thread_state->result) == PIKE_T_STRING) {
+        Pike_error("%pS", Pike_interpreter.thread_state->result.u.string);
+      } else {
+        Pike_error("%pO", &Pike_interpreter.thread_state->result);
+      }
     } else {
       push_svalue(&Pike_interpreter.thread_state->result);
       assign_svalue(&throw_value, Pike_sp-1);
@@ -4245,19 +4249,24 @@ static void check_thread_interrupt(struct callback *foo,
  *! This function causes the thread to throw an error
  *! where the message defaults to @expr{"Interrupted.\n"@}.
  *!
- *! @fixme
- *!   The argument @[msg] is currently ignored.
- *!
  *! @note
  *!   Interrupts are asynchronous, and are currently not queued.
  *!
  *! @note
  *!   Due to the asynchronous nature of interrupts, it may take
  *!   some time before the thread reacts to the interrupt.
+ *!
+ *! @seealso
+ *!   @[kill()]
  */
 static void f_thread_id_interrupt(INT32 args)
 {
-  /* FIXME: The msg argument is not supported yet. */
+  if (!args) {
+    /* Default interruption error message. */
+    push_constant_text("Interrupted.\n");
+    args++;
+  }
+  assign_svalue(&THIS_THREAD->result, Pike_sp-args);
   pop_n_elems(args);
 
   if (!(THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK)) {
@@ -4301,6 +4310,9 @@ static void low_thread_kill (struct thread_state *th)
  *! @note
  *!   Killing the backend thread (aka the main thread) is
  *!   equivalent to calling @[predef::kill()].
+ *!
+ *! @seealso
+ *!   @[interrupt()]
  */
 static void f_thread_id_kill(INT32 args)
 {
