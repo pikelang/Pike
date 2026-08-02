@@ -2,23 +2,102 @@ START_MARKER
 
 cond_resolv( Image.AVIF.decode, [[
 
-  test_do( add_constant("avif_enc",
-    Image.AVIF.encode(Image.Image(8,8)->test(),
-                      ([ "speed": Image.AVIF.SPEED_FASTEST ]))) )
+  dnl --- constants ---
 
+  test_true( intp(Image.AVIF.version) )
+
+  test_true( intp(Image.AVIF.SPEED_DEFAULT) )
+  test_true( intp(Image.AVIF.SPEED_SLOWEST) )
+  test_true( intp(Image.AVIF.SPEED_FASTEST) )
+  test_true( Image.AVIF.SPEED_SLOWEST < Image.AVIF.SPEED_FASTEST )
+
+  test_true( intp(Image.AVIF.QUALITY_DEFAULT) )
+  test_true( intp(Image.AVIF.QUALITY_LOSSLESS) )
+  test_true( intp(Image.AVIF.QUALITY_WORST) )
+  test_true( intp(Image.AVIF.QUALITY_BEST) )
+  test_true( Image.AVIF.QUALITY_WORST < Image.AVIF.QUALITY_BEST )
+  test_equal( Image.AVIF.QUALITY_LOSSLESS, Image.AVIF.QUALITY_BEST )
+
+  dnl --- shared fixtures ---
+
+  test_do( add_constant("avif_src", Image.Image(8,8)->test()) )
+  test_do( add_constant("avif_fast", ([ "speed": Image.AVIF.SPEED_FASTEST ])) )
+
+  dnl --- encode ---
+
+  test_do( add_constant("avif_enc", Image.AVIF.encode(avif_src, avif_fast)) )
   test_true( stringp(avif_enc) )
+  test_true( sizeof(avif_enc) > 0 )
+
+  dnl --- decode ---
 
   test_true( objectp(Image.AVIF.decode(avif_enc)) )
   test_equal( Image.AVIF.decode(avif_enc)->xsize(), 8 )
   test_equal( Image.AVIF.decode(avif_enc)->ysize(), 8 )
 
-  test_true( mappingp(Image.AVIF._decode(avif_enc)) )
-  test_equal( Image.AVIF._decode(avif_enc)->format, "image/avif" )
-  test_equal( Image.AVIF._decode(avif_enc)->xsize, 8 )
-  test_equal( Image.AVIF._decode(avif_enc)->ysize, 8 )
-  test_true( objectp(Image.AVIF._decode(avif_enc)->image) )
+  dnl --- _decode ---
+
+  test_do( add_constant("avif_dec", Image.AVIF._decode(avif_enc)) )
+  test_true( mappingp(avif_dec) )
+  test_equal( avif_dec->format, "image/avif" )
+  test_equal( avif_dec->xsize, 8 )
+  test_equal( avif_dec->ysize, 8 )
+  test_true( objectp(avif_dec->image) )
+  test_false( objectp(avif_dec->alpha) )
+  test_do( add_constant("avif_dec") )
+
+  dnl --- quality ---
+
+  test_do( add_constant("avif_q_worst",
+    Image.AVIF.encode(avif_src, avif_fast | (["quality": Image.AVIF.QUALITY_WORST]))) )
+  test_true( stringp(avif_q_worst) )
+  test_equal( Image.AVIF.decode(avif_q_worst)->xsize(), 8 )
+  test_equal( Image.AVIF.decode(avif_q_worst)->ysize(), 8 )
+  test_do( add_constant("avif_q_worst") )
+
+  dnl --- lossless: dimensions and exact pixel roundtrip ---
+
+  test_do( add_constant("avif_ll",
+    Image.AVIF.encode(avif_src, avif_fast | (["lossless": 1]))) )
+  test_true( stringp(avif_ll) )
+  test_equal( Image.AVIF.decode(avif_ll)->xsize(), 8 )
+  test_equal( Image.AVIF.decode(avif_ll)->ysize(), 8 )
+  test_equal( Image.AVIF.decode(avif_ll)->getpixel(0,0),
+              avif_src->getpixel(0,0) )
+  test_do( add_constant("avif_ll") )
+
+  dnl --- depth 10 ---
+
+  test_do( add_constant("avif_d10",
+    Image.AVIF.encode(avif_src, avif_fast | (["depth": 10]))) )
+  test_true( stringp(avif_d10) )
+  test_equal( Image.AVIF.decode(avif_d10)->xsize(), 8 )
+  test_equal( Image.AVIF.decode(avif_d10)->ysize(), 8 )
+  test_do( add_constant("avif_d10") )
+
+  dnl --- alpha channel ---
+
+  test_do( add_constant("avif_a_src", Image.Image(8,8)->test()) )
+  test_do( add_constant("avif_a_enc",
+    Image.AVIF.encode(avif_src, avif_fast | (["alpha": avif_a_src]))) )
+  test_true( stringp(avif_a_enc) )
+  test_equal( Image.AVIF.decode(avif_a_enc)->xsize(), 8 )
+  test_equal( Image.AVIF.decode(avif_a_enc)->ysize(), 8 )
+  test_true( objectp(Image.AVIF._decode(avif_a_enc)->alpha) )
+  test_do( add_constant("avif_a_src") )
+  test_do( add_constant("avif_a_enc") )
+
+  dnl --- error cases ---
+
+  test_eval_error( Image.AVIF.encode(Image.Image(4,4), (["depth": 7])) )
+  test_eval_error( Image.AVIF.encode(Image.Image(4,4),
+                                     (["alpha": Image.Image(8,8)])) )
+
+  dnl --- teardown ---
 
   test_do( add_constant("avif_enc") )
+  test_do( add_constant("avif_src") )
+  test_do( add_constant("avif_fast") )
 
 ]])
 
