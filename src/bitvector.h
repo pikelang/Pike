@@ -40,7 +40,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
 #elif defined(HAS___BUILTIN_CLZ)
     return i ? __builtin_clz(i) : 32;
 #elif defined(HAS__BIT_SCAN_REVERSE)
-    return i ? _bit_scan_reverse(i) : 32;
+    return i ? 31 - _bit_scan_reverse(i) : 32;
 #elif defined(HAS___CNTLZ4)
     return i ? __cntlz4(i) : 32;
 #elif defined(HAS__BITSCANREVERSE)
