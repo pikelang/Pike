@@ -71,8 +71,7 @@ static struct program *deflate_program;
  *!
  *!   Note that although these functions use the same @i{algorithm@} as
  *!   @tt{gzip@}, they do not use the exact same format, so you cannot directly
- *!   unzip gzipped files with these routines. Support for this will be
- *!   added in the future.
+ *!   unzip gzipped files with these routines.
  */
 
 /*! @endmodule
