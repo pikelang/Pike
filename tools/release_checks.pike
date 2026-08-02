@@ -130,21 +130,39 @@ int test_unicode() {
 int test_tzdata() {
   string timezones_html = Protocols.HTTP.
     get_url_data("http://www.iana.org/time-zones");
-  string|zero found_div;
-  foreach((timezones_html/"<div id=")[1..], string div_id) {
-    if (has_prefix(div_id[1..], "timezone_version")) {
-      found_div = ((div_id/"</div>")[0]/">")[1..] * ">";
-    }
-  }
   string|zero found_version;
   string|zero found_date;
-  if (found_div) {
-    foreach((found_div/"<span id=")[1..], string span_id) {
-      if (has_prefix(span_id[1..], "version")) {
-        found_version = ((span_id/"</span>")[0]/">")[1..] * ">";
+  // First try the 2026c markup.
+  foreach((timezones_html/"<div class=")[1..], string div_id) {
+    string div_content = ((div_id/"</div>")[0]/">")[1..] * ">";
+    if (has_prefix(div_id[1..], "tile-link-content")) {
+      foreach((div_content/"<h2>")[1..], string h2) {
+        found_version = (h2/"</h2>")[0];
+        break;
       }
-      if (has_prefix(span_id[1..], "date")) {
-        found_date = ((span_id/"</span>")[0]/">")[1..] * ">";
+    } else if (has_prefix(div_id[1..], "tz-released")) {
+      foreach((div_content/"<time")[1..], string tm) {
+        tm = (tm/">")[1];
+        found_date = (tm/"<")[0];
+      }
+    }
+  }
+  if (!found_version && !found_date) {
+    string|zero found_div;
+    // This worked when 2026b was the latest,
+    foreach((timezones_html/"<div id=")[1..], string div_id) {
+      if (has_prefix(div_id[1..], "timezone_version")) {
+        found_div = ((div_id/"</div>")[0]/">")[1..] * ">";
+      }
+    }
+    if (found_div) {
+      foreach((found_div/"<span id=")[1..], string span_id) {
+        if (has_prefix(span_id[1..], "version")) {
+          found_version = ((span_id/"</span>")[0]/">")[1..] * ">";
+        }
+        if (has_prefix(span_id[1..], "date")) {
+          found_date = ((span_id/"</span>")[0]/">")[1..] * ">";
+        }
       }
     }
   }
