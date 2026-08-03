@@ -3223,12 +3223,20 @@ void exit_mutex_obj(struct object *UNUSED(o))
     if(m->num_waiting)
     {
       THREADS_FPRINTF(1, "Destructed mutex is being waited on.\n");
-      THREADS_ALLOW();
       /* exit_mutex_key_obj has already signalled, but since the
        * waiting threads will throw an error instead of making a new
        * lock we need to double it to a broadcast. The last thread
-       * that stops waiting will destroy m->condition. */
+       * that stops waiting will destroy m->condition.
+       *
+       * NB: Broadcast while we still hold the interpreter lock, so that we
+       *     are serialized against the co_destroy() of m->condition. Otherwise
+       *     another thread may co_destroy() the condition (which on NT closes
+       *     the underlying handle) in the window between THREADS_ALLOW() and
+       *     co_broadcast() acquiring the condition lock, causing co_broadcast()
+       *     to operate on an invalid handle.
+       */
       co_broadcast (&m->condition);
+      THREADS_ALLOW();
 
       /* Try to wake up the waiting thread(s) immediately
        * in an attempt to avoid starvation.
@@ -3336,8 +3344,16 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
     THIS_KEY->mutex_obj = NULL;
 
     if (mut->num_waiting) {
-      THREADS_ALLOW();
+      /* NB: Broadcast while we still hold the interpreter lock, so that we
+       *     are serialized against the co_destroy() of mut->condition in the
+       *     exit hook of the last key. Otherwise another thread may
+       *     co_destroy() the condition (which on NT closes the underlying
+       *     handle) in the window between THREADS_ALLOW() and co_broadcast()
+       *     acquiring the condition lock, causing co_broadcast() to operate
+       *     on an invalid handle.
+       */
       co_broadcast(&mut->condition);
+      THREADS_ALLOW();
 
       /* Try to wake up the waiting thread(s) immediately
        * in an attempt to avoid starvation.
@@ -4212,7 +4228,11 @@ static void check_thread_interrupt(struct callback *foo,
       thread_interrupt_callback = NULL;
     }
     if (throw_severity == THROW_ERROR) {
-      Pike_error("Interrupted.\n");
+      if (TYPEOF(Pike_interpreter.thread_state->result) == PIKE_T_STRING) {
+        Pike_error("%pS", Pike_interpreter.thread_state->result.u.string);
+      } else {
+        Pike_error("%pO", &Pike_interpreter.thread_state->result);
+      }
     } else {
       push_svalue(&Pike_interpreter.thread_state->result);
       assign_svalue(&throw_value, Pike_sp-1);
@@ -4229,19 +4249,24 @@ static void check_thread_interrupt(struct callback *foo,
  *! This function causes the thread to throw an error
  *! where the message defaults to @expr{"Interrupted.\n"@}.
  *!
- *! @fixme
- *!   The argument @[msg] is currently ignored.
- *!
  *! @note
  *!   Interrupts are asynchronous, and are currently not queued.
  *!
  *! @note
  *!   Due to the asynchronous nature of interrupts, it may take
  *!   some time before the thread reacts to the interrupt.
+ *!
+ *! @seealso
+ *!   @[kill()]
  */
 static void f_thread_id_interrupt(INT32 args)
 {
-  /* FIXME: The msg argument is not supported yet. */
+  if (!args) {
+    /* Default interruption error message. */
+    push_constant_text("Interrupted.\n");
+    args++;
+  }
+  assign_svalue(&THIS_THREAD->result, Pike_sp-args);
   pop_n_elems(args);
 
   if (!(THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK)) {
@@ -4285,6 +4310,9 @@ static void low_thread_kill (struct thread_state *th)
  *! @note
  *!   Killing the backend thread (aka the main thread) is
  *!   equivalent to calling @[predef::kill()].
+ *!
+ *! @seealso
+ *!   @[interrupt()]
  */
 static void f_thread_id_kill(INT32 args)
 {

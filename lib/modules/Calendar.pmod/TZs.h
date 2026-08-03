@@ -4858,9 +4858,13 @@ constant America_Yellowknife=America_Edmonton;
 class America_Vancouver
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
+      if (ux>=1793523600) // from 2026 Nov  1 02:00
+         return tz5 || (tz5=Rule.Timezone(25200,"MST"));
+      if (ux>=1772989200) // from 2026 Mar  9
+         return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
       if (ux>=536428800) // from 1987
          return tz3 || (tz3=TZrules.Canada(28800,"P%sT"));
       if (ux>=-2713880852) // from 1884

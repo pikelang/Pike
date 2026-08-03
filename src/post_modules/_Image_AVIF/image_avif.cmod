@@ -27,6 +27,12 @@ DECLARATIONS
 
 #include <avif/avif.h>
 
+/*! @module Image
+ */
+
+/*! @module AVIF
+ */
+
 static struct program *img_program;
 
 static struct program *image_program()
@@ -396,16 +402,34 @@ PIKE_MODULE_INIT
 {
   INIT
 #ifdef HAVE_LIBAVIF
+  /*! @decl constant int version
+   *!
+   *! Version of the AVIF library,
+   */
   add_integer_constant("version", AVIF_VERSION, 0);
+  /*! @decl constant int SPEED_DEFAULT
+   *! @decl constant int SPEED_SLOWEST
+   *! @decl constant int SPEED_FASTEST
+   */
   add_integer_constant("SPEED_DEFAULT", AVIF_SPEED_DEFAULT, 0);
   add_integer_constant("SPEED_SLOWEST", AVIF_SPEED_SLOWEST, 0);
   add_integer_constant("SPEED_FASTEST", AVIF_SPEED_FASTEST, 0);
 #ifdef AVIF_QUALITY_DEFAULT
+  /*! @decl constant int QUALITY_DEFAULT
+   *! @decl constant int QUALITY_LOSSLESS
+   *! @decl constant int QUALITY_WORST
+   *! @decl constant int QUALITY_BEST
+   */
   add_integer_constant("QUALITY_DEFAULT",  AVIF_QUALITY_DEFAULT,  0);
   add_integer_constant("QUALITY_LOSSLESS", AVIF_QUALITY_LOSSLESS, 0);
   add_integer_constant("QUALITY_WORST",    AVIF_QUALITY_WORST,    0);
   add_integer_constant("QUALITY_BEST",     AVIF_QUALITY_BEST,     0);
 #else
+  /*! @decl constant int QUALITY_DEFAULT
+   *! @decl constant int QUALITY_LOSSLESS
+   *! @decl constant int QUALITY_WORST
+   *! @decl constant int QUALITY_BEST
+   */
   add_integer_constant("QUALITY_DEFAULT",  60,  0);
   add_integer_constant("QUALITY_LOSSLESS", 100, 0);
   add_integer_constant("QUALITY_WORST",    0,   0);
@@ -424,3 +448,9 @@ PIKE_MODULE_EXIT
   }
 #endif
 }
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */

@@ -314,7 +314,7 @@ protected void read_cb(mixed dummy,string s)
    {
      if (sizeof(raw_buffer) > MAX_HEADER_SIZE)
      {
-       http_error(413);
+       http_error(431);
        return;
      }
      call_out(connection_timeout,connection_timeout_delay);
