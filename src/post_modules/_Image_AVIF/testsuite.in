@@ -2,9 +2,19 @@ START_MARKER
 
 cond_resolv( Image.AVIF.decode, [[
 
-  test_do( add_constant("avif_enc",
-    Image.AVIF.encode(Image.Image(8,8)->test(),
-                      ([ "speed": Image.AVIF.SPEED_FASTEST ]))) )
+  test_do( add_constant("avif_enc", MIME.decode_base64(
+#"AAAAHGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABw
+aWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAAImlsb2MAAAAAREAAAQABAAAAAAD6AAEA
+AAAAAAAAKgAAACNpaW5mAAAAAAABAAAAFWluZmUCAAAAAAEAAGF2MDEAAAAAVmlwcnAAAAA4aXBj
+bwAAAAxhdjFDgQAMAAAAABRpc3BlAAAAAAAAAAgAAAAIAAAAEHBpeGkAAAAAAwgICAAAABZpcG1h
+AAAAAAAAAAEAAQOBAgMAAAAybWRhdBIACggYCL9ggIaDQjIcGAAKKKKEAENH2/qXSTUcVZgfA+jk
+W1gvtMEfHw==")) )
+
+  cond_resolv( Image.AVIF.encode, [[
+    test_do( add_constant("avif_enc",
+      Image.AVIF.encode(Image.Image(8,8)->test(),
+                        ([ "speed": Image.AVIF.SPEED_FASTEST ]))) )
+  ]])
 
   test_true( stringp(avif_enc) )
 
