@@ -257,16 +257,16 @@ int test_version() {
 int test_fncases(void|string dir) {
   int failures = 0;
   dir = dir||".";
-  array d = get_dir(dir);
-  multiset d2 = (<>);
+  array d = sort(get_dir(dir));
+  mapping(string:string) d2 = ([]);
   foreach(d, string fn) {
-    if( d2[lower_case(fn)] ) {
-      write("%O with different cases in %O.\n", fn, dir);
+    if (string found = d2[lower_case(fn)] ) {
+      write("%O with different case (%O) in %O.\n", fn, found, dir);
       failures++;
     }
     if( Stdio.is_dir(dir+"/"+fn) )
       failures += test_fncases(dir+"/"+fn);
-    d2[lower_case(fn)]=1;
+    d2[lower_case(fn)] = fn;
   }
   return failures;
 }
