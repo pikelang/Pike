@@ -31,6 +31,12 @@ DECLARATIONS
  */
 
 /*! @module AVIF
+ *!
+ *!   Module providing support for the AV1 Image Format (aka AVIF)
+ *!   via the @tt{libavif2@} library.
+ *!
+ *! @seealso
+ *!   @url{https://github.com/AOMediaCodec/libavif@}
  */
 
 static struct program *img_program;

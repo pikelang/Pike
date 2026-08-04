@@ -756,6 +756,10 @@ o GI.repository
   will load (and compile) the corresponding GObject namespace.
   This adds support for eg Gtk 4.0.
 
+o Image.AVIF
+
+  Support for the AV1 Image Format (aka AVIF).
+
 o Standards.HPack (RFC 7541)
 o Stdio.FakePipe
 
