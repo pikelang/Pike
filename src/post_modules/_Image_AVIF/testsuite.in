@@ -42,8 +42,12 @@ cond_resolv( Image.AVIF.encode, [[
 
     dnl --- shared fixtures ---
 
+cond_resolv( Image.AVIF.version, [[
+
     test_do( add_constant("avif_src", Image.Image(8,8)->test()) )
     test_do( add_constant("avif_fast", ([ "speed": Image.AVIF.SPEED_FASTEST ])) )
+
+]])
 
     dnl --- encode ---
 
