@@ -31,6 +31,12 @@ DECLARATIONS
  */
 
 /*! @module AVIF
+ *!
+ *!   Module providing support for the AV1 Image Format (aka AVIF)
+ *!   via the @tt{libavif2@} library.
+ *!
+ *! @seealso
+ *!   @url{https://github.com/AOMediaCodec/libavif@}
  */
 
 static struct program *img_program;
@@ -396,6 +402,24 @@ PIKEFUN string(0..255) encode( object(Image.Image) img,
     push_string(make_shared_binary_string((const char *)output.data, output.size));
     avifRWDataFree(&output);
 }
+
+EXTRA
+{
+#undef ADD_FUNCTION2
+#define ADD_FUNCTION2(NAME, FUNC, TYPE, FLAGS, OPT_FLAGS)	\
+  if (CHECK_SHOULD_ADD_ ## FUNC) \
+  quick_add_function(NAME, CONSTANT_STRLEN(NAME), FUNC, TYPE,	\
+                     CONSTANT_STRLEN(TYPE), FLAGS, OPT_FLAGS)
+#define CHECK_HAS_CODEC(flags) \
+  (avifCodecName(AVIF_CODEC_CHOICE_AUTO, flags) != NULL)
+#define CHECK_SHOULD_ADD_f_cq__Image_AVIF_cq__decode \
+  CHECK_HAS_CODEC(AVIF_CODEC_FLAG_CAN_DECODE)
+#define CHECK_SHOULD_ADD_f_cq__Image_AVIF_decode \
+  CHECK_HAS_CODEC(AVIF_CODEC_FLAG_CAN_DECODE)
+#define CHECK_SHOULD_ADD_f_cq__Image_AVIF_encode \
+  CHECK_HAS_CODEC(AVIF_CODEC_FLAG_CAN_ENCODE)
+}
+
 #endif
 
 PIKE_MODULE_INIT

@@ -49,7 +49,6 @@ Incompatible changes
 New modules and functions
 -------------------------
 
-o Support for decoding the AVIF image format through the new Image.AVIF module.
 
 
 New features

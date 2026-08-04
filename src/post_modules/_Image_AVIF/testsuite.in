@@ -107,4 +107,6 @@ cond_resolv( Image.AVIF.decode, [[
 
 ]])
 
+test_do( add_constant("avif_enc") )
+
 END_MARKER
