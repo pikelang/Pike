@@ -40,12 +40,6 @@ cond_resolv( Image.AVIF.encode, [[
 
   dnl --- encode/decode roundtrip (requires a working AV1 codec at runtime) ---
 
-cond_resolv( Image.AVIF.encode, [[
-
-  cond( [[ !catch { Image.AVIF.encode(Image.Image(1,1), (["speed": Image.AVIF.SPEED_FASTEST])); } ]], [[
-
-]])
-
     dnl --- shared fixtures ---
 
     test_do( add_constant("avif_src", Image.Image(8,8)->test()) )
