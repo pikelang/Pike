@@ -368,8 +368,10 @@ int test_manifest()
   mapping all = ([
     ".gitignore" : "ignored",
   ]);
-  foreach(Stdio.File("src/.gitignore")->line_iterator();; string line)
+  foreach(Stdio.File("src/.gitignore")->line_iterator();; string line) {
+    // FIXME: This does not handle globs.
     all[line[1..]] = "ignored";
+  }
   foreach(entries;; mapping files)
   {
     all += files;
@@ -383,7 +385,7 @@ int test_manifest()
   }
   foreach(get_dir("src");; string file)
   {
-    if( file[-1]=='~' ) continue;
+    if( (< '~', '#' >)[file[-1]] ) continue;
     if( !all[file] )
     {
       write("File %O not described in MANIFEST.\n", file);
