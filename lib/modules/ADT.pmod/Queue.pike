@@ -52,13 +52,23 @@ __deprecated__ ValueType read()
 //! the queue is empty.
 //!
 //! @seealso
-//!   @[peek()], @[put()]
+//!   @[peek()], @[unget()], @[put()]
 object(ValueType)|zero get()
 {
   if( !sizeof(l) ) return UNDEFINED;
   ValueType res = l[0];
   l = l[1..];
   return res;
+}
+
+//! @decl void unget(ValueType item)
+//!   Prepend an element to the queue.
+//!
+//! @seealso
+//!   @[get()], @[put()]
+void unget(ValueType item)
+{
+  l = ({ item }) + l;
 }
 
 //! Returns the next element from the queue without removing it from
