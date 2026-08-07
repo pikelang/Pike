@@ -97,7 +97,8 @@ int main(int num, array(string) args)
         /* Convenience: When using make benchmark there will be some
            junk output before the actual json.
         */
-        string data = Stdio.read_file( opt[1] );
+        string data = ((opt[1] == "-") ? Stdio.stdin->read() :
+                       Stdio.read_file( opt[1] ));
         if( !data )
           exit(1,"Failed to read comparison file %q\n",
                combine_path( getcwd(), opt[1] ));
