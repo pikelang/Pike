@@ -65,7 +65,7 @@ enum PIKE_TYPE {
     PIKE_T_INT=0,
     PIKE_T_FLOAT=1,
 
-    PIKE_T_FUNCTION_ARG = 4,	/* Only used in type strings. */
+    PIKE_T_FUNCTION_ARG = 4,	/* Only used in type strings. Cf tFuncArg(). */
 
 /* NB: The reference counted types all have bit 3 (8) set. */
     PIKE_T_ARRAY=8,
