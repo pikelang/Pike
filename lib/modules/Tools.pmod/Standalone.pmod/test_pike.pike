@@ -1019,48 +1019,46 @@ int main(int argc, array(string) argv)
 	  _verify_internals();
 	}
 
-        // Is there a condition for this test?
+        // Are there any conditions for this test?
         if( sizeof(test->conditions) )
         {
-          // FIXME: Support more than one condition (current testsuite
-          // format only handles one though)
-          if( sizeof(test->conditions)>1 )
-            error("Only one concurrent condition supported.\n");
 
           int tmp;
-          string condition = test->conditions[0];
-	  if(!(tmp=cond_cache[condition]))
-	  {
-	    mixed err = catch {
-              tmp=!!(test->compile("mixed c() { return "+condition+"; }")()->c());
-	    };
+          foreach(test->conditions, string condition) {
+            if(!(tmp=cond_cache[condition]))
+            {
+              mixed err = catch {
+                  tmp=!!(test->compile("mixed c() { return "+condition+"; }")()->c());
+                };
 
-	    if(err) {
-	      if (err && err->is_cpp_or_compilation_error)
-                log_msg( "Conditional %d failed.\n", e+1);
-	      else
-                log_msg( "Conditional %d failed:\n%s\n", e+1,
-			 describe_backtrace(err) );
-              print_code( condition );
-	      errors++;
-	      tmp = -1;
-	    }
+              if(err) {
+                if (err && err->is_cpp_or_compilation_error)
+                  log_msg( "Conditional %d failed.\n", e+1);
+                else
+                  log_msg( "Conditional %d failed:\n%s\n", e+1,
+                           describe_backtrace(err) );
+                print_code( condition );
+                errors++;
+                tmp = -1;
+              }
 
-            if (tmp != 1) {
-              if ((verbose > 1 || failed_cond) && !err) {
-                log_msg("Conditional %d failed:\n", e+1);
-		print_code( condition );
-	      }
-	    } else if (verbose > 5) {
-              log_msg("Conditional %d succeeded.\n", e+1);
-	      if (verbose > 9) {
-		print_code( condition );
-	      }
-	    }
+              if (tmp != 1) {
+                if ((verbose > 1 || failed_cond) && !err) {
+                  log_msg("Conditional %d failed:\n", e+1);
+                  print_code( condition );
+                }
+              } else if (verbose > 5) {
+                log_msg("Conditional %d succeeded.\n", e+1);
+                if (verbose > 9) {
+                  print_code( condition );
+                }
+              }
 
-	    if(!tmp) tmp=-1;
-	    cond_cache[condition]=tmp;
-	  }
+              if(!tmp) tmp=-1;
+              cond_cache[condition]=tmp;
+            }
+            if (tmp == -1) break;
+          }
 
 	  if(tmp==-1)
 	  {
