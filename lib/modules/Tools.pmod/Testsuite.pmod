@@ -654,7 +654,7 @@ class M4Testsuite
     //! be parsed.
     protected void create(string data)
     {
-      if( sscanf(data, "COND %s\n%s", string cond, data)==2 )
+      while( sscanf(data, "COND %s\n%s", string cond, data)==2 )
         conditions += ({ cond });
       if( sscanf(data, "%s:%d: test %d, expected result: %s\n%s",
                  file, line, number, type, data)!=5 )
