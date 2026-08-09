@@ -379,7 +379,7 @@ class State {
 
   protected Gmp.mpz random_number(Gmp.mpz n)
   {
-    return [object(Gmp.mpz)](Gmp.mpz(random( [int(0..)](q->size() + 10 / 8)),
+    return [object(Gmp.mpz)](Gmp.mpz(random( [int(0..)]((q->size() + 10) / 8)),
 				     256) % n);
   }
 
