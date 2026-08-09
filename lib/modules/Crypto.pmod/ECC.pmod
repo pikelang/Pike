@@ -420,8 +420,9 @@ class Curve {
 	"y": MIME.encode_base64url(get_y_str()),
       ]);
       if (private_key) {
-	// FIXME: Detect if the private key hasn't been set.
-	jwk->d = MIME.encode_base64url(get_private_key()->digits(256));
+        Gmp.mpz priv = get_private_key();
+        if (!priv) return 0;
+        jwk->d = MIME.encode_base64url(priv->digits(256));
       }
       return jwk;
     }
@@ -810,8 +811,9 @@ class _Curve25519 {
 	"x": MIME.encode_base64url(get_x_str()),
       ]);
       if (private_key) {
-	// FIXME: Detect if the private key hasn't been set.
-	jwk->d = MIME.encode_base64url(get_private_key());
+        string(8bit) priv = get_private_key();
+        if (!sizeof(priv)) return 0;
+        jwk->d = MIME.encode_base64url(priv);
       }
       return jwk;
     }
@@ -1141,8 +1143,9 @@ class _Curve448 {
         "x": MIME.encode_base64url(get_x_str()),
       ]);
       if (private_key) {
-        // FIXME: Detect if the private key hasn't been set.
-        jwk->d = MIME.encode_base64url(get_private_key());
+        string(8bit) priv = get_private_key();
+        if (!sizeof(priv)) return 0;
+        jwk->d = MIME.encode_base64url(priv);
       }
       return jwk;
     }
