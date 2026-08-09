@@ -252,13 +252,13 @@ define(test_tests, [[DOTEST(RUNCT,dnl
 define(cond_begin,dnl
 checkarg([[cond]],1)dnl
 [[
-define([[CONDITION]],[[COND \$1
+pushdef([[CONDITION]],CONDITION[[COND \$1
 ]])
 ]])
 
 define(cond_end,dnl
 [[
-define([[CONDITION]],[[]])
+popdef([[CONDITION]])
 ]])
 
 define(cond,dnl
