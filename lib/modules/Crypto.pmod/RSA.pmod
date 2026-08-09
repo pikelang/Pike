@@ -410,8 +410,8 @@ class OAEPState {
     //! Returns the crypto block size, in bytes, or zero if not yet set.
     int block_size()
     {
-      // FIXME: This can be both zero and negative...
-      return n->size(256) - 2*(hash_alg->digest_size() + 1);
+      if (!n) return 0;
+      return max(0, n->size(256) - 2*(hash_alg->digest_size() + 1));
     }
 
     string(8bit) encrypt(string(8bit) s,
@@ -983,7 +983,7 @@ class PKCS1_5State
   //! Returns the crypto block size, in bytes, or zero if not yet set.
   int block_size()
   {
-    // FIXME: This can be both zero and negative...
+    if (!n) return 0;
     return n->size(256) - 3;
   }
 
