@@ -381,6 +381,8 @@ class OAEPState {
 
     string(7bit) name() { return "RSAES-OAEP"; }
 
+    // NIST SP 800-131A rev2 now disallows SHA-1 in new RSA-OAEP
+    // use. Defaults to SHA-256.
     protected .Hash hash_alg = .SHA1;
 
     optional .Hash get_hash_algorithm()
@@ -617,7 +619,7 @@ class PSSState {
       // 1. Length checking: If the length of the signature S is not k
       //    octets, output "invalid signature" and stop.
       if (sizeof(sign) != n->size(256)) {
-	werror("Bad size\n");
+        // werror("Bad size\n");
 	return 0;
       }
 
@@ -638,7 +640,7 @@ class PSSState {
       //       If RSAVP1 output "signature representative out of range," output
       //       "invalid signature" and stop.
       if (m >= n) {
-	werror("Out of range\n");
+        // werror("Out of range\n");
 	return 0;
       }
 

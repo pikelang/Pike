@@ -638,7 +638,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     render_hash = render_old_crypt_hash;
     // Defaults taken from PassLib.
     salt_size = 22;		// 16 bytes after base64-encoding.
-    default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    default_rounds = 29000;     // NB: The Passlib example defaults to 6400.
     scheme = "pbkdf2";
     break;
 
@@ -647,7 +647,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     render_hash = render_old_crypt_hash;
     // Defaults taken from PassLib.
     salt_size = 22;		// 16 bytes after base64-encoding.
-    default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    default_rounds = 29000;     // OWASP 2023 recommends 600,000
     scheme = "pbkdf2-sha256";
     break;
 
@@ -657,7 +657,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     render_hash = render_old_crypt_hash;
     // Defaults taken from Passlib.
     salt_size = 22;		// 16 bytes after base64-encoding.
-    default_rounds = 29000;	// NB: The Passlib example defaults to 6400.
+    default_rounds = 29000;     // OWASP 2023 recommends 210,000
     scheme = "pbkdf2-sha512";
     break;
 #endif
