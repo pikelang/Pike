@@ -6,9 +6,12 @@ AC_MODULE_INIT(_Regexp_PCRE)
 
 PIKE_FEATURE_WITHOUT(Regexp.PCRE)
 
+PCRE=pcre
 if test x$with_libpcre = xyes ; then
   PIKE_FEATURE_NODEP(Regexp.PCRE)
-  AC_CHECK_HEADERS(pcre.h pcre/pcre.h)
+  OLD_CPPFLAGS="${CPPFLAGS}"
+  CPPFLAGS="${CPPFLAGS} -DPCRE2_CODE_UNIT_WIDTH=0"
+  AC_CHECK_HEADERS(pcre.h pcre/pcre.h pcre2.h)
   if test $ac_cv_header_pcre_h = yes -o $ac_cv_header_pcre_pcre_h = yes; then
     AC_CHECK_LIB(pcre, pcre_compile, [
       AC_DEFINE(HAVE_LIBPCRE)
@@ -17,7 +20,18 @@ if test x$with_libpcre = xyes ; then
 
       AC_CHECK_FUNCS(pcre_fullinfo pcre_get_stringnumber)
     ])
-  fi
+  else if test $ac_cv_header_pcre2_h = yes; then
+    AC_CHECK_LIB(pcre2-8, pcre2_compile_8, [
+    AC_CHECK_LIB(pcre2-16, pcre2_compile_16, [
+    AC_CHECK_LIB(pcre2-32, pcre2_compile_32, [
+      PCRE=pcre2
+      AC_DEFINE(HAVE_LIBPCRE)
+      LIBS="${LIBS-} -lpcre2-8 -lpcre2-16 -lpcre2-32"
+      PIKE_FEATURE(Regexp.PCRE,[yes (libpcre2)])
+    ])])])
+  fi fi
+  CPPFLAGS="${old_CPPFLAGS}"
 fi
 
+AC_SUBST(PCRE)
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

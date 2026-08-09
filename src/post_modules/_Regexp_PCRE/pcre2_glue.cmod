@@ -1,0 +1,969 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| (original author: mirar)
+*/
+
+#include "global.h"
+#include "pcre_machine.h"
+
+#include "interpret.h"
+#include "svalue.h"
+#include "pike_error.h"
+#include "stralloc.h"
+#include "module_support.h"
+#include "sprintf.h"
+
+/*! @module Regexp
+ */
+
+/*! @module PCRE
+ */
+
+DECLARATIONS
+
+#ifdef HAVE_LIBPCRE
+
+#define PCRE2_CODE_UNIT_WIDTH 0
+#include <pcre2.h>
+#undef PCRE2_CODE_UNIT_WIDTH
+
+static void push_pcre2_error_message(int errorcode)
+{
+  struct string_builder s;
+  PCRE2_UCHAR32 buffer[256];
+  int len=pcre2_get_error_message_32(errorcode, buffer, sizeof(buffer)-1);
+  init_string_builder(&s, 2);
+  if (len <= 0)
+    string_builder_sprintf(&s, "Unknown error %d", errorcode);
+  else
+    string_builder_binary_strcat2(&s, (const p_wchar2 *)buffer, len);
+  push_string(finish_string_builder(&s));
+}
+
+/*** _pcre the regexp object ***********************************/
+
+/*! @class _pcre
+ */
+
+PIKECLASS _pcre
+{
+   CVAR pcre2_code_8 *re8;
+   CVAR pcre2_code_16 *re16;
+   CVAR pcre2_code_32 *re32;
+   CVAR uint32_t options;
+   PIKEVAR string pattern;
+
+   static void create_re_width(struct cq__Regexp_PCRE_cq__pcre_struct *that,
+			       enum size_shift width)
+   {
+     struct pike_string *pattern = that->pattern;
+     struct string_builder s;
+     ONERROR error;
+     void *result;
+     int errorcode;
+     PCRE2_SIZE erroffset;
+   
+     if (width != pattern->size_shift) {
+       init_string_builder(&s, width);
+       SET_ONERROR(error, free_string_builder, &s);
+       string_builder_shared_strcat(&s, that->pattern);
+       pattern = s.s;
+       if (width != pattern->size_shift)
+         Pike_error("Failed to widen string\n");
+     } else
+       error.func = NULL;
+   
+     switch (width) {
+     case eightbit:
+       result=THIS->re8=pcre2_compile_8(
+         STR0(pattern),
+         pattern->len,
+         that->options,
+         &errorcode,&erroffset,
+         NULL /* table */ );
+       break;
+     case sixteenbit:
+       result=THIS->re16=pcre2_compile_16(
+         STR1(pattern),
+         pattern->len,
+         that->options,
+         &errorcode,&erroffset,
+         NULL /* table */ );
+       break;
+     case thirtytwobit:
+       result=THIS->re32=pcre2_compile_32(
+         (PCRE2_SPTR32)STR2(pattern),
+         pattern->len,
+         that->options,
+         &errorcode,&erroffset,
+         NULL /* table */ );
+       break;
+     default:
+       Pike_error("Invalid size_shift!\n");
+     }
+   
+     if (!result) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre_compile [%d]: %pS\n",
+		  (int)erroffset,Pike_sp[-1].u.string);
+     }
+
+     if (error.func)
+       CALL_AND_UNSET_ONERROR (error);
+   }
+
+   /*! @decl void create(string pattern, void|int options, void|object table)
+    *!
+    *! The option bits are:
+    *! @int
+    *!   @value  OPTION.ALLOW_EMPTY_CLASS
+    *!     Treat a closing square bracket that immediately follows an opening
+    *!     one as a class with no characters
+    *!   @value  OPTION.ALT_BSUX
+    *!     Alter handling of \u, \U, and \x to closer match ECMAscript
+    *!   @value  OPTION.ANCHORED
+    *!     Force pattern anchoring
+    *!   @value  OPTION.AUTO_CALLOUT
+    *!     Automatically inserts callout items, all with number 255, before
+    *!     each pattern item, except immediately before or after an explicit
+    *!     callout in the pattern
+    *!   @value  OPTION.CASELESS
+    *!     Do caseless matching
+    *!   @value  OPTION.DOLLAR_ENDONLY
+    *!     $ not to match newline at end
+    *!   @value  OPTION.DOTALL
+    *!     . matches anything including NL
+    *!   @value  OPTION.DUPNAMES
+    *!     Names used to identify capture groups need not be unique
+    *!   @value  OPTION.ENDANCHORED
+    *!     The end of any pattern match must be right at the end of the
+    *!     string being searched
+    *!   @value  OPTION.EXTENDED
+    *!     Ignore whitespace and # comments
+    *!   @value  OPTION.FIRSTLINE
+    *!     The start of an unanchored pattern match must be before or at the
+    *!     first newline in the subject string following the start of matching
+    *!   @value  OPTION.MATCH_UNSET_BACKREF
+    *!     A backreference to an unset capture group matches an empty string
+    *!   @value  OPTION.MULTILINE
+    *!     ^ and $ match newlines within data
+    *!   @value  OPTION.NEVER_UCP
+    *!     Locks out the use of Unicode properties
+    *!   @value  OPTION.NEVER_UTF
+    *!     Locks out interpretation of the pattern as UTF-8, UTF-16, or UTF-32 
+    *!   @value  OPTION.NO_AUTO_CAPTURE
+    *!     Disable numbered capturing parentheses (named ones available)
+    *!   @value  OPTION.NO_AUTO_POSSESS
+    *!     Disable "auto-possessification"
+    *!   @value  OPTION.NO_DOTSTAR_ANCHOR
+    *!     Disables an optimization that is applied when .* is the first
+    *!     significant item in a top-level branch of a pattern, and all the
+    *!     other branches also start with .* or with \A or \G or ^
+    *!   @value  OPTION.NO_START_OPTIMIZE
+    *!     Disable start-up optimizations
+    *!   @value  OPTION.NO_UTF_CHECK
+    *!     Disable checks for UTF validity
+    *!   @value  OPTION.UCP
+    *!     Force the use of Unicode properties 
+    *!   @value  OPTION.UNGREEDY
+    *!     Invert greediness of quantifiers
+    *!   @value  OPTION.UTF
+    *!     Regard both the pattern and the subject strings that are
+    *!     subsequently processed as strings of UTF characters instead of
+    *!     single-code-unit strings
+    *!   @value  OPTION.NEVER_BACKSLASH_C
+    *!     Ĺock out the use of \C in the pattern that is being compiled
+    *!   @value  OPTION.ALT_CIRCUMFLEX
+    *!     A multiline circumflex also matches after a terminating newline
+    *!   @value  OPTION.ALT_VERBNAMES
+    *!     Normal backslash processing is applied to verb names and only an
+    *!     unescaped closing parenthesis terminates the name
+    *!   @value  OPTION.EXTENDED_MORE
+    *!     Like @[OPTION.EXTENDED] but, in addition, unescaped space and
+    *!     horizontal tab characters are ignored inside a character class
+    *!   @value  OPTION.LITERAL
+    *!     All meta-characters in the pattern are disabled, and it is treated
+    *!     as a literal string
+    *!   @value  OPTION.MATCH_INVALID_UTF
+    *!     Enables support for matching in subject strings that contain
+    *!     invalid UTF sequences
+    *!   @value  OPTION.ALT_EXTENDED_CLASS
+    *!     Alters the parsing of character classes to follow the extended
+    *!     syntax described by Unicode UTS#18
+    *! @endint
+    */
+
+   PIKEFUN void create(string pattern,
+		       void|int options,
+		       void|object table)
+     flags ID_PROTECTED;
+   {
+     if (THIS->pattern) { free_string(THIS->pattern); THIS->pattern=NULL; }
+     THIS->pattern = pattern;
+     add_ref(pattern);
+
+     if (THIS->re8) {
+       pcre2_code_free_8(THIS->re8);
+       THIS->re8 = NULL;
+     }
+     if (THIS->re16) {
+       pcre2_code_free_16(THIS->re16);
+       THIS->re16 = NULL;
+     }
+     if (THIS->re32) {
+       pcre2_code_free_32(THIS->re32);
+       THIS->re32 = NULL;
+     }
+
+     THIS->options =
+       options && TYPEOF(*options) == PIKE_T_INT ? options->u.integer : 0;
+     
+     if (!(THIS->options &
+	   (PCRE2_UTF | PCRE2_NEVER_UCP | PCRE2_MATCH_INVALID_UTF)))
+       THIS->options |= PCRE2_UCP | PCRE2_NEVER_UTF;
+
+     create_re_width(THIS, pattern->size_shift);
+   }
+
+   /*! @decl object study()
+    *!
+    *!  Do nothing (backward compat)
+    */
+
+   PIKEFUN object study()
+   {
+     RETURN this_object();
+   }
+
+   /*! @decl protected string _sprintf(int c, mapping flags)
+    */
+   PIKEFUN string _sprintf(int c, mapping flags)
+     flags ID_PROTECTED;
+   {
+     switch(c)
+     {
+     default:
+       push_undefined();
+       return;
+
+     case 'O':
+       push_static_text ("%t(%O)");
+       ref_push_object(Pike_fp->current_object);
+       if (THIS->pattern)
+         ref_push_string(THIS->pattern);
+       else
+         push_undefined();
+       f_sprintf(3);
+       return;
+
+     case 's':
+       if (THIS->pattern)
+         ref_push_string(THIS->pattern);
+       else
+         push_undefined();
+       return;
+
+     case 't':
+       push_static_text("Regexp.PCRE._pcre");
+       return;
+     }
+   }
+
+/*! @decl int|array exec(string subject,void|int startoffset)
+ *!     Matches the regexp against @[subject], starting at
+ *!     @[startoffset] if it is given.
+ *!
+ *!     If the match is successful, the return value is an array that
+ *!     holds the offsets of all matches:
+ *!
+ *!     Elements 0 and 1 have the start and end offsets, respectively,
+ *!     of the match for the whole regexp. The start offset is
+ *!     inclusive while the end is exclusive, i.e. the matching string
+ *!     is @expr{@[subject][res[0]..res[1]-1]@}.
+ *!
+ *!     Elements 2 and 3 have the offsets of the first capturing
+ *!     submatch (if any) in the same way, elements 4 and 5 are for
+ *!     the second capturing submatch, etc. If a submatch didn't match
+ *!     anything, the corresponding elements are set to -1. If a
+ *!     submatch has matched successfully several times, the offsets
+ *!     of the last match are returned.
+ *!
+ *!     The returned array is always of length 2*n + 1, where n is the
+ *!     total number of capturing submatches in the regexp.
+ *!
+ *!     If there is an error, an integer error code is returned:
+ *!
+ *!  @int
+ *!     @value ERROR.NOMATCH
+ *!
+ *!   The subject string did not match the pattern.
+ *!
+ *!     @value ERROR.NULL
+ *!
+ *!   Either code or subject was passed as NULL, or ovector was NULL
+ *!   and oversize was not zero.
+ *!
+ *!     @value ERROR.BADOPTION
+ *!
+ *!   An unrecognized bit was set in the options argument.
+ *!
+ *!     @value ERROR.BADMAGIC
+ *!
+ *!   PCRE stores a 4-byte "magic number" at the start of the compiled
+ *!   code, to catch the case when it is passed a junk pointer. This
+ *!   is the error it gives when the magic number isn't present.
+ *!
+ *!     @value ERROR.UNKNOWN_NODE
+ *!
+ *!   While running the pattern match, an unknown item was encountered
+ *!   in the compiled pattern. This error could be caused by a bug in
+ *!   PCRE or by overwriting of the compiled pattern.
+ *!
+ *!     @value ERROR.NOMEMORY
+ *!
+ *!   If a pattern contains back references, but the ovector that is
+ *!   passed to pcre_exec() is not big enough to remember the
+ *!   referenced substrings, PCRE gets a block of memory at the start
+ *!   of matching to use for this purpose. If the call via
+ *!   pcre_malloc() fails, this error is given. The memory is freed at
+ *!   the end of matching.
+ *!
+ *!     @value ERROR.NOSUBSTRING
+ *!
+ *!   This error is used by the pcre_copy_substring(),
+ *!   pcre_get_substring(), and pcre_get_substring_list() functions
+ *!   (see below). It is never returned by pcre_exec().
+ *!
+ *!     @value ERROR.MATCHLIMIT
+ *!
+ *!   The recursion and backtracking limit, as specified by the
+ *!   match_limit field in a pcre_extra structure (or defaulted) was
+ *!   reached. See the description above.
+ *!
+ *!     @value ERROR.CALLOUT
+ *!
+ *!   This error is never generated by pcre_exec() itself. It is
+ *!   provided for use by callout functions that want to yield a
+ *!   distinctive error code. See the pcrecallout documentation for
+ *!   details.
+ *! @endint
+ */
+
+#define OVECTOR_SIZE 3000 /* multiple of three; possible hits*3 */
+
+   PIKEFUN int|array(int) exec(string subject,
+			       void|int startoffset)
+   {
+     struct array *res;
+
+     int ovector[OVECTOR_SIZE];
+     PCRE2_SIZE off=0;
+     uint32_t opts=0;
+
+     if (!THIS->pattern)
+       Pike_error("need to initialize before exec() is called\n");
+
+     if (startoffset) {
+       INT64 o;
+       if (!int64_from_svalue(&o, startoffset))
+	 Pike_error("int expected\n");
+       off = o;
+     }
+
+     /* FIXME: also MATCH_LIMIT and CALLOUT_DATA ... later */
+
+     if (off > (PCRE2_SIZE)subject->len) {
+       /* PCRE2 returns PCRE2_ERROR_BADOFFSET in this case,
+	  but the testsuite expects NOMATCH (-1)... */
+       push_int (PCRE2_ERROR_NOMATCH);
+     }
+
+     else {
+       int rc;
+       uint32_t len;
+       PCRE2_SIZE *ovector = NULL;
+       struct pike_string *sub = subject;
+       struct string_builder s;
+       ONERROR error, error2;
+       
+       if (sub->size_shift < THIS->pattern->size_shift) {
+	 /* Need to widen subject */
+	 init_string_builder(&s, THIS->pattern->size_shift);
+	 SET_ONERROR(error, free_string_builder, &s);
+	 string_builder_shared_strcat(&s, subject);
+	 sub = s.s;
+	 if (sub->size_shift < THIS->pattern->size_shift)
+	   Pike_error("Failed to widen string\n");
+       } else
+	 error.func = NULL;
+
+       switch(sub->size_shift) {
+       case eightbit:
+	 if (!THIS->re8)
+	   create_re_width(THIS, eightbit);
+	 {
+	   pcre2_match_data_8 *match_data =
+	     pcre2_match_data_create_from_pattern_8(THIS->re8, NULL);
+	   SET_ONERROR(error2, pcre2_match_data_free_8, match_data);
+	   rc=pcre2_match_8(THIS->re8,
+			    STR0(sub),sub->len,
+			    off,opts,
+			    match_data,NULL);
+	   if (rc>=0) {
+	     ovector = pcre2_get_ovector_pointer_8(match_data);
+	     len = pcre2_get_ovector_count_8(match_data) * 2;
+	   }
+	 }
+	 break;
+       case sixteenbit:
+	 if (!THIS->re16)
+	   create_re_width(THIS, sixteenbit);
+	 {
+	   pcre2_match_data_16 *match_data =
+	     pcre2_match_data_create_from_pattern_16(THIS->re16, NULL);
+	   SET_ONERROR(error2, pcre2_match_data_free_16, match_data);
+	   rc=pcre2_match_16(THIS->re16,
+			     STR1(sub),sub->len,
+			     off,opts,
+			     match_data,NULL);
+	   if (rc>=0) {
+	     ovector = pcre2_get_ovector_pointer_16(match_data);
+	     len = pcre2_get_ovector_count_16(match_data) * 2;
+	   }
+	 }
+	 break;
+       case thirtytwobit:
+	 if (!THIS->re32)
+	   create_re_width(THIS, thirtytwobit);
+	 {
+	   pcre2_match_data_32 *match_data =
+	     pcre2_match_data_create_from_pattern_32(THIS->re32, NULL);
+	   SET_ONERROR(error2, pcre2_match_data_free_32, match_data);
+	   rc=pcre2_match_32(THIS->re32,
+			     (PCRE2_SPTR32)STR2(sub),sub->len,
+			     off,opts,
+			     match_data,NULL);
+	   if (rc>=0) {
+	     ovector = pcre2_get_ovector_pointer_32(match_data);
+	     len = pcre2_get_ovector_count_32(match_data) * 2;
+	   }
+	 }
+	 break;
+       default:
+	 Pike_error("Invalid size_shift!\n");
+       }
+
+       if (rc<0)
+       {
+         push_int(rc);
+       }
+       else
+       {
+         uint32_t i, urc=(uint32_t)rc;
+         urc*=2;
+	 if (urc > len)
+	   urc = len;
+         res=allocate_array(len);
+         for (i=0; i<urc; i++)
+         {
+           SET_SVAL(ITEM(res)[i], T_INT, NUMBER_NUMBER, integer,
+                    ovector[i]);
+         }
+         for (; i < len; i++) {
+           SET_SVAL(ITEM(res)[i], T_INT, NUMBER_NUMBER, integer, -1);
+         }
+         push_array(res);
+       }
+       CALL_AND_UNSET_ONERROR (error2);
+       if (error.func)
+	 CALL_AND_UNSET_ONERROR (error);
+     }
+   }
+
+/*! @endclass
+ */
+
+/*! @decl array(string) split_subject(string subject, @
+ *!                        array(int) previous_result)
+ *! Convenience function that
+ *! splits a subject string on the result from @[_pcre()->exec()]
+ *!
+ *! equal to
+ *! map(previous_result/2,
+ *!     lambda(array v) { return subject[v[0]..v[1]-1]; })
+ */
+
+PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
+{
+  int i,j;
+  int sz=previous_result->size/2;
+  struct array *res;
+
+  for (i=0; i<sz*2; i++)
+    if (TYPEOF(ITEM(previous_result)[i]) != T_INT)
+      SIMPLE_ARG_TYPE_ERROR("split_subject",2,"array(int)");
+
+  res=allocate_array(sz);
+  for (i=j=0; j<sz; i+=2,j++)
+  {
+    INT_TYPE start = ITEM(previous_result)[i].u.integer;
+    INT_TYPE end = ITEM(previous_result)[i+1].u.integer;
+    if (start >= 0 && end >= start) {
+      SET_SVAL(ITEM(res)[j], T_STRING, 0, string,
+               string_slice(subject, start, end - start));
+    }
+  }
+
+   RETURN res;
+}
+
+#endif /* HAVE_LIBPCRE */
+
+/*** module init & exit & stuff *****************************************/
+
+PIKE_MODULE_EXIT
+{
+  EXIT
+}
+
+PIKE_MODULE_INIT
+{
+#ifdef HAVE_LIBPCRE
+
+  add_integer_constant("PCRE2", 1, 0);
+
+  /*! @module OPTION
+   *!  contains all option constants
+   */
+
+  start_new_program();
+
+  /*! @decl constant ALLOW_EMPTY_CLASS
+   *! (from the pcre2api manpage) By default, for compatibility with Perl,
+   *! a closing square bracket thatimmediately follows an opening one is
+   *! treated as a data character for the class. When ALLOW_EMPTY_CLASS is
+   *! set, it terminates the class, which therefore contains no characters
+   *! and so can never match.
+   */
+  add_integer_constant("ALLOW_EMPTY_CLASS",PCRE2_ALLOW_EMPTY_CLASS,0);
+
+  /*! @decl constant ALT_BSUX
+   *! (from the pcre2api manpage) This option request alternative handling
+   *! of three escape sequences, which makes PCRE2's behaviour more like
+   *! ECMAscript (aka JavaScript). When it is set:
+   *! @ol
+   *!   @item
+   *!     \U matches an upper case "U" character; by default \U causes
+   *!     a compile time error (Perl uses \U to upper case subsequent
+   *!     characters).
+   *!   @item
+   *!     \u matches a lower case "u" character unless it is followed by
+   *!     four hexadecimal digits, in which case the hexadecimal number
+   *!     defines the code point to match. By default, \u causes a compile
+   *!     time error (Perl uses it to upper case the following character).
+   *!   @item
+   *!     \x matches a lower case "x" character unless it is followed by
+   *!     two hexadecimal digits, in which case the hexadecimal number
+   *!     defines the code point to match. By default, as in Perl, a
+   *!     hexadecimal number is always expected after \x, but it may have
+   *!     zero, one, or two digits (so, for example, \xz matches a
+   *!     binary zero character followed by z).
+   *! @endol
+   */
+  add_integer_constant("ALT_BSUX",PCRE2_ALT_BSUX,0);
+
+  /*! @decl constant ALT_CIRCUMFLEX
+   *! (from the pcre2api manpage) In multiline mode (when @[MULTILINE]
+   *! is set), the circumflex metacharacter matches at the start of the
+   *! subject, and also after any internal newline. However, it does not
+   *! match after a newline at the end of the subject, for compatibility
+   *! with Perl. If you want a multiline circumflex also to match after
+   *! a terminating newline, you must set ALT_CIRCUMFLEX.
+   */
+  add_integer_constant("ALT_CIRCUMFLEX",PCRE2_ALT_CIRCUMFLEX,0);
+
+  /*! @decl constant ALT_EXTENDED_CLASS
+   *! (from the pcre2api manpage) Alters the parsing of character classes
+   *! to follow the extended syntax described by Unicode UTS#18.
+   *! The ALT_EXTENDED_CLASS option has no impact on the behaviour of the
+   *! Perl-specific "(?[...])" syntax for extended classes, but instead
+   *! enables the alternative syntax of extended class behaviour inside
+   *! ordinary "[...]" character classes.
+   */
+  add_integer_constant("ALT_EXTENDED_CLASS",PCRE2_ALT_EXTENDED_CLASS,0);
+
+  /*! @decl constant ALT_VERBNAMES
+   *! (from the pcre2api manpage) By default, for compatibility with Perl,
+   *! the name in any verb sequence such as (*MARK:NAME) is any sequence
+   *! of characters that does not include a closing parenthesis. The name
+   *! is not processed in any way, and it is not possible to include a
+   *! closing parenthesis in the name. However, if the ALT_VERBNAMES
+   *! option is set, normal backslash processing is applied to verb names
+   *! and only an unescaped closing parenthesis terminates the name.
+   *! A closing parenthesis can be included in a name either as \) or
+   *! between \Q and \E. If the @[EXTENDED] or @[EXTENDED_MORE] option
+   *! is set with ALT_VERBNAMES, unescaped whitespace in verb names is
+   *! skipped and #-comments are recognized, exactly as in the rest of
+   *! the pattern.
+   */
+  add_integer_constant("ALT_VERBNAMES",PCRE2_ALT_VERBNAMES,0);
+
+  /*! @decl constant ANCHORED
+   *! (from the pcre2api manpage) If this bit is set, the pattern is forced
+   *! to be "anchored", that is, it is constrained to match only at the first
+   *! matching point in the string that is being searched (the "subject
+   *! string"). This effect can also be achieved by appropriate constructs
+   *! in the pattern itself, which is the only way to do it in Perl.
+   */
+  add_integer_constant("ANCHORED",PCRE2_ANCHORED,0);
+
+  /*! @decl constant AUTO_CALLOUT
+   *! (from the pcre2api manpage) If this bit is set, callout items are
+   *! automatically inserted, all with number 255, before each pattern item,
+   *! except immediately before or after an explicit callout in the pattern.
+   */
+  add_integer_constant("AUTO_CALLOUT",PCRE2_AUTO_CALLOUT,0);
+
+  /*! @decl constant CASELESS
+   *! (from the pcre2api manpage) If this bit is set, letters in the
+   *! pattern match both upper and lower case letters in the subject.
+   *! It is equivalent to Perl's /i option, and it can be changed within
+   *! a pattern by a (?i) option setting
+   */
+  add_integer_constant("CASELESS",PCRE2_CASELESS,0);
+
+  /*! @decl constant DOLLAR_ENDONLY
+   *! (from the pcre2api manpage) If this bit is set, a dollar
+   *! metacharacter in the pattern matches only at the end of the subject
+   *! string. Without this option, a dollar also matches immediately before
+   *! a newline at the end of the string (but not before any other newlines).
+   *! The DOLLAR_ENDONLY option is ignored if @[MULTILINE] is set.
+   *! There is no equivalent to this option in Perl, and no way to set it
+   *! within a pattern.
+   */
+  add_integer_constant("DOLLAR_ENDONLY",PCRE2_DOLLAR_ENDONLY,0);
+
+  /*! @decl constant DOTALL
+   *! (from the pcre2api manpage) If this bit is set, a dot metacharacter
+   *! in the pattern matches any character, including one that indicates
+   *! a newline. However, it only ever matches one character, even if
+   *! newlines are coded as CRLF. Without this option, a dot does not match
+   *! when the current position in the subject is at a newline. This option
+   *! is equivalent to Perl's /s option, and it can be changed within a
+   *! pattern by a (?s) option setting. A negative class such as [^a] always
+   *! matches newline characters, and the \N escape sequence always matches a
+   *! non-newline character, independent of the setting of DOTALL.
+   */
+  add_integer_constant("DOTALL",PCRE2_DOTALL,0);
+
+  /*! @decl constant DUPNAMES
+   *! (from the pcre2api manpage) If this bit is set, names used to identify
+   *! capture groups need not be unique. This can be helpful for certain types
+   *! of pattern when it is known that only one instance of the named group
+   *! can ever be matched.
+   */
+  add_integer_constant("DUPNAMES",PCRE2_DUPNAMES,0);
+
+  /*! @decl constant ENDANCHORED
+   *! (from the pcre2api manpage) If this bit is set, the end of any pattern
+   *! match must be right at the end of the string being searched (the
+   *! "subject string"). If the pattern match succeeds by reaching (*ACCEPT),
+   *! but does not reach the end of the subject, the match fails at the
+   *! current starting point. For unanchored patterns, a new match is then
+   *! tried at the next starting point. However, if the match succeeds by
+   *! reaching the end of the pattern, but not the end of the subject,
+   *! backtracking occurs and an alternative match may be found.
+   */
+  add_integer_constant("ENDANCHORED",PCRE2_ENDANCHORED,0);
+
+  /*! @decl constant EXTENDED
+   *! (from the pcre2api manpage) If this bit is set, most white space
+   *! characters in the pattern are totally ignored except when escaped,
+   *! inside a character class, or inside a \Q...\E sequence. However,
+   *! white space is not allowed within sequences such as (?> that introduce
+   *! various parenthesized groups, nor within numerical quantifiers such
+   *! as {1,3}. Ignorable white space is permitted between an item and a
+   *! following quantifier and between a quantifier and a following + that
+   *! indicates possessiveness. EXTENDED is equivalent to Perl's /x option,
+   *! and it can be changed within a pattern by a (?x) option setting.
+   */
+  add_integer_constant("EXTENDED",PCRE2_EXTENDED,0);
+
+  /*! @decl constant EXTENDED_MORE
+   *! (from the pcre2api manpage) This option has the effect of @[EXTENDED],
+   *! but, in addition, unescaped space and horizontal tab characters are
+   *! ignored inside a character class. Note: only these two characters are
+   *! ignored, not the full set of pattern white space characters that are
+   *! ignored outside a character class. EXTENDED_MORE is equivalent to
+   *! Perl's /xx option, and it can be changed within a pattern by a
+   *! (?xx) option setting.
+   */
+  add_integer_constant("EXTENDED_MORE",PCRE2_EXTENDED_MORE,0);
+
+  /*! @decl constant FIRSTLINE
+   *! (from the pcre2api manpage) If this option is set, the start of an
+   *! unanchored pattern match must be before or at the first newline in
+   *! the subject string following the start of matching, though the
+   *! matched text may continue over the newline. If @tt{startoffset@} is
+   *! non-zero, the limiting newline is not necessarily the first newline
+   *! in the subject. For example, if the subject string is "abc\nxyz"
+   *! (where \n represents a single-character newline) a pattern match for
+   *! "yz" succeeds with FIRSTLINE if @tt{startoffset@} is greater than 3.
+   */
+  add_integer_constant("FIRSTLINE",PCRE2_FIRSTLINE,0);
+
+  /*! @decl constant LITERAL
+   *! (from the pcre2api manpage) If this option is set, all
+   *! meta-characters in the pattern are disabled, and it is
+   *! treated as a literal string. Matching literal strings with
+   *! a regular expression engine is not the most efficient way
+   *!of doing it. If you are doing a lot of literal matching and
+   *! are worried about efficiency, you should consider
+   *! using other approaches.
+   */
+  add_integer_constant("LITERAL",PCRE2_LITERAL,0);
+
+  /*! @decl constant MATCH_INVALID_UTF
+   *! (from the pcre2api manpage) This option forces @[UTF] (see below) and
+   *! also enables support for matching in subject strings that contain
+   *! invalid UTF sequences.
+   */
+  add_integer_constant("MATCH_INVALID_UTF",PCRE2_MATCH_INVALID_UTF,0);
+
+  /*! @decl constant MATCH_UNSET_BACKREF
+   *! (from the pcre2api manpage) If this option is set, a backreference
+   *! to an unset capture group matches an empty string (by default this
+   *! causes the current matching alternative to fail). A pattern such as
+   *! (\1)(a) succeeds when this option is set (assuming it can find an
+   *! "a" in the subject), whereas it fails by default, for Perl
+   *! compatibility. Setting this option makes PCRE2 behave more like
+   *! ECMAscript (aka JavaScript).
+   */
+  add_integer_constant("MATCH_UNSET_BACKREF",PCRE2_MATCH_UNSET_BACKREF,0);
+
+  /*! @decl constant MULTILINE
+   *! (from the pcre2api manpage) By default, for the purposes of matching
+   *! "start of line" and "end of line", PCRE2 treats the subject string as
+   *! consisting of a single line of characters, even if it actually contains
+   *! newlines. The "start of line" metacharacter (^) matches only at the
+   *! start of the string, and the "end of line" metacharacter ($) matches
+   *! only at the end of the string, or before a terminating newline
+   *! (except when DOLLAR_ENDONLY is set). Note, however, that unless
+   *! @[DOTALL] is set, the "any character" metacharacter (.) does not match
+   *! at a newline. This behaviour (for ^, $, and dot) is the same as Perl.
+   *!
+   *! When MULTILINE it is set, the "start of line" and "end of line"
+   *! constructs match immediately following or immediately before internal
+   *! newlines in the subject string, respectively, as well as at the very
+   *! start and end. This is equivalent to Perl's /m option, and it can be
+   *! changed within a pattern by a(?m) option setting. Note that the
+   *! "start of line" metacharacter does not match after a newline at the
+   *! end of the subject, for compatibility with Perl. However, you can
+   *! change this by setting the @[ALT_CIRCUMFLEX] option. If there are no
+   *! newlines in a subject string, or no occurrences of ^ or $ in a
+   *! pattern, setting MULTILINE has no effect.
+   */
+  add_integer_constant("MULTILINE",PCRE2_MULTILINE,0);
+
+  /*! @decl constant NEVER_BACKSLASH_C
+   *! (from the pcre2api manpage) This option locks out the use of \C
+   *! in the pattern that is being compiled. This escape can cause
+   *! unpredictable behaviour in UTF-8 or UTF-16 modes, because
+   *! it may leave the current matching point in the middle of a
+   *! multi-code-unit character. This option may be useful in applications
+   *! that process patterns from external sources. Note that there is also
+   *! a build-time option that permanently locks out the use of \C.
+   */
+  add_integer_constant("NEVER_BACKSLASH_C",PCRE2_NEVER_BACKSLASH_C,0);
+
+  /*! @decl constant NEVER_UCP
+   *! (from the pcre2api manpage) This option locks out the use of Unicode
+   *! properties for handling \B, \b, \D, \d, \S, \s, \W, \w, and some of
+   *! the POSIX character classes, as described for the @[UCP] option below.
+   *! In particular, it prevents the creator of the pattern from enabling
+   *! this facility by starting the pattern with (*UCP). This option may be
+   *! useful in applications that process patterns from external sources.
+   *! The option combination @[UCP] and NEVER_UCP causes an error.
+   */
+  add_integer_constant("NEVER_UCP",PCRE2_NEVER_UCP,0);
+
+  /*! @decl constant NEVER_UTF
+   *! (from the pcre2api manpage) This option locks out interpretation of the
+   *! pattern as UTF-8, UTF-16, or UTF-32. In particular, it prevents the
+   *! creator of the pattern from switching to UTF interpretation by starting
+   *! the pattern with (*UTF). This option may be useful in applications that
+   *! process patterns from external sources. The combination of @[UTF] and
+   *! NEVER_UTF causes an error.
+   */
+  add_integer_constant("NEVER_UTF",PCRE2_NEVER_UTF,0);
+
+  /*! @decl constant NO_AUTO_CAPTURE
+   *! (from the pcre2api manpage) If this option is set, it disables the
+   *! use of numbered capturing parentheses in the pattern. Any opening
+   *! parenthesis that is not followed by ? behaves as if it were followed
+   *! by ?: but named parentheses can still be used for capturing (and
+   *! they acquire numbers in the usual way). This is the same as Perl's
+   *! /n option. Note that, when this option is set, references to capture
+   *! groups (backreferences or recursion/subroutine calls) may only refer
+   *! to named groups, though the reference can be by name or by number.
+   */
+  add_integer_constant("NO_AUTO_CAPTURE",PCRE2_NO_AUTO_CAPTURE,0);
+
+  /*! @decl constant NO_AUTO_POSSESS
+   *! (from the pcre2api manpage) If this (deprecated) option is set,
+   *! it disables "auto-possessification", which is an optimization that,
+   *! for example, turns a+b into a++b in order to avoid backtracks into
+   *! a+ that can never be successful. However, if callouts are in use,
+   *! auto-possessification means that some callouts are never taken. You can
+   *! set this option if you want the matching functions to do a full
+   *! unoptimized search and run all the callouts, but it is mainly provided
+   *! for testing purposes.
+   */
+  add_integer_constant("NO_AUTO_POSSESS",PCRE2_NO_AUTO_POSSESS,0);
+
+  /*! @decl constant NO_DOTSTAR_ANCHOR
+   *! (from the pcre2api manpage) If this (deprecated) option is set,
+   *! it disables an optimization that is applied when .* is the first
+   *! significant item in a top-level branch of a pattern, and all the other
+   *! branches also start with .* or with \A or \G or ^. The optimization
+   *! is automatically disabled for .* if it is inside an atomic group
+   *! or a capture group that is the subject of a backreference, or if the
+   *! pattern contains (*PRUNE) or (*SKIP). When the optimization is not
+   *! disabled, such a pattern is automatically anchored if @[DOTALL] is
+   *! set for all the .* items and @[MULTILINE] is not set for any ^ items.
+   *! Otherwise, the fact that any match must start either at the start of
+   *! the subject or following a newline is remembered. Like other
+   *! optimizations, this can cause callouts to be skipped.
+   */
+  add_integer_constant("NO_DOTSTAR_ANCHOR",PCRE2_NO_DOTSTAR_ANCHOR,0);
+
+  /*! @decl constant NO_START_OPTIMIZE
+   *! (from the pcre2api manpage) This is an option whose main effect is
+   *! at matching time.
+   *!
+   *! There are a number of optimizations that may occur at the start of
+   *! a match, in order to speed up the process. For example, if it is
+   *! known that an unanchored match must start with a specific code unit
+   *! value, the matching code searches the subject for that value, and
+   *! fails immediately if it cannot find it, without actually running
+   *! the main matching function. The start-up optimizations are in effect
+   *! a pre-scan of the subject that takes place before the pattern is run.
+   *!
+   *! Disabling the start-up optimizations may cause performance to suffer.
+   *! However, this may be desirable for patterns which contain callouts or
+   *! items such as (*COMMIT) and (*MARK).
+   */
+  add_integer_constant("NO_START_OPTIMIZE",PCRE2_NO_START_OPTIMIZE,0);
+
+  /*! @decl constant NO_UTF_CHECK
+   *! (from the pcre2api manpage) When @[UTF] is set, the validity of the
+   *! pattern as a UTF string is automatically checked.  If an invalid UTF
+   *! sequence is found, an error is thrown.
+   *!
+   *! If you know that your pattern is a valid UTF string, and you want to
+   *! skip this check for performance reasons, you can set the NO_UTF_CHECK
+   *! option. When it is set, the effect of passing an invalid UTF string a
+   *! s a pattern is undefined. It may cause your program to crash or loop.
+   *!
+   *! Note also that setting NO_UTF_CHECK at compile time does not disable
+   *! the error that is given if an escape sequence for an invalid Unicode
+   *! code point is encountered in the pattern. In particular, the so-called
+   *! "surrogate" code points (0xd800 to 0xdfff) are invalid.
+   */
+  add_integer_constant("NO_UTF_CHECK",PCRE2_NO_UTF_CHECK,0);
+
+  /*! @decl constant UCP
+   *! (from the pcre2api manpage) This option has two effects.
+   *! Firstly, it change the way PCRE2 processes \B, \b, \D, \d,
+   *! \S, \s, \W, \w, and some of the POSIX character classes. By
+   *! default, only ASCII characters are recognized, but if UCP is set,'
+   *! Unicode properties are used to classify characters.
+   *!
+   *! The second effect of UCP is to force the use of Unicode properties for
+   *! upper/lower casing operations, even when @[UTF] is not set. This makes
+   *! it possible to process strings in the 16-bit UCS-2 code.
+   *!
+   *! In Pike the option is automatically enabled unless either @[UTF] or
+   *! @[NEVER_UCP] is set.
+   */
+  add_integer_constant("UCP",PCRE2_UCP,0);
+
+  /*! @decl constant UNGREEDY
+   *! (from the pcre2api manpage) This option inverts the "greediness" of the
+   *! quantifiers so that they are not greedy by default, but become greedy
+   *! if followed by "?". It is not compatible with Perl. It can also be set
+   *! by a (?U) option setting within the pattern.
+   */
+  add_integer_constant("UNGREEDY",PCRE2_UNGREEDY,0);
+
+  /*! @decl constant UTF
+   *! (from the pcre2api manpage) This option causes PCRE2 to regard
+   *! both the pattern and the subject strings that are subsequently
+   *! processed as strings of UTF characters instead of single-code-unit
+   *! strings.
+   */
+  add_integer_constant("UTF",PCRE2_UTF,0);
+
+#define END_PROGRAM_MAKE_SUBMODULE(X)					\
+   do									\
+   { 									\
+     struct program *p=end_program();					\
+     struct object *obj=clone_object(p,0);				\
+     add_object_constant(X,obj,0);					\
+     free_object(obj);							\
+     free_program(p);							\
+   }									\
+   while (0)
+
+   END_PROGRAM_MAKE_SUBMODULE("OPTION");
+
+   /*! @endmodule OPTION
+    */
+  
+
+   /*! @module ERROR
+    */
+
+   /*! @decl constant NOMATCH
+    *! @decl constant NULL
+    *! @decl constant BADOPTION
+    *! @decl constant BADMAGIC
+    *! @decl constant NOMEMORY
+    *! @decl constant NOSUBSTRING
+    *! @decl constant MATCHLIMIT
+    *! @decl constant CALLOUT
+    *!   Documented in @[_pcre()->exec()].
+    */
+
+   start_new_program();
+   /* documented in exec() */
+   add_integer_constant("NOMATCH",PCRE2_ERROR_NOMATCH,0);
+   add_integer_constant("NULL",PCRE2_ERROR_NULL,0);
+   add_integer_constant("BADOPTION",PCRE2_ERROR_BADOPTION,0);
+   add_integer_constant("BADMAGIC",PCRE2_ERROR_BADMAGIC,0);
+   add_integer_constant("NOMEMORY",PCRE2_ERROR_NOMEMORY,0);
+   add_integer_constant("NOSUBSTRING",PCRE2_ERROR_NOSUBSTRING,0);
+#ifdef PCRE2_ERROR_MATCHLIMIT
+   add_integer_constant("MATCHLIMIT",PCRE2_ERROR_MATCHLIMIT,0);
+#endif
+#ifdef PCRE2_ERROR_CALLOUT
+   add_integer_constant("CALLOUT",PCRE2_ERROR_CALLOUT,0);
+#endif
+
+   END_PROGRAM_MAKE_SUBMODULE("ERROR");
+
+   /*! @endmodule ERROR
+    */
+
+   /*! @endmodule PCRE
+    */
+
+   /*! @endmodule Regexp
+    */
+
+   INIT
+
+#endif /* HAVE_LIBPCRE */
+}

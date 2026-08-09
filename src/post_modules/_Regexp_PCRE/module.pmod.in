@@ -37,7 +37,9 @@ class Plain
 		  ([ERROR.NULL   :"ERROR.NULL",
 		    ERROR.BADOPTION:"ERROR.BADOPTION",
 		    ERROR.BADMAGIC :"ERROR.BADMAGIC",
+#if constant(@module@.ERROR.UNKNOWN_NODE)
 		    ERROR.UNKNOWN_NODE:"ERROR.UNKNOWN_NODE",
+#endif /* PCRE.ERROR.UNKNOWN_NODE */
 #if constant(@module@.ERROR.MATCHLIMIT)
 		    ERROR.MATCHLIMIT  :"ERROR.MATCHLIMIT",
 #endif /* PCRE.ERROR.MATCHLIMIT */
@@ -353,7 +355,24 @@ class Studied
    }
 }
 
-#if constant(@module@.UTF8_SUPPORTED)
+#if constant(@module@.PCRE2)
+
+// PCRE2 has builtin widestring support
+
+// Same as Plain
+class Widestring
+{
+   inherit Plain;
+}
+
+// Same as Studied
+class StudiedWidestring
+{
+   inherit Studied;
+}
+
+#define GOOD StudiedWidestring
+#elif constant(@module@.UTF8_SUPPORTED)
 
 //! Wrapper class around Plain, that will allow widestring
 //! patterns and subjects.

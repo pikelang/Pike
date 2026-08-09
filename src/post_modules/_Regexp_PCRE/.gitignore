@@ -16,3 +16,5 @@
 /stamp-h.in
 /pcre_glue.c
 /pcre_glue.cmod.compiled
+/pcre2_glue.c
+/pcre2_glue.cmod.compiled
