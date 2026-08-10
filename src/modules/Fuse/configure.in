@@ -10,6 +10,7 @@ if test x$with_fuse = xno; then
 else
   PIKE_FEATURE_NODEP(Fuse)
   AC_DEFINE(_FILE_OFFSET_BITS,64,[Needed for FUSE])
+  PIKE_PKG_CONFIG(fuse)
   AC_CHECK_HEADERS(fuse.h)
   if test x$ac_cv_header_fuse_h = xyes ; then
     AC_MSG_CHECKING([if we can compile C9x code])
