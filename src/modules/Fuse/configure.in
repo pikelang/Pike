@@ -10,38 +10,40 @@ if test x$with_fuse = xno; then
 else
   PIKE_FEATURE_NODEP(Fuse)
   AC_DEFINE(_FILE_OFFSET_BITS,64,[Needed for FUSE])
-  PIKE_PKG_CONFIG(fuse)
-  AC_CHECK_HEADERS(fuse.h)
-  if test x$ac_cv_header_fuse_h = xyes ; then
-    AC_MSG_CHECKING([if we can compile C9x code])
-    AC_CACHE_VAL(pike_cv_c9x_compiler, [
-      AC_TRY_COMPILE([
-#include <stdlib.h>
-	// C++ comment.
 
-	// Structure field assignment.
-	static struct foo {
-	  int field1, field2;
-	} bar = {
-	  .field2 = 1,
-	  .field1 = 2,
-	};
-      ], [
-	exit(0);
-	// Variables declared in the middle of code.
-	int foo = 0;
-      ], [ pike_cv_c9x_compiler=yes ], [ pike_cv_c9x_compiler=no ])
-    ])
-    if test "$pike_cv_c9x_compiler" = "yes"; then
-      AC_MSG_RESULT(yes)
+  AC_MSG_CHECKING([if we can compile C9x code])
+  AC_CACHE_VAL(pike_cv_c9x_compiler, [
+    AC_TRY_COMPILE([
+#include <stdlib.h>
+      // C++ comment.
+
+      // Structure field assignment.
+      static struct foo {
+        int field1, field2;
+      } bar = {
+        .field2 = 1,
+        .field1 = 2,
+      };
+    ], [
+      exit(0);
+      // Variables declared in the middle of code.
+      int foo = 0;
+    ], [ pike_cv_c9x_compiler=yes ], [ pike_cv_c9x_compiler=no ])
+  ])
+  if test "$pike_cv_c9x_compiler" = "yes"; then
+    AC_MSG_RESULT(yes)
+
+    PIKE_PKG_CONFIG(fuse)
+    AC_CHECK_HEADERS(fuse.h)
+    if test x$ac_cv_header_fuse_h = xyes ; then
       AC_CHECK_LIB(fuse, fuse_read_cmd, [
             LIBS="${LIBS-} -lfuse"
             AC_DEFINE(HAVE_LIBFUSE,1,[Define if libfuse and fuse.h is available])
             PIKE_FEATURE_OK(Fuse)
       ])
-    else
-      AC_MSG_RESULT(no)
     fi
+  else
+    AC_MSG_RESULT(no)
   fi
 fi
 
