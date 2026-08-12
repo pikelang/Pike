@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
@@ -19,7 +20,9 @@
 
 #ifdef HAVE_LIBFUSE
 /* Attempt to use FUSE API version 2.9 (if possible). */
+#ifndef FUSE_USE_VERSION
 #define FUSE_USE_VERSION 29
+#endif
 #include <fuse.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -41,7 +44,14 @@ static struct object *global_fuse_obj; // There Can Be Only One
 enum dispatch_id {
     PF_GETATTR,
     PF_READLINK,
+#if FUSE_VERSION < 30
     PF_GETDIR,
+#else
+    PF_OPENDIR,
+    PF_READDIR,
+    PF_FSYNCDIR,
+    PF_RELEASEDIR,
+#endif
     PF_MKNOD,
     PF_MKDIR,
     PF_UNLINK,
@@ -86,11 +96,35 @@ struct dispatch_struct {
             char *buf;
             size_t size;
         } pf_readlink;
+#if FUSE_VERSION < 30
         struct {
             const char *path;
             fuse_dirh_t h;
             fuse_dirfil_t filler;
         } pf_getdir;
+#else
+        struct {
+            const char *path;
+            struct fuse_file_info *fi;
+        } pf_opendir;
+        struct {
+            const char *path;
+            void *buf;
+            fuse_fill_dir_t fill_dir_func;
+            off_t off;
+            struct fuse_file_info *fi;
+            enum fuse_readdir_flags flags;
+        } pf_readdir;
+        struct {
+            const char *path;
+            struct fuse_file_info *fi;
+        } pf_releasedir;
+        struct {
+            const char *path;
+            int datasync;
+            struct fuse_file_info *fi;
+        } pf_fsyncdir;
+#endif
         struct {
             const char *path;
             mode_t mode;
@@ -209,7 +243,11 @@ static int low_pf_getattr(const char *path, struct stat *stbuf)
     return 0;
 }
 
-static int pf_getattr(const char *path, struct stat *stbuf)
+static int pf_getattr(const char *path, struct stat *stbuf
+#if FUSE_VERSION >= 30
+                      , struct fuse_file_info *fi
+#endif
+                      )
 {
     struct dispatch_struct dinfo;
 
@@ -248,6 +286,7 @@ static int pf_readlink(const char *path, char *buf, size_t size)
 }
 
 static struct program *getdir_program;
+#if FUSE_VERSION < 30
 struct getdir_storage
 {
     fuse_dirh_t h;
@@ -273,6 +312,7 @@ static int low_pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
     push_text( path );
     push_getdir_callback( h, filler );
+    /* NOTE: Calls readdir() (and NOT getdir()) in the Operations object! */
     apply( global_fuse_obj, "readdir", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
@@ -291,6 +331,35 @@ static int pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 
     return dinfo.ret;
 }
+#else
+static int pf_opendir(const char *path, struct fuse_file_info *fi)
+{
+    return -1;
+}
+
+static int pf_readdir(const char *path, void *buf,
+                      int (*fill_dir_cb)(void *buf, const char *name,
+                                         const struct stat *stbuf,
+                                         off_t off,
+                                         enum fuse_fill_dir_flags flags),
+                      off_t offset,
+                      struct fuse_file_info *fi,
+                      enum fuse_readdir_flags flags)
+{
+    return -1;
+}
+
+static int pf_fsyncdir(const char *path, int datasync,
+                       struct fuse_file_info *fi)
+{
+    return -1;
+}
+
+static int pf_releasedir(const char *path, struct fuse_file_info *fi)
+{
+    return -1;
+}
+#endif
 
 static int low_pf_mknod(const char *path, mode_t mode, dev_t rdev)
 {
@@ -410,7 +479,11 @@ static int low_pf_rename(const char *from, const char *to)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_rename(const char *from, const char *to)
+static int pf_rename(const char *from, const char *to
+#if FUSE_VERSION >= 30
+                     , unsigned int flags
+#endif
+                     )
 {
     struct dispatch_struct dinfo;
 
@@ -454,7 +527,11 @@ static int low_pf_chmod(const char *path, mode_t mode)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_chmod(const char *path, mode_t mode)
+static int pf_chmod(const char *path, mode_t mode
+#if FUSE_VERSION >= 30
+                    , struct fuse_file_info *fi
+#endif
+                    )
 {
     struct dispatch_struct dinfo;
 
@@ -477,7 +554,11 @@ static int low_pf_chown(const char *path, uid_t uid, gid_t gid)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_chown(const char *path, uid_t uid, gid_t gid)
+static int pf_chown(const char *path, uid_t uid, gid_t gid
+#if FUSE_VERSION >= 30
+                    , struct fuse_file_info *fi
+#endif
+                    )
 {
     struct dispatch_struct dinfo;
 
@@ -500,7 +581,11 @@ static int low_pf_truncate(const char *path, off_t size)
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_truncate(const char *path, off_t size)
+static int pf_truncate(const char *path, off_t size
+#if FUSE_VERSION >= 30
+                    , struct fuse_file_info *fi
+#endif
+                    )
 {
     struct dispatch_struct dinfo;
 
@@ -546,7 +631,11 @@ static int low_pf_utimens(const char *path, const struct timespec tv[2])
     return -Pike_sp[-1].u.integer;
 }
 
-static int pf_utimens(const char *path, const struct timespec tv[2])
+static int pf_utimens(const char *path, const struct timespec tv[2]
+#if FUSE_VERSION >= 30
+                    , struct fuse_file_info *fi
+#endif
+                    )
 {
     struct dispatch_struct dinfo;
 
@@ -969,11 +1058,20 @@ static void low_dispatch(void *vinfo) {
                                      dinfo->sig.pf_readlink.buf,
                                      dinfo->sig.pf_readlink.size);
         return;
+#if FUSE_VERSION < 30
     case PF_GETDIR:
         dinfo->ret = low_pf_getdir(dinfo->sig.pf_getdir.path,
                                    dinfo->sig.pf_getdir.h,
                                    dinfo->sig.pf_getdir.filler);
         return;
+#else
+    case PF_OPENDIR:
+    case PF_READDIR:
+    case PF_FSYNCDIR:
+    case PF_RELEASEDIR:
+        Pike_fatal("Not implemented!\n");
+        return;
+#endif
     case PF_MKNOD:
         dinfo->ret = low_pf_mknod(dinfo->sig.pf_mknod.path,
                                   dinfo->sig.pf_mknod.mode,
@@ -1099,7 +1197,14 @@ static void low_dispatch(void *vinfo) {
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
     .readlink	= pf_readlink,
+#if FUSE_VERSION < 30
     .getdir	= pf_getdir,
+#else
+    .opendir	= pf_opendir,
+    .readdir	= pf_readdir,
+    .fsyncdir	= pf_fsyncdir,
+    .releasedir	= pf_releasedir,
+#endif
     .mknod	= pf_mknod,
     .mkdir	= pf_mkdir,
     .unlink	= pf_unlink,
@@ -1182,12 +1287,14 @@ PIKE_MODULE_INIT
 {
     ADD_FUNCTION( "run", f_fuse_run, tFunc(tObj tArr(tStr),tVoid ), 0 );
 
+#if FUSE_VERSION < 30
     start_new_program( );
     {
 	ADD_STORAGE( struct getdir_storage );
 	ADD_FUNCTION( "`()", f_getdir_callback, tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid ), 0 );
     }
     getdir_program = end_program();
+#endif
 
     add_integer_constant("F_RDLCK", F_GETLK, 0 );
     add_integer_constant("F_WRLCK", F_WRLCK, 0 );
@@ -1208,6 +1315,6 @@ PIKE_MODULE_EXIT
 
 PIKE_MODULE_INIT
 {
-  HIDE_MODULE();
+    HIDE_MODULE();
 }
 #endif /* HAVE_LIBFUSE */
