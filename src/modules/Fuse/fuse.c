@@ -1240,8 +1240,8 @@ static struct fuse_operations pike_fuse_oper = {
 static void f_fuse_run( INT32 nargs )
 {
     struct fuse *fuse;
-    int i, multi, fd;
-    char **argv, *mountpoint;
+    int i;
+    char **argv;
     struct array *args;
     int ret;
 
@@ -1258,7 +1258,7 @@ static void f_fuse_run( INT32 nargs )
 	    string_has_null(args->item[i].u.string) )
 	{
 	    free( argv );
-	    Pike_error("Argument %d is not a nonbinary string\n", i );
+            Pike_error("Argument %d is not a nonbinary string.\n", i );
 	}
 	argv[i] = args->item[i].u.string->str;
     }
@@ -1268,8 +1268,10 @@ static void f_fuse_run( INT32 nargs )
     ret = fuse_main(args->size, argv, &pike_fuse_oper, NULL);
     THREADS_DISALLOW();
 
+    global_fuse_obj = NULL;
     free(argv);
-    exit(ret);
+
+    push_int(ret);
 }
 
 PIKE_MODULE_EXIT
@@ -1285,7 +1287,7 @@ PIKE_MODULE_EXIT
 
 PIKE_MODULE_INIT
 {
-    ADD_FUNCTION( "run", f_fuse_run, tFunc(tObj tArr(tStr),tVoid ), 0 );
+    ADD_FUNCTION( "run", f_fuse_run, tFunc(tObj tArr(tStr), tIntPos ), 0 );
 
 #if FUSE_VERSION < 30
     start_new_program( );
