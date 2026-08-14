@@ -37,8 +37,6 @@
 /*! @module ___Fuse
  */
 
-static struct object *global_fuse_obj; // There Can Be Only One
-
 #define DEFAULT_ERRNO() do{if((TYPEOF(Pike_sp[-1]) == T_INT) && Pike_sp[-1].u.integer) return -Pike_sp[-1].u.integer;return -ENOENT;}while(0)
 
 enum dispatch_id {
@@ -85,6 +83,7 @@ enum dispatch_id {
 struct dispatch_struct {
     enum dispatch_id id;
     int ret;
+    struct object *operations_obj;
 
     union {
         struct {
@@ -110,20 +109,20 @@ struct dispatch_struct {
         struct {
             const char *path;
             void *buf;
-            fuse_fill_dir_t fill_dir_func;
+            fuse_fill_dir_t fill_dir_cb;
             off_t off;
             struct fuse_file_info *fi;
             enum fuse_readdir_flags flags;
         } pf_readdir;
         struct {
             const char *path;
-            struct fuse_file_info *fi;
-        } pf_releasedir;
-        struct {
-            const char *path;
             int datasync;
             struct fuse_file_info *fi;
         } pf_fsyncdir;
+        struct {
+            const char *path;
+            struct fuse_file_info *fi;
+        } pf_releasedir;
 #endif
         struct {
             const char *path;
@@ -230,12 +229,13 @@ struct dispatch_struct {
 
 static void low_dispatch(void*);
 
-static int low_pf_getattr(const char *path, struct stat *stbuf)
+static int low_pf_getattr(struct object *op_obj,
+                          const char *path, struct stat *stbuf)
 {
     extern struct program *stat_program;
     struct stat *st;
     push_text( path );
-    apply( global_fuse_obj, "getattr", 1 );
+    apply( op_obj, "getattr", 1 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
 	!(st = get_storage( Pike_sp[-1].u.object, stat_program)) )
 	DEFAULT_ERRNO();
@@ -252,17 +252,19 @@ static int pf_getattr(const char *path, struct stat *stbuf
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_GETATTR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_getattr.path = path;
     dinfo.sig.pf_getattr.stbuf = stbuf;
     call_with_interpreter(low_dispatch, &dinfo);
     return dinfo.ret;
 }
 
-static int low_pf_readlink(const char *path, char *buf, size_t size)
+static int low_pf_readlink(struct object *op_obj,
+                           const char *path, char *buf, size_t size)
 {
     int res;
     push_text( path );
-    apply( global_fuse_obj, "readlink", 1 );
+    apply( op_obj, "readlink", 1 );
     if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
@@ -277,6 +279,7 @@ static int pf_readlink(const char *path, char *buf, size_t size)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_READLINK;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_readlink.path = path;
     dinfo.sig.pf_readlink.buf = buf;
     dinfo.sig.pf_readlink.size = size;
@@ -308,12 +311,13 @@ static void push_getdir_callback( fuse_dirh_t h, fuse_dirfil_t filler )
     push_object( o );
 }
 
-static int low_pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
+static int low_pf_getdir(struct object *op_obj,
+                         const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
     push_text( path );
     push_getdir_callback( h, filler );
     /* NOTE: Calls readdir() (and NOT getdir()) in the Operations object! */
-    apply( global_fuse_obj, "readdir", 2 );
+    apply( op_obj, "readdir", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -324,6 +328,7 @@ static int pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_GETDIR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_getdir.path = path;
     dinfo.sig.pf_getdir.h = h;
     dinfo.sig.pf_getdir.filler = filler;
@@ -338,11 +343,8 @@ static int pf_opendir(const char *path, struct fuse_file_info *fi)
 }
 
 static int pf_readdir(const char *path, void *buf,
-                      int (*fill_dir_cb)(void *buf, const char *name,
-                                         const struct stat *stbuf,
-                                         off_t off,
-                                         enum fuse_fill_dir_flags flags),
-                      off_t offset,
+                      fuse_fill_dir_t fill_dir_cb,
+                      off_t off,
                       struct fuse_file_info *fi,
                       enum fuse_readdir_flags flags)
 {
@@ -361,12 +363,13 @@ static int pf_releasedir(const char *path, struct fuse_file_info *fi)
 }
 #endif
 
-static int low_pf_mknod(const char *path, mode_t mode, dev_t rdev)
+static int low_pf_mknod(struct object *op_obj,
+                        const char *path, mode_t mode, dev_t rdev)
 {
     push_text( path );
     push_int( mode );
     push_int( rdev );
-    apply( global_fuse_obj, "mknod", 3 );
+    apply( op_obj, "mknod", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -377,6 +380,7 @@ static int pf_mknod(const char *path, mode_t mode, dev_t rdev)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_MKNOD;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_mknod.path = path;
     dinfo.sig.pf_mknod.mode = mode;
     dinfo.sig.pf_mknod.rdev = rdev;
@@ -385,11 +389,12 @@ static int pf_mknod(const char *path, mode_t mode, dev_t rdev)
     return dinfo.ret;
 }
 
-static int low_pf_mkdir(const char *path, mode_t mode)
+static int low_pf_mkdir(struct object *op_obj,
+                        const char *path, mode_t mode)
 {
     push_text( path );
     push_int( mode );
-    apply( global_fuse_obj, "mkdir", 2 );
+    apply( op_obj, "mkdir", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -400,6 +405,7 @@ static int pf_mkdir(const char *path, mode_t mode)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_MKDIR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_mkdir.path = path;
     dinfo.sig.pf_mkdir.mode = mode;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -407,10 +413,11 @@ static int pf_mkdir(const char *path, mode_t mode)
     return dinfo.ret;
 }
 
-static int low_pf_unlink(const char *path)
+static int low_pf_unlink(struct object *op_obj,
+                         const char *path)
 {
     push_text( path );
-    apply( global_fuse_obj, "unlink", 1 );
+    apply( op_obj, "unlink", 1 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -421,16 +428,18 @@ static int pf_unlink(const char *path)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_UNLINK;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_unlink.path = path;
     call_with_interpreter(low_dispatch, &dinfo);
 
     return dinfo.ret;
 }
 
-static int low_pf_rmdir(const char *path)
+static int low_pf_rmdir(struct object *op_obj,
+                        const char *path)
 {
     push_text( path );
-    apply( global_fuse_obj, "rmdir", 1 );
+    apply( op_obj, "rmdir", 1 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -441,17 +450,19 @@ static int pf_rmdir(const char *path)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_RMDIR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_rmdir.path = path;
     call_with_interpreter(low_dispatch, &dinfo);
 
     return dinfo.ret;
 }
 
-static int low_pf_symlink(const char *from, const char *to)
+static int low_pf_symlink(struct object *op_obj,
+                          const char *from, const char *to)
 {
     push_text( from );
     push_text( to );
-    apply( global_fuse_obj, "symlink", 2 );
+    apply( op_obj, "symlink", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -462,6 +473,7 @@ static int pf_symlink(const char *from, const char *to)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_SYMLINK;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_symlink.from = from;
     dinfo.sig.pf_symlink.to = to;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -469,11 +481,12 @@ static int pf_symlink(const char *from, const char *to)
     return dinfo.ret;
 }
 
-static int low_pf_rename(const char *from, const char *to)
+static int low_pf_rename(struct object *op_obj,
+                         const char *from, const char *to)
 {
     push_text( from );
     push_text( to );
-    apply( global_fuse_obj, "rename", 2 );
+    apply( op_obj, "rename", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -488,6 +501,7 @@ static int pf_rename(const char *from, const char *to
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_RENAME;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_rename.from = from;
     dinfo.sig.pf_rename.to = to;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -495,11 +509,12 @@ static int pf_rename(const char *from, const char *to
     return dinfo.ret;
 }
 
-static int low_pf_link(const char *from, const char *to)
+static int low_pf_link(struct object *op_obj,
+                       const char *from, const char *to)
 {
     push_text( from );
     push_text( to );
-    apply( global_fuse_obj, "link", 2 );
+    apply( op_obj, "link", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -510,6 +525,7 @@ static int pf_link(const char *from, const char *to)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_LINK;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_link.from = from;
     dinfo.sig.pf_link.to = to;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -517,11 +533,12 @@ static int pf_link(const char *from, const char *to)
     return dinfo.ret;
 }
 
-static int low_pf_chmod(const char *path, mode_t mode)
+static int low_pf_chmod(struct object *op_obj,
+                        const char *path, mode_t mode)
 {
     push_text( path );
     push_int( mode );
-    apply( global_fuse_obj, "chmod", 2 );
+    apply( op_obj, "chmod", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -536,6 +553,7 @@ static int pf_chmod(const char *path, mode_t mode
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_CHMOD;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_chmod.path = path;
     dinfo.sig.pf_chmod.mode = mode;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -543,12 +561,13 @@ static int pf_chmod(const char *path, mode_t mode
     return dinfo.ret;
 }
 
-static int low_pf_chown(const char *path, uid_t uid, gid_t gid)
+static int low_pf_chown(struct object *op_obj,
+                        const char *path, uid_t uid, gid_t gid)
 {
     push_text( path );
     push_int( uid );
     push_int( gid );
-    apply( global_fuse_obj, "chown", 3 );
+    apply( op_obj, "chown", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -563,6 +582,7 @@ static int pf_chown(const char *path, uid_t uid, gid_t gid
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_CHOWN;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_chown.path = path;
     dinfo.sig.pf_chown.uid = uid;
     dinfo.sig.pf_chown.gid = gid;
@@ -571,11 +591,12 @@ static int pf_chown(const char *path, uid_t uid, gid_t gid
     return dinfo.ret;
 }
 
-static int low_pf_truncate(const char *path, off_t size)
+static int low_pf_truncate(struct object *op_obj,
+                           const char *path, off_t size)
 {
     push_text( path );
     push_int64( size );
-    apply( global_fuse_obj, "truncate", 2 );
+    apply( op_obj, "truncate", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -590,6 +611,7 @@ static int pf_truncate(const char *path, off_t size
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_TRUNCATE;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_truncate.path = path;
     dinfo.sig.pf_truncate.size = size;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -598,12 +620,13 @@ static int pf_truncate(const char *path, off_t size
 }
 
 #if FUSE_VERSION < 26
-static int low_pf_utime(const char *path, struct utimbuf *buf)
+static int low_pf_utime(struct object *op_obj,
+                        const char *path, struct utimbuf *buf)
 {
     push_text( path );
     push_int( buf->actime );
     push_int( buf->modtime );
-    apply( global_fuse_obj, "utime", 3 );
+    apply( op_obj, "utime", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -613,6 +636,7 @@ static int pf_utime(const char *path, struct utimbuf *buf)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_UTIME;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_utime.path = path;
     dinfo.sig.pf_utime.utimbuf = buf;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -620,12 +644,13 @@ static int pf_utime(const char *path, struct utimbuf *buf)
     return dinfo.ret;
 }
 #else
-static int low_pf_utimens(const char *path, const struct timespec tv[2])
+static int low_pf_utimens(struct object *op_obj,
+                          const char *path, const struct timespec tv[2])
 {
     push_text( path );
     push_int64( (INT64)tv[0].tv_sec*(INT64)1000000000 + (INT64)tv[0].tv_nsec );
     push_int64( (INT64)tv[1].tv_sec*(INT64)1000000000 + (INT64)tv[1].tv_nsec );
-    apply( global_fuse_obj, "utimens", 3 );
+    apply( op_obj, "utimens", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -640,6 +665,7 @@ static int pf_utimens(const char *path, const struct timespec tv[2]
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_UTIMENS;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_utimens.path = path;
     dinfo.sig.pf_utimens.tv = tv;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -648,11 +674,12 @@ static int pf_utimens(const char *path, const struct timespec tv[2]
 }
 #endif
 
-static int low_pf_open(const char *path, struct fuse_file_info *fi)
+static int low_pf_open(struct object *op_obj,
+                       const char *path, struct fuse_file_info *fi)
 {
     push_text( path );
     push_int( fi->flags );
-    apply( global_fuse_obj, "open", 2 );
+    apply( op_obj, "open", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -663,6 +690,7 @@ static int pf_open(const char *path, struct fuse_file_info *fi)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_OPEN;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_open.path = path;
     dinfo.sig.pf_open.fi = fi;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -670,13 +698,14 @@ static int pf_open(const char *path, struct fuse_file_info *fi)
     return dinfo.ret;
 }
 
-static int low_pf_read(const char *path, char *buf, size_t size, off_t offset,
-                    struct fuse_file_info *UNUSED(fi))
+static int low_pf_read(struct object *op_obj,
+                       const char *path, char *buf, size_t size, off_t offset,
+                       struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_int( size );
     push_int64( offset );
-    apply( global_fuse_obj, "read", 3 );
+    apply( op_obj, "read", 3 );
 
     if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	(Pike_sp[-1].u.string->size_shift) )
@@ -693,6 +722,7 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_READ;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_read.path = path;
     dinfo.sig.pf_read.buf = buf;
     dinfo.sig.pf_read.size = size;
@@ -703,13 +733,14 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
     return dinfo.ret;
 }
 
-static int low_pf_write(const char *path, const char *buf, size_t size,
-		    off_t offset, struct fuse_file_info *UNUSED(fi))
+static int low_pf_write(struct object *op_obj,
+                        const char *path, const char *buf, size_t size,
+                        off_t offset, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_string( make_shared_binary_string(buf, size ) );
     push_int64( offset );
-    apply( global_fuse_obj, "write", 3 );
+    apply( op_obj, "write", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -721,6 +752,7 @@ static int pf_write(const char *path, const char *buf, size_t size,
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_WRITE;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_write.path = path;
     dinfo.sig.pf_write.buf = buf;
     dinfo.sig.pf_write.size = size;
@@ -731,13 +763,14 @@ static int pf_write(const char *path, const char *buf, size_t size,
     return dinfo.ret;
 }
 
-static int low_pf_statfs(const char *path, struct statvfs *stbuf)
+static int low_pf_statfs(struct object *op_obj,
+                         const char *path, struct statvfs *stbuf)
 {
     struct mapping *m;
     struct svalue *val;
 
     push_text( path );
-    apply( global_fuse_obj, "statfs", 1 );
+    apply( op_obj, "statfs", 1 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
 	DEFAULT_ERRNO();
     m = Pike_sp[-1].u.mapping;
@@ -771,6 +804,7 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_STATFS;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_statfs.path = path;
     dinfo.sig.pf_statfs.stbuf = stbuf;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -778,10 +812,11 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     return dinfo.ret;
 }
 
-static int low_pf_release(const char *path, struct fuse_file_info *UNUSED(fi))
+static int low_pf_release(struct object *op_obj,
+                          const char *path, struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
-    apply( global_fuse_obj, "release", 1 );
+    apply( op_obj, "release", 1 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -792,6 +827,7 @@ static int pf_release(const char *path, struct fuse_file_info *fi)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_RELEASE;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_release.path = path;
     dinfo.sig.pf_release.fi = fi;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -799,12 +835,13 @@ static int pf_release(const char *path, struct fuse_file_info *fi)
     return dinfo.ret;
 }
 
-static int low_pf_fsync(const char *path, int isdatasync,
-                     struct fuse_file_info *UNUSED(fi))
+static int low_pf_fsync(struct object *op_obj,
+                        const char *path, int isdatasync,
+                        struct fuse_file_info *UNUSED(fi))
 {
     push_text( path );
     push_int( isdatasync );
-    apply( global_fuse_obj, "fsync", 2 );
+    apply( op_obj, "fsync", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -816,6 +853,7 @@ static int pf_fsync(const char *path, int isdatasync,
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_FSYNC;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_fsync.path = path;
     dinfo.sig.pf_fsync.isdatasync = isdatasync;
     dinfo.sig.pf_fsync.fi = fi;
@@ -824,14 +862,15 @@ static int pf_fsync(const char *path, int isdatasync,
     return dinfo.ret;
 }
 
-static int low_pf_setxattr(const char *path, const char *name,
+static int low_pf_setxattr(struct object *op_obj,
+                           const char *path, const char *name,
                            const char *value, size_t size, int flags)
 {
     push_text( path );
     push_text( name );
     push_string( make_shared_binary_string( value, size ) );
     push_int( flags );
-    apply( global_fuse_obj, "setxattr", 4 );
+    apply( op_obj, "setxattr", 4 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -843,6 +882,7 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_SETXATTR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_setxattr.path = path;
     dinfo.sig.pf_setxattr.name = name;
     dinfo.sig.pf_setxattr.value = value;
@@ -853,13 +893,14 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
     return dinfo.ret;
 }
 
-static int low_pf_getxattr(const char *path, const char *name, char *value,
-		       size_t size)
+static int low_pf_getxattr(struct object *op_obj,
+                           const char *path, const char *name, char *value,
+                           size_t size)
 {
     unsigned int ds;
     push_text( path );
     push_text( name );
-    apply( global_fuse_obj, "getxattr", 2 );
+    apply( op_obj, "getxattr", 2 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
@@ -878,6 +919,7 @@ static int pf_getxattr(const char *path, const char *name, char *value,
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_GETXATTR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_getxattr.path = path;
     dinfo.sig.pf_getxattr.name = name;
     dinfo.sig.pf_getxattr.value = value;
@@ -887,12 +929,13 @@ static int pf_getxattr(const char *path, const char *name, char *value,
     return dinfo.ret;
 }
 
-static int low_pf_listxattr(const char *path, char *list, size_t size)
+static int low_pf_listxattr(struct object *op_obj,
+                            const char *path, char *list, size_t size)
 {
     unsigned int ds;
 
     push_text( path );
-    apply( global_fuse_obj, "listxattr", 1 );
+    apply( op_obj, "listxattr", 1 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY )
 	DEFAULT_ERRNO();
     push_string( make_shared_binary_string( "\0", 1 ) );
@@ -915,6 +958,7 @@ static int pf_listxattr(const char *path, char *list, size_t size)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_LISTXATTR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_listxattr.path = path;
     dinfo.sig.pf_listxattr.list = list;
     dinfo.sig.pf_listxattr.size = size;
@@ -923,11 +967,12 @@ static int pf_listxattr(const char *path, char *list, size_t size)
     return dinfo.ret;
 }
 
-static int low_pf_removexattr(const char *path, const char *name)
+static int low_pf_removexattr(struct object *op_obj,
+                              const char *path, const char *name)
 {
     push_text( path );
     push_text( name );
-    apply( global_fuse_obj, "removexattr", 2 );
+    apply( op_obj, "removexattr", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -938,6 +983,7 @@ static int pf_removexattr(const char *path, const char *name)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_REMOVEXATTR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_removexattr.path = path;
     dinfo.sig.pf_removexattr.name= name;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -945,13 +991,14 @@ static int pf_removexattr(const char *path, const char *name)
     return dinfo.ret;
 }
 
-static int low_pf_creat( const char *path, mode_t mode,
+static int low_pf_creat( struct object *op_obj,
+                         const char *path, mode_t mode,
                          struct fuse_file_info *fi)
 {
     push_text( path );
     push_int( mode );
     push_int( fi->flags );
-    apply( global_fuse_obj, "creat", 3 );
+    apply( op_obj, "creat", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -962,6 +1009,7 @@ static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_CREAT;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_creat.path = path;
     dinfo.sig.pf_creat.mode = mode;
     dinfo.sig.pf_creat.fi = fi;
@@ -970,11 +1018,12 @@ static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
     return dinfo.ret;
 }
 
-static int low_pf_access( const char *path, int mode)
+static int low_pf_access( struct object *op_obj,
+                          const char *path, int mode)
 {
     push_text( path );
     push_int( mode );
-    apply( global_fuse_obj, "access", 2 );
+    apply( op_obj, "access", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
@@ -985,6 +1034,7 @@ static int pf_access( const char *path, int mode)
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_ACCESS;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_access.path = path;
     dinfo.sig.pf_access.mode = mode;
     call_with_interpreter(low_dispatch, &dinfo);
@@ -992,7 +1042,8 @@ static int pf_access( const char *path, int mode)
     return dinfo.ret;
 }
 
-static int low_pf_lock( const char *path, struct fuse_file_info *fi, int cmd,
+static int low_pf_lock( struct object *op_obj,
+                        const char *path, struct fuse_file_info *fi, int cmd,
                         struct flock *lck )
 {
   push_text( path );
@@ -1005,7 +1056,7 @@ static int low_pf_lock( const char *path, struct fuse_file_info *fi, int cmd,
   push_static_text("len");   push_int( lck->l_len );
   push_static_text("pid");   push_int( lck->l_pid );
   f_aggregate_mapping( 6 * 2 );
-  apply( global_fuse_obj, "lock", 3 );
+  apply( op_obj, "lock", 3 );
 
   if( TYPEOF(Pike_sp[-1]) == PIKE_T_MAPPING )
   {
@@ -1032,6 +1083,7 @@ static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_LOCK;
+    dinfo.operations_obj = fuse_get_context()->private_data;
     dinfo.sig.pf_lock.path = path;
     dinfo.sig.pf_lock.fi = fi;
     dinfo.sig.pf_lock.cmd = cmd;
@@ -1043,6 +1095,7 @@ static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct
 
 static void low_dispatch(void *vinfo) {
     struct dispatch_struct *dinfo = vinfo;
+    struct object *operations_obj = dinfo->operations_obj;
 
     /* If we error in Pike code later, this will stand and ought to be
      * a better return value than most. */
@@ -1050,17 +1103,20 @@ static void low_dispatch(void *vinfo) {
 
     switch (dinfo->id) {
     case PF_GETATTR:
-        dinfo->ret = low_pf_getattr(dinfo->sig.pf_getattr.path,
+        dinfo->ret = low_pf_getattr(operations_obj,
+                                    dinfo->sig.pf_getattr.path,
                                     dinfo->sig.pf_getattr.stbuf);
         return;
     case PF_READLINK:
-        dinfo->ret = low_pf_readlink(dinfo->sig.pf_readlink.path,
+        dinfo->ret = low_pf_readlink(operations_obj,
+                                     dinfo->sig.pf_readlink.path,
                                      dinfo->sig.pf_readlink.buf,
                                      dinfo->sig.pf_readlink.size);
         return;
 #if FUSE_VERSION < 30
     case PF_GETDIR:
-        dinfo->ret = low_pf_getdir(dinfo->sig.pf_getdir.path,
+        dinfo->ret = low_pf_getdir(operations_obj,
+                                   dinfo->sig.pf_getdir.path,
                                    dinfo->sig.pf_getdir.h,
                                    dinfo->sig.pf_getdir.filler);
         return;
@@ -1073,121 +1129,146 @@ static void low_dispatch(void *vinfo) {
         return;
 #endif
     case PF_MKNOD:
-        dinfo->ret = low_pf_mknod(dinfo->sig.pf_mknod.path,
+        dinfo->ret = low_pf_mknod(operations_obj,
+                                  dinfo->sig.pf_mknod.path,
                                   dinfo->sig.pf_mknod.mode,
                                   dinfo->sig.pf_mknod.rdev);
         return;
     case PF_MKDIR:
-        dinfo->ret = low_pf_mkdir(dinfo->sig.pf_mkdir.path,
+        dinfo->ret = low_pf_mkdir(operations_obj,
+                                  dinfo->sig.pf_mkdir.path,
                                   dinfo->sig.pf_mkdir.mode);
         return;
     case PF_UNLINK:
-        dinfo->ret = low_pf_unlink(dinfo->sig.pf_unlink.path);
+        dinfo->ret = low_pf_unlink(operations_obj,
+                                   dinfo->sig.pf_unlink.path);
         return;
 
     case PF_RMDIR:
-        dinfo->ret = low_pf_rmdir(dinfo->sig.pf_rmdir.path);
+        dinfo->ret = low_pf_rmdir(operations_obj,
+                                  dinfo->sig.pf_rmdir.path);
         return;
     case PF_SYMLINK:
-        dinfo->ret = low_pf_symlink(dinfo->sig.pf_symlink.from,
+        dinfo->ret = low_pf_symlink(operations_obj,
+                                    dinfo->sig.pf_symlink.from,
                                     dinfo->sig.pf_symlink.to);
         return;
     case PF_RENAME:
-        dinfo->ret = low_pf_rename(dinfo->sig.pf_rename.from,
+        dinfo->ret = low_pf_rename(operations_obj,
+                                   dinfo->sig.pf_rename.from,
                                    dinfo->sig.pf_rename.to);
         return;
     case PF_LINK:
-        dinfo->ret = low_pf_link(dinfo->sig.pf_link.from,
+        dinfo->ret = low_pf_link(operations_obj,
+                                 dinfo->sig.pf_link.from,
                                  dinfo->sig.pf_link.to);
         return;
     case PF_CHMOD:
-        dinfo->ret = low_pf_chmod(dinfo->sig.pf_chmod.path,
+        dinfo->ret = low_pf_chmod(operations_obj,
+                                  dinfo->sig.pf_chmod.path,
                                   dinfo->sig.pf_chmod.mode);
         return;
     case PF_CHOWN:
-        dinfo->ret = low_pf_chown(dinfo->sig.pf_chown.path,
+        dinfo->ret = low_pf_chown(operations_obj,
+                                  dinfo->sig.pf_chown.path,
                                   dinfo->sig.pf_chown.uid,
                                   dinfo->sig.pf_chown.gid);
         return;
     case PF_TRUNCATE:
-        dinfo->ret = low_pf_truncate(dinfo->sig.pf_truncate.path,
+        dinfo->ret = low_pf_truncate(operations_obj,
+                                     dinfo->sig.pf_truncate.path,
                                      dinfo->sig.pf_truncate.size);
         return;
 #if FUSE_VERSION < 26
     case PF_UTIME:
-        dinfo->ret = low_pf_utime(dinfo->sig.pf_utime.path,
+        dinfo->ret = low_pf_utime(operations_obj,
+                                  dinfo->sig.pf_utime.path,
                                   dinfo->sig.pf_utime.buf);
         return;
 #else
     case PF_UTIMENS:
-        dinfo->ret = low_pf_utimens(dinfo->sig.pf_utimens.path,
+        dinfo->ret = low_pf_utimens(operations_obj,
+                                    dinfo->sig.pf_utimens.path,
                                     dinfo->sig.pf_utimens.tv);
         return;
 #endif
     case PF_OPEN:
-        dinfo->ret = low_pf_open(dinfo->sig.pf_open.path,
+        dinfo->ret = low_pf_open(operations_obj,
+                                 dinfo->sig.pf_open.path,
                                  dinfo->sig.pf_open.fi);
         return;
     case PF_READ:
-        dinfo->ret = low_pf_read(dinfo->sig.pf_read.path,
+        dinfo->ret = low_pf_read(operations_obj,
+                                 dinfo->sig.pf_read.path,
                                  dinfo->sig.pf_read.buf,
                                  dinfo->sig.pf_read.size,
                                  dinfo->sig.pf_read.offset,
                                  dinfo->sig.pf_read.fi);
         return;
     case PF_WRITE:
-        dinfo->ret = low_pf_write(dinfo->sig.pf_write.path,
+        dinfo->ret = low_pf_write(operations_obj,
+                                  dinfo->sig.pf_write.path,
                                   dinfo->sig.pf_write.buf,
                                   dinfo->sig.pf_write.size,
                                   dinfo->sig.pf_write.offset,
                                   dinfo->sig.pf_write.fi);
         return;
     case PF_STATFS:
-        dinfo->ret = low_pf_statfs(dinfo->sig.pf_statfs.path,
+        dinfo->ret = low_pf_statfs(operations_obj,
+                                   dinfo->sig.pf_statfs.path,
                                    dinfo->sig.pf_statfs.stbuf);
         return;
     case PF_RELEASE:
-        dinfo->ret = low_pf_release(dinfo->sig.pf_release.path,
+        dinfo->ret = low_pf_release(operations_obj,
+                                    dinfo->sig.pf_release.path,
                                     dinfo->sig.pf_release.fi);
         return;
     case PF_FSYNC:
-        dinfo->ret = low_pf_fsync(dinfo->sig.pf_fsync.path,
+        dinfo->ret = low_pf_fsync(operations_obj,
+                                  dinfo->sig.pf_fsync.path,
                                   dinfo->sig.pf_fsync.isdatasync,
                                   dinfo->sig.pf_fsync.fi);
         return;
     case PF_SETXATTR:
-        dinfo->ret = low_pf_setxattr(dinfo->sig.pf_setxattr.path,
+        dinfo->ret = low_pf_setxattr(operations_obj,
+                                     dinfo->sig.pf_setxattr.path,
                                      dinfo->sig.pf_setxattr.name,
                                      dinfo->sig.pf_setxattr.value,
                                      dinfo->sig.pf_setxattr.size,
                                      dinfo->sig.pf_setxattr.flags);
         return;
     case PF_GETXATTR:
-        dinfo->ret = low_pf_getxattr(dinfo->sig.pf_getxattr.path,
+        dinfo->ret = low_pf_getxattr(operations_obj,
+                                     dinfo->sig.pf_getxattr.path,
                                      dinfo->sig.pf_getxattr.name,
                                      dinfo->sig.pf_getxattr.value,
                                      dinfo->sig.pf_getxattr.size);
         return;
     case PF_LISTXATTR:
-        dinfo->ret = low_pf_listxattr(dinfo->sig.pf_listxattr.path,
+        dinfo->ret = low_pf_listxattr(operations_obj,
+                                      dinfo->sig.pf_listxattr.path,
                                       dinfo->sig.pf_listxattr.list,
                                       dinfo->sig.pf_listxattr.size);
         return;
     case PF_REMOVEXATTR:
-        dinfo->ret = low_pf_removexattr(dinfo->sig.pf_removexattr.path,
+        dinfo->ret = low_pf_removexattr(operations_obj,
+                                        dinfo->sig.pf_removexattr.path,
                                         dinfo->sig.pf_removexattr.name);
         return;
     case PF_CREAT:
-        dinfo->ret = low_pf_creat(dinfo->sig.pf_creat.path,
+        dinfo->ret = low_pf_creat(operations_obj,
+                                  dinfo->sig.pf_creat.path,
                                   dinfo->sig.pf_creat.mode,
                                   dinfo->sig.pf_creat.fi);
         return;
     case PF_ACCESS:
-        dinfo->ret = low_pf_access(dinfo->sig.pf_access.path,
+        dinfo->ret = low_pf_access(operations_obj,
+                                   dinfo->sig.pf_access.path,
                                    dinfo->sig.pf_access.mode);
         return;
     case PF_LOCK:
-        dinfo->ret = low_pf_lock(dinfo->sig.pf_lock.path,
+        dinfo->ret = low_pf_lock(operations_obj,
+                                 dinfo->sig.pf_lock.path,
                                  dinfo->sig.pf_lock.fi,
                                  dinfo->sig.pf_lock.cmd,
                                  dinfo->sig.pf_lock.lck);
@@ -1244,12 +1325,15 @@ static void f_fuse_run( INT32 nargs )
     char **argv;
     struct array *args;
     int ret;
+    struct object *operations_obj = NULL;
+    static int inhibit_concurrent_run;
 
-    if( global_fuse_obj )
+    if ( inhibit_concurrent_run )
 	Pike_error("There can be only one.\n"
 		   "You have to run multiple processes to have multiple FUSE filesystems\n");
+    inhibit_concurrent_run = 1;
 
-    get_all_args( NULL, nargs, "%o%a", &global_fuse_obj, &args );
+    get_all_args( NULL, nargs, "%o%a", &operations_obj, &args );
 
     argv = malloc( sizeof(char *) * args->size );
     for( i = 0; i<args->size; i++ )
@@ -1265,10 +1349,10 @@ static void f_fuse_run( INT32 nargs )
 
     enable_external_threads();
     THREADS_ALLOW();
-    ret = fuse_main(args->size, argv, &pike_fuse_oper, NULL);
+    ret = fuse_main(args->size, argv, &pike_fuse_oper, operations_obj);
     THREADS_DISALLOW();
 
-    global_fuse_obj = NULL;
+    inhibit_concurrent_run = 0;
     free(argv);
 
     push_int(ret);
@@ -1276,7 +1360,7 @@ static void f_fuse_run( INT32 nargs )
 
 PIKE_MODULE_EXIT
 {
-  free_program( getdir_program );
+    free_program( getdir_program );
 }
 
 /*! @decl constant FUSE_MAJOR_VERSION
