@@ -42,9 +42,10 @@
 enum dispatch_id {
     PF_GETATTR,
     PF_READLINK,
-#if FUSE_VERSION < 30
+#if FUSE_VERSION < 23
     PF_GETDIR,
 #else
+    /* opendir was introduced in Fuse 2.3. */
     PF_OPENDIR,
     PF_READDIR,
     PF_FSYNCDIR,
@@ -95,7 +96,7 @@ struct dispatch_struct {
             char *buf;
             size_t size;
         } pf_readlink;
-#if FUSE_VERSION < 30
+#if FUSE_VERSION < 23
         struct {
             const char *path;
             fuse_dirh_t h;
@@ -112,7 +113,9 @@ struct dispatch_struct {
             fuse_fill_dir_t fill_dir_cb;
             off_t off;
             struct fuse_file_info *fi;
+#if FUSE_VERSION >= 30
             enum fuse_readdir_flags flags;
+#endif
         } pf_readdir;
         struct {
             const char *path;
@@ -289,7 +292,7 @@ static int pf_readlink(const char *path, char *buf, size_t size)
 }
 
 static struct program *getdir_program;
-#if FUSE_VERSION < 30
+#if FUSE_VERSION < 23
 struct getdir_storage
 {
     fuse_dirh_t h;
@@ -300,7 +303,7 @@ static void f_getdir_callback( INT32 args )
 {
     char *name;
     get_all_args( NULL, args, "%c", &name );
-    THISGD->filler( THISGD->h, name, 0, 0 );
+    push_int(THISGD->filler( THISGD->h, name, 0, 0 ));
 }
 
 static void push_getdir_callback( fuse_dirh_t h, fuse_dirfil_t filler )
@@ -337,29 +340,195 @@ static int pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     return dinfo.ret;
 }
 #else
+static int low_pf_opendir(struct object *op_obj,
+                          const char *path, struct fuse_file_info *fi)
+{
+    struct svalue *sval = NULL;
+    push_text( path );
+    apply( op_obj, "opendir", 1 );
+
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT) {
+        if (Pike_sp[-1].u.integer) {
+            /* Failure. */
+            fi->fh = 0;
+
+            return -Pike_sp[-1].u.integer;
+        }
+    } else {
+        sval = xalloc(sizeof(struct svalue));
+        assign_svalue_no_free(sval, Pike_sp-1);
+    }
+
+    fi->fh = (uint64_t)(size_t)sval;
+
+    return 0;
+}
+
 static int pf_opendir(const char *path, struct fuse_file_info *fi)
 {
-    return -1;
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_OPENDIR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
+    dinfo.sig.pf_opendir.path = path;
+    dinfo.sig.pf_opendir.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+struct getdir_storage
+{
+    void *buf;
+    fuse_fill_dir_t fill_dir_cb;
+};
+#define THISGD ((struct getdir_storage *)Pike_fp->current_storage)
+static void f_getdir_callback( INT32 args )
+{
+    extern struct program *stat_program;
+    char *name;
+    int off = 0;
+    struct object *stat_obj = NULL;
+    struct stat *st = NULL;
+#if FUSE_VERSION >= 30
+    enum fuse_fill_dir_flags flags = 0;
+#endif
+    get_all_args( NULL, args, "%c.%d%o", &name, &off, &stat_obj );
+    if (stat_obj && (st = get_storage(stat_obj, stat_program))) {
+#if FUSE_VERSION >= 30
+        flags |= FUSE_FILL_DIR_PLUS;
+#endif
+    }
+    THISGD->fill_dir_cb(THISGD->buf, name, st, off
+#if FUSE_VERSION >= 30
+                        , flags
+#endif
+                        );
+}
+
+static void push_getdir_callback( void *buf, fuse_fill_dir_t fill_dir_cb )
+{
+    struct object *o=clone_object( getdir_program, 0 );
+    ((struct getdir_storage*)o->storage)->buf = buf;
+    ((struct getdir_storage*)o->storage)->fill_dir_cb = fill_dir_cb;
+    push_object( o );
+}
+
+static int low_pf_readdir(struct object *op_obj,
+                          const char *path, void *buf,
+                          fuse_fill_dir_t fill_dir_cb,
+                          off_t offset,
+                          struct fuse_file_info *fi
+#if FUSE_VERSION >= 30
+                          ,
+                          enum fuse_readdir_flags flags
+#endif
+                          )
+{
+    push_text(path);
+    push_getdir_callback(buf, fill_dir_cb);
+    if (fi->fh) {
+        push_svalue((void *)fi->fh);
+    } else {
+        push_int(0);
+    }
+    push_int64(offset);
+    apply(op_obj, "readdir", 4);
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+        DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
 }
 
 static int pf_readdir(const char *path, void *buf,
                       fuse_fill_dir_t fill_dir_cb,
                       off_t off,
-                      struct fuse_file_info *fi,
-                      enum fuse_readdir_flags flags)
+                      struct fuse_file_info *fi
+#if FUSE_VERSION >= 30
+                      ,
+                      enum fuse_readdir_flags flags
+#endif
+                      )
 {
-    return -1;
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_READDIR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
+    dinfo.sig.pf_readdir.path = path;
+    dinfo.sig.pf_readdir.buf = buf;
+    dinfo.sig.pf_readdir.fill_dir_cb = fill_dir_cb;
+    dinfo.sig.pf_readdir.off = off;
+    dinfo.sig.pf_readdir.fi = fi;
+#if FUSE_VERSION >= 30
+    dinfo.sig.pf_readdir.flags = flags;
+#endif
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_fsyncdir(struct object *op_obj,
+                           const char *path, int datasync,
+                           struct fuse_file_info *fi)
+{
+    push_text(path);
+    push_int(datasync);
+    if (fi->fh) {
+        push_svalue((void *)fi->fh);
+    } else {
+        push_int(0);
+    }
+    apply(op_obj, "fsyncdir", 3);
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+        DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
 }
 
 static int pf_fsyncdir(const char *path, int datasync,
                        struct fuse_file_info *fi)
 {
-    return -1;
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_FSYNCDIR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
+    dinfo.sig.pf_fsyncdir.path = path;
+    dinfo.sig.pf_fsyncdir.datasync = !!datasync;
+    dinfo.sig.pf_fsyncdir.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
+static int low_pf_releasedir(struct object *op_obj,
+                             const char *path, struct fuse_file_info *fi)
+{
+    push_text(path);
+    if (fi->fh) {
+        push_svalue((void *)fi->fh);
+    } else {
+        push_int(0);
+    }
+    safe_apply(op_obj, "releasedir", 2);
+
+    if (fi->fh) {
+        struct svalue *sval = (void *)fi->fh;
+        free_svalue(sval);
+        free(sval);
+        fi->fh = 0;
+    }
+    return 0;
 }
 
 static int pf_releasedir(const char *path, struct fuse_file_info *fi)
 {
-    return -1;
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_RELEASEDIR;
+    dinfo.operations_obj = fuse_get_context()->private_data;
+    dinfo.sig.pf_releasedir.path = path;
+    dinfo.sig.pf_releasedir.fi = fi;
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
 }
 #endif
 
@@ -1113,7 +1282,7 @@ static void low_dispatch(void *vinfo) {
                                      dinfo->sig.pf_readlink.buf,
                                      dinfo->sig.pf_readlink.size);
         return;
-#if FUSE_VERSION < 30
+#if FUSE_VERSION < 23
     case PF_GETDIR:
         dinfo->ret = low_pf_getdir(operations_obj,
                                    dinfo->sig.pf_getdir.path,
@@ -1122,10 +1291,33 @@ static void low_dispatch(void *vinfo) {
         return;
 #else
     case PF_OPENDIR:
+        dinfo->ret = low_pf_opendir(operations_obj,
+                                    dinfo->sig.pf_opendir.path,
+                                    dinfo->sig.pf_opendir.fi);
+        return;
     case PF_READDIR:
+        dinfo->ret = low_pf_readdir(operations_obj,
+                                    dinfo->sig.pf_readdir.path,
+                                    dinfo->sig.pf_readdir.buf,
+                                    dinfo->sig.pf_readdir.fill_dir_cb,
+                                    dinfo->sig.pf_readdir.off,
+                                    dinfo->sig.pf_readdir.fi
+#if FUSE_VERSION >= 30
+                                    ,
+                                    dinfo->sig.pf_readdir.flags
+#endif
+                                    );
+        return;
     case PF_FSYNCDIR:
+        dinfo->ret = low_pf_fsyncdir(operations_obj,
+                                     dinfo->sig.pf_fsyncdir.path,
+                                     dinfo->sig.pf_fsyncdir.datasync,
+                                     dinfo->sig.pf_fsyncdir.fi);
+        return;
     case PF_RELEASEDIR:
-        Pike_fatal("Not implemented!\n");
+        dinfo->ret = low_pf_releasedir(operations_obj,
+                                       dinfo->sig.pf_releasedir.path,
+                                       dinfo->sig.pf_releasedir.fi);
         return;
 #endif
     case PF_MKNOD:
@@ -1278,7 +1470,7 @@ static void low_dispatch(void *vinfo) {
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
     .readlink	= pf_readlink,
-#if FUSE_VERSION < 30
+#if FUSE_VERSION < 23
     .getdir	= pf_getdir,
 #else
     .opendir	= pf_opendir,
@@ -1373,14 +1565,12 @@ PIKE_MODULE_INIT
 {
     ADD_FUNCTION( "run", f_fuse_run, tFunc(tObj tArr(tStr), tIntPos ), 0 );
 
-#if FUSE_VERSION < 30
     start_new_program( );
     {
 	ADD_STORAGE( struct getdir_storage );
 	ADD_FUNCTION( "`()", f_getdir_callback, tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid ), 0 );
     }
     getdir_program = end_program();
-#endif
 
     add_integer_constant("F_RDLCK", F_GETLK, 0 );
     add_integer_constant("F_WRLCK", F_WRLCK, 0 );

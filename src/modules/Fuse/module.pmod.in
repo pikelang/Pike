@@ -1,3 +1,4 @@
+// -*- mode: Pike; c-basic-offset: 4; -*-
 #pike __REAL_VERSION__
 
 //! Fuse - Filesystem in USErspace
@@ -94,16 +95,89 @@ class Operations
     //! The symlink contents or errno
     string|int(1..) readlink( string path );
 
+    //! Open a directory.
+    //!
+    //! @param path
+    //!   Path to the directory.
+    //!
+    //! @returns
+    //!   Returns @expr{0@} (zero) or a non-integer (typically an object)
+    //!   on success and the errno on failure. The returned value will
+    //!   be passed to @[readdir()] and @[fsyncdir()] and released when
+    //!   the directory is closed.
+    //!
+    //! @note
+    //!   New in Pike 9.0 and FUSE 2.3.
+    mixed opendir(string path);
+
     //! Get directory contents.
     //!
-    //! Call the callback once per file in the directory with the
-    //! filename as the argument.
+    //! @param path
+    //!   Path to the directory.
+    //!
+    //! @param callback
+    //!   Filler callback. Call the callback once per entry in the
+    //!   directory with the filename as the first argument. The optional
+    //!   second argument is the next value for @[off]. A @[Stdio.Stat]
+    //!   object for the entry may optionally be provided with the third
+    //!   argument. Returns @expr{1@} on failure (typically due to the
+    //!   buffer being full), at which time @[readdir()] should return
+    //!   @expr{0@}. The kernel will then call @[readdir()] again with
+    //!   the latest reported @[off].
+    //!
+    //! @param opendir_handle
+    //!   The value that was returned from @[opendir()].
+    //!
+    //! @param off
+    //!   Directory offset to start at. The first call after @[opendir()]
+    //!   has a value of @expr{0@}. Later calls have the value from
+    //!   the last call of @[callback].
+    //!
+    //! @note
+    //!   Do not forget to add entries for @expr{"."@} end @expr{".."@}.
     //!
     //! @note
     //! This function is required.
     //! @returns
+    //!   errno or @expr{0@}. Returning @expr{0@} after a failed
+    //!   call of @[callback] indicates that there are entries left.
+    //!   Otherwise returning @expr{0@} indicates that all entries
+    //!   have been registered.
+    int readdir( string path,
+                 function(string, int|void, Stdio.Stat|void:int) callback,
+                 mixed|void opendir_handle,
+                 int|void off);
+
+    //! Sync directory changes to disc.
+    //!
+    //! @param path
+    //!   Path to the directory.
+    //!
+    //! @param datasync
+    //!   Whether the caller called @tt{fdatasync()@} (@expr{1@}) or
+    //!   @tt{fsync()@} (@expr{0@}).
+    //!
+    //! @param opendir_handle
+    //!   The value returned from @[opendir()].
+    //!
+    //! @returns
     //! errno or 0
-    int readdir( string path, function(string:void) callback );
+    //!
+    //! @note
+    //!   New in Pike 9.0 and FUSE 2.3.
+    int fsync_dir( string path, int(0..1) datasync, mixed opendir_handle );
+
+    //! Close a directory opened via @[opendir()].
+    //!
+    //! @param path
+    //!   Path to the directory (if still valid).
+    //!
+    //! @param opendir_handle
+    //!   The value that was returned from @[opendir()].
+    //!
+    //! @note
+    //!   New in Pike 9.0 and FUSE 2.3.
+    void releasedir(string path, mixed|void opendir_handle);
 
     //! Create a node (file, device special, or named pipe).
     //! See man 2 mknod
