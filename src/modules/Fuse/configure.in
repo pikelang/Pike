@@ -33,15 +33,31 @@ else
   if test "$pike_cv_c9x_compiler" = "yes"; then
     AC_MSG_RESULT(yes)
 
-    PIKE_PKG_CONFIG(fuse)
-    AC_CHECK_HEADERS(fuse.h)
-    if test x$ac_cv_header_fuse_h = xyes ; then
-      AC_CHECK_LIB(fuse, fuse_read_cmd, [
-            LIBS="${LIBS-} -lfuse"
-            AC_DEFINE(HAVE_LIBFUSE,1,[Define if libfuse and fuse.h is available])
-            PIKE_FEATURE_OK(Fuse)
-      ])
-    fi
+    # Detect and use FUSE3.
+    PIKE_PKG_CONFIG(fuse3, [
+      AC_DEFINE(FUSE_USE_VERSION, [FUSE_MAKE_VERSION(3, 99)],
+                [Fuse API version.])
+      AC_CHECK_HEADERS(fuse.h)
+      if test x$ac_cv_header_fuse_h = xyes ; then
+        AC_CHECK_FUNC(fuse_version, [
+          AC_DEFINE(HAVE_LIBFUSE, 1,
+                    [Define if libfuse or libfuse3 and fuse.h are available.])
+          PIKE_FEATURE_OK(Fuse)
+        ])
+      fi
+    ], [
+      PIKE_PKG_CONFIG(fuse)
+      AC_DEFINE(FUSE_USE_VERSION, 29)
+
+      AC_CHECK_HEADERS(fuse.h)
+      if test x$ac_cv_header_fuse_h = xyes ; then
+        AC_SEARCH_LIBS(fuse_read_cmd, fuse, [
+          LIBS="${LIBS-} -lfuse"
+          AC_DEFINE(HAVE_LIBFUSE, 1)
+          PIKE_FEATURE_OK(Fuse)
+        ])
+      fi
+    ])
   else
     AC_MSG_RESULT(no)
   fi
