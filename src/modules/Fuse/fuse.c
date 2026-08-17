@@ -248,7 +248,7 @@ static int low_pf_getattr(struct object *op_obj,
 
 static int pf_getattr(const char *path, struct stat *stbuf
 #if FUSE_VERSION >= 30
-                      , struct fuse_file_info *fi
+                      , struct fuse_file_info *PIKE_UNUSED(fi)
 #endif
                       )
 {
@@ -421,14 +421,14 @@ static int low_pf_readdir(struct object *op_obj,
                           struct fuse_file_info *fi
 #if FUSE_VERSION >= 30
                           ,
-                          enum fuse_readdir_flags flags
+                          enum fuse_readdir_flags PIKE_UNUSED(flags)
 #endif
                           )
 {
     push_text(path);
     push_getdir_callback(buf, fill_dir_cb);
     if (fi->fh) {
-        push_svalue((void *)fi->fh);
+        push_svalue((void *)(size_t)fi->fh);
     } else {
         push_int(0);
     }
@@ -473,7 +473,7 @@ static int low_pf_fsyncdir(struct object *op_obj,
     push_text(path);
     push_int(datasync);
     if (fi->fh) {
-        push_svalue((void *)fi->fh);
+        push_svalue((void *)(size_t)fi->fh);
     } else {
         push_int(0);
     }
@@ -503,14 +503,14 @@ static int low_pf_releasedir(struct object *op_obj,
 {
     push_text(path);
     if (fi->fh) {
-        push_svalue((void *)fi->fh);
+        push_svalue((void *)(size_t)fi->fh);
     } else {
         push_int(0);
     }
     safe_apply(op_obj, "releasedir", 2);
 
     if (fi->fh) {
-        struct svalue *sval = (void *)fi->fh;
+        struct svalue *sval = (void *)(size_t)fi->fh;
         free_svalue(sval);
         free(sval);
         fi->fh = 0;
@@ -663,7 +663,7 @@ static int low_pf_rename(struct object *op_obj,
 
 static int pf_rename(const char *from, const char *to
 #if FUSE_VERSION >= 30
-                     , unsigned int flags
+                     , unsigned int PIKE_UNUSED(flags)
 #endif
                      )
 {
@@ -715,7 +715,7 @@ static int low_pf_chmod(struct object *op_obj,
 
 static int pf_chmod(const char *path, mode_t mode
 #if FUSE_VERSION >= 30
-                    , struct fuse_file_info *fi
+                    , struct fuse_file_info *PIKE_UNUSED(fi)
 #endif
                     )
 {
@@ -744,7 +744,7 @@ static int low_pf_chown(struct object *op_obj,
 
 static int pf_chown(const char *path, uid_t uid, gid_t gid
 #if FUSE_VERSION >= 30
-                    , struct fuse_file_info *fi
+                    , struct fuse_file_info *PIKE_UNUSED(fi)
 #endif
                     )
 {
@@ -773,7 +773,7 @@ static int low_pf_truncate(struct object *op_obj,
 
 static int pf_truncate(const char *path, off_t size
 #if FUSE_VERSION >= 30
-                    , struct fuse_file_info *fi
+                    , struct fuse_file_info *PIKE_UNUSED(fi)
 #endif
                     )
 {
@@ -827,7 +827,7 @@ static int low_pf_utimens(struct object *op_obj,
 
 static int pf_utimens(const char *path, const struct timespec tv[2]
 #if FUSE_VERSION >= 30
-                    , struct fuse_file_info *fi
+                    , struct fuse_file_info *PIKE_UNUSED(fi)
 #endif
                     )
 {
