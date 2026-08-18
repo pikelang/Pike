@@ -427,12 +427,12 @@ static int low_pf_readdir(struct object *op_obj,
 {
     push_text(path);
     push_getdir_callback(buf, fill_dir_cb);
+    push_int64(offset);
     if (fi->fh) {
         push_svalue((void *)(size_t)fi->fh);
     } else {
         push_int(0);
     }
-    push_int64(offset);
     apply(op_obj, "readdir", 4);
     if (TYPEOF(Pike_sp[-1]) != T_INT)
         DEFAULT_ERRNO();
