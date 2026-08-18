@@ -125,19 +125,20 @@ class Operations
     //!   @expr{0@}. The kernel will then call @[readdir()] again with
     //!   the latest reported @[off].
     //!
-    //! @param opendir_handle
-    //!   The value that was returned from @[opendir()].
-    //!
     //! @param off
     //!   Directory offset to start at. The first call after @[opendir()]
     //!   has a value of @expr{0@}. Later calls have the value from
     //!   the last call of @[callback].
+    //!
+    //! @param opendir_handle
+    //!   The value that was returned from @[opendir()].
     //!
     //! @note
     //!   Do not forget to add entries for @expr{"."@} end @expr{".."@}.
     //!
     //! @note
     //! This function is required.
+    //!
     //! @returns
     //!   errno or @expr{0@}. Returning @expr{0@} after a failed
     //!   call of @[callback] indicates that there are entries left.
@@ -145,8 +146,8 @@ class Operations
     //!   have been registered.
     int readdir( string path,
                  function(string, int|void, Stdio.Stat|void:int) callback,
-                 mixed|void opendir_handle,
-                 int|void off);
+                 int|void off,
+                 mixed|void opendir_handle);
 
     //! Sync directory changes to disc.
     //!
