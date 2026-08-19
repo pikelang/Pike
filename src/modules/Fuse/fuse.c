@@ -70,6 +70,7 @@ enum dispatch_id {
     PF_READ,
     PF_WRITE,
     PF_STATFS,
+    PF_FLUSH,
     PF_RELEASE,
     PF_FSYNC,
     PF_SETXATTR,
@@ -166,7 +167,7 @@ struct dispatch_struct {
         struct {
             const char *path;
             struct fuse_file_info *fi;
-        } pf_open, pf_release;
+        } pf_open, pf_flush, pf_release;
         struct {
             const char *path;
             char *buf;
@@ -981,6 +982,52 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     return dinfo.ret;
 }
 
+static int low_pf_flush( struct object *op_obj,
+                         const char *path
+#if FUSE_VERSION >= 22
+                         ,
+                         struct fuse_file_info *fi
+#endif
+                         )
+{
+    maybe_push_text( path );
+#if FUSE_VERSION >= 22
+    if (fi->fh) {
+        push_svalue((void *)(size_t)fi->fh);
+    } else {
+        push_int(0);
+    }
+#else
+    push_int(0);
+#endif
+    apply( op_obj, "flush", 2 );
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
+        DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+
+static int pf_flush( const char *path
+#if FUSE_VERSION >= 22
+                     ,
+                     struct fuse_file_info *fi
+#endif
+                     )
+{
+    struct dispatch_struct dinfo;
+
+    dinfo.id = PF_ACCESS;
+    dinfo.operations_obj = fuse_get_context()->private_data;
+    dinfo.sig.pf_flush.path = path;
+#if FUSE_VERSION >= 22
+    dinfo.sig.pf_flush.fi = fi;
+#else
+    dinfo.sig.pf_flush.fi = NULL;
+#endif
+    call_with_interpreter(low_dispatch, &dinfo);
+
+    return dinfo.ret;
+}
+
 static int low_pf_release(struct object *op_obj,
                           const char *path, struct fuse_file_info *UNUSED(fi))
 {
@@ -1410,6 +1457,11 @@ static void low_dispatch(void *vinfo) {
                                    dinfo->sig.pf_statfs.path,
                                    dinfo->sig.pf_statfs.stbuf);
         return;
+    case PF_FLUSH:
+        dinfo->ret = low_pf_flush(operations_obj,
+                                  dinfo->sig.pf_flush.path,
+                                  dinfo->sig.pf_flush.fi);
+        return;
     case PF_RELEASE:
         dinfo->ret = low_pf_release(operations_obj,
                                     dinfo->sig.pf_release.path,
@@ -1500,6 +1552,7 @@ static struct fuse_operations pike_fuse_oper = {
     .read	= pf_read,
     .write	= pf_write,
     .statfs	= pf_statfs,
+    .flush	= pf_flush,
     .release	= pf_release,
     .fsync	= pf_fsync,
     .setxattr	= pf_setxattr,

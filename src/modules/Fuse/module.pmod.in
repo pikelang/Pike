@@ -382,7 +382,7 @@ class Operations
                                   mapping(string:int) how );
 
     //! Write unwritten data.
-    int flush( string path, int flags );
+    int flush( string path, mixed|void open_handle );
 }
 
 //! @decl void run( Operations handler, array(string) args );
