@@ -385,7 +385,7 @@ class Operations
     int flush( string path, mixed|void open_handle );
 }
 
-//! @decl void run( Operations handler, array(string) args );
+//! @decl int run( Operations handler, array(string) args )
 //! Start fuse. Args is as in argv in main(). This function will not
 //! return.
 //!
@@ -428,9 +428,42 @@ class Operations
 //!     hard_remove            immediate removal (don't hide files)
 //!     debug                  enable debug output
 //!     fsname=NAME            set filesystem name in mtab (overrides argv[0])
+//!     auto_unmount           enable unmount on crash
 //! @}
+//!
+//!   This function blocks until the filesystem is unmounted.
+//!
+//! @returns
+//!   Returns a non-negative integer.
+//!   @int
+//!     @value 0
+//!       Returns @expr{0@} (zero) on successfull mount followed by unmount.
+//!     @value 1
+//!       Invalid options in @[args].
+//!     @value 2
+//!       No mount poiunt specified.
+//!     @value 3
+//!       FUSE setup failed.
+//!     @value 4
+//!       Mounting failed.
+//!     @value 5
+//!       Failed to daemonize (detach from session).
+//!     @value 6
+//!       Failed to set up signal handlers.
+//!     @value 7
+//!       An error occurred during the life of the file system.
+//!   @endint
+//!
+//! @note
+//!   Prior to Pike 9.0 this function called @[exit()] with the return code.
+//!
+//! @note
+//!   Only one call of this function may be active at a time.
+//!
+//! @seealso
+//!   @[8.0::Fuse.run()]
 
 // {
-//     ::run( handler, args );
+//     return ::run( handler, args );
 // }
 #endif
