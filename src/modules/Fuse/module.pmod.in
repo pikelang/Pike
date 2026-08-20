@@ -88,7 +88,7 @@ class Operations
     //! @returns
     //! A @[Stdio.Stat] object or an errno.
     //!
-    Stdio.Stat|int(1..) getattr( string path );
+    Stdio.Stat|int(1..) getattr( string path, mixed|void open_handle );
 
     //! Read a symlink.
     //! @returns
@@ -103,8 +103,9 @@ class Operations
     //! @returns
     //!   Returns @expr{0@} (zero) or a non-integer (typically an object)
     //!   on success and the errno on failure. The returned value will
-    //!   be passed to @[readdir()] and @[fsyncdir()] and released when
-    //!   the directory is closed.
+    //!   be passed to @[readdir()], @[fsyncdir()] and @[releasedir()]
+    //!   as the @tt{opendir_handle@} argument. It will be released after
+    //!   the @[releasedir()] call when the directory is closed.
     //!
     //! @note
     //!   New in Pike 9.0 and FUSE 2.3.
@@ -219,17 +220,17 @@ class Operations
     //! Change the permission of a file or directory
     //! @returns
     //! errno or 0
-    int chmod( string path, int mode );
+    int chmod( string path, int mode, mixed|void open_handle );
 
     //! Change the owner of a file or directory
     //! @returns
     //! errno or 0
-    int chown( string path, int uid, int gid);
+    int chown( string path, int uid, int gid, mixed|void open_handle );
 
     //! Shrink or enlarge a file
     //! @returns
     //! errno or 0
-    int truncate( string path, int new_length);
+    int truncate( string path, int new_length, mixed|void open_handle );
 
     //! Set access and modification time. The arguments are the number
     //! of seconds since jan 1 1970 00:00.
@@ -247,7 +248,7 @@ class Operations
     //!
     //! @returns
     //! errno or 0
-    int utimens( string path, int atime, int mtime ) {
+    int utimens( string path, int atime, int mtime, mixed|void open_handle ) {
         utime( path, atime/1000000,mtime/100000 );
     }
 
@@ -259,21 +260,29 @@ class Operations
     //! You do not really have to implement this function.
     //! It's useful to start prefetch and to cache open files, and
     //! check that the user has permission to read/write the file.
+    //!
     //! @returns
-    //! errno or 0
-    int open( string path, int mode );
+    //!   Returns @expr{0@} or a non-integer value on success, and
+    //!   an errno on failure. The returned value will be passed as
+    //!   the @tt{open_handle@} to several functions.
+    //!
+    //! @seealso
+    //!   @[creat()], @[release()]
+    int|mixed open( string path, int mode );
 
     //! Read data from a file. You have to return at most @[len]
     //! bytes, wunless an error occurs, or there is less than len bytes
     //! of data still left to read.
     //! @returns
     //! errno or the data
-    string|int(1..) read( string path, int len, int offset );
+    string|int(1..) read( string path, int len, int offset,
+                          mixed|void open_handle );
 
     //! Write data to the file. Should write all data.
     //! @returns
     //! errno or amount written (bytes)
-    int write( string path, string data, int offset  );
+    int write( string path, string data, int offset,
+               mixed|void open_handle );
 
     //! Stat a filesystem.
     //! Mapping as from @[filesystem_stat]
@@ -282,16 +291,20 @@ class Operations
     //!   is an error each time @tt{'df'@} is run.
     mapping(string:int) statfs( string path );
 
-    //! The inverse of @[open()].
+    //! The inverse of @[open()] and @[creat()].
+    //!
     //! @note
     //! The file might very well be openend multiple times.
-    //! Keep reference counts.
-    int release( string path );
+    //! Keep reference counts or use the @[open_handle] to keep track.
+    //!
+    //! @seealso
+    //!   @[open()], @[creat()]
+    int release( string path, mixed|void open_handle );
 
     //! Flush data and user-data to disk. Not required.
     //! If the @[datasync] parameter is non-zero, then only the user data
     //! should be flushed, not the meta data.
-    int fsync( string path, int datasync );
+    int fsync( string path, int datasync, mixed|void open_handle );
 
     //! Return a list of all available extended attributes on @[path]
     array(string)|int listxattr(string path);
@@ -305,8 +318,16 @@ class Operations
     //! Set the extended attrbiute @[name] on @[path] to @[value]
     int setxattr(string path, string name, string value, int flags );
 
-    //! Create and open or just open the given @[path]
-    int creat( string path, int mode, int flag );
+    //! Create and open or just open the given @[path].
+    //!
+    //! @returns
+    //!   Returns @expr{0@} or a non-integer value on success, and
+    //!   an errno on failure. The returned value will be passed as
+    //!   the @tt{open_handle@} to several functions.
+    //!
+    //! @seealso
+    //!   @[open()], @[release()]
+    int|mixed creat( string path, int mode, int flag );
 
     //! Return if the user is allowed to access the @[path]. If the
     //! 'default_permissions' mount option is given, this method is not
@@ -379,7 +400,8 @@ class Operations
     //!     Pid of the lock owner (if any).
     //! @endmapping
     mapping(string:int)|int lock( string path, int mode,
-                                  mapping(string:int) how );
+                                  mapping(string:int) how,
+                                  mixed|void open_handle );
 
     //! Write unwritten data.
     int flush( string path, mixed|void open_handle );
