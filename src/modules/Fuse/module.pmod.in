@@ -30,10 +30,10 @@ class Operations
 //! This is the interface you have to implement to write a FUSE filesystem
 //! If something goes wrong in your callback, always return errno.
 //! Unless the function returns a specific value (Stat, string or similar),
-//! return 0 if all is well.
+//! return @expr{0@} (zero) if all is well.
 //!
 //! You do not have to implement all functions. Unimplemented
-//! functions have a default implementation that returns -ENOIMPL.
+//! functions have a default implementation that returns @[System.ENOSYS].
 {
     //! Unkown directory entry type
     final constant DT_UNKNOWN = 0;
@@ -167,7 +167,10 @@ class Operations
     //!
     //! @note
     //!   New in Pike 9.0 and FUSE 2.3.
-    int fsync_dir( string path, int(0..1) datasync, mixed opendir_handle );
+    //!
+    //! @seealso
+    //!   @[fsync()]
+    int fsyncdir( string path, int(0..1) datasync, mixed opendir_handle );
 
     //! Close a directory opened via @[opendir()].
     //!
@@ -304,6 +307,9 @@ class Operations
     //! Flush data and user-data to disk. Not required.
     //! If the @[datasync] parameter is non-zero, then only the user data
     //! should be flushed, not the meta data.
+    //!
+    //! @seealso
+    //!   @[fsyncdir()]
     int fsync( string path, int datasync, mixed|void open_handle );
 
     //! Return a list of all available extended attributes on @[path]
