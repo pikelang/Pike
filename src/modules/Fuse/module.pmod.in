@@ -93,7 +93,7 @@ class Operations
     //! Read a symlink.
     //! @returns
     //! The symlink contents or errno
-    string|int(1..) readlink( string path );
+    optional string|int(1..) readlink( string path );
 
     //! Open a directory.
     //!
@@ -109,7 +109,7 @@ class Operations
     //!
     //! @note
     //!   New in Pike 9.0 and FUSE 2.3.
-    mixed opendir(string path);
+    optional mixed opendir(string path);
 
     //! Get directory contents.
     //!
@@ -170,7 +170,8 @@ class Operations
     //!
     //! @seealso
     //!   @[fsync()]
-    int fsyncdir( string path, int(0..1) datasync, mixed opendir_handle );
+    optional int fsyncdir( string path, int(0..1) datasync,
+                           mixed opendir_handle );
 
     //! Close a directory opened via @[opendir()].
     //!
@@ -182,58 +183,59 @@ class Operations
     //!
     //! @note
     //!   New in Pike 9.0 and FUSE 2.3.
-    void releasedir(string path, mixed|void opendir_handle);
+    optional void releasedir(string path, mixed|void opendir_handle);
 
     //! Create a node (file, device special, or named pipe).
     //! See man 2 mknod
     //! @returns
     //! errno or 0
-    int mknod( string path, int mode, int rdev );
+    optional int mknod( string path, int mode, int rdev );
 
     //! Create a directory.
     //! @returns
     //! errno or 0
-    int mkdir( string path, int mode );
+    optional int mkdir( string path, int mode );
 
     //! Remove a file
     //! @returns
     //! errno or 0
-    int unlink( string path );
+    optional int unlink( string path );
 
     //! Remove a directory
     //! @returns
     //! errno or 0
-    int rmdir( string path );
+    optional int rmdir( string path );
 
     //! Create a symlink from source to destination.
     //! @returns
     //! errno or 0
-    int symlink( string source, string destination );
+    optional int symlink( string source, string destination );
 
     //! Create a hard link from source to destination.
     //! @returns
     //! errno or 0
-    int link( string source, string destination );
+    optional int link( string source, string destination );
 
     //! Rename @[source] to @[destination].
     //! @returns
     //! errno or 0
-    int rename( string source, string destination );
+    optional int rename( string source, string destination );
 
     //! Change the permission of a file or directory
     //! @returns
     //! errno or 0
-    int chmod( string path, int mode, mixed|void open_handle );
+    optional int chmod( string path, int mode, mixed|void open_handle );
 
     //! Change the owner of a file or directory
     //! @returns
     //! errno or 0
-    int chown( string path, int uid, int gid, mixed|void open_handle );
+    optional int chown( string path, int uid, int gid, mixed|void open_handle );
 
     //! Shrink or enlarge a file
     //! @returns
     //! errno or 0
-    int truncate( string path, int new_length, mixed|void open_handle );
+    optional int truncate( string path, int new_length,
+                           mixed|void open_handle );
 
     //! Set access and modification time. The arguments are the number
     //! of seconds since jan 1 1970 00:00.
@@ -243,7 +245,7 @@ class Operations
     //!
     //! @returns
     //! errno or 0
-    int utime( string path, int atime, int mtime );
+    optional int utime( string path, int atime, int mtime );
 
     //! Set access and modification time, with nanosecond resolution.
     //! The arguments are the number of nanoseconds since jan 1 1970
@@ -251,7 +253,8 @@ class Operations
     //!
     //! @returns
     //! errno or 0
-    int utimens( string path, int atime, int mtime, mixed|void open_handle ) {
+    optional int utimens( string path, int atime, int mtime,
+                          mixed|void open_handle ) {
         utime( path, atime/1000000,mtime/100000 );
     }
 
@@ -271,7 +274,7 @@ class Operations
     //!
     //! @seealso
     //!   @[creat()], @[release()]
-    int|mixed open( string path, int mode );
+    optional int|mixed open( string path, int mode );
 
     //! Read data from a file. You have to return at most @[len]
     //! bytes, wunless an error occurs, or there is less than len bytes
@@ -284,15 +287,15 @@ class Operations
     //! Write data to the file. Should write all data.
     //! @returns
     //! errno or amount written (bytes)
-    int write( string path, string data, int offset,
-               mixed|void open_handle );
+    optional int write( string path, string data, int offset,
+                        mixed|void open_handle );
 
     //! Stat a filesystem.
     //! Mapping as from @[filesystem_stat]
     //! @note
     //!   required for @tt{'df'@} support, without this function there
     //!   is an error each time @tt{'df'@} is run.
-    mapping(string:int) statfs( string path );
+    optional mapping(string:int) statfs( string path );
 
     //! The inverse of @[open()] and @[creat()].
     //!
@@ -302,7 +305,7 @@ class Operations
     //!
     //! @seealso
     //!   @[open()], @[creat()]
-    int release( string path, mixed|void open_handle );
+    optional int release( string path, mixed|void open_handle );
 
     //! Flush data and user-data to disk. Not required.
     //! If the @[datasync] parameter is non-zero, then only the user data
@@ -310,19 +313,19 @@ class Operations
     //!
     //! @seealso
     //!   @[fsyncdir()]
-    int fsync( string path, int datasync, mixed|void open_handle );
+    optional int fsync( string path, int datasync, mixed|void open_handle );
 
     //! Return a list of all available extended attributes on @[path]
-    array(string)|int listxattr(string path);
+    optional array(string)|int listxattr(string path);
 
     //! Remove the extended attribute @[name] from @[path]
-    int removexattr(string path, string name);
+    optional int removexattr(string path, string name);
 
     //! Get the extended attribute @[name] on @[path]
-    string getxattr( string path, string name );
+    optional string getxattr( string path, string name );
 
     //! Set the extended attrbiute @[name] on @[path] to @[value]
-    int setxattr(string path, string name, string value, int flags );
+    optional int setxattr(string path, string name, string value, int flags );
 
     //! Create and open or just open the given @[path].
     //!
@@ -333,12 +336,12 @@ class Operations
     //!
     //! @seealso
     //!   @[open()], @[release()]
-    int|mixed creat( string path, int mode, int flag );
+    optional int|mixed creat( string path, int mode, int flag );
 
     //! Return if the user is allowed to access the @[path]. If the
     //! 'default_permissions' mount option is given, this method is not
     //! called.
-    int access( string path, int mode );
+    optional int access( string path, int mode );
 
     //! Lock, unlock or test for the existence of record locks (POSIX
     //! file locking). The owner of the lock is identified by
@@ -405,12 +408,12 @@ class Operations
     //!   @member int "pid"
     //!     Pid of the lock owner (if any).
     //! @endmapping
-    mapping(string:int)|int lock( string path, int mode,
-                                  mapping(string:int) how,
-                                  mixed|void open_handle );
+    optional mapping(string:int)|int lock( string path, int mode,
+                                           mapping(string:int) how,
+                                           mixed|void open_handle );
 
     //! Write unwritten data.
-    int flush( string path, mixed|void open_handle );
+    optional int flush( string path, mixed|void open_handle );
 }
 
 //! @decl int run( Operations handler, array(string) args )
