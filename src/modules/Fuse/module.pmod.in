@@ -237,6 +237,7 @@ class Operations
     optional int truncate( string path, int new_length,
                            mixed|void open_handle );
 
+#pragma no_deprecation_warnings
     //! Set access and modification time. The arguments are the number
     //! of seconds since jan 1 1970 00:00.
     //!
@@ -245,7 +246,7 @@ class Operations
     //!
     //! @returns
     //! errno or 0
-    optional int utime( string path, int atime, int mtime );
+    optional __deprecated__ int utime( string path, int atime, int mtime );
 
     //! Set access and modification time, with nanosecond resolution.
     //! The arguments are the number of nanoseconds since jan 1 1970
@@ -254,9 +255,11 @@ class Operations
     //! @returns
     //! errno or 0
     optional int utimens( string path, int atime, int mtime,
-                          mixed|void open_handle ) {
+                          mixed|void open_handle )
+    {
         utime( path, atime/1000000,mtime/100000 );
     }
+#pragma deprecation_warnings
 
     //! Open @[path]. @[mode] is as for the system call open.
     //! @expr{(mode & O_ACCMODE)@} is one of @[O_RDONLY], @[O_WRONLY]
