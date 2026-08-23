@@ -147,7 +147,7 @@ void run_sub( Test test, int maximum_seconds,
                                                         overhead))) +
           "\n");
 
-#if constant(Debug.generate_perf_map)
+#if constant(Debug.generate_perf_map) && defined(BENCHMARK_PROFILING)
     Debug.generate_perf_map();
 #endif
 }
