@@ -482,7 +482,7 @@ protected void async_failed()
 protected void async_timeout(void|bool force)
 {
    if (!force && !zero_type(timeout_watchdog)) {
-     int deltat = time(1) - (timeout_watchdog + (data_timeout || timeout));
+     int deltat = (timeout_watchdog + (data_timeout || timeout)) - time(1);
      if (deltat > 0) {
        call_out(this_function, deltat);
        return;
