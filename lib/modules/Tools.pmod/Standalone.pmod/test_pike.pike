@@ -427,6 +427,15 @@ array(string) find_test(string ts)
   return ({});
 }
 
+array bad_call_out(mixed fun, int|float t, mixed... args)
+{
+  if (t) {
+    // Test robustness against inexact call_out.
+    t += (random(4)-1)/16.0;
+  }
+  return call_out(fun, t, @args);
+}
+
 //
 // Plugins
 //
@@ -625,6 +634,9 @@ int main(int argc, array(string) argv)
 #if constant(Debug.debug)
   add_constant("_debug", Debug.debug);
 #endif
+
+  // Attempt to trigger issues with bad call_out handling.
+  add_constant("call_out", bad_call_out);
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
