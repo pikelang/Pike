@@ -24,6 +24,9 @@
 #define FUSE_USE_VERSION 29
 #endif
 #include <fuse.h>
+#if FUSE_VERSION >= 30
+#include <fuse_lowlevel.h>
+#endif
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
@@ -1651,6 +1654,7 @@ static struct fuse_operations pike_fuse_oper = {
     .create     = pf_creat,
 };
 
+#if FUSE_VERSION < 26
 static void f_fuse_run( INT32 nargs )
 {
     struct fuse *fuse;
@@ -1690,6 +1694,135 @@ static void f_fuse_run( INT32 nargs )
 
     push_int(ret);
 }
+#elif FUSE_VERSION < 30
+/* NB: fuse_parse_cmdline() was added in Fuse 2.5.0.
+ * NB: fuse_new() got support for user data in Fuse 2.6.0.
+ *
+ * Fuse 2.6.0 appears to have been released 2006-10-22,
+ * which is ~20 years ago at the time of writing.
+ */
+static void f_fuse_run( INT32 nargs )
+{
+    struct fuse *fuse;
+    int i;
+    struct array *args;
+    int ret;
+    struct object *operations_obj = NULL;
+    struct fuse_args fargs = FUSE_ARGS_INIT(0, NULL);
+    char *mountpoint = NULL;
+    int multithreaded = 0;
+    int foreground = 0;
+    int force_foreground = 0;
+    struct fuse_chan *ch = NULL;
+
+    get_all_args( NULL, nargs, "%o%a.%d", &operations_obj, &args,
+                  &force_foreground );
+
+    for( i = 0; i<args->size; i++ )
+    {
+        if( TYPEOF(args->item[i]) != PIKE_T_STRING ||
+            string_has_null(args->item[i].u.string) )
+        {
+            fuse_opt_free_args(&fargs);
+            Pike_error("Argument %d is not a nonbinary string.\n", i );
+        }
+        fuse_opt_add_arg(&fargs, args->item[i].u.string->str);
+    }
+
+    if (fuse_parse_cmdline(&fargs, &mountpoint, &multithreaded, &foreground)) {
+        fuse_opt_free_args(&fargs);
+        Pike_error("Bad arguments.\n");
+    }
+
+    fuse_daemonize(foreground || force_foreground);
+
+    if (!(ch = fuse_mount(mountpoint, &fargs))) {
+        free(mountpoint);
+        fuse_opt_free_args(&fargs);
+        Pike_error("Failed to mount.\n");
+    }
+
+    if (!(fuse = fuse_new(ch, &fargs, &pike_fuse_oper, sizeof(pike_fuse_oper),
+                          operations_obj))) {
+        fuse_unmount(mountpoint, ch);
+        free(mountpoint);
+        fuse_opt_free_args(&fargs);
+        Pike_error("Failed to create FUSE state.\n");
+    }
+
+    enable_external_threads();
+    THREADS_ALLOW();
+    ret = fuse_loop_mt(fuse);
+    THREADS_DISALLOW();
+
+    fuse_unmount(mountpoint, ch);
+    fuse_destroy(fuse);
+    free(mountpoint);
+
+    push_int(ret);
+}
+#else
+static void f_fuse_run( INT32 nargs )
+{
+    struct fuse *fuse;
+    int i;
+    struct array *args;
+    int ret;
+    struct object *operations_obj = NULL;
+    struct fuse_args fargs = FUSE_ARGS_INIT(0, NULL);
+    struct fuse_cmdline_opts opts;
+    int force_foreground = 0;
+
+    get_all_args( NULL, nargs, "%o%a.%d", &operations_obj, &args,
+                  &force_foreground );
+
+    for( i = 0; i<args->size; i++ )
+    {
+        if( TYPEOF(args->item[i]) != PIKE_T_STRING ||
+            string_has_null(args->item[i].u.string) )
+        {
+            fuse_opt_free_args(&fargs);
+            Pike_error("Argument %d is not a nonbinary string.\n", i );
+        }
+        fuse_opt_add_arg(&fargs, args->item[i].u.string->str);
+    }
+
+    if (fuse_parse_cmdline(&fargs, &opts)) {
+        fuse_opt_free_args(&fargs);
+        Pike_error("Bad arguments.\n");
+    }
+
+    fuse_daemonize(opts.foreground || force_foreground);
+
+    if (!(fuse = fuse_new(&fargs, &pike_fuse_oper, sizeof(pike_fuse_oper),
+                          operations_obj))) {
+        fuse_opt_free_args(&fargs);
+        Pike_error("Failed to create FUSE state.\n");
+    }
+
+    /* NB: Not thread-safe when -o auto_umount.
+     *
+     * FIXME: Use a mutex other than the interpreter lock.
+     */
+    fuse_mount(fuse, opts.mountpoint);
+
+    enable_external_threads();
+    THREADS_ALLOW();
+#if FUSE_VERSION < FUSE_MAKE_VERSION(3, 12)
+    /* We do not bother with the old multi-threaded API. */
+    ret = fuse_loop(fuse);
+#else
+    ret = fuse_loop_mt(fuse, NULL);
+#endif
+    THREADS_DISALLOW();
+
+    fuse_unmount(fuse);
+    fuse_destroy(fuse);
+    fuse_opt_free_args(&fargs);
+
+    push_int(ret);
+}
+#endif
 
 PIKE_MODULE_EXIT
 {
