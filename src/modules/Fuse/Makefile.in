@@ -9,4 +9,7 @@ OBJS=fuse.o
 MODNAME=Fuse
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
+# UnixWare make needs help to find the source file...
+fuse.o: $(SRCDIR)/fuse.c
+
 @dependencies@

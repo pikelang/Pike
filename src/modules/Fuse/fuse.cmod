@@ -273,8 +273,8 @@ static int low_pf_getattr(struct object *op_obj,
     push_open_handle(fi);
     apply( op_obj, "getattr", 2 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
-	!(st = get_storage( Pike_sp[-1].u.object, stat_program)) )
-	DEFAULT_ERRNO();
+        !(st = get_storage( Pike_sp[-1].u.object, stat_program)) )
+        DEFAULT_ERRNO();
     *stbuf = *st;
     return 0;
 }
@@ -309,10 +309,10 @@ static int low_pf_readlink(struct object *op_obj,
     maybe_push_text( path );
     apply( op_obj, "readlink", 1 );
     if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
-	(Pike_sp[-1].u.string->size_shift) )
-	DEFAULT_ERRNO();
+        (Pike_sp[-1].u.string->size_shift) )
+        DEFAULT_ERRNO();
     if( Pike_sp[-1].u.string->len >= (int)size )
-	return -ENAMETOOLONG;
+        return -ENAMETOOLONG;
     memcpy( buf, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len+1);
     return 0;
 }
@@ -362,7 +362,7 @@ static int low_pf_getdir(struct object *op_obj,
     /* NOTE: Calls readdir() (and NOT getdir()) in the Operations object! */
     apply( op_obj, "readdir", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -568,7 +568,7 @@ static int low_pf_mknod(struct object *op_obj,
     push_int( rdev );
     apply( op_obj, "mknod", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -593,7 +593,7 @@ static int low_pf_mkdir(struct object *op_obj,
     push_int( mode );
     apply( op_obj, "mkdir", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -616,7 +616,7 @@ static int low_pf_unlink(struct object *op_obj,
     push_text( path );
     apply( op_obj, "unlink", 1 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -638,7 +638,7 @@ static int low_pf_rmdir(struct object *op_obj,
     push_text( path );
     apply( op_obj, "rmdir", 1 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -661,7 +661,7 @@ static int low_pf_symlink(struct object *op_obj,
     push_text( to );
     apply( op_obj, "symlink", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -685,7 +685,7 @@ static int low_pf_rename(struct object *op_obj,
     push_text( to );
     apply( op_obj, "rename", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -713,7 +713,7 @@ static int low_pf_link(struct object *op_obj,
     push_text( to );
     apply( op_obj, "link", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -739,7 +739,7 @@ static int low_pf_chmod(struct object *op_obj,
     push_open_handle(fi);
     apply( op_obj, "chmod", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -777,7 +777,7 @@ static int low_pf_chown(struct object *op_obj,
     push_open_handle(fi);
     apply( op_obj, "chown", 4 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -815,7 +815,7 @@ static int low_pf_truncate(struct object *op_obj,
     push_open_handle(fi);
     apply( op_obj, "truncate", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -852,7 +852,7 @@ static int low_pf_utime(struct object *op_obj,
     push_int( buf->modtime );
     apply( op_obj, "utime", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 static int pf_utime(const char *path, struct utimbuf *buf)
@@ -878,7 +878,7 @@ static int low_pf_utimens(struct object *op_obj,
     push_open_handle(fi);
     apply( op_obj, "utimens", 4 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -956,10 +956,10 @@ static int low_pf_read(struct object *op_obj,
     apply( op_obj, "read", 4 );
 
     if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
-	(Pike_sp[-1].u.string->size_shift) )
-	DEFAULT_ERRNO();
+        (Pike_sp[-1].u.string->size_shift) )
+        DEFAULT_ERRNO();
     if (((size_t)Pike_sp[-1].u.string->len) > size) {
-	return -ENAMETOOLONG;
+        return -ENAMETOOLONG;
     }
     memcpy( buf, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
     return Pike_sp[-1].u.string->len;
@@ -991,12 +991,12 @@ static int low_pf_write(struct object *op_obj,
     push_open_handle(fi);
     apply( op_obj, "write", 4 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
 static int pf_write(const char *path, const char *buf, size_t size,
-		    off_t offset, struct fuse_file_info *fi)
+                    off_t offset, struct fuse_file_info *fi)
 {
     struct dispatch_struct dinfo;
 
@@ -1021,15 +1021,15 @@ static int low_pf_statfs(struct object *op_obj,
     push_text( path );
     apply( op_obj, "statfs", 1 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     m = Pike_sp[-1].u.mapping;
     memset( stbuf, 0, sizeof(*stbuf) );
     stbuf->f_namemax = 4096;
     stbuf->f_bsize = 1024;
 #define STSET(X)    do {				\
       if ((val=simple_mapping_string_lookup( m,#X )) &&	\
-	  (TYPEOF(*val) == T_INT))			\
-	stbuf->f_##X=val->u.integer;			\
+          (TYPEOF(*val) == T_INT))			\
+          stbuf->f_##X=val->u.integer;			\
     } while(0)
     STSET(bsize);
     STSET(blocks);
@@ -1038,10 +1038,10 @@ static int low_pf_statfs(struct object *op_obj,
     STSET(files);
     STSET(ffree);
     if (((val=simple_mapping_string_lookup( m,"namemax" )) &&
-	 (TYPEOF(*val) == T_INT)) ||
-	/* namelen is compat. */
-	((val=simple_mapping_string_lookup( m,"namelen" )) &&
-	 (TYPEOF(*val) == T_INT))) {
+         (TYPEOF(*val) == T_INT)) ||
+        /* namelen is compat. */
+        ((val=simple_mapping_string_lookup( m,"namelen" )) &&
+         (TYPEOF(*val) == T_INT))) {
       stbuf->f_namemax = val->u.integer;
     }
 #undef STSET
@@ -1104,7 +1104,7 @@ static int low_pf_release(struct object *op_obj,
     push_open_handle(fi);
     safe_apply( op_obj, "release", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -1130,7 +1130,7 @@ static int low_pf_fsync(struct object *op_obj,
     push_open_handle(fi);
     apply( op_obj, "fsync", 3 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -1159,12 +1159,12 @@ static int low_pf_setxattr(struct object *op_obj,
     push_int( flags );
     apply( op_obj, "setxattr", 4 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
 static int pf_setxattr(const char *path, const char *name, const char *value,
-			size_t size, int flags)
+                       size_t size, int flags)
 {
     struct dispatch_struct dinfo;
 
@@ -1189,19 +1189,19 @@ static int low_pf_getxattr(struct object *op_obj,
     push_text( name );
     apply( op_obj, "getxattr", 2 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
-	(Pike_sp[-1].u.string->size_shift) )
-	DEFAULT_ERRNO();
+        (Pike_sp[-1].u.string->size_shift) )
+        DEFAULT_ERRNO();
     ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
     if( !size )
-	return ds;
+        return ds;
     if( size < ds )
-	return -ERANGE;
+        return -ERANGE;
     memcpy( value, Pike_sp[-1].u.string->str, ds );
     return ds;
 }
 
 static int pf_getxattr(const char *path, const char *name, char *value,
-		       size_t size)
+                       size_t size)
 {
     struct dispatch_struct dinfo;
 
@@ -1224,18 +1224,18 @@ static int low_pf_listxattr(struct object *op_obj,
     push_text( path );
     apply( op_obj, "listxattr", 1 );
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY )
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     push_string( make_shared_binary_string( "\0", 1 ) );
     o_multiply();
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
-	(Pike_sp[-1].u.string->size_shift) )
-	DEFAULT_ERRNO();
+        (Pike_sp[-1].u.string->size_shift) )
+        DEFAULT_ERRNO();
     /* We need to account for the terminating NUL. */
     ds = (Pike_sp[-1].u.string->len + 1) <<Pike_sp[-1].u.string->size_shift;
     if( !size )
-	return ds;
+        return ds;
     if( size < ds )
-	return -ERANGE;
+        return -ERANGE;
     memcpy( list, Pike_sp[-1].u.string->str, ds );
     return ds;
 }
@@ -1261,7 +1261,7 @@ static int low_pf_removexattr(struct object *op_obj,
     push_text( name );
     apply( op_obj, "removexattr", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -1326,7 +1326,7 @@ static int low_pf_access( struct object *op_obj,
     push_int( mode );
     apply( op_obj, "access", 2 );
     if (TYPEOF(Pike_sp[-1]) != T_INT)
-	DEFAULT_ERRNO();
+        DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
@@ -1666,8 +1666,8 @@ static void f_fuse_run( INT32 nargs )
     static int inhibit_concurrent_run;
 
     if ( inhibit_concurrent_run )
-	Pike_error("There can be only one.\n"
-		   "You have to run multiple processes to have multiple FUSE filesystems\n");
+        Pike_error("There can be only one.\n"
+                   "You have to run multiple processes to have multiple FUSE filesystems\n");
     inhibit_concurrent_run = 1;
 
     get_all_args( NULL, nargs, "%o%a", &operations_obj, &args );
@@ -1676,12 +1676,12 @@ static void f_fuse_run( INT32 nargs )
     for( i = 0; i<args->size; i++ )
     {
         if( TYPEOF(args->item[i]) != PIKE_T_STRING ||
-	    string_has_null(args->item[i].u.string) )
-	{
-	    free( argv );
+            string_has_null(args->item[i].u.string) )
+        {
+            free( argv );
             Pike_error("Argument %d is not a nonbinary string.\n", i );
-	}
-	argv[i] = args->item[i].u.string->str;
+        }
+        argv[i] = args->item[i].u.string->str;
     }
 
     enable_external_threads();
@@ -1827,6 +1827,8 @@ static void f_fuse_run( INT32 nargs )
 PIKE_MODULE_EXIT
 {
     free_program( getdir_program );
+
+    EXIT;
 }
 
 /*! @decl constant FUSE_MAJOR_VERSION
@@ -1841,8 +1843,8 @@ PIKE_MODULE_INIT
 
     start_new_program( );
     {
-	ADD_STORAGE( struct getdir_storage );
-	ADD_FUNCTION( "`()", f_getdir_callback, tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid ), 0 );
+        ADD_STORAGE( struct getdir_storage );
+        ADD_FUNCTION( "`()", f_getdir_callback, tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid ), 0 );
     }
     getdir_program = end_program();
 
@@ -1854,6 +1856,8 @@ PIKE_MODULE_INIT
     add_integer_constant("F_SETLKW", F_SETLKW, 0 );
     add_integer_constant("FUSE_MAJOR_VERSION", FUSE_MAJOR_VERSION, 0);
     add_integer_constant("FUSE_MINOR_VERSION", FUSE_MINOR_VERSION, 0);
+
+    INIT;
 }
 
 /*! @endmodule

@@ -553,7 +553,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/FSEvents/fsevents.cmod mixed_indent
 /src/modules/FSEvents/fseventstest.pike mixed_indent
 /src/modules/Fuse/example/remountcwd.pike mixed_indent
-/src/modules/Fuse/fuse.c mixed_indent
 /src/modules/Gdbm/gdbmmod.c mixed_indent
 /src/modules/Gettext/configure.in mixed_indent
 /src/modules/Gettext/gettext.c mixed_indent
