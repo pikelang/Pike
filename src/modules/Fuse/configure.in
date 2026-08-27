@@ -1,4 +1,4 @@
-AC_INIT(fuse.c)
+AC_INIT(fuse.cmod)
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(fuse,  [  --without-fuse       no support for the Fuse user filesystem module],[],[with_fuse=yes])
