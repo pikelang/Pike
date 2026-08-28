@@ -203,9 +203,10 @@ log_start response_assembly
       find . -name "*.core" -print
       find . -name "core.*" -print
   ) | grep -v '/modref/' | while read f; do
-      echo "$f"
+      echo "Examining core file $f..." >>xenofarm_result/_core.txt
       gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} \
           >>xenofarm_result/_core.txt ";"
+      echo >>xenofarm_result/_core.txt
   done
   log_end $?
 
