@@ -515,11 +515,6 @@ PMOD_EXPORT void debug_xfree(void *mem)
   free(mem);
 }
 
-PMOD_EXPORT void *debug_xmalloc(size_t s)
-{
-  return malloc(s);
-}
-
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)
 {
   void *ret = realloc(m,s);
