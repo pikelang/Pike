@@ -59,6 +59,12 @@ xenofarm_post_build() {
             xenofarm_result/verifylog.txt 2>&1
       log_end $?
       [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
+
+      log_start release_checks
+      bin/pike tools/release_checks.pike \
+               >xenofarm_result/release_checks.txt 2>&1
+      log_end $?
+      [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
   fi
 
   if [ "x$MAKE_DOC" = "x" ]; then :; else
