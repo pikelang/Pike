@@ -365,32 +365,37 @@ int test_manifest()
   }
   record();
 
-  mapping all = ([
-    ".gitignore" : "ignored",
-  ]);
-  foreach(Stdio.File("src/.gitignore")->line_iterator();; string line) {
-    // FIXME: This does not handle globs.
-    all[line[1..]] = "ignored";
-  }
-  foreach(entries;; mapping files)
-  {
-    all += files;
-    foreach(files; string file; string desc)
+  // NB: Dists do not contain .gitignore files.
+  if (Stdio.exist("src/.gitignore")) {
+    mapping all = ([
+      ".gitignore" : "ignored",
+    ]);
+    foreach(Stdio.File("src/.gitignore")->line_iterator();; string line) {
+      // FIXME: This does not handle globs.
+      all[line[1..]] = "ignored";
+    }
+    foreach(entries;; mapping files)
     {
-      if( !Stdio.exist(combine_path("src",file)) ) {
-        write("Reference missing file %O.\n", file);
+      all += files;
+      foreach(files; string file; string desc)
+      {
+        if( !Stdio.exist(combine_path("src",file)) ) {
+          write("Reference missing file %O.\n", file);
+          failures++;
+        }
+      }
+    }
+    foreach(get_dir("src");; string file)
+    {
+      if( (< '~', '#' >)[file[-1]] ) continue;
+      if( !all[file] )
+      {
+        write("File %O not described in MANIFEST.\n", file);
         failures++;
       }
     }
-  }
-  foreach(get_dir("src");; string file)
-  {
-    if( (< '~', '#' >)[file[-1]] ) continue;
-    if( !all[file] )
-    {
-      write("File %O not described in MANIFEST.\n", file);
-      failures++;
-    }
+  } else {
+    write("Skipping missing files in MANIFEST check.\n");
   }
 
   return failures;
