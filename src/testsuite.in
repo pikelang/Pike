@@ -16325,6 +16325,8 @@ test_eq(sprintf("%+d",-2),"-2")
 test_eq(sprintf("%-2d",2),"2 ")
 test_eq(sprintf("%|3d",2)," 2 ")
 test_eq(sprintf("%-=3s","f o bar gaz"),"f o\nbar\ngaz")
+test_eq(map(sprintf("%-=20s\n", "Foo bar Foobar Gazonk Baz.")/"\n",
+            String.trim_all_whites) * "\n", "Foo bar Foobar\nGazonk Baz.\n")
 dnl test_eq(sprintf("%/3s","f o bargaz"),"f o\nbar\ngaz")
 test_true(stringp(sprintf("%3#s","f\no\nbargaz\nonk")))
 test_true(stringp(sprintf("%3$s","f\no\nbargaz\nonk")))
