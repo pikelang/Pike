@@ -895,7 +895,11 @@ static int do_one(struct format_stack *fs,
       break;
     }
 
-    if (lastspace == -1) {
+    if (e == f->len) {
+      /* The entire remainder of the string fits in the field. */
+      lastspace = e;
+      rest = ADD_PCHARP(f->b, lastspace); /* NB: At EOS. */
+    } else if (lastspace == -1) {
       /* No suitable whitespace break point found.
        * Perform a rough break at f->column_width.
        */
@@ -904,7 +908,7 @@ static int do_one(struct format_stack *fs,
       } else {
 	lastspace = f->column_width;
       }
-      rest = ADD_PCHARP(f->b, lastspace);
+      rest = ADD_PCHARP(f->b, lastspace); /* NB: Not space ==> No adjust. */
     } else {
       /* Break at the found whitespace, and advance past it. */
       rest = ADD_PCHARP(f->b, lastspace + 1);
