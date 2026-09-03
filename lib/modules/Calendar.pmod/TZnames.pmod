@@ -1517,6 +1517,7 @@ mapping abbr2zones =
      "America/Ciudad_Juarez",
      "America/Costa_Rica",
      "America/Detroit",
+     "America/Edmonton",
      "America/El_Salvador",
      "America/Guatemala",
      "America/Havana",
@@ -3409,7 +3410,7 @@ mapping timezone_expert_tree =
                0:"Antarctica/Troll",
             ]),
          -3600:
-            ([ "test":-69890400, // 1967-10-15 02:00:00
+            ([ "test":10243800, // 1970-04-29 13:30:00
                -3600:
                   ([ "test":-2021169296, // 1905-12-14 20:05:04
                      0:
@@ -3829,7 +3830,7 @@ mapping timezone_expert_tree =
             ]),
       ]),
    25200:
-      ([ "test":1304852400, // 2011-05-08 11:00:00
+      ([ "test":1535396400, // 2018-08-27 19:00:00
          18000:
             ([ "test":1168716600, // 2007-01-13 19:30:00
                21600:
@@ -3848,18 +3849,15 @@ mapping timezone_expert_tree =
                18000:"America/Cambridge_Bay",
                21600:"America/Swift_Current",
                25200:
-                  ([ "test":-47347200, // 1968-07-02 00:00:00
-                     21600:
-                        ([ "test":127659600, // 1974-01-17 13:00:00
-                           21600:"America/Denver",
-                           25200:"America/Boise",
-                        ]),
+                  ([ "test":127659600, // 1974-01-17 13:00:00
+                     21600:"America/Denver",
                      25200:
                         ([ "test":425970000, // 1983-07-02 05:00:00
                            21600:
-                              ([ "test":-1551600784, // 1920-10-31 15:46:56
+                              ([ "test":-1735254784, // 1915-01-06 00:46:56
                                  0:"America/Yellowknife",
                                  25200:"America/Edmonton",
+                                 28800:"America/Boise",
                               ]),
                            25200:"America/Mazatlan",
                         ]),
@@ -3887,20 +3885,20 @@ mapping timezone_expert_tree =
                   ]),
             ]),
          28800:
-            ([ "test":-108030600, // 1966-07-30 15:30:00
+            ([ "test":110419200, // 1973-07-02 00:00:00
                25200:
-                  ([ "test":-2715760426, // 1883-12-10 14:06:14
-                     28800:"America/Los_Angeles",
-                     29548:"America/Vancouver",
+                  ([ "test":-641147400, // 1949-09-07 07:30:00
+                     25200:"America/Vancouver",
+                     28800:
+                        ([ "test":-1215102600, // 1931-07-01 07:30:00
+                           25200:"America/Tijuana",
+                           28800:"America/Los_Angeles",
+                        ]),
                   ]),
                28800:
                   ([ "test":-139568400, // 1965-07-30 15:00:00
                      25200:"America/Whitehorse",
-                     28800:
-                        ([ "test":-394459200, // 1957-07-02 12:00:00
-                           25200:"America/Tijuana",
-                           28800:"America/Ensenada",
-                        ]),
+                     28800:"America/Ensenada",
                   ]),
             ]),
          32400:
