@@ -212,17 +212,17 @@ mapping zones =
 
 mapping abbr2zones =
 ([
-   "+00": ({"Antarctica/Troll", "Atlantic/Azores", "Atlantic/Cape_Verde",
-       "Etc/GMT+1", "Africa/El_Aaiun", "Africa/Bissau", "Africa/Casablanca",
-       "America/Scoresbysund", "Atlantic/Reykjavik", "Atlantic/Madeira",
-       "Atlantic/Canary"}),
+   "+00": ({"Africa/Casablanca", "Africa/El_Aaiun", "Antarctica/Troll",
+       "Atlantic/Azores", "Atlantic/Cape_Verde", "Etc/GMT+1",
+       "Africa/Bissau", "America/Scoresbysund", "Atlantic/Reykjavik",
+       "Atlantic/Madeira", "Atlantic/Canary"}),
    "+0020": ({"Africa/Accra", "Europe/Amsterdam"}),
    "+0030": ({"Africa/Accra", "Africa/Lagos"}),
    "+01": ({"Africa/Casablanca", "Africa/El_Aaiun", "Etc/GMT-1"}),
    "+0120": ({"Europe/Amsterdam"}),
    "+0130": ({"Africa/Lagos", "Africa/Windhoek"}),
-   "+02": ({"Africa/Casablanca", "Africa/El_Aaiun", "Antarctica/Troll",
-       "Etc/GMT-1", "Etc/GMT-2", "Europe/Ulyanovsk", "Europe/Samara"}),
+   "+02": ({"Antarctica/Troll", "Etc/GMT-1", "Etc/GMT-2", "Europe/Ulyanovsk",
+       "Europe/Samara", "Africa/Casablanca", "Africa/El_Aaiun"}),
    "+0220": ({"Europe/Zaporozhye"}),
    "+0230": ({"Africa/Mogadishu", "Africa/Kampala", "Africa/Nairobi",
        "Africa/Windhoek"}),
@@ -596,25 +596,25 @@ mapping abbr2zones =
        "America/Kentucky/Louisville", "America/Kentucky/Monticello",
        "America/Monterrey", "America/Pangnirtung"}),
    "CST": ({"America/Bahia_Banderas", "America/Belize", "America/Chicago",
-       "America/Chihuahua", "America/Costa_Rica", "America/El_Salvador",
-       "America/Guatemala", "America/Havana", "America/Indiana/Knox",
-       "America/Indiana/Tell_City", "America/Managua", "America/Matamoros",
-       "America/Menominee", "America/Merida", "America/Mexico_City",
-       "America/Monterrey", "America/North_Dakota/Beulah",
-       "America/North_Dakota/Center", "America/North_Dakota/New_Salem",
-       "America/Ojinaga", "America/Rainy_River", "America/Rankin_Inlet",
-       "America/Regina", "America/Resolute", "America/Swift_Current",
-       "America/Tegucigalpa", "America/Winnipeg", "Asia/Chongqing",
-       "Asia/Harbin", "Asia/Kashgar", "Asia/Macau", "Asia/Shanghai",
-       "Asia/Taipei", "CST6CDT", "America/Ciudad_Juarez",
-       "America/Cambridge_Bay", "America/Cancun", "America/Atikokan",
-       "America/Indiana/Indianapolis", "America/Indiana/Marengo",
-       "America/Indiana/Petersburg", "America/Indiana/Vevay",
-       "America/Indiana/Vincennes", "America/Indiana/Winamac",
-       "America/Iqaluit", "America/Kentucky/Louisville",
-       "America/Kentucky/Monticello", "America/Pangnirtung",
-       "America/Hermosillo", "America/Mazatlan", "America/Detroit",
-       "America/Thunder_Bay"}),
+       "America/Chihuahua", "America/Costa_Rica", "America/Edmonton",
+       "America/El_Salvador", "America/Guatemala", "America/Havana",
+       "America/Indiana/Knox", "America/Indiana/Tell_City",
+       "America/Managua", "America/Matamoros", "America/Menominee",
+       "America/Merida", "America/Mexico_City", "America/Monterrey",
+       "America/North_Dakota/Beulah", "America/North_Dakota/Center",
+       "America/North_Dakota/New_Salem", "America/Ojinaga",
+       "America/Rainy_River", "America/Rankin_Inlet", "America/Regina",
+       "America/Resolute", "America/Swift_Current", "America/Tegucigalpa",
+       "America/Winnipeg", "Asia/Chongqing", "Asia/Harbin", "Asia/Kashgar",
+       "Asia/Macau", "Asia/Shanghai", "Asia/Taipei", "CST6CDT",
+       "America/Ciudad_Juarez", "America/Cambridge_Bay", "America/Cancun",
+       "America/Atikokan", "America/Indiana/Indianapolis",
+       "America/Indiana/Marengo", "America/Indiana/Petersburg",
+       "America/Indiana/Vevay", "America/Indiana/Vincennes",
+       "America/Indiana/Winamac", "America/Iqaluit",
+       "America/Kentucky/Louisville", "America/Kentucky/Monticello",
+       "America/Pangnirtung", "America/Hermosillo", "America/Mazatlan",
+       "America/Detroit", "America/Thunder_Bay"}),
    "CT": ({"Asia/Macau"}),
    "CWT": ({"America/Bahia_Banderas", "America/Belize", "America/Chicago",
        "America/Indiana/Knox", "America/Indiana/Tell_City",
@@ -870,9 +870,9 @@ mapping abbr2zones =
    "LST": ({"Europe/Riga"}),
    "MDST": ({"Europe/Moscow"}),
    "MDT": ({"America/Boise", "America/Cambridge_Bay",
-       "America/Ciudad_Juarez", "America/Denver", "America/Edmonton",
-       "America/Inuvik", "America/Mazatlan", "America/Yellowknife",
-       "MST7MDT", "America/Bahia_Banderas", "America/Chihuahua",
+       "America/Ciudad_Juarez", "America/Denver", "America/Inuvik",
+       "America/Mazatlan", "America/Yellowknife", "MST7MDT",
+       "America/Edmonton", "America/Bahia_Banderas", "America/Chihuahua",
        "America/Hermosillo", "America/Mexico_City", "America/Monterrey",
        "America/North_Dakota/Beulah", "America/North_Dakota/Center",
        "America/North_Dakota/New_Salem", "America/Ojinaga",
@@ -883,8 +883,8 @@ mapping abbr2zones =
        "America/Managua", "Asia/Makassar", "Europe/Minsk",
        "America/Montevideo", "Asia/Colombo", "Asia/Kolkata"}),
    "MPT": ({"America/Boise", "America/Cambridge_Bay",
-       "America/Ciudad_Juarez", "America/Denver", "America/Edmonton",
-       "America/Inuvik", "America/Yellowknife", "MST7MDT",
+       "America/Ciudad_Juarez", "America/Denver", "America/Inuvik",
+       "America/Yellowknife", "MST7MDT", "America/Edmonton",
        "America/North_Dakota/Beulah", "America/North_Dakota/Center",
        "America/North_Dakota/New_Salem", "America/Ojinaga",
        "America/Phoenix", "America/Regina", "America/Swift_Current"}),
@@ -899,19 +899,19 @@ mapping abbr2zones =
        "Europe/Zaporozhye"}),
    "MST": ({"America/Boise", "America/Cambridge_Bay",
        "America/Ciudad_Juarez", "America/Creston", "America/Dawson",
-       "America/Dawson_Creek", "America/Denver", "America/Edmonton",
-       "America/Fort_Nelson", "America/Hermosillo", "America/Inuvik",
-       "America/Mazatlan", "America/Phoenix", "America/Whitehorse",
+       "America/Dawson_Creek", "America/Denver", "America/Fort_Nelson",
+       "America/Hermosillo", "America/Inuvik", "America/Mazatlan",
+       "America/Phoenix", "America/Vancouver", "America/Whitehorse",
        "America/Yellowknife", "MST", "MST7MDT", "America/Bahia_Banderas",
-       "America/Chihuahua", "America/Mexico_City", "America/Monterrey",
-       "America/North_Dakota/Beulah", "America/North_Dakota/Center",
-       "America/North_Dakota/New_Salem", "America/Ojinaga", "America/Regina",
-       "America/Swift_Current", "Europe/Moscow", "America/Ensenada",
-       "America/Tijuana"}),
+       "America/Chihuahua", "America/Edmonton", "America/Mexico_City",
+       "America/Monterrey", "America/North_Dakota/Beulah",
+       "America/North_Dakota/Center", "America/North_Dakota/New_Salem",
+       "America/Ojinaga", "America/Regina", "America/Swift_Current",
+       "Europe/Moscow", "America/Ensenada", "America/Tijuana"}),
    "MWT": ({"America/Boise", "America/Cambridge_Bay",
-       "America/Ciudad_Juarez", "America/Denver", "America/Edmonton",
-       "America/Inuvik", "America/Mazatlan", "America/Yellowknife",
-       "MST7MDT", "America/Bahia_Banderas", "America/Chihuahua",
+       "America/Ciudad_Juarez", "America/Denver", "America/Inuvik",
+       "America/Mazatlan", "America/Yellowknife", "MST7MDT",
+       "America/Bahia_Banderas", "America/Chihuahua", "America/Edmonton",
        "America/Hermosillo", "America/Mexico_City", "America/Monterrey",
        "America/North_Dakota/Beulah", "America/North_Dakota/Center",
        "America/North_Dakota/New_Salem", "America/Ojinaga",
@@ -930,7 +930,7 @@ mapping abbr2zones =
    "NZMT": ({"Antarctica/McMurdo", "Pacific/Auckland"}),
    "NZST": ({"Antarctica/McMurdo", "Pacific/Auckland"}),
    "PDT": ({"America/Ensenada", "America/Los_Angeles", "America/Tijuana",
-       "America/Vancouver", "Asia/Manila", "PST8PDT", "America/Boise",
+       "Asia/Manila", "PST8PDT", "America/Vancouver", "America/Boise",
        "America/Dawson", "America/Dawson_Creek", "America/Fort_Nelson",
        "America/Inuvik", "America/Juneau", "America/Metlakatla",
        "America/Sitka", "America/Whitehorse"}),
@@ -943,19 +943,20 @@ mapping abbr2zones =
        "Europe/Monaco", "Africa/Algiers", "Africa/Tunis", "Europe/Paris",
        "Europe/Prague"}),
    "PPMT": ({"America/Port-au-Prince"}),
-   "PPT": ({"America/Los_Angeles", "America/Tijuana", "America/Vancouver",
+   "PPT": ({"America/Los_Angeles", "America/Tijuana", "PST8PDT",
+       "America/Boise", "America/Dawson", "America/Dawson_Creek",
+       "America/Fort_Nelson", "America/Inuvik", "America/Juneau",
+       "America/Metlakatla", "America/Sitka", "America/Vancouver",
+       "America/Whitehorse"}),
+   "PST": ({"America/Ensenada", "America/Los_Angeles", "America/Tijuana",
+       "Asia/Manila", "PST8PDT", "America/Metlakatla", "America/Dawson",
+       "America/Whitehorse", "America/Boise", "America/Dawson_Creek",
+       "America/Fort_Nelson", "America/Inuvik", "America/Juneau",
+       "America/Sitka", "America/Vancouver", "America/Creston"}),
+   "PWT": ({"America/Ensenada", "America/Los_Angeles", "America/Tijuana",
        "PST8PDT", "America/Boise", "America/Dawson", "America/Dawson_Creek",
        "America/Fort_Nelson", "America/Inuvik", "America/Juneau",
-       "America/Metlakatla", "America/Sitka", "America/Whitehorse"}),
-   "PST": ({"America/Ensenada", "America/Los_Angeles", "America/Tijuana",
-       "America/Vancouver", "Asia/Manila", "PST8PDT", "America/Metlakatla",
-       "America/Dawson", "America/Whitehorse", "America/Boise",
-       "America/Dawson_Creek", "America/Fort_Nelson", "America/Inuvik",
-       "America/Juneau", "America/Sitka", "America/Creston"}),
-   "PWT": ({"America/Ensenada", "America/Los_Angeles", "America/Tijuana",
-       "America/Vancouver", "PST8PDT", "America/Boise", "America/Dawson",
-       "America/Dawson_Creek", "America/Fort_Nelson", "America/Inuvik",
-       "America/Juneau", "America/Metlakatla", "America/Sitka",
+       "America/Metlakatla", "America/Sitka", "America/Vancouver",
        "America/Whitehorse"}),
    "QMT": ({"America/Guayaquil"}),
    "RMT": ({"Europe/Riga", "Asia/Yangon", "Europe/Rome"}),
@@ -1027,10 +1028,21 @@ mapping timezone_expert_tree =
             ([ "test":-1709985344, // 1915-10-25 12:04:16
                -43200:"Pacific/Fiji",
                -41400:"Pacific/Auckland",
+               0:"Antarctica/McMurdo",
             ]),
          -43200:
             ([ "test":670341600, // 1991-03-30 14:00:00
-               -43200:"Pacific/Tarawa",
+               -43200:
+                  ([ "test":-818067600, // 1944-01-29 15:00:00
+                     -43200:
+                        ([ "test":-2177496920, // 1900-12-31 11:44:40
+                           -43200:"Pacific/Wallis",
+                           -43012:"Pacific/Funafuti",
+                           -41524:"Pacific/Tarawa",
+                           -39988:"Pacific/Wake",
+                        ]),
+                     -39600:"Pacific/Majuro",
+                  ]),
                -39600:"Asia/Kamchatka",
             ]),
          -39600:"Pacific/Kosrae",
@@ -1054,14 +1066,22 @@ mapping timezone_expert_tree =
          -39600:
             ([ "test":-1829387596, // 1912-01-12 12:46:44
                -39948:"Pacific/Noumea",
-               -39600:"Pacific/Efate",
+               -39600:
+                  ([ "test":-907408800, // 1941-03-31 14:00:00
+                     -39600:"Pacific/Efate",
+                     -32400:"Pacific/Pohnpei",
+                  ]),
                -38388:"Pacific/Guadalcanal",
             ]),
          -36000:
             ([ "test":31572000, // 1971-01-01 10:00:00
                -39600:
                   ([ "test":-1583848800, // 1919-10-24 10:00:00
-                     -36000:"Australia/Hobart",
+                     -36000:
+                        ([ "test":-2345795356, // 1895-08-31 14:10:44
+                           -36000:"Australia/Hobart",
+                           -34528:"Australia/Currie",
+                        ]),
                      0:"Antarctica/Macquarie",
                   ]),
                -36000:
@@ -1086,9 +1106,18 @@ mapping timezone_expert_tree =
             ([ "test":1419696000, // 2014-12-27 16:00:00
                -39600:"Pacific/Bougainville",
                -36000:
-                  ([ "test":-885549600, // 1941-12-09 14:00:00
-                     -36000:"Pacific/Port_Moresby",
-                     -32400:"Pacific/Guam",
+                  ([ "test":-804157200, // 1944-07-08 15:00:00
+                     -36000:
+                        ([ "test":-2177487780, // 1900-12-31 14:17:00
+                           -36000:"Pacific/Port_Moresby",
+                           -32400:"Pacific/Saipan",
+                        ]),
+                     -32400:
+                        ([ "test":-802256400, // 1944-07-30 15:00:00
+                           -36000:"Pacific/Guam",
+                           -32400:"Pacific/Chuuk",
+                        ]),
+                     0:"Antarctica/DumontDUrville",
                   ]),
             ]),
       ]),
@@ -1122,29 +1151,34 @@ mapping timezone_expert_tree =
          -28800:"Asia/Dili",
       ]),
    -31500:"Australia/Eucla",
+   -30600:"Asia/Harbin",
    -28800:
       ([ "test":1255802400, // 2009-10-17 18:00:00
          -39600:"Antarctica/Casey",
          -32400:"Asia/Irkutsk",
          -28800:
-            ([ "test":-891579600, // 1941-09-30 19:00:00
-               -32400:
-                  ([ "test":-649954800, // 1949-05-28 09:00:00
-                     -32400:"Asia/Taipei",
-                     -28800:"Asia/Shanghai",
-                  ]),
-               -30600:"Asia/Hong_Kong",
-               -30000:"Asia/Kuching",
+            ([ "test":-2056692850, // 1904-10-29 16:25:50
                -28800:
-                  ([ "test":-836409600, // 1943-07-01 08:00:00
-                     -36000:"Asia/Macau",
+                  ([ "test":-649954800, // 1949-05-28 09:00:00
                      -32400:
-                        ([ "test":-766054800, // 1945-09-22 15:00:00
-                           -32400:"Asia/Manila",
-                           -28800:"Asia/Makassar",
+                        ([ "test":-766224000, // 1945-09-20 16:00:00
+                           -32400:"Asia/Macau",
+                           -28800:"Asia/Taipei",
                         ]),
-                     -28800:"Australia/Perth",
+                     -28800:
+                        ([ "test":-783594000, // 1945-03-03 15:00:00
+                           -32400:
+                              ([ "test":-2219083200, // 1899-09-06 04:00:00
+                                 -29143:"Asia/Shanghai",
+                                 -28800:"Asia/Manila",
+                              ]),
+                           -28800:"Australia/Perth",
+                        ]),
                   ]),
+               -28656:"Asia/Makassar",
+               -27580:"Asia/Brunei",
+               -27402:"Asia/Hong_Kong",
+               -26480:"Asia/Kuching",
             ]),
          -25200:
             ([ "test":171820800, // 1975-06-12 16:00:00
@@ -1152,37 +1186,55 @@ mapping timezone_expert_tree =
                -25200:"Asia/Ho_Chi_Minh",
             ]),
       ]),
-   -27000:"Asia/Singapore",
+   -27000:
+      ([ "test":-2177477725, // 1900-12-31 17:04:35
+         -24925:"Asia/Singapore",
+         -24406:"Asia/Kuala_Lumpur",
+      ]),
    -25200:
-      ([ "test":760035600, // 1994-01-31 17:00:00
-         -28800:"Asia/Ulaanbaatar",
+      ([ "test":670359600, // 1991-03-30 19:00:00
+         -32400:"Asia/Ulaanbaatar",
+         -28800:"Asia/Chongqing",
          -25200:
-            ([ "test":1269716400, // 2010-03-27 19:00:00
-               -28800:"Asia/Krasnoyarsk",
+            ([ "test":760035600, // 1994-01-31 17:00:00
                -25200:
                   ([ "test":1255806000, // 2009-10-17 19:00:00
                      -25200:
-                        ([ "test":-620812800, // 1950-04-30 16:00:00
-                           -28800:"Asia/Hanoi",
-                           -27000:"Asia/Jakarta",
-                           -25200:"Asia/Bangkok",
+                        ([ "test":-2004073404, // 1906-06-30 16:56:36
+                           -25632:"Asia/Jakarta",
+                           -25590:"Asia/Hanoi",
+                           -25200:"Indian/Christmas",
+                           -25180:"Asia/Phnom_Penh",
+                           -24624:"Asia/Vientiane",
+                           -24124:"Asia/Bangkok",
                         ]),
                      -18000:"Antarctica/Davis",
                   ]),
-               -21600:
-                  ([ "test":801648000, // 1995-05-28 08:00:00
+               0:"Antarctica/Vostok",
+            ]),
+         -21600:
+            ([ "test":801648000, // 1995-05-28 08:00:00
+               -28800:
+                  ([ "test":1020250800, // 2002-05-01 11:00:00
                      -28800:
-                        ([ "test":1020250800, // 2002-05-01 11:00:00
-                           -28800:"Asia/Novokuznetsk",
-                           -25200:"Asia/Tomsk",
+                        ([ "test":1269716400, // 2010-03-27 19:00:00
+                           -28800:"Asia/Krasnoyarsk",
+                           -21600:"Asia/Novokuznetsk",
                         ]),
-                     -25200:"Asia/Barnaul",
+                     -25200:"Asia/Tomsk",
+                  ]),
+               -25200:
+                  ([ "test":738144000, // 1993-05-23 08:00:00
+                     -28800:"Asia/Barnaul",
+                     -25200:"Asia/Novosibirsk",
                   ]),
             ]),
-         -21600:"Asia/Novosibirsk",
-         0:"Antarctica/Vostok",
       ]),
-   -23400:"Asia/Yangon",
+   -23400:
+      ([ "test":-873268200, // 1942-04-30 17:30:00
+         -32400:"Asia/Yangon",
+         -23400:"Indian/Cocos",
+      ]),
    -21600:
       ([ "test":670363200, // 1991-03-30 20:00:00
          -28800:"Asia/Hovd",
@@ -1216,6 +1268,7 @@ mapping timezone_expert_tree =
       ]),
    -18000:
       ([ "test":922568400, // 1999-03-27 21:00:00
+         -28800:"Asia/Kashgar",
          -21600:
             ([ "test":695768400, // 1992-01-18 21:00:00
                -21600:"Asia/Qyzylorda",
@@ -1238,8 +1291,9 @@ mapping timezone_expert_tree =
                      -18000:"Asia/Ashgabat",
                   ]),
                -18000:
-                  ([ "test":-576135000, // 1951-09-29 18:30:00
-                     -18000:"Asia/Karachi",
+                  ([ "test":-631152000, // 1950-01-01 00:00:00
+                     -19800:"Asia/Karachi",
+                     -18000:"Indian/Kerguelen",
                      -17640:"Indian/Maldives",
                   ]),
             ]),
@@ -1255,142 +1309,195 @@ mapping timezone_expert_tree =
       ]),
    -16200:"Asia/Kabul",
    -14400:
-      ([ "test":686102400, // 1991-09-29 00:00:00
-         -14400:
-            ([ "test":575416800, // 1988-03-26 22:00:00
-               -18000:
-                  ([ "test":1459033200, // 2016-03-26 23:00:00
-                     -14400:"Europe/Astrakhan",
-                     -10800:"Europe/Kirov",
-                  ]),
+      ([ "test":575416800, // 1988-03-26 22:00:00
+         -18000:
+            ([ "test":687916800, // 1991-10-20 00:00:00
                -14400:
-                  ([ "test":-1988164200, // 1906-12-31 20:10:00
-                     -14400:"Indian/Mauritius",
-                     -13272:"Asia/Dubai",
+                  ([ "test":670374000, // 1991-03-30 23:00:00
+                     -14400:
+                        ([ "test":1459033200, // 2016-03-26 23:00:00
+                           -14400:"Europe/Astrakhan",
+                           -10800:"Europe/Kirov",
+                        ]),
+                     -7200:"Europe/Samara",
                   ]),
                -10800:
+                  ([ "test":778392000, // 1994-09-01 04:00:00
+                     -18000:"Asia/Tbilisi",
+                     -14400:
+                        ([ "test":-1441163964, // 1924-05-01 20:40:36
+                           -10800:"Asia/Baku",
+                           -10680:"Asia/Yerevan",
+                        ]),
+                  ]),
+               -7200:"Europe/Ulyanovsk",
+            ]),
+         -14400:
+            ([ "test":-1988164200, // 1906-12-31 20:10:00
+               -14400:"Indian/Mauritius",
+               -14064:"Asia/Muscat",
+               -13312:"Indian/Reunion",
+               -13308:"Indian/Mahe",
+               -13272:"Asia/Dubai",
+            ]),
+         -10800:
+            ([ "test":76190400, // 1972-05-31 20:00:00
+               -14400:
                   ([ "test":1480806000, // 2016-12-03 23:00:00
                      -14400:"Europe/Saratov",
                      -10800:"Europe/Volgograd",
                   ]),
-            ]),
-         -10800:
-            ([ "test":778392000, // 1994-09-01 04:00:00
-               -18000:
-                  ([ "test":606866400, // 1989-03-25 22:00:00
-                     -18000:"Asia/Tbilisi",
-                     -10800:"Europe/Samara",
+               -10800:
+                  ([ "test":-897880940, // 1941-07-19 20:37:40
+                     -14400:"Asia/Qatar",
+                     -12600:"Asia/Bahrain",
                   ]),
-               -14400:
-                  ([ "test":-1441163964, // 1924-05-01 20:40:36
-                     -10800:"Asia/Baku",
-                     -10680:"Asia/Yerevan",
-                  ]),
-               -10800:"Asia/Qatar",
             ]),
-         -7200:"Europe/Ulyanovsk",
       ]),
    -12600:"Asia/Tehran",
    -10800:
-      ([ "test":606870000, // 1989-03-25 23:00:00
+      ([ "test":670374000, // 1991-03-30 23:00:00
          -14400:
-            ([ "test":646786800, // 1990-06-30 23:00:00
-               -14400:
-                  ([ "test":1301180400, // 2011-03-26 23:00:00
-                     -14400:"Europe/Moscow",
-                     -10800:"Asia/Baghdad",
-                     -7200:"Europe/Kyiv",
-                  ]),
-               -10800:
-                  ([ "test":-804636000, // 1944-07-03 02:00:00
-                     -10800:"Europe/Minsk",
-                     -7200:"Europe/Chisinau",
-                  ]),
-               -7200:"Europe/Simferopol",
+            ([ "test":695793600, // 1992-01-19 04:00:00
+               -10800:"Europe/Tiraspol",
+               -7200:"Europe/Zaporozhye",
             ]),
          -10800:
-            ([ "test":622598400, // 1989-09-24 00:00:00
+            ([ "test":686102400, // 1991-09-29 00:00:00
+               -14400:"Asia/Baghdad",
                -10800:
-                  ([ "test":-865305900, // 1942-07-31 21:15:00
+                  ([ "test":-1946168836, // 1908-04-30 21:32:44
+                     -11516:"Asia/Kuwait",
+                     -11404:"Indian/Antananarivo",
                      -11212:"Asia/Riyadh",
-                     -10800:"Africa/Nairobi",
+                     -10856:"Indian/Mayotte",
+                     -10800:"Africa/Mogadishu",
+                     -10794:"Asia/Aden",
+                     -10384:"Indian/Comoro",
+                     -10356:"Africa/Djibouti",
+                     -9428:"Africa/Dar_es_Salaam",
+                     -9320:
+                        ([ "test":-3155682888, // 1869-12-31 21:25:12
+                           -9332:"Africa/Asmara",
+                           -9320:"Africa/Addis_Ababa",
+                        ]),
+                     -9000:"Africa/Nairobi",
+                     -7780:"Africa/Kampala",
+                     0:"Antarctica/Syowa",
                   ]),
-               -7200:
+               -7200:"Europe/Kyiv",
+            ]),
+         -7200:
+            ([ "test":606870000, // 1989-03-25 23:00:00
+               -14400:
+                  ([ "test":646786800, // 1990-06-30 23:00:00
+                     -14400:"Europe/Moscow",
+                     -10800:
+                        ([ "test":1641002400, // 2022-01-01 02:00:00
+                           -10800:"Europe/Minsk",
+                           -7200:"Europe/Chisinau",
+                        ]),
+                     -7200:"Europe/Simferopol",
+                  ]),
+               -10800:
                   ([ "test":-797637600, // 1944-09-22 02:00:00
                      -10800:"Europe/Tallinn",
                      -7200:"Europe/Riga",
                   ]),
+               -7200:
+                  ([ "test":891133200, // 1998-03-29 01:00:00
+                     -10800:"Europe/Kaliningrad",
+                     -7200:"Europe/Vilnius",
+                  ]),
             ]),
-         -7200:
-            ([ "test":891133200, // 1998-03-29 01:00:00
-               -10800:"Europe/Kaliningrad",
-               -7200:"Europe/Vilnius",
-            ]),
+         -3600:"Europe/Uzhgorod",
       ]),
    -7200:
-      ([ "test":844034400, // 1996-09-29 22:00:00
+      ([ "test":904618800, // 1998-09-01 03:00:00
          -10800:
             ([ "test":267933600, // 1978-06-29 02:00:00
                -10800:
-                  ([ "test":347162400, // 1981-01-01 02:00:00
-                     -10800:"Europe/Istanbul",
-                     -7200:
-                        ([ "test":-1686101632, // 1916-07-27 22:26:08
-                           -8712:"Asia/Damascus",
-                           -7200:"Europe/Athens",
-                        ]),
-                  ]),
-               -7200:
-                  ([ "test":291762000, // 1979-03-31 21:00:00
-                     -10800:"Europe/Sofia",
-                     -7200:
-                        ([ "test":-1535938789, // 1921-04-30 22:20:11
-                           -7200:"Europe/Helsinki",
-                           -6264:"Europe/Bucharest",
-                        ]),
-                  ]),
-            ]),
-         -7200:
-            ([ "test":1220220000, // 2008-08-31 22:00:00
-               -10800:
-                  ([ "test":904618800, // 1998-09-01 03:00:00
+                  ([ "test":1301187600, // 2011-03-27 01:00:00
                      -10800:
-                        ([ "test":-1641003640, // 1917-12-31 21:39:20
-                           -8624:"Asia/Amman",
+                        ([ "test":-1686101632, // 1916-07-27 22:26:08
                            -8148:"Asia/Famagusta",
                            -8008:"Asia/Nicosia",
                            -7200:
-                              ([ "test":-2840149254, // 1879-12-31 21:39:06
-                                 -8440:"Asia/Jerusalem",
+                              ([ "test":-2344642492, // 1895-09-13 22:25:08
                                  -7200:"Asia/Beirut",
+                                 -5692:"Europe/Athens",
                               ]),
                         ]),
                      -7200:
-                        ([ "test":1509483600, // 2017-10-31 21:00:00
-                           -10800:"Africa/Juba",
-                           -7200:"Africa/Khartoum",
+                        ([ "test":1396141200, // 2014-03-30 01:00:00
+                           -10800:
+                              ([ "test":1666908000, // 2022-10-27 22:00:00
+                                 -10800:"Asia/Amman",
+                                 -7200:"Asia/Damascus",
+                              ]),
+                           -7200:
+                              ([ "test":1301274000, // 2011-03-28 01:00:00
+                                 -10800:"Europe/Istanbul",
+                                 -7200:"Africa/Cairo",
+                              ]),
                         ]),
                   ]),
                -7200:
                   ([ "test":1269640860, // 2010-03-26 22:01:00
                      -10800:
-                        ([ "test":1219978800, // 2008-08-29 03:00:00
-                           -10800:"Asia/Hebron",
-                           -7200:"Asia/Gaza",
+                        ([ "test":1220220000, // 2008-08-31 22:00:00
+                           -10800:
+                              ([ "test":-1641003660, // 1917-12-31 21:39:00
+                                 -8440:"Asia/Jerusalem",
+                                 -7200:"Asia/Tel_Aviv",
+                              ]),
+                           -7200:
+                              ([ "test":1219978800, // 2008-08-29 03:00:00
+                                 -10800:"Asia/Hebron",
+                                 -7200:"Asia/Gaza",
+                              ]),
                         ]),
                      -7200:
-                        ([ "test":-2109288600, // 1903-02-28 22:30:00
-                           -7818:"Africa/Maputo",
+                        ([ "test":291762000, // 1979-03-31 21:00:00
+                           -10800:"Europe/Sofia",
                            -7200:
-                              ([ "test":-2185409109, // 1900-09-30 21:54:51
-                                 -7200:"Africa/Cairo",
-                                 -5400:"Africa/Johannesburg",
+                              ([ "test":-1535938789, // 1921-04-30 22:20:11
+                                 -7200:"Europe/Helsinki",
+                                 -6264:"Europe/Bucharest",
                               ]),
                         ]),
                   ]),
-               -3600:"Africa/Windhoek",
             ]),
-         -3600:"Africa/Tripoli",
+         -7200:
+            ([ "test":1352505600, // 2012-11-10 00:00:00
+               -10800:
+                  ([ "test":1509483600, // 2017-10-31 21:00:00
+                     -10800:"Africa/Juba",
+                     -7200:"Africa/Khartoum",
+                  ]),
+               -7200:
+                  ([ "test":-2109290664, // 1903-02-28 21:55:36
+                     -8400:"Africa/Blantyre",
+                     -7818:"Africa/Maputo",
+                     -7452:"Africa/Harare",
+                     -7216:"Africa/Kigali",
+                     -7200:
+                        ([ "test":-2524528648, // 1889-12-31 22:02:32
+                           -7464:"Africa/Mbabane",
+                           -7200:"Africa/Bujumbura",
+                        ]),
+                     -6788:"Africa/Lusaka",
+                     -6600:"Africa/Maseru",
+                     -5400:
+                        ([ "test":-2682294220, // 1884-12-31 22:16:20
+                           -6720:"Africa/Johannesburg",
+                           -5400:"Africa/Gaborone",
+                        ]),
+                     -3600:"Africa/Lubumbashi",
+                  ]),
+               -3600:"Africa/Tripoli",
+            ]),
+         -3600:"Africa/Windhoek",
       ]),
    -3600:
       ([ "test":212544000, // 1976-09-26 00:00:00
@@ -1401,42 +1508,71 @@ mapping timezone_expert_tree =
                   ([ "test":102387600, // 1973-03-31 01:00:00
                      -7200:"Europe/Malta",
                      -3600:
-                        ([ "test":-766623600, // 1945-09-16 01:00:00
-                           -10800:"Europe/Berlin",
-                           -7200:
-                              ([ "test":-931726800, // 1940-06-23 03:00:00
-                                 -7200:
-                                    ([ "test":-728510400, // 1946-12-01 04:00:00
-                                       -7200:"Europe/Prague",
-                                       -3600:"Europe/Warsaw",
-                                    ]),
-                                 -3600:
-                                    ([ "test":-906768000, // 1941-04-08 00:00:00
-                                       -7200:"Europe/Budapest",
-                                       -3600:"Europe/Madrid",
-                                    ]),
-                              ]),
+                        ([ "test":-1855958961, // 1911-03-10 23:50:39
+                           -5040:"Europe/Warsaw",
                            -3600:
-                              ([ "test":-1693702800, // 1916-04-30 23:00:00
+                              ([ "test":-776548800, // 1945-05-24 04:00:00
+                                 -10800:"Europe/Berlin",
                                  -7200:
-                                    ([ "test":-780188400, // 1945-04-12 01:00:00
-                                       -7200:"Europe/Brussels",
-                                       -3600:"Europe/Vienna",
+                                    ([ "test":-906768000, // 1941-04-08 00:00:00
+                                       -7200:
+                                          ([ "test":-797972400, // 1944-09-18 05:00:00
+                                             -7200:
+                                                ([ "test":-728510400, // 1946-12-01 04:00:00
+                                                   -7200:"Europe/Prague",
+                                                   -3600:
+                                                      ([ "test":-781045200, // 1945-04-02 03:00:00
+                                                         -7200:
+                                                            ([ "test":-2398294220, // 1893-12-31 23:09:40
+                                                               -3600:"Europe/Copenhagen",
+                                                               -2580:"Europe/Oslo",
+                                                            ]),
+                                                         -3600:"Europe/Budapest",
+                                                      ]),
+                                                ]),
+                                             -3600:
+                                                ([ "test":-935179200, // 1940-05-14 04:00:00
+                                                   -7200:"Europe/Luxembourg",
+                                                   -3600:"Europe/Rome",
+                                                ]),
+                                          ]),
+                                       -3600:
+                                          ([ "test":-2713915544, // 1883-12-31 22:34:16
+                                             -4920:"Europe/Belgrade",
+                                             -4420:"Europe/Sarajevo",
+                                             -3832:"Europe/Zagreb",
+                                             -3600:"Europe/Skopje",
+                                             -3484:"Europe/Ljubljana",
+                                          ]),
                                     ]),
                                  -3600:
-                                    ([ "test":-777942000, // 1945-05-08 01:00:00
+                                    ([ "test":-1692496800, // 1916-05-14 22:00:00
                                        -7200:
-                                          ([ "test":-2713915320, // 1883-12-31 22:38:00
-                                             -3600:"Europe/Belgrade",
-                                             -2996:"Europe/Rome",
+                                          ([ "test":-781052400, // 1945-04-02 01:00:00
+                                             -7200:"Europe/Vienna",
+                                             -3600:"Europe/Stockholm",
                                           ]),
-                                       -3600:"Europe/Zurich",
+                                       -3600:
+                                          ([ "test":-2385247084, // 1894-05-31 23:21:56
+                                             -3600:"Europe/Vaduz",
+                                             -1786:"Europe/Zurich",
+                                          ]),
                                     ]),
-                                 0:"Europe/Gibraltar",
                               ]),
+                           -1172:"Europe/Amsterdam",
+                           -561:"Europe/Monaco",
                            0:
-                              ([ "test":-766609200, // 1945-09-16 05:00:00
-                                 -3600:"Europe/Paris",
+                              ([ "test":-932428800, // 1940-06-15 00:00:00
+                                 -7200:
+                                    ([ "test":-934668000, // 1940-05-20 02:00:00
+                                       -7200:"Europe/Brussels",
+                                       -3600:"Europe/Paris",
+                                    ]),
+                                 -3600:
+                                    ([ "test":-2821649916, // 1880-08-02 00:21:24
+                                       0:"Europe/Gibraltar",
+                                       884:"Europe/Madrid",
+                                    ]),
                                  0:"Europe/Andorra",
                               ]),
                         ]),
@@ -1445,35 +1581,64 @@ mapping timezone_expert_tree =
                   ([ "test":308703600, // 1979-10-13 23:00:00
                      -7200:"Africa/Ndjamena",
                      -3600:
-                        ([ "test":-1767226415, // 1913-12-31 23:46:25
-                           -3600:"Africa/Tunis",
-                           -1800:"Africa/Lagos",
+                        ([ "test":-1940889600, // 1908-07-01 00:00:00
+                           -4460:"Africa/Bangui",
+                           -3668:"Africa/Brazzaville",
+                           -3600:"Africa/Kinshasa",
+                           -3124:"Africa/Luanda",
+                           -2328:"Africa/Douala",
+                           -2268:"Africa/Libreville",
+                           -2108:"Africa/Malabo",
+                           -815:"Africa/Lagos",
+                           -628:"Africa/Porto-Novo",
+                           -561:"Africa/Tunis",
+                           -508:"Africa/Niamey",
                         ]),
                   ]),
             ]),
          0:"Europe/Lisbon",
       ]),
    0:
-      ([ "test":523155600, // 1986-07-31 01:00:00
-         -7200:"Africa/Ceuta",
+      ([ "test":1789873200, // 2026-09-20 03:00:00
+         -7200:
+            ([ "test":448243200, // 1984-03-16 00:00:00
+               -3600:"Africa/Ceuta",
+               0:"Antarctica/Troll",
+            ]),
          -3600:
-            ([ "test":246240000, // 1977-10-21 00:00:00
+            ([ "test":-37234800, // 1968-10-27 01:00:00
                -3600:
-                  ([ "test":309747600, // 1979-10-26 01:00:00
+                  ([ "test":-930956400, // 1940-07-02 01:00:00
+                     -7200:
+                        ([ "test":-2258092800, // 1898-06-11 16:00:00
+                           0:"Europe/Jersey",
+                           609:"Europe/Guernsey",
+                        ]),
                      -3600:
                         ([ "test":-1691962479, // 1916-05-21 02:25:21
-                           -3600:"Europe/London",
-                           -2079:"Europe/Dublin",
+                           -3600:
+                              ([ "test":-3852662325, // 1847-12-01 00:01:15
+                                 0:"Europe/London",
+                                 1075:"Europe/Isle_of_Man",
+                              ]),
+                           -2079:
+                              ([ "test":-2821649781, // 1880-08-02 00:23:39
+                                 1420:"Europe/Belfast",
+                                 1521:"Europe/Dublin",
+                              ]),
                         ]),
-                     0:"Africa/Algiers",
                   ]),
                0:
-                  ([ "test":323827200, // 1980-04-06 00:00:00
-                     -3600:"Atlantic/Canary",
+                  ([ "test":246240000, // 1977-10-21 00:00:00
+                     -3600:"Africa/Algiers",
                      0:
-                        ([ "test":-1830380400, // 1912-01-01 01:00:00
-                           0:"Atlantic/Faroe",
-                           3600:"Atlantic/Madeira",
+                        ([ "test":323827200, // 1980-04-06 00:00:00
+                           -3600:"Atlantic/Canary",
+                           0:
+                              ([ "test":-1830380400, // 1912-01-01 01:00:00
+                                 0:"Atlantic/Faroe",
+                                 3600:"Atlantic/Madeira",
+                              ]),
                         ]),
                   ]),
             ]),
@@ -1485,9 +1650,24 @@ mapping timezone_expert_tree =
                      0:"Africa/Sao_Tome",
                   ]),
                0:
-                  ([ "test":-1830383033, // 1912-01-01 00:16:07
-                     0:"Antarctica/Troll",
+                  ([ "test":-1956609120, // 1908-01-01 01:28:00
+                     0:
+                        ([ "test":-1004313600, // 1938-03-06 00:00:00
+                           0:"Africa/Lome",
+                           43200:"Pacific/Enderbury",
+                        ]),
+                     52:"Africa/Accra",
+                     364:"Africa/Ouagadougou",
+                     724:"Africa/Timbuktu",
                      968:"Africa/Abidjan",
+                     1368:"Atlantic/St_Helena",
+                     1920:"Africa/Bamako",
+                     3180:"Africa/Freetown",
+                     3292:"Africa/Conakry",
+                     3600:"Atlantic/Reykjavik",
+                     3828:"Africa/Nouakchott",
+                     3996:"Africa/Banjul",
+                     4184:"Africa/Dakar",
                   ]),
             ]),
          10800:"Antarctica/Rothera",
@@ -1514,42 +1694,49 @@ mapping timezone_expert_tree =
          0:"America/Danmarkshavn",
          7200:"America/Nuuk",
          10800:
-            ([ "test":132096600, // 1974-03-09 21:30:00
-               5400:"America/Montevideo",
+            ([ "test":938919600, // 1999-10-03 03:00:00
                7200:
+                  ([ "test":972165600, // 2000-10-21 22:00:00
+                     7200:
+                        ([ "test":1318734000, // 2011-10-16 03:00:00
+                           7200:
+                              ([ "test":-195447600, // 1963-10-22 21:00:00
+                                 7200:"America/Sao_Paulo",
+                                 10800:"America/Bahia",
+                              ]),
+                           10800:"America/Araguaina",
+                        ]),
+                     10800:
+                        ([ "test":971560800, // 2000-10-14 22:00:00
+                           7200:
+                              ([ "test":-1767217028, // 1914-01-01 02:22:52
+                                 9240:"America/Fortaleza",
+                                 10800:"America/Maceio",
+                              ]),
+                           10800:"America/Recife",
+                        ]),
+                  ]),
+               10800:
+                  ([ "test":132096600, // 1974-03-09 21:30:00
+                     5400:"America/Montevideo",
+                     10800:
+                        ([ "test":-1767213964, // 1914-01-01 03:13:56
+                           10800:"America/Belem",
+                           14400:"America/Cayenne",
+                        ]),
+                  ]),
+               14400:
                   ([ "test":667947600, // 1991-03-02 21:00:00
-                     7200:"America/Argentina/Buenos_Aires",
+                     7200:
+                        ([ "test":938898000, // 1999-10-02 21:00:00
+                           10800:"America/Rosario",
+                           14400:"America/Argentina/Buenos_Aires",
+                        ]),
                      10800:"America/Argentina/Jujuy",
                      14400:
                         ([ "test":-2372096592, // 1894-10-31 04:16:48
                            15408:"America/Argentina/Cordoba",
                            15700:"America/Argentina/Salta",
-                        ]),
-                  ]),
-               10800:
-                  ([ "test":971560800, // 2000-10-14 22:00:00
-                     7200:
-                        ([ "test":972165600, // 2000-10-21 22:00:00
-                           7200:
-                              ([ "test":1318734000, // 2011-10-16 03:00:00
-                                 7200:
-                                    ([ "test":-195447600, // 1963-10-22 21:00:00
-                                       7200:"America/Sao_Paulo",
-                                       10800:"America/Bahia",
-                                    ]),
-                                 10800:"America/Araguaina",
-                              ]),
-                           10800:
-                              ([ "test":-1767217028, // 1914-01-01 02:22:52
-                                 9240:"America/Fortaleza",
-                                 10800:"America/Maceio",
-                              ]),
-                        ]),
-                     10800:
-                        ([ "test":-1767217224, // 1914-01-01 02:19:36
-                           10800:"America/Recife",
-                           11636:"America/Belem",
-                           14400:"America/Cayenne",
                         ]),
                   ]),
             ]),
@@ -1565,7 +1752,11 @@ mapping timezone_expert_tree =
                      14400:
                         ([ "test":1087099200, // 2004-06-13 04:00:00
                            10800:"America/Argentina/Tucuman",
-                           14400:"America/Argentina/Catamarca",
+                           14400:
+                              ([ "test":-2372096212, // 1894-10-31 04:23:08
+                                 15408:"America/Argentina/Catamarca",
+                                 16200:"America/Argentina/ComodRivadavia",
+                              ]),
                         ]),
                   ]),
                10800:
@@ -1603,7 +1794,7 @@ mapping timezone_expert_tree =
       ]),
    13500:"America/Guyana",
    14400:
-      ([ "test":1283637600, // 2010-09-04 22:00:00
+      ([ "test":1320094800, // 2011-10-31 21:00:00
          7200:"America/Miquelon",
          10800:
             ([ "test":590011200, // 1988-09-11 20:00:00
@@ -1620,37 +1811,55 @@ mapping timezone_expert_tree =
                      14400:"Atlantic/Stanley",
                   ]),
                14400:
-                  ([ "test":-1767212472, // 1914-01-01 03:38:48
-                     14400:"America/Santarem",
-                     16508:"America/Thule",
+                  ([ "test":-1206389360, // 1931-10-10 03:50:40
+                     10800:
+                        ([ "test":1214280000, // 2008-06-24 04:00:00
+                           10800:"America/Santarem",
+                           14400:
+                              ([ "test":-1767212492, // 1914-01-01 03:38:28
+                                 13460:"America/Cuiaba",
+                                 14400:"America/Campo_Grande",
+                              ]),
+                        ]),
+                     14400:
+                        ([ "test":86760000, // 1972-10-01 04:00:00
+                           10800:"America/Asuncion",
+                           14400:"America/Thule",
+                        ]),
                   ]),
             ]),
          14400:
-            ([ "test":971557200, // 2000-10-14 21:00:00
-               10800:
-                  ([ "test":86760000, // 1972-10-01 04:00:00
-                     10800:"America/Asuncion",
-                     14400:
-                        ([ "test":-1767212492, // 1914-01-01 03:38:28
-                           13460:"America/Cuiaba",
-                           14400:"America/Campo_Grande",
-                        ]),
-                  ]),
+            ([ "test":323841600, // 1980-04-06 04:00:00
+               10800:"America/Martinique",
                14400:
-                  ([ "test":323841600, // 1980-04-06 04:00:00
-                     10800:"America/Martinique",
+                  ([ "test":-1848254032, // 1911-06-08 04:06:08
+                     14309:"America/Barbados",
                      14400:
-                        ([ "test":-1841256091, // 1911-08-28 03:58:29
-                           14400:
-                              ([ "test":-788932800, // 1944-12-31 20:00:00
-                                 10800:"America/Puerto_Rico",
-                                 14400:"America/Barbados",
+                        ([ "test":-873057600, // 1942-05-03 04:00:00
+                           10800:
+                              ([ "test":-2713896692, // 1884-01-01 03:48:28
+                                 14400:"America/Blanc-Sablon",
+                                 15865:"America/Puerto_Rico",
                               ]),
-                           14404:"America/Manaus",
-                           14560:"America/Boa_Vista",
-                           15336:"America/Porto_Velho",
-                           16356:"America/La_Paz",
+                           14400:"America/Guadeloupe",
                         ]),
+                     14404:"America/Manaus",
+                     14560:"America/Boa_Vista",
+                     14640:"America/St_Lucia",
+                     14696:"America/St_Vincent",
+                     14736:"America/Dominica",
+                     14764:"America/Port_of_Spain",
+                     14820:"America/Grenada",
+                     14832:"America/Antigua",
+                     14932:"America/Montserrat",
+                     15052:"America/St_Kitts",
+                     15136:"America/Anguilla",
+                     15336:"America/Porto_Velho",
+                     15508:"America/Tortola",
+                     15584:"America/St_Thomas",
+                     16356:"America/La_Paz",
+                     16547:"America/Curacao",
+                     16824:"America/Aruba",
                   ]),
             ]),
          16200:"America/Caracas",
@@ -1663,24 +1872,38 @@ mapping timezone_expert_tree =
                14400:
                   ([ "test":167814000, // 1975-04-27 07:00:00
                      14400:
-                        ([ "test":-1402813824, // 1925-07-19 17:29:36
-                           14400:
+                        ([ "test":-2051202469, // 1905-01-01 05:32:11
+                           18000:
                               ([ "test":-883630800, // 1941-12-31 19:00:00
-                                 14400:"America/Toronto",
+                                 14400:
+                                    ([ "test":-2713892744, // 1884-01-01 04:54:16
+                                       18000:"America/Montreal",
+                                       19052:"America/Toronto",
+                                       21184:"America/Nipigon",
+                                    ]),
                                  18000:"America/New_York",
                               ]),
-                           18000:
-                              ([ "test":-1724083200, // 1915-05-15 08:00:00
-                                 18000:"America/Detroit",
-                                 19776:"America/Havana",
+                           18570:"America/Nassau",
+                           19776:"America/Havana",
+                           21600:
+                              ([ "test":-80542740, // 1967-06-13 19:01:00
+                                 14400:"America/Detroit",
+                                 18000:
+                                    ([ "test":-757404000, // 1945-12-31 18:00:00
+                                       18000:"America/Thunder_Bay",
+                                       21600:"America/Kentucky/Louisville",
+                                    ]),
                               ]),
-                           21600:"America/Kentucky/Louisville",
                         ]),
                      18000:"America/Grand_Turk",
                   ]),
                18000:
                   ([ "test":972766800, // 2000-10-28 21:00:00
-                     14400:"America/Iqaluit",
+                     14400:
+                        ([ "test":-1546300800, // 1921-01-01 00:00:00
+                           0:"America/Iqaluit",
+                           18000:"America/Pangnirtung",
+                        ]),
                      18000:
                         ([ "test":-386787600, // 1957-09-29 07:00:00
                            18000:
@@ -1706,10 +1929,19 @@ mapping timezone_expert_tree =
                18000:
                   ([ "test":-1946918424, // 1908-04-22 05:19:36
                      17776:"America/Bogota",
-                     18000:"America/Panama",
-                     18430:"America/Jamaica",
+                     18000:
+                        ([ "test":-2524502512, // 1890-01-01 05:18:08
+                           18000:"America/Coral_Harbour",
+                           19176:"America/Panama",
+                        ]),
+                     18430:
+                        ([ "test":-2524503170, // 1890-01-01 05:07:10
+                           18430:"America/Jamaica",
+                           19532:"America/Cayman",
+                        ]),
                      18516:"America/Lima",
                      18840:"America/Guayaquil",
+                     21600:"America/Atikokan",
                   ]),
             ]),
          21600:
@@ -1749,7 +1981,11 @@ mapping timezone_expert_tree =
                            18000:"America/Chicago",
                            21600:"America/Winnipeg",
                         ]),
-                     21600:"America/Resolute",
+                     21600:
+                        ([ "test":-880214400, // 1942-02-09 08:00:00
+                           0:"America/Resolute",
+                           18000:"America/Rainy_River",
+                        ]),
                   ]),
             ]),
          21600:
@@ -1815,23 +2051,25 @@ mapping timezone_expert_tree =
                         ]),
                   ]),
                25200:
-                  ([ "test":941313600, // 1999-10-30 20:00:00
-                     18000:"America/Cambridge_Bay",
+                  ([ "test":1793520000, // 2026-11-01 08:00:00
                      21600:
                         ([ "test":-873828000, // 1942-04-24 06:00:00
                            21600:"America/Edmonton",
                            25200:"America/Bahia_Banderas",
                         ]),
+                     25200:
+                        ([ "test":941313600, // 1999-10-30 20:00:00
+                           18000:"America/Cambridge_Bay",
+                           21600:"America/Yellowknife",
+                        ]),
                   ]),
             ]),
          25200:
-            ([ "test":-812653140, // 1944-04-01 07:01:00
+            ([ "test":-1627833600, // 1918-06-02 08:00:00
                21600:"America/Phoenix",
-               25200:
-                  ([ "test":-1514739601, // 1922-01-01 06:59:59
-                     25540:"America/Mazatlan",
-                     26632:"America/Hermosillo",
-                  ]),
+               25200:"America/Creston",
+               25540:"America/Mazatlan",
+               26632:"America/Hermosillo",
             ]),
       ]),
    28800:
@@ -1846,14 +2084,18 @@ mapping timezone_expert_tree =
                28800:"America/Fort_Nelson",
             ]),
          28800:
-            ([ "test":-608144400, // 1950-09-24 07:00:00
+            ([ "test":1793523600, // 2026-11-01 09:00:00
                25200:
-                  ([ "test":-2717640000, // 1883-11-18 20:00:00
-                     28800:"America/Los_Angeles",
-                     29548:"America/Vancouver",
+                  ([ "test":-157798800, // 1964-12-31 15:00:00
+                     28800:"America/Vancouver",
+                     32400:"America/Whitehorse",
                   ]),
-               28800:"America/Tijuana",
-               32400:"America/Whitehorse",
+               28800:
+                  ([ "test":-1514739600, // 1922-01-01 07:00:00
+                     25200:"America/Tijuana",
+                     27988:"America/Ensenada",
+                     28800:"America/Los_Angeles",
+                  ]),
             ]),
          32400:
             ([ "test":325620000, // 1980-04-26 18:00:00
@@ -1891,7 +2133,8 @@ mapping timezone_expert_tree =
          32400:"America/Nome",
          36000:"America/Adak",
          39600:
-            ([ "test":-543069620, // 1952-10-16 11:19:40
+            ([ "test":-428504400, // 1956-06-03 11:00:00
+               36000:"Pacific/Midway",
                39600:"Pacific/Pago_Pago",
                40800:"Pacific/Niue",
             ]),
