@@ -87,7 +87,7 @@ DESCRIPTION
                      if present – between zero and 59.  If preceded by a “-”,
                      the time zone shall be east of the Prime Meridian;
                      otherwise it shall be west (which may be indicated by an
-                     optional preceding “+”.
+                     optional preceding “+”).
 
               rule   Indicates when to change to and back from daylight saving
                      time.  The rule has the form:
