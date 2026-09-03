@@ -83,6 +83,7 @@ For example, for a zone named America/Los_Angeles
 the directory America should already exist.
 By default, the directory and its ancestors are created
 if they do not already exist.
+.TP
 .BI "\-d " directory
 Create time conversion information files in the named directory rather than
 in the standard directory named below.
@@ -123,7 +124,8 @@ is
 (the default), any already-existing link is removed.
 .sp
 Unless
-.I timezone is
+.I timezone
+is
 .q "\-" ,
 this option is obsolete and is no longer supported by most runtimes.
 Among other things it should not be used for timestamps after the year 2037,
@@ -274,8 +276,8 @@ for
 .PP
 The output file does not contain all the information about the
 long-term future of a timezone, because the future cannot be summarized as
-a proleptic TZ string.  For example, as of 2023 this problem
-occurs for Morocco's daylight-saving rules, as these rules are based
+a proleptic TZ string.  For example, as of 2026 this problem
+occurs for Palestine's daylight-saving rules, as these rules are based
 on predictions for when Ramadan will be observed, something that
 a proleptic TZ string cannot represent.
 .PP

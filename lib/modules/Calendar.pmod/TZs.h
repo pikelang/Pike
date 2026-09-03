@@ -281,9 +281,11 @@ class Indian_Mauritius
 class Africa_Casablanca
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
+      if (ux>=1789873200) // from 2026 Sep 20  2:00
+         return tz5 || (tz5=Rule.Timezone(0,"+00/+01"));
       if (ux>=1540699200) // from 2018 Oct 28  3:00
          return tz4 || (tz4=TZrules.Morocco(-3600,"+01/+02"));
       if (ux>=504918000) // from 1986
@@ -299,9 +301,11 @@ class Africa_Casablanca
 class Africa_El_Aaiun
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
+      if (ux>=1789873200) // from 2026 Sep 20  2:00
+         return tz5 || (tz5=Rule.Timezone(0,"+00/+01"));
       if (ux>=1540699200) // from 2018 Oct 28  3:00
          return tz4 || (tz4=TZrules.Morocco(-3600,"+01/+02"));
       if (ux>=198291600) // from 1976 Apr 14
@@ -4842,9 +4846,13 @@ class America_Swift_Current
 class America_Edmonton
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
+      if (ux>=1793520000) // from 2026 Nov  1  2:00
+         return tz5 || (tz5=Rule.Timezone(21600,"CST"));
+      if (ux>=1781719200) // from 2026 Jun 18
+         return tz4 || (tz4=Rule.Timezone(21600,"MDT"));
       if (ux>=536432400) // from 1987
          return tz3 || (tz3=TZrules.Canada(25200,"M%sT"));
       if (ux>=-1998663968) // from 1906 Sep
@@ -4861,7 +4869,7 @@ class America_Vancouver
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1793523600) // from 2026 Nov  1 02:00
+      if (ux>=1793523600) // from 2026 Nov  1  2:00
          return tz5 || (tz5=Rule.Timezone(25200,"MST"));
       if (ux>=1772989200) // from 2026 Mar  9
          return tz4 || (tz4=Rule.Timezone(25200,"PDT"));

@@ -31,9 +31,11 @@ OPTIONS
        -D     Do not create ancestor directories of output files, For example,
               for a zone named America/Los_Angeles the directory America
               should already exist.  By default, the directory and its
-              ancestors are created if they do not already exist.  -d
-              directory Create time conversion information files in the named
-              directory rather than in the standard directory named below.
+              ancestors are created if they do not already exist.
+
+       -d directory
+              Create time conversion information files in the named directory
+              rather than in the standard directory named below.
 
        -l timezone
               Use timezone as local time.  zic will act as if the input
@@ -148,8 +150,8 @@ OPTIONS
 
               The output file does not contain all the information about the
               long-term future of a timezone, because the future cannot be
-              summarized as a proleptic TZ string.  For example, as of 2023
-              this problem occurs for Morocco's daylight-saving rules, as
+              summarized as a proleptic TZ string.  For example, as of 2026
+              this problem occurs for Palestine's daylight-saving rules, as
               these rules are based on predictions for when Ramadan will be
               observed, something that a proleptic TZ string cannot represent.
 
@@ -184,12 +186,13 @@ FILES
        zero or more lines, each ending in a newline byte and containing at
        most 2048 bytes counting the newline, and without any NUL bytes.  The
        input text's encoding is typically UTF-8 or ASCII; it should have a
-       unibyte representation for the POSIX Portable Character Set (PPCS) and
-       the encoding's non-unibyte characters should consist entirely of non-
-       PPCS bytes.  Non-PPCS characters typically occur only in comments:
-       although output file names and time zone abbreviations can contain
-       nearly any character, other software will work better if these are
-       limited to the restricted syntax described under the -v option.
+       unibyte representation for the POSIX Portable Character Set (PPCS)
+       ⟨https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap06
+       .html⟩ and the encoding's non-unibyte characters should consist
+       entirely of non-PPCS bytes.  Non-PPCS characters typically occur only
+       in comments: although output file names and time zone abbreviations can
+       contain nearly any character, other software will work better if these
+       are limited to the restricted syntax described under the -v option.
 
        Input lines are made up of fields.  Fields are separated from one
        another by one or more white space characters.  The white space
