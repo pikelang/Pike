@@ -7,15 +7,22 @@ int test_constants() {
   int allocated;
   sscanf(Stdio.read_file("src/constants.c"), "%*sallocate_mapping(%d)",
 			 allocated);
+  // Add an extra margin of 5% when RTL-debug.
+  int debug_margin = Pike.get_runtime_info()->rtl_debug * 5;
+#if defined(__NT__) || defined(__amigaos__)
+  // Add some extra margin for non-POSIX OSes.
+  // These typically lack several efuns (like eg getpwnam() et al).
+  debug_margin += 5;
+#endif
   // Aim for 10% overallocation to allow for adding of a few extra constants
   // without penalty.
-  if(allocated < consts*105/100) {
+  if(allocated < consts*(105 - debug_margin)/100) {
     // Overallocating by less than 5%.
     write("Consider increasing the size of the builtin_constants mapping "
 	  "to %d entries (currently %d/%d).\n", consts*110/100, allocated,
 	  consts);
     return 1;
-  } else if (allocated > consts*115/100) {
+  } else if (allocated > consts*(115 + debug_margin)/100) {
     // Overallocating by more than 15% seems excessive.
     write("Consider decreasing the size of the builtin_constants mapping "
 	  "to %d entries (currently %d).\n", consts*110/100, allocated);
