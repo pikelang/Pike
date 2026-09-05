@@ -837,7 +837,7 @@ PIKECLASS CPP
       ref_push_string(MK_STRING("-"));
     }
     push_int(this->current_line);
-    f_sprintf(2);
+    f_sprintf(3);
   }
 
 #define FIND_DEFINE(N) find_define(this, (N))
