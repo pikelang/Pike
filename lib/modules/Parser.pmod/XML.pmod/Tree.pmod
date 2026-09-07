@@ -402,6 +402,13 @@ class AbstractSimpleNode {
   //!
   //! @returns
   //!   The current node.
+  //!
+  //! @note
+  //!   To add a node first in the list, call @[add_child_after()]
+  //!   with a second argument of @expr{0@} (zero).
+  //!
+  //! @seealso
+  //!   @[add_child_before()], @[add_child_after()]
   AbstractSimpleNode add_child(AbstractSimpleNode c)
   {
     mChildren += ({ c });
@@ -756,7 +763,7 @@ class AbstractNode {
   }
 
   //! Variants of @[add_child], @[add_child_before] and
-  //! @[add_child_after] that doesn't set the parent pointer in the
+  //! @[add_child_after] that don't set the parent pointer in the
   //! newly added children.
   //!
   //! This is useful while building a node tree, to get efficient
