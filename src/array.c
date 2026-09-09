@@ -78,6 +78,10 @@ PMOD_EXPORT void dont_accept_unfinished_type_fields (void *orig)
  * @param extra_space The number of extra elements space
  * should be reserved for.
  * @return A pointer to the allocated array struct.
+ *
+ * NB: The array storage is allocated with xcalloc(), so the elements
+ *     (including the over-allocated elements) are all initialized to
+ *     { T_INT, NUMBER_NUMBER, 0 } (ie plain integer zeroes).
  */
 PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 					      ptrdiff_t extra_space)
@@ -334,6 +338,7 @@ PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
 #endif
 
   free_svalue(ITEM(v) + index);
+  SET_SVAL(ITEM(v)[index], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 }
 
 /** set an element in an array to a value.
@@ -723,6 +728,8 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 	      (v->size-index-1)*sizeof(struct svalue));
     }
     v->size--;
+    /* Zap the sval that now is outside the array. */
+    SET_SVAL(ITEM(v)[v->size], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     return v;
   }
 }
