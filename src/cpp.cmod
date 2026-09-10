@@ -1050,6 +1050,11 @@ static void cpp_handle_exception(struct CPP_struct *this,
     va_end (args);
   }
 
+  if (TYPEOF(thrown) == PIKE_T_FREE) {
+    /* No exception to format. */
+    return;
+  }
+
   push_svalue(&thrown);
   safe_apply_current(f_CPP_format_exception_fun_num, 1);
 
