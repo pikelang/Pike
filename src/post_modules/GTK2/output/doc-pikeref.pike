@@ -19,7 +19,7 @@ protected string make_example_image( string data, int toplevel,
   tim = replace( tim, "_1", "" );
 
   if( !file_stat( dir+"/"+tim ) ) {
-    if (inhibited) {
+    if (inhibited & 1) {
       werror("Warning: Image %O missing!\n", tim);
     } else {
       Process.create_process( ({master()->_pike_file_name,
@@ -242,7 +242,7 @@ protected string make_function_doc( GtkFunction f, Class c )
   imgfile=imgfilename(c->name+"_"+f->name);
   if( !f->doc || !sizeof( f->doc ) )
   {
-    if (!f->inhibited) {
+    if (!(f->inhibited & 1)) {
       werror("Warning: "+f->file+":"+f->line+": "
              +c->name+"->"+f->name+" not documented\n" );
       res += "//!\n";

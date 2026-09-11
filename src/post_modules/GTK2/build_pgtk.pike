@@ -159,7 +159,7 @@ class GtkFunction(Class parent,
   protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("GtkFunction( %O, %O %s)",name, return_type,
-                               inhibited?"/* Inhibited */ ":"");
+                               (inhibited & 1)?"/* Inhibited */ ":"");
   }
 
   string|zero pike_type( )
@@ -484,7 +484,7 @@ class Member( string name, Type type, int set,
   protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Member( %O /* %O %s*/ )",name,type,
-                               inhibited?"inhibited ":"");
+                               (inhibited & 1)?"inhibited ":"");
   }
 }
 
@@ -1365,7 +1365,7 @@ class Class( string name, string|zero file, int line,
     return fmt=='O' && sprintf("Class( %O /* %d funcs. %s*/ )", name,
 			       sizeof(functions)+sizeof(members)+
                                sizeof(properties),
-                               inhibited?"inhibited ":"");
+                               (inhibited & 1)?"inhibited ":"");
   }
 
   class Ref( string file, int line, Class c ) {  }
@@ -1713,7 +1713,7 @@ string parse_pre_file( string file )
         continue;
       }
 
-      inhibited = 1;
+      inhibited |= 1;
     }
 
     if( objectp( token ) )
