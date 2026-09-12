@@ -1882,6 +1882,9 @@ string parse_pre_file( string file )
            current_scope->doc += doc+"\n";
            continue;
          }
+         if( (token->text[..1] == "/""/") && // comment
+             !current_class )
+           continue;
 
          /*
           * type identifier( type identifier, ... )
