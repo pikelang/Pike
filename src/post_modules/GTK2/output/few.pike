@@ -7,6 +7,8 @@ array files = ({});
 String.Buffer current_data = String.Buffer(LIMIT + OVERFLOW);
 int fcount;
 
+int prev_inhibited;
+
 void output_current_data()
 {
   // Processing done. Actually write the file.
@@ -28,14 +30,27 @@ void post_class_build()
 
 protected void output_class( Class cls, int lvl )
 {
+  if (sizeof(current_data) && ((prev_inhibited ^ cls->inhibited) & 2)) {
+    // Deprecation state differs from previous class.
+    output_current_data();
+  }
+
+  prev_inhibited = cls->inhibited;
+
   if( !cls->functions["_sprintf"] )
     cls->create_default_sprintf();
 
   cls->create_init_exit();
 
   /* Start output */
-  if(!sizeof( current_data ) )
+  if(!sizeof( current_data ) ) {
+    if (cls->inhibited & 2) {
+      // Inhibit warnings about using deprecated APIs.
+      current_data->add("#define GLIB_CANNOT_IGNORE_DEPRECATIONS\n");
+    }
+
     current_data->add( "#define EXTPRG extern\n", sfhead );
+  }
 
   if(cls->mixin_for)
     current_data->add( "#define CLASS_TYPE MIXIN\n" );

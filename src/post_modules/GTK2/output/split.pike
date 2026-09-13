@@ -176,6 +176,15 @@ array(string) output( mapping(string:Class) classes,
   write_file( dir + "time_stamp", (string)time() );
 
   string pre = "#define EXTPRG\n"+sfhead+"\n", res = "";
+
+  foreach(values(classes), Class cls) {
+    if (cls->inhibited == 2) {
+      // Uninhibited deprecated class.
+      // The *_get_type() functions are also deprecated...
+      pre = "#define GLIB_CANNOT_IGNORE_DEPRECATIONS\n" + pre;
+      break;
+    }
+  }
   
   pre += Parser.Pike.simple_reconstitute( global_code );
 
