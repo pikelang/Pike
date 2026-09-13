@@ -1637,12 +1637,13 @@ void make_strings(array tokens)
     }
 }
 
-string parse_pre_file( string file )
+void parse_pre_file( string file )
 {
   array current_require = ({});
   array current_unrequire = ({});
   Class current_class;
   mixed current_scope;
+  int deprecated;
 
   if( file[0] != '/' )
     file = combine_path( getcwd(), file );
@@ -1677,7 +1678,7 @@ string parse_pre_file( string file )
     array(string) arg_names;
     mixed tk,token = GOBBLE();
     string doc = "";
-    int inhibited = 0;
+    int inhibited = deprecated?2:0;
 
     if( objectp( token ) )
     {
@@ -1720,6 +1721,10 @@ string parse_pre_file( string file )
     {
       switch( token->text )
       {
+       case "__DEPRECATED__":
+         deprecated = 1;
+         SEMICOLON("__DEPRECATED__");
+         continue;
        case "class":
          tk = GOBBLE();
          while( PEEK() != ";" )

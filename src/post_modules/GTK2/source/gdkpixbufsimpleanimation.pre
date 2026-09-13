@@ -1,6 +1,11 @@
 /* -*- C -*- */
 require gtk28;
 
+// require gdbpixbuf244
+// NB: gdk-pixbuf 2.44 marks most/all symbols as deprecated.
+__DEPRECATED__;
+// endrequire
+
 class GDK2.PixbufSimpleAnim;
 inherit GDK2.PixbufAnimation;
 
