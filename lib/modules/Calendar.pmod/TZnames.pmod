@@ -124,8 +124,8 @@ mapping zones =
                   "Sitka", "St_Johns", "St_Kitts", "St_Lucia", "St_Thomas",
                   "St_Vincent", "Swift_Current", "Tegucigalpa", "Thule",
                   "Thunder_Bay", "Tijuana", "Toronto", "Tortola", "Vancouver",
-                  "Whitehorse", "Winnipeg", "Yakutat",
-                  "Yellowknife"}),
+                  "Whitehorse", "Winnipeg",
+                  "Yakutat"}),
    "Pacific":   ({"Apia", "Auckland", "Bougainville", "Chatham", "Chuuk",
                   "Easter", "Efate", "Enderbury", "Fakaofo", "Fiji",
                   "Funafuti", "Galapagos", "Gambier", "Guadalcanal", "Guam",
@@ -770,7 +770,6 @@ mapping abbr2zones =
      "America/Pangnirtung",
      "America/Rankin_Inlet",
      "America/Resolute",
-     "America/Yellowknife",
      "Antarctica/Casey",
      "Antarctica/Davis",
      "Antarctica/DumontDUrville",
@@ -1504,7 +1503,6 @@ mapping abbr2zones =
      "America/Rankin_Inlet",
      "America/Resolute",
      "America/Winnipeg",
-     "CST6CDT",
    }),
    "CST": ({
      "America/Atikokan",
@@ -1530,6 +1528,7 @@ mapping abbr2zones =
      "America/Indiana/Vevay",
      "America/Indiana/Vincennes",
      "America/Indiana/Winamac",
+     "America/Inuvik",
      "America/Iqaluit",
      "America/Kentucky/Louisville",
      "America/Kentucky/Monticello",
@@ -1598,7 +1597,6 @@ mapping abbr2zones =
      "America/Rankin_Inlet",
      "America/Resolute",
      "America/Winnipeg",
-     "CST6CDT",
    }),
    "ChST": ({
      "Pacific/Guam",
@@ -1741,7 +1739,6 @@ mapping abbr2zones =
      "America/Santo_Domingo",
      "America/Thunder_Bay",
      "America/Toronto",
-     "EST5EDT",
    }),
    "EST": ({
      "America/Antigua",
@@ -1808,7 +1805,6 @@ mapping abbr2zones =
      "America/Santo_Domingo",
      "America/Thunder_Bay",
      "America/Toronto",
-     "EST5EDT",
    }),
    "FFMT": ({
      "America/Martinique",
@@ -2385,7 +2381,6 @@ mapping abbr2zones =
      "America/Phoenix",
      "America/Regina",
      "America/Swift_Current",
-     "America/Yellowknife",
      "MST7MDT",
    }),
    "MEST": ({
@@ -2419,8 +2414,6 @@ mapping abbr2zones =
      "America/Phoenix",
      "America/Regina",
      "America/Swift_Current",
-     "America/Yellowknife",
-     "MST7MDT",
    }),
    "MSD": ({
      "Europe/Chisinau",
@@ -2482,7 +2475,6 @@ mapping abbr2zones =
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
-     "America/Yellowknife",
      "Europe/Moscow",
      "MST",
      "MST7MDT",
@@ -2507,8 +2499,6 @@ mapping abbr2zones =
      "America/Phoenix",
      "America/Regina",
      "America/Swift_Current",
-     "America/Yellowknife",
-     "MST7MDT",
    }),
    "NDDT": ({
      "America/Goose_Bay",
@@ -2614,7 +2604,6 @@ mapping abbr2zones =
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
-     "PST8PDT",
    }),
    "PST": ({
      "America/Boise",
@@ -2648,7 +2637,6 @@ mapping abbr2zones =
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
-     "PST8PDT",
    }),
    "QMT": ({
      "America/Guayaquil",
@@ -3852,10 +3840,9 @@ mapping timezone_expert_tree =
                   ([ "test":127659600, // 1974-01-17 13:00:00
                      21600:"America/Denver",
                      25200:
-                        ([ "test":425970000, // 1983-07-02 05:00:00
+                        ([ "test":332773200, // 1980-07-18 13:00:00
                            21600:
                               ([ "test":-1735254784, // 1915-01-06 00:46:56
-                                 0:"America/Yellowknife",
                                  25200:"America/Edmonton",
                                  28800:"America/Boise",
                               ]),

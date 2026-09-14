@@ -15,6 +15,10 @@ import ".";
 // Timezones
 // ----------------------------------------------------------------------
 
+Rule.Timezone PST8PDT=TZrules.USback(28800,"P%sT");
+Rule.Timezone MST7MDT=TZrules.USback(25200,"M%sT");
+Rule.Timezone CST6CDT=TZrules.USback(21600,"C%sT");
+Rule.Timezone EST5EDT=TZrules.USback(18000,"E%sT");
 Rule.Timezone Etc_UTC=Rule.Timezone(0,"UTC");
 Rule.Timezone Etc_UCT=Etc_UTC;
 Rule.Timezone Etc_Universal=Etc_UTC;
@@ -63,12 +67,8 @@ Rule.Timezone Factory=Rule.Timezone(0,"-00");
 Rule.Timezone Atlantic_Jan_Mayen=Rule.Timezone(3600,"-01");
 Rule.Timezone Pacific_Johnston=Rule.Timezone(36000,"HST");
 Rule.Timezone HST=Rule.Timezone(36000,"HST");
-Rule.Timezone PST8PDT=TZrules.US(28800,"P%sT");
 Rule.Timezone MST=Rule.Timezone(25200,"MST");
-Rule.Timezone MST7MDT=TZrules.US(25200,"M%sT");
-Rule.Timezone CST6CDT=TZrules.US(21600,"C%sT");
 Rule.Timezone EST=Rule.Timezone(18000,"EST");
-Rule.Timezone EST5EDT=TZrules.US(18000,"E%sT");
 Rule.Timezone WET=TZrules.EU(0,"WE%sT");
 Rule.Timezone CET=TZrules.C_Eur(-3600,"CE%sT");
 Rule.Timezone MET=TZrules.C_Eur(-3600,"ME%sT");
@@ -3997,7 +3997,6 @@ class America_New_York
       return tz1 || (tz1=Rule.Timezone(17762,"LMT"));
    }
 }
-constant EST5EDT=America_New_York;
 constant US_Eastern=America_New_York;
 
 class America_Chicago
@@ -4023,7 +4022,6 @@ class America_Chicago
       return tz1 || (tz1=Rule.Timezone(21036,"LMT"));
    }
 }
-constant CST6CDT=America_Chicago;
 constant US_Central=America_Chicago;
 
 class America_North_Dakota_Center
@@ -4087,7 +4085,6 @@ class America_Denver
       return tz1 || (tz1=Rule.Timezone(25196,"LMT"));
    }
 }
-constant MST7MDT=America_Denver;
 constant Navajo=America_Denver;
 constant US_Mountain=America_Denver;
 constant America_Shiprock=America_Denver;
@@ -4108,7 +4105,6 @@ class America_Los_Angeles
    }
 }
 constant US_Pacific=America_Los_Angeles;
-constant PST8PDT=America_Los_Angeles;
 
 class America_Juneau
 {
@@ -4132,7 +4128,7 @@ class America_Juneau
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
       if (ux>=-2188954939) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:33:32
+      if (ux>=-3225223727) // from 1867 Oct 19  0:31:13u
          return tz2 || (tz2=Rule.Timezone(32261,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-54139,"LMT"));
    }
@@ -4156,7 +4152,7 @@ class America_Sitka
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
       if (ux>=-2188954727) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:30
+      if (ux>=-3225223727) // from 1867 Oct 19  0:31:13u
          return tz2 || (tz2=Rule.Timezone(32473,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-53927,"LMT"));
    }
@@ -4184,7 +4180,7 @@ class America_Metlakatla
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
       if (ux>=-2188955622) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:44:55
+      if (ux>=-3225223727) // from 1867 Oct 19  0:31:13u
          return tz2 || (tz2=Rule.Timezone(31578,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-54822,"LMT"));
    }
@@ -4206,7 +4202,7 @@ class America_Yakutat
          return tz4 || (tz4=TZrules.US(32400,"Y%sT"));
       if (ux>=-2188953665) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(32400,"YST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:12:18
+      if (ux>=-3225223727) // from 1867 Oct 19  0:31:13u
          return tz2 || (tz2=Rule.Timezone(33535,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-52865,"LMT"));
    }
@@ -4230,7 +4226,7 @@ class America_Anchorage
          return tz4 || (tz4=TZrules.US(36000,"A%sT"));
       if (ux>=-2188951224) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(36000,"AST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 14:31:37
+      if (ux>=-3225223727) // from 1867 Oct 19  0:31:13u
          return tz2 || (tz2=Rule.Timezone(35976,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-50424,"LMT"));
    }
@@ -4257,7 +4253,7 @@ class America_Nome
          return tz4 || (tz4=TZrules.US(39600,"N%sT"));
       if (ux>=-2188947502) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(39600,"NST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 13:29:35
+      if (ux>=-3225223727) // from 1867 Oct 19  0:31:13u
          return tz2 || (tz2=Rule.Timezone(39698,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-46702,"LMT"));
    }
@@ -4283,7 +4279,7 @@ class America_Adak
          return tz4 || (tz4=TZrules.US(39600,"N%sT"));
       if (ux>=-2188944802) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(39600,"NST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 12:44:35
+      if (ux>=-3225223727) // from 1867 Oct 19  0:31:13u
          return tz2 || (tz2=Rule.Timezone(42398,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-44002,"LMT"));
    }
@@ -4849,10 +4845,10 @@ class America_Edmonton
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1793520000) // from 2026 Nov  1  2:00
+      if (ux>=1793476800) // from 2026 Nov  1  2:00
          return tz5 || (tz5=Rule.Timezone(21600,"CST"));
       if (ux>=1781719200) // from 2026 Jun 18
-         return tz4 || (tz4=Rule.Timezone(21600,"MDT"));
+         return tz4 || (tz4=TZrules.Canada(25200,"MDT"));
       if (ux>=536432400) // from 1987
          return tz3 || (tz3=TZrules.Canada(25200,"M%sT"));
       if (ux>=-1998663968) // from 1906 Sep
@@ -4869,10 +4865,10 @@ class America_Vancouver
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1793523600) // from 2026 Nov  1  2:00
+      if (ux>=1793473200) // from 2026 Nov  1  2:00
          return tz5 || (tz5=Rule.Timezone(25200,"MST"));
       if (ux>=1772989200) // from 2026 Mar  9
-         return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
+         return tz4 || (tz4=TZrules.Canada(28800,"PDT"));
       if (ux>=536428800) // from 1987
          return tz3 || (tz3=TZrules.Canada(28800,"P%sT"));
       if (ux>=-2713880852) // from 1884
@@ -4998,9 +4994,13 @@ class America_Cambridge_Bay
 class America_Inuvik
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
+      if (ux>=1793476800) // from 2026 Nov  1  2:00
+         return tz6 || (tz6=Rule.Timezone(21600,"CST"));
+      if (ux>=1787248800) // from 2026 Aug 21
+         return tz5 || (tz5=TZrules.Canada(25200,"MDT"));
       if (ux>=315507600) // from 1980
          return tz4 || (tz4=TZrules.Canada(25200,"M%sT"));
       if (ux>=291744000) // from 1979 Apr lastSun  2:00
@@ -7652,21 +7652,6 @@ class America_Tortola
          return tz2 || (tz2=Rule.Timezone(14400,"AST"));
       // Road Town
       return tz1 || (tz1=Rule.Timezone(15508,"LMT"));
-   }
-}
-
-class America_Yellowknife
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=315507600) // from 1980
-         return tz3 || (tz3=TZrules.Canada(25200,"M%sT"));
-      if (ux>=-1104537600) // from 1935
-         return tz2 || (tz2=TZrules.NT_YK(25200,"M%sT"));
-      // Yellowknife founded?
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
 }
 
