@@ -1357,7 +1357,7 @@ class CO
       {
          case 1992:
             return ({({0           ,0         ,0    ,""    }),  // ?
-                     ({FIXED(124)  ,UO+0      ,3600 ,""    })});// May 3
+                     ({FIXED(123)  ,UO+0      ,3600 ,""    })});// May 2
          case 1993:
             return ({({0           ,0         ,3600 ,""    }),
                      ({FIXED(37)   ,UO+82800  ,0    ,""    })});// Feb 6
@@ -3352,7 +3352,7 @@ class Iran
                      ({FIXED(217)  ,UO+0      ,0    ,""    })});// Aug 5
          case 1979:
             return ({({0           ,0         ,0    ,""    }),
-                     ({FIXED(146)  ,UO+86400  ,3600 ,""    }),  // May 26
+                     ({FIXED(146)  ,UO+0      ,3600 ,""    }),  // May 26
                      ({FIXED(261)  ,UO+82800  ,0    ,""    })});// Sep 18
          case 1980:
             return ({({0           ,0         ,0    ,""    }),
@@ -6889,6 +6889,56 @@ class US
          case 1945:
             return ({({0           ,0         ,3600 ,"W"   }),
                      ({FIXED(226)  ,82800     ,3600 ,"P"   }),  // Aug 14
+                     ({FIXED(273)  ,UO+3600   ,0    ,"S"   })});// Sep 30
+         default: // ..1917:
+         case 1920..1941:
+         case 1946..1966:
+            return ({({0           ,0         ,0    ,"S"   })});
+         case 1974:
+            return ({({0           ,0         ,0    ,"S"   }),
+                     ({FIXED(6)    ,UO+7200   ,3600 ,"D"   }),  // Jan 6
+                     ({LDAY (304,7),UO+3600   ,0    ,"S"   })});// Oct lastSun
+         case 1975:
+            return ({({0           ,0         ,0    ,"S"   }),
+                     ({LDAY (59,7) ,UO+7200   ,3600 ,"D"   }),  // Feb lastSun
+                     ({LDAY (304,7),UO+3600   ,0    ,"S"   })});// Oct lastSun
+         case 1967..1973:
+         case 1976..1986:
+            return ({({0           ,0         ,0    ,"S"   }),
+                     ({LDAYL(120,7),UO+7200   ,3600 ,"D"   }),  // Apr lastSun
+                     ({LDAYL(304,7),UO+3600   ,0    ,"S"   })});// Oct lastSun
+         case 1987..2006:
+            return ({({0           ,0         ,0    ,"S"   }),
+                     ({LDAYL(97,7) ,UO+7200   ,3600 ,"D"   }),  // Apr Sun>=1
+                     ({LDAYL(304,7),UO+3600   ,0    ,"S"   })});// Oct lastSun
+         case 2007..:
+            return ({({0           ,0         ,0    ,"S"   }),
+                     ({LDAYL(73,7) ,UO+7200   ,3600 ,"D"   }),  // Mar Sun>=8
+                     ({LDAYL(311,7),UO+3600   ,0    ,"S"   })});// Nov Sun>=1
+      }
+   }
+}
+
+class USback
+{
+   inherit TZRules;
+   protected array(array(string|int)) jd_year_periods(int jd)
+   {
+      [int y,int yjd,int leap]=gregorian_yjd(jd);
+      switch (y)
+      {
+         case 1918..1919:
+            return ({({0           ,0         ,0    ,"S"   }),
+                     ({LDAY (90,7) ,UO+7200   ,3600 ,"D"   }),  // Mar lastSun
+                     ({LDAY (304,7),UO+3600   ,0    ,"S"   })});// Oct lastSun
+         case 1942:
+            return ({({0           ,0         ,0    ,"S"   }),
+                     ({FIXED(40)   ,UO+7200   ,3600 ,"D"   })});// Feb 9
+         case 1943..1944:
+            return ({({0           ,0         ,3600 ,"D"   })});
+         case 1945:
+            return ({({0           ,0         ,3600 ,"D"   }),
+                     ({FIXED(226)  ,82800     ,3600 ,"D"   }),  // Aug 14
                      ({FIXED(273)  ,UO+3600   ,0    ,"S"   })});// Sep 30
          default: // ..1917:
          case 1920..1941:
