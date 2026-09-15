@@ -1494,6 +1494,7 @@ Class get_class_define( string name, string file, int line, int|void inhibited )
     }
     res->file = file;
     res->line = line;
+    res->inhibited = inhibited;
   }
   else
     res = classes[name] = Class(name, file, line, inhibited);
