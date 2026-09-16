@@ -1,5 +1,15 @@
 #charset iso-8859-1
 
+string|zero get_url_data(string url)
+{
+  mixed err = catch {
+      return Protocols.HTTP.
+        get_url_data("http://ftp.unicode.org/Public/UNIDATA/ReadMe.txt");
+    };
+  write("Failed to get network data for %s.\n"
+        "Error: %s", url, master()->describe_error(err));
+  return UNDEFINED;
+}
 
 // Ok, so this test is stupid
 int test_constants() {
@@ -120,8 +130,12 @@ int test_charset_table(string t) {
 }
 
 int test_unicode() {
-  string readme = Protocols.HTTP.
+  string readme =
     get_url_data("http://ftp.unicode.org/Public/UNIDATA/ReadMe.txt");
+  if (!readme) {
+    write("Skipping UnicodeData.txt check due to missing info.\n");
+    return 0;
+  }
   int a,b,c;
   sscanf(readme, "%*sVersion %d.%d.%d", a,b,c);
   int x,y,z;
@@ -135,8 +149,7 @@ int test_unicode() {
 }
 
 int test_tzdata() {
-  string timezones_html = Protocols.HTTP.
-    get_url_data("http://www.iana.org/time-zones");
+  string timezones_html = get_url_data("http://www.iana.org/time-zones");
   if (!timezones_html) {
     write("Skipping timezone check due to missing info.\n");
     return 0;
