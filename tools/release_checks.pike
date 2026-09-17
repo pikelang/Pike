@@ -3,8 +3,7 @@
 string|zero get_url_data(string url)
 {
   mixed err = catch {
-      return Protocols.HTTP.
-        get_url_data("http://ftp.unicode.org/Public/UNIDATA/ReadMe.txt");
+      return Protocols.HTTP.get_url_data(url);
     };
   write("Failed to get network data for %s.\n"
         "Error: %s", url, master()->describe_error(err));
