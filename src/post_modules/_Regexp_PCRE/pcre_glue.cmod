@@ -26,7 +26,7 @@
 /*! @module Regexp
  */
 
-/*! @module PCRE
+/*! @module PCRE1
  */
 
 DECLARATIONS
@@ -157,7 +157,7 @@ PIKECLASS _pcre
        return;
 
      case 't':
-       push_static_text("Regexp.PCRE._pcre");
+       push_static_text("Regexp.PCRE1._pcre");
        return;
      }
    }
@@ -813,7 +813,7 @@ PIKE_MODULE_INIT
    /*! @endmodule ERROR
     */
 
-   /*! @endmodule PCRE
+   /*! @endmodule PCRE1
     */
 
    /*! @endmodule Regexp

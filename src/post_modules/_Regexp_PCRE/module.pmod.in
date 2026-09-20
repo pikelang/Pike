@@ -1,6 +1,6 @@
 // -*- mode: Pike; c-basic-offset: 3; -*-
 // original author: mirar
-//! @appears Regexp.PCRE
+//! @appears Regexp.PCRE1
 
 #charset iso-8859-1
 #pike __REAL_VERSION__
@@ -55,7 +55,7 @@ class Plain
 //!
 //! example:
 //! @code
-//! > Regexp.PCRE.Plain("i\(.*\) is \(.*\)u")->split2("pike is fun");
+//! > Regexp.PCRE1.Plain("i\(.*\) is \(.*\)u")->split2("pike is fun");
 //! Result: ({
 //!              "ike is fu",
 //!              "ke",
@@ -77,12 +77,12 @@ class Plain
 //!
 //! example:
 //! @code
-//! > Regexp.PCRE.Plain("i\(.*\) is \(.*\)u")->split("pike is fun");
+//! > Regexp.PCRE1.Plain("i\(.*\) is \(.*\)u")->split("pike is fun");
 //! (1) Result: ({
 //!                 "ke",
 //!                 "f"
 //!             })
-//! > Regexp.PCRE.Plain("is fun")->split("pike is fun");
+//! > Regexp.PCRE1.Plain("is fun")->split("pike is fun");
 //! (4) Result: ({
 //!                 0
 //!             })
@@ -100,9 +100,9 @@ class Plain
 //!
 //! example:
 //! @code
-//! > Regexp.PCRE.Plain("is fun")->match("pike is fun");
+//! > Regexp.PCRE1.Plain("is fun")->match("pike is fun");
 //! Result: 1
-//! > Regexp.PCRE.Plain("is fun")->match("pike isn't fun");
+//! > Regexp.PCRE1.Plain("is fun")->match("pike isn't fun");
 //! Result: 0
 //! @endcode
    int(0..1) match(string subject,void|int startoffset)
@@ -121,9 +121,9 @@ class Plain
 //!
 //! example:
 //! @code
-//! > Regexp.PCRE("b[^-]*m")->replace("abam-boom-fooabadoom","gurka");
+//! > Regexp.PCRE1("b[^-]*m")->replace("abam-boom-fooabadoom","gurka");
 //! Result: "agurka-gurka-fooagurka"
-//! > Regexp.PCRE("b[^-]*m")->replace("abam-boom-fooabadoom",
+//! > Regexp.PCRE1("b[^-]*m")->replace("abam-boom-fooabadoom",
 //!      lambda(string s) { werror("%O\n",s); return "gurka"; });
 //! "bam"
 //! "boom"
@@ -134,7 +134,7 @@ class Plain
 //! example:
 //!
 //! @code
-//!> Regexp.PCRE("([a-z0-9_\\.-]+)@@([\\da-z\\.-]+)\\.([a-z\\.]{2,6})")
+//!> Regexp.PCRE1("([a-z0-9_\\.-]+)@@([\\da-z\\.-]+)\\.([a-z\\.]{2,6})")
 //!   ->replace("foo@@bar.org",
 //!     lambda(string whole, string user, string loc, string domain)
 //!       { return user + " from " + loc + " dot " + domain; }
@@ -183,7 +183,7 @@ class Plain
 //!
 //! example:
 //! @code
-//! > Regexp.PCRE("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka");
+//! > Regexp.PCRE1("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka");
 //! Result: "agurka-boom-fooabadoom"
 //! @endcode
    string replace1(string subject,string|function(string:string) with)
@@ -211,7 +211,7 @@ class Plain
 //!
 //! example:
 //! @code
-//! > Regexp.PCRE("b(a*)([^-\1234]*)(\1234*)m")
+//! > Regexp.PCRE1("b(a*)([^-\1234]*)(\1234*)m")
 //!     ->matchall("abam-boom-fooabado\1234m",
 //!                lambda(mixed s) { werror("%O\n",s); return "gurka"; });
 //! ({ /* 4 elements */
@@ -232,7 +232,7 @@ class Plain
 //!     "do",
 //!     "\1234"
 //! })
-//! Result: Regexp.PCRE.StudiedWidestring("b(a*)([^-Ê\234]*)(Ê\234*)m")
+//! Result: Regexp.PCRE1.StudiedWidestring("b(a*)([^-Ê\234]*)(Ê\234*)m")
 //! @endcode
    this_program matchall(string subject,
 			 function(array(string)|void,
@@ -260,7 +260,7 @@ class Plain
 //!
 //!  example:
 //! @code
-//!   > Regexp.PCRE.Plain("my name is ([a-zA-Z]+)")
+//!   > Regexp.PCRE1.Plain("my name is ([a-zA-Z]+)")
 //!       ->replace_positional("allow me to introduce myself: my name is john",
 //!                           "%[0]s is my name");
 //!   (1) Result: "allow me to introduce myself: john is my name"
@@ -322,7 +322,7 @@ class Plain
 
    protected string _sprintf(int t,mapping fum)
    {
-      if (t=='t') return "Regexp.PCRE.Plain";
+      if (t=='t') return "Regexp.PCRE1.Plain";
       return ::_sprintf(t,fum);
    }
 
@@ -348,7 +348,7 @@ class Studied
 
    protected string _sprintf(int t,mapping fum)
    {
-      if (t=='t') return "Regexp.PCRE.Studied";
+      if (t=='t') return "Regexp.PCRE1.Studied";
       return ::_sprintf(t,fum);
    }
 }
@@ -371,7 +371,7 @@ class Widestring
 
    protected string _sprintf(int t,mapping fum)
    {
-      if (t=='t') return "Regexp.PCRE.Widestring";
+      if (t=='t') return "Regexp.PCRE1.Widestring";
       return ::_sprintf(t,fum);
    }
 
@@ -444,7 +444,7 @@ class StudiedWidestring
 
    protected string _sprintf(int t,mapping fum)
    {
-      if (t=='t') return "Regexp.PCRE.StudiedWidestring";
+      if (t=='t') return "Regexp.PCRE1.StudiedWidestring";
       return ::_sprintf(t,fum);
    }
 }
@@ -466,17 +466,17 @@ class StudiedWidestring
 //! widestring wrapping will on the other hand add overhead.
 //!
 //! If you need a faster regexp and doesn't use widestring,
-//! create a Regexp.PCRE.Studied instead.
+//! create a Regexp.PCRE1.Studied instead.
 //!
 //! Widestring support will not be used if the linked libpcre
 //! lacks UTF8 support. This can be tested with
-//! checking that the Regexp.PCRE.Widestring class exist.
+//! checking that the Regexp.PCRE1.Widestring class exist.
 //!
 //! @note
 //!   This function being marked as a @tt{__factory__@} means that
 //!   the following code is valid:
 //!   @code
-//!     Regexp.PCRE pcre = Regexp.PCRE(pcre_regexp);
+//!     Regexp.PCRE1 pcre = Regexp.PCRE1(pcre_regexp);
 //!   @endcode
 
 protected __factory__ GOOD `()(string pattern, void|int options,

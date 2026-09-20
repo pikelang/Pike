@@ -4,11 +4,24 @@
 #include <regexp.h>
 
 #if constant(_Regexp_PCRE._pcre)
-final constant PCRE=_Regexp_PCRE; // Regexp.PCRE
+final constant PCRE1=_Regexp_PCRE; // Regexp.PCRE1
 #endif
 
 #if constant(_Regexp_PCRE2._pcre)
 final constant PCRE2=_Regexp_PCRE2; // Regexp.PCRE2
+#endif
+
+#if constant(_Regexp_PCRE2._pcre)
+//! PCRE wrapper module.
+//!
+//! This is a convenience module that is identical to the latest
+//! supported PCRE version, if available
+//!
+//! @seealso
+//!   @[Regexp.PCRE1], @[Regexp.PCRE2]
+final constant PCRE=_Regexp_PCRE2;
+#elif constant(_Regexp_PCRE._pcre)
+final constant PCRE=_Regexp_PCRE;
 #endif
 
 //! @ignore
@@ -90,7 +103,7 @@ protected __factory__ SimpleRegexp `()(void|string regexp) {
 }
 
 
-#if constant(_Regexp_PCRE._pcre)
+#if constant(_Regexp_PCRE._pcre) || constant(_Regexp_PCRE2._pcre)
 
 // ****************************************************************
 
