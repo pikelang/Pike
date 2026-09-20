@@ -2917,7 +2917,7 @@ class dirnode (string dirname, CompilationHandler|void compilation_handler,
 		       dirname, index, fname, ret);
 #if constant(load_module)
 	  if (has_suffix(fname, ".so")) {
-	    // This is compatible with 7.4 behaviour.
+            // This is compatible with 7.4 behavior.
 	    if (!ret->_module_value) {
 	      object o;
 	      // NB: p might be a function in a fake_object...
@@ -4750,14 +4750,14 @@ void _main(array(string(0..255)) orig_argv)
 thread_local(<int(0..1)|CompilationHandler|function(string, int, string:void)>)
   inhibit_compile_errors = thread_local();
 
-//! Set the compile error, warning and exception behaviour.
+//! Set the compile error, warning and exception behavior.
 //!
-//! @param behaviour
-//!   The desired behaviour. One of:
+//! @param behavior
+//!   The desired behavior. One of:
 //!   @mixed
 //!     @type int(0..0)
 //!       Output compilation errors and warnings to @tt{stderr@}.
-//!       This is the default behaviour.
+//!       This is the default behavior.
 //!     @type int(1..1)
 //!       Inhibit output of compilator diagnostics.
 //!     @type function(string, int, string:void)
@@ -4771,18 +4771,18 @@ thread_local(<int(0..1)|CompilationHandler|function(string, int, string:void)>)
 //!   @endmixed
 //!
 //! @note
-//!   Note that the behaviour is thread local, and is not copied
+//!   Note that the behavior is thread local, and is not copied
 //!   to new threads when they are created.
 //!
 //! @seealso
 //!   @[get_inhibit_compile_errors()]
 void set_inhibit_compile_errors(int(0..1)|CompilationHandler|
-                                function(string, int, string:void) behaviour)
+                                function(string, int, string:void) behavior)
 {
-  inhibit_compile_errors->set(behaviour);
+  inhibit_compile_errors->set(behavior);
 }
 
-//! Get the current compile error, warning and exception behaviour.
+//! Get the current compile error, warning and exception behavior.
 //!
 //! See @[set_inhibit_compile_errors()] for details.
 //!
