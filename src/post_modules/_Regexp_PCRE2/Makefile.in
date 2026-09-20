@@ -1,0 +1,11 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=pcre2_glue.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+@dynamic_module_makefile@
+
+# Some make's need help to find the source files...
+pcre2_glue.o: $(SRCDIR)/pcre2_glue.c
+
+@dependencies@

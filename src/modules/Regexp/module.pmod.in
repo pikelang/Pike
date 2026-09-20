@@ -7,6 +7,10 @@
 final constant PCRE=_Regexp_PCRE; // Regexp.PCRE
 #endif
 
+#if constant(_Regexp_PCRE2._pcre)
+final constant PCRE2=_Regexp_PCRE2; // Regexp.PCRE2
+#endif
+
 //! @ignore
 inherit @module@;
 //! @endignore
