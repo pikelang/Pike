@@ -705,6 +705,7 @@ PIKE_MODULE_INIT
    */
   add_integer_constant("ALT_CIRCUMFLEX",PCRE2_ALT_CIRCUMFLEX,0);
 
+#ifdef PCRE2_ALT_EXTENDED_CLASS
   /*! @decl constant ALT_EXTENDED_CLASS
    *! (from the pcre2api manpage) Alters the parsing of character classes
    *! to follow the extended syntax described by Unicode UTS#18.
@@ -714,6 +715,7 @@ PIKE_MODULE_INIT
    *! ordinary "[...]" character classes.
    */
   add_integer_constant("ALT_EXTENDED_CLASS",PCRE2_ALT_EXTENDED_CLASS,0);
+#endif
 
   /*! @decl constant ALT_VERBNAMES
    *! (from the pcre2api manpage) By default, for compatibility with Perl,
