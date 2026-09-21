@@ -46,6 +46,31 @@ test_equal([[Regexp.PCRE2 ("^(?:(.*b)|(.*c))$")->exec ("GERGXVc")]],
 test_eq(Regexp.PCRE2("\1234[^-]*m")->replace("a\1234\567m-\1234oom-fooa\1234adoom","g\1234rka"),
            "ag\1234rka-g\1234rka-fooag\1234rka")
 
+dnl 8 bit pattern, 8 bit subject
+test_equal(Regexp.PCRE2("[a].")->split2("blaha"), ({"ah"}))
+dnl 16 bit pattern, 8 bit subject
+test_equal(Regexp.PCRE2("[a\u3042].")->split2("blaha"), ({"ah"}))
+dnl 32 bit pattern, 8 bit subject
+test_equal(Regexp.PCRE2("[a\u3042\U0001F130].")->split2("blaha"), ({"ah"}))
+dnl 8 bit pattern, 16 bit subject
+test_equal( Regexp.PCRE2("[a].")->split2("toa\u308b"), ({"a\u308b"}))
+dnl 16 bit pattern, 16 bit subject
+test_equal(Regexp.PCRE2("[a\u3042].")->split2("\u3068\u3042\u308b"),
+           ({"\u3042\u308b"}))
+dnl 32 bit pattern, 16 bit subject
+test_equal(Regexp.PCRE2("[a\u3042\U0001F130].")->split2("\u3068\u3042\u308b"),
+           ({"\u3042\u308b"}))
+dnl 8 bit pattern, 32 bit subject
+test_equal(Regexp.PCRE2("[a].")->split2("bla\U0001F137a"),
+           ({"a\u{1f137}"}))
+dnl 16 bit pattern, 32 bit subject
+test_equal(Regexp.PCRE2("[a\u3042].")->split2("bl\u3042\U0001F137a"),
+           ({"\u3042\u{1f137}"}))
+dnl 32 bit pattern, 32 bit subject
+test_equal(Regexp.PCRE2("[a\u3042\U0001F130].")->
+           split2("\U0001F131\U0001F13B\U0001F130\U0001F137\U0001F130"),
+           ({"\u{1f130}\u{1f137}"}))
+
 cond_end // Regexp.PCRE2.Plain
 
 END_MARKER
