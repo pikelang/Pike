@@ -1,5 +1,9 @@
 
-#if constant(_Regexp_PCRE._pcre)
+#if constant(_Regexp_PCRE2._pcre)
+#define PCRE_GOT_WIDESTRINGS
+#define GOOD _Regexp_PCRE2.Studied
+#define QUICK _Regexp_PCRE2.Plain
+#elif constant(_Regexp_PCRE._pcre)
 #if constant(_Regexp_PCRE.UTF8_SUPPORTED)
 #define PCRE_GOT_WIDESTRINGS
 #define GOOD _Regexp_PCRE.StudiedWidestring
