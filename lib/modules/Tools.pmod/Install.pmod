@@ -68,7 +68,8 @@ array(string) features()
 	     "PDF.PDFlib", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
              "X", "Bz2", "COM", "Fuse", "GI", "GTK2", "Gettext", "HTTPAccept",
-	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
+             "Kerberos", "SQLite", "_Image_SVG", "Regexp.PCRE", "_Regexp_PCRE",
+             "_Regexp_PCRE2", "GSSAPI",
 	     "Protocols.DNS_SD", "Gnome2", "MIME", "Standards.JSON",
 	     "Web.Sass", "VCDiff", "ZXID", "System.FSEvents.EventStream",
 	     "System.Inotify" }),
@@ -81,9 +82,13 @@ array(string) features()
 		({ "dont_dump_module" })) ||
 	 (tmp && !objectp(tmp)))
       {
+        modname = ([
+          "Java.machine":"Java",
+          "_Regexp_PCRE": "Regexp.PCRE1",
+        ])[modname] || modname;
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
-	m += ({ (["Java.machine":"Java"])[modname] || modname });
+        m += ({ modname });
 
 	if (modname == "Mysql") {
 	  // Check taste of Mysql client library.
@@ -103,7 +108,7 @@ array(string) features()
     };
   }
 
-  foreach (({"Regexp.PCRE.Widestring", "Java.NATIVE_METHODS"}), string symbol)
+  foreach (({"Regexp.PCRE1.Widestring", "Java.NATIVE_METHODS"}), string symbol)
     catch {
       if (has_index(all_constants(), symbol) ||
 	  !undefinedp(master()->resolv(symbol)))

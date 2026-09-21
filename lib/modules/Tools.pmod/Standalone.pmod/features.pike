@@ -327,8 +327,11 @@ int main(int num, array(string) args) {
   F(Random.Hardware);
 
   write("\nRegexp\n");
-  f("_Regexp_PCRE._pcre", "Regexp.PCRE");
-  f("_Regexp_PCRE.Widestring", "PCRE wide string support");
+  f("Regexp.PCRE._pcre", "Regexp.PCRE");
+  f("_Regexp_PCRE._pcre", "Regexp.PCRE1");
+  f("_Regexp_PCRE.Widestring", "PCRE1 wide string support");
+  f("_Regexp_PCRE2._pcre", "Regexp.PCRE2");
+  f("_Regexp_PCRE2.Widestring", "PCRE2 wide string support");
 
   write("\nSANE\n");
   M(SANE.list_scanners);

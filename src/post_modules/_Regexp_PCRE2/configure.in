@@ -1,0 +1,26 @@
+AC_INIT(pcre2_glue.cmod)
+AC_CONFIG_HEADER(pcre2_machine.h)
+AC_ARG_WITH(libpcre2,     [  --with(out)-libpcre2       Support Regexp.PCRE2],[],[with_libpcre2=yes])
+
+AC_MODULE_INIT(_Regexp_PCRE2)
+
+PIKE_FEATURE_WITHOUT(Regexp.PCRE2)
+
+if test x$with_libpcre2 = xyes ; then
+  PIKE_FEATURE_NODEP(Regexp.PCRE2)
+  OLD_CPPFLAGS="${CPPFLAGS}"
+  CPPFLAGS="${CPPFLAGS} -DPCRE2_CODE_UNIT_WIDTH=0"
+  AC_CHECK_HEADERS(pcre2.h)
+  if test $ac_cv_header_pcre2_h = yes; then
+    AC_CHECK_LIB(pcre2-8, pcre2_compile_8, [
+    AC_CHECK_LIB(pcre2-16, pcre2_compile_16, [
+    AC_CHECK_LIB(pcre2-32, pcre2_compile_32, [
+      AC_DEFINE(HAVE_LIBPCRE2)
+      LIBS="${LIBS-} -lpcre2-8 -lpcre2-16 -lpcre2-32"
+      PIKE_FEATURE(Regexp.PCRE2,[yes (libpcre2)])
+    ])])])
+  fi
+  CPPFLAGS="${old_CPPFLAGS}"
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
