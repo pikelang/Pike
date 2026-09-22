@@ -314,7 +314,7 @@ PIKECLASS _pcre
  *!
  *!     @value ERROR.BADMAGIC
  *!
- *!   PCRE stores a 4-byte "magic number" at the start of the compiled
+ *!   PCRE2 stores a 4-byte "magic number" at the start of the compiled
  *!   code, to catch the case when it is passed a junk pointer. This
  *!   is the error it gives when the magic number isn't present.
  *!
@@ -322,7 +322,7 @@ PIKECLASS _pcre
  *!
  *!   If a pattern contains back references, but the ovector that is
  *!   passed to pcre_exec() is not big enough to remember the
- *!   referenced substrings, PCRE gets a block of memory at the start
+ *!   referenced substrings, PCRE2 gets a block of memory at the start
  *!   of matching to use for this purpose. If the call via
  *!   pcre_malloc() fails, this error is given. The memory is freed at
  *!   the end of matching.
@@ -706,15 +706,20 @@ PIKE_MODULE_INIT
   add_integer_constant("ALT_CIRCUMFLEX",PCRE2_ALT_CIRCUMFLEX,0);
 
 #ifdef PCRE2_ALT_EXTENDED_CLASS
-  /*! @decl constant ALT_EXTENDED_CLASS
+  /*! @decl optional constant ALT_EXTENDED_CLASS
    *! (from the pcre2api manpage) Alters the parsing of character classes
    *! to follow the extended syntax described by Unicode UTS#18.
    *! The ALT_EXTENDED_CLASS option has no impact on the behaviour of the
    *! Perl-specific "(?[...])" syntax for extended classes, but instead
    *! enables the alternative syntax of extended class behaviour inside
    *! ordinary "[...]" character classes.
+   *!
+   *! @note
+   *!   This symbol is not present in all versions of PCRE2. It is
+   *!   known to not be present in PCRE2 10.42 and present in 10.47.
    */
-  add_integer_constant("ALT_EXTENDED_CLASS",PCRE2_ALT_EXTENDED_CLASS,0);
+  add_integer_constant("ALT_EXTENDED_CLASS",PCRE2_ALT_EXTENDED_CLASS,
+                       ID_OPTIONAL);
 #endif
 
   /*! @decl constant ALT_VERBNAMES

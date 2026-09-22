@@ -352,12 +352,20 @@ class Studied
 // PCRE2 has builtin widestring support
 
 // Same as Plain
+//! Compatibility wrapper class around @[Plain], that will allow widestring
+//! patterns and subjects.
+//!
+//! With PCRE2 this class has the identical behavior as @[Plain].
 __deprecated__ class Widestring
 {
    inherit Plain;
 }
 
 // Same as Studied
+//! Similar to @[Widestring], this is a compatibility wrapper
+//! for @[Studied].
+//!
+//! With PCRE2 this class has the identical behavior as @[Studied].
 __deprecated__ class StudiedWidestring
 {
    inherit Studied;
