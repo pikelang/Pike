@@ -12,14 +12,30 @@ final constant PCRE2=_Regexp_PCRE2; // Regexp.PCRE2
 #endif
 
 #if constant(_Regexp_PCRE2._pcre)
-//! PCRE wrapper module.
+//! @module PCRE
+//!
+//! Compatibility PCRE wrapper module.
 //!
 //! This is a convenience module that is identical to the latest
-//! supported PCRE version, if available
+//! supported PCRE version, if available.
+//!
+//! @note
+//!   Use with caution; the syntax in @[PCRE1] and @[PCRE2] have slight
+//!   differences, and code that uses this module should be prepared to
+//!   encounter either.
+//!
+//! @note
+//!   Prior to Pike 9.0 this module was the only PCRE module and
+//!   was always @[PCRE1].
 //!
 //! @seealso
 //!   @[Regexp.PCRE1], @[Regexp.PCRE2]
+
+//! @decl inherit PCRE2
+
 final constant PCRE=_Regexp_PCRE2;
+
+//! @endmodule
 #elif constant(_Regexp_PCRE._pcre)
 final constant PCRE=_Regexp_PCRE;
 #endif
