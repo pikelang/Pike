@@ -89,9 +89,22 @@ static int got_port_event (struct fd_callback_box *box, int DEBUGUSED(event))
 
   p->my_errno = errno;		/* Propagate backend setting. */
   p->immediate_cnt++;
-  push_svalue (&p->id);
-  apply_svalue(& p->accept_callback, 1);
-  pop_stack();
+
+  check_destructed(&p->accept_callback);
+
+  if (TYPEOF(p->accept_callback) == PIKE_T_INT) {
+    /* The accept callback has been destructed or zapped.
+     *
+     * Make sure we don't trigger again.
+     */
+    if (p->box.backend)
+      set_fd_callback_events (&p->box, 0, 0);
+    set_nonblocking(p->box.fd,0);
+  } else {
+    push_svalue (&p->id);
+    safe_apply_svalue(& p->accept_callback, 1, 1);
+    pop_stack();
+  }
   return 0;
 }
 
