@@ -454,7 +454,7 @@ local protected {
       return ({ sizeof(arg) });
     }
 
-#if constant(Regexp.PCRE.Widestring)
+#if constant(Regexp.PCRE2.Plain) || constant(Regexp.PCRE1.Widestring)
     // RFC 9535 2.4.6
     array jsonpath_match(array str_arg, array regexp_arg)
     {
@@ -465,7 +465,11 @@ local protected {
       string regexp = regexp_arg[0];
       if (!stringp(regexp)) return ({});
       catch {
-        Regexp.PCRE pcre = Regexp.PCRE.Widestring("^" + regexp + "$");
+#if constant(Regexp.PCRE2.Plain)
+        Regexp.PCRE pcre = Regexp.PCRE2.Plain("^" + regexp + "$");
+#else /* Regexp.PCRE1.Widestring) */
+        Regexp.PCRE pcre = Regexp.PCRE1.Widestring("^" + regexp + "$");
+#endif
         if (pcre->match(str)) {
           return ({ Val.true });
         }
@@ -483,14 +487,18 @@ local protected {
       string regexp = regexp_arg[0];
       if (!stringp(regexp)) return ({});
       catch {
-        Regexp.PCRE pcre = Regexp.PCRE.Widestring(regexp);
+#if constant(Regexp.PCRE2.Plain)
+        Regexp.PCRE pcre = Regexp.PCRE2.Plain(regexp);
+#else /* Regexp.PCRE1.Widestring) */
+        Regexp.PCRE pcre = Regexp.PCRE1.Widestring(regexp);
+#endif
         if (pcre->match(str)) {
           return ({ Val.true });
         }
       };
       return ({});
     }
-#endif // Regexp.PCRE.Widestring
+#endif // Regexp.PCRE2.Plain || Regexp.PCRE1.Widestring
 
     // RFC 9535 2.4.8
     array jsonpath_value(array arg)
