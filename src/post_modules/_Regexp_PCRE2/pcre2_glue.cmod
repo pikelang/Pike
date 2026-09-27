@@ -305,8 +305,7 @@ PIKECLASS _pcre
  *!
  *!     @value ERROR.NULL
  *!
- *!   Either code or subject was passed as NULL, or ovector was NULL
- *!   and oversize was not zero.
+ *!   Either the code, subject, or match_data argument was passed as NULL.
  *!
  *!     @value ERROR.BADOPTION
  *!
@@ -320,12 +319,10 @@ PIKECLASS _pcre
  *!
  *!     @value ERROR.NOMEMORY
  *!
- *!   If a pattern contains back references, but the ovector that is
- *!   passed to pcre_exec() is not big enough to remember the
- *!   referenced substrings, PCRE2 gets a block of memory at the start
- *!   of matching to use for this purpose. If the call via
- *!   pcre_malloc() fails, this error is given. The memory is freed at
- *!   the end of matching.
+ *!   Heap memory is used to remember backtracking points. This error is given
+ *!   when the memory allocation function (default or custom) fails. Note that
+ *!   a different error, @[ERROR.HEAPLIMIT], is given if the amount of memory
+ *!   needed exceeds the heap limit.
  *!
  *!     @value ERROR.NOSUBSTRING
  *!
@@ -338,6 +335,10 @@ PIKECLASS _pcre
  *!   The recursion and backtracking limit, as specified by the
  *!   match_limit field in a pcre_extra structure (or defaulted) was
  *!   reached. See the description above.
+ *!
+ *!     @value ERROR.HEAPLIMIT
+ *!
+ *!   The heap limit was reached.
  *!
  *!     @value ERROR.CALLOUT
  *!
@@ -1048,6 +1049,7 @@ PIKE_MODULE_INIT
     *! @decl constant NOMEMORY
     *! @decl constant NOSUBSTRING
     *! @decl constant MATCHLIMIT
+    *! @decl constant HEAPLIMIT
     *! @decl constant CALLOUT
     *!   Documented in @[_pcre()->exec()].
     */
@@ -1062,6 +1064,9 @@ PIKE_MODULE_INIT
    add_integer_constant("NOSUBSTRING",PCRE2_ERROR_NOSUBSTRING,0);
 #ifdef PCRE2_ERROR_MATCHLIMIT
    add_integer_constant("MATCHLIMIT",PCRE2_ERROR_MATCHLIMIT,0);
+#endif
+#ifdef PCRE2_ERROR_HEAPLIMIT
+   add_integer_constant("HEAPLIMIT",PCRE2_ERROR_HEAPLIMIT,0);
 #endif
 #ifdef PCRE2_ERROR_CALLOUT
    add_integer_constant("CALLOUT",PCRE2_ERROR_CALLOUT,0);
