@@ -348,14 +348,11 @@ PIKECLASS _pcre
  *! @endint
  */
 
-#define OVECTOR_SIZE 3000 /* multiple of three; possible hits*3 */
-
    PIKEFUN int|array(int) exec(string subject,
                                void|int startoffset)
    {
      struct array *res;
 
-     int ovector[OVECTOR_SIZE];
      PCRE2_SIZE off=0;
      uint32_t opts=0;
 
