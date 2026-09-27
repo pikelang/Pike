@@ -518,6 +518,50 @@ PIKECLASS _pcre
      }
    }
 
+/* init and exit */
+
+#ifdef PIKE_NULL_IS_SPECIAL
+   INIT
+   {
+     THIS->re8=NULL;
+     THIS->re16=NULL;
+     THIS->re32=NULL;
+     THIS->md8=NULL;
+     THIS->md16=NULL;
+     THIS->md32=NULL;
+     THIS->pattern=NULL;
+   }
+#endif
+
+   EXIT
+     gc_trivial;
+   {
+     if (THIS->md8) {
+       pcre2_match_data_free_8(THIS->md8);
+       THIS->md8 = NULL;
+     }
+     if (THIS->md16) {
+       pcre2_match_data_free_16(THIS->md16);
+       THIS->md16 = NULL;
+     }
+     if (THIS->md32) {
+       pcre2_match_data_free_32(THIS->md32);
+       THIS->md32 = NULL;
+     }
+     if (THIS->re8) {
+       pcre2_code_free_8(THIS->re8);
+       THIS->re8 = NULL;
+     }
+     if (THIS->re16) {
+       pcre2_code_free_16(THIS->re16);
+       THIS->re16 = NULL;
+     }
+     if (THIS->re32) {
+       pcre2_code_free_32(THIS->re32);
+       THIS->re32 = NULL;
+     }
+   }
+
 }
 /*! @endclass
  */
