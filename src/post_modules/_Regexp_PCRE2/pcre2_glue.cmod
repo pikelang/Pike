@@ -127,8 +127,9 @@ PIKECLASS _pcre
                   (int)erroffset,Pike_sp[-1].u.string);
      } else if (errorcode < 0 && errorcode != PCRE2_ERROR_JIT_BADOPTION
 #ifdef PCRE2_ERROR_JIT_UNSUPPORTED
-                && errorcode != PCRE2_ERROR_JIT_UNSUPPORTED) {
+                && errorcode != PCRE2_ERROR_JIT_UNSUPPORTED
 #endif
+                ) {
        push_pcre2_error_message(errorcode);
        Pike_error("error calling pcre2_jit_compile: %pS\n",
                   Pike_sp[-1].u.string);
@@ -282,8 +283,9 @@ PIKECLASS _pcre
          errorcode = pcre2_jit_compile_32(THIS->re32, PCRE2_JIT_COMPLETE);
        if (errorcode == PCRE2_ERROR_JIT_BADOPTION
 #ifdef PCRE2_ERROR_JIT_UNSUPPORTED
-           || errorcode == PCRE2_ERROR_JIT_UNSUPPORTED)
+           || errorcode == PCRE2_ERROR_JIT_UNSUPPORTED
 #endif
+           )
          ; // JIT not available
        else if (errorcode < 0) {
          push_pcre2_error_message(errorcode);
