@@ -31,6 +31,7 @@ DECLARATIONS
 
 /* Used with pcre2_config() when the return value is a string */
 typedef char verstring24[24];
+typedef char targetstring64[64];
 
 static void push_pcre2_error_message(int errorcode)
 {
@@ -571,6 +572,20 @@ PIKE_MODULE_INIT
  *!	The output is an integer that gives the default match limit for
  *!     pcre2_match().
  *!
+ *! @decl constant buildconfig_HEAPLIMIT
+ *!     (from the pcre2api man-page)
+ *!     The output is an integer that gives, in kibibytes, the default
+ *!     limit for the amount of heap memory used by @[match()].
+ *!
+ *! @decl constant buildconfig_JIT
+ *!     (from the pcre2api man-page)
+ *!     The output is an integer that is set to one if support for
+ *!     just-in-time compiling is included in the library; otherwise it is set
+ *!     to zero. Note that having the support in the library does not guarantee
+ *!     that JIT will be used for any given match, and neither does it
+ *!     guarantee that JIT will actually be able to function, because it may
+ *!     not be able to allocate executable memory in some environments.
+ *!
  *! @decl constant buildconfig_UNICODE_VERSION
  *!     (from the pcre2api man-page)
  *!     If PCRE2 has been compiled without Unicode support, the buffer is
@@ -580,6 +595,13 @@ PIKE_MODULE_INIT
  *! @decl constant buildconfig_VERSION
  *!     (from the pcre2api man-page)
  *!     The buffer is filled with the PCRE2 version string.
+ *!
+ *! @decl optional constant buildconfig_JITTARGET
+ *!     (from the pcre2api man-page)
+ *!     The buffer is filled with a string that contains the name of the
+ *!     architecture for which the JIT compiler is configured, for example
+ *!     "x86 32bit (little endian + unaligned)".
+ *!     If JIT support is not available, this constant does not exist.
  */
 
 #define FIGURE_BUILD_TIME_OPTION(X,T,CT)				\
@@ -600,11 +622,20 @@ PIKE_MODULE_INIT
 #ifdef PCRE2_CONFIG_MATCHLIMIT
   FIGURE_BUILD_TIME_OPTION(MATCHLIMIT,uint32_t,integer);
 #endif
+#ifdef PCRE2_CONFIG_HEAPLIMIT
+  FIGURE_BUILD_TIME_OPTION(HEAPLIMIT,uint32_t,integer);
+#endif
+#ifdef PCRE2_CONFIG_JIT
+  FIGURE_BUILD_TIME_OPTION(JIT,uint32_t,integer);
+#endif
 #ifdef PCRE2_CONFIG_UNICODE_VERSION
   FIGURE_BUILD_TIME_OPTION(UNICODE_VERSION,verstring24,string);
 #endif
 #ifdef PCRE2_CONFIG_VERSION
   FIGURE_BUILD_TIME_OPTION(VERSION,verstring24,string);
+#endif
+#ifdef PCRE2_CONFIG_JITTARGET
+  FIGURE_BUILD_TIME_OPTION(JITTARGET,targetstring64,string);
 #endif
 
   /*! @module NEWLINE
