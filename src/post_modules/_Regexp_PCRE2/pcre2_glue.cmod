@@ -56,6 +56,9 @@ PIKECLASS _pcre
    CVAR pcre2_code_8 *re8;
    CVAR pcre2_code_16 *re16;
    CVAR pcre2_code_32 *re32;
+   CVAR pcre2_match_data_8 *md8;
+   CVAR pcre2_match_data_16 *md16;
+   CVAR pcre2_match_data_32 *md32;
    CVAR uint32_t options;
    CVAR int jit;
    PIKEVAR string pattern;
@@ -223,6 +226,18 @@ PIKECLASS _pcre
      THIS->pattern = pattern;
      add_ref(pattern);
 
+     if (THIS->md8) {
+       pcre2_match_data_free_8(THIS->md8);
+       THIS->md8 = NULL;
+     }
+     if (THIS->md16) {
+       pcre2_match_data_free_16(THIS->md16);
+       THIS->md16 = NULL;
+     }
+     if (THIS->md32) {
+       pcre2_match_data_free_32(THIS->md32);
+       THIS->md32 = NULL;
+     }
      if (THIS->re8) {
        pcre2_code_free_8(THIS->re8);
        THIS->re8 = NULL;
@@ -417,7 +432,7 @@ PIKECLASS _pcre
        PCRE2_SIZE *ovector = NULL;
        struct pike_string *sub = subject;
        struct string_builder s;
-       ONERROR error, error2;
+       ONERROR error;
        
        if (sub->size_shift < THIS->pattern->size_shift) {
          /* Need to widen subject */
@@ -434,52 +449,43 @@ PIKECLASS _pcre
        case eightbit:
          if (!THIS->re8)
            create_re_width(THIS, eightbit);
-         {
-           pcre2_match_data_8 *match_data =
-             pcre2_match_data_create_from_pattern_8(THIS->re8, NULL);
-           SET_ONERROR(error2, pcre2_match_data_free_8, match_data);
-           rc=pcre2_match_8(THIS->re8,
-                            STR0(sub),sub->len,
-                            off,opts,
-                            match_data,NULL);
-           if (rc>=0) {
-             ovector = pcre2_get_ovector_pointer_8(match_data);
-             len = pcre2_get_ovector_count_8(match_data) * 2;
-           }
+         if (!THIS->md8)
+           THIS->md8 = pcre2_match_data_create_from_pattern_8(THIS->re8, NULL);
+         rc=pcre2_match_8(THIS->re8,
+                          STR0(sub),sub->len,
+                          off,opts,
+                          THIS->md8,NULL);
+         if (rc>=0) {
+           ovector = pcre2_get_ovector_pointer_8(THIS->md8);
+           len = pcre2_get_ovector_count_8(THIS->md8) * 2;
          }
          break;
        case sixteenbit:
          if (!THIS->re16)
            create_re_width(THIS, sixteenbit);
-         {
-           pcre2_match_data_16 *match_data =
-             pcre2_match_data_create_from_pattern_16(THIS->re16, NULL);
-           SET_ONERROR(error2, pcre2_match_data_free_16, match_data);
-           rc=pcre2_match_16(THIS->re16,
-                             STR1(sub),sub->len,
-                             off,opts,
-                             match_data,NULL);
-           if (rc>=0) {
-             ovector = pcre2_get_ovector_pointer_16(match_data);
-             len = pcre2_get_ovector_count_16(match_data) * 2;
-           }
+         if (!THIS->md16)
+           THIS->md16 = pcre2_match_data_create_from_pattern_16(THIS->re16, NULL);
+         rc=pcre2_match_16(THIS->re16,
+                           STR1(sub),sub->len,
+                           off,opts,
+                           THIS->md16,NULL);
+         if (rc>=0) {
+           ovector = pcre2_get_ovector_pointer_16(THIS->md16);
+           len = pcre2_get_ovector_count_16(THIS->md16) * 2;
          }
          break;
        case thirtytwobit:
          if (!THIS->re32)
            create_re_width(THIS, thirtytwobit);
-         {
-           pcre2_match_data_32 *match_data =
-             pcre2_match_data_create_from_pattern_32(THIS->re32, NULL);
-           SET_ONERROR(error2, pcre2_match_data_free_32, match_data);
-           rc=pcre2_match_32(THIS->re32,
-                             (PCRE2_SPTR32)STR2(sub),sub->len,
-                             off,opts,
-                             match_data,NULL);
-           if (rc>=0) {
-             ovector = pcre2_get_ovector_pointer_32(match_data);
-             len = pcre2_get_ovector_count_32(match_data) * 2;
-           }
+         if (!THIS->md32)
+           THIS->md32 = pcre2_match_data_create_from_pattern_32(THIS->re32, NULL);
+         rc=pcre2_match_32(THIS->re32,
+                           (PCRE2_SPTR32)STR2(sub),sub->len,
+                           off,opts,
+                           THIS->md32,NULL);
+         if (rc>=0) {
+           ovector = pcre2_get_ovector_pointer_32(THIS->md32);
+           len = pcre2_get_ovector_count_32(THIS->md32) * 2;
          }
          break;
        default:
@@ -507,7 +513,6 @@ PIKECLASS _pcre
          }
          push_array(res);
        }
-       CALL_AND_UNSET_ONERROR (error2);
        if (error.func)
          CALL_AND_UNSET_ONERROR (error);
      }
