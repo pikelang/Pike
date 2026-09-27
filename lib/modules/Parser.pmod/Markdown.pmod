@@ -1,6 +1,6 @@
 #charset utf-8
 #pike __REAL_VERSION__
-#require constant(Regexp.PCRE.Widestring)
+#require constant(Regexp.PCRE2.Plain) || constant(Regexp.PCRE1.Widestring)
 
 //! This is a port of the Javascript Markdown parser 'Marked'
 //! @url{https://github.com/chjj/marked@}. The only method needed to
@@ -9,7 +9,12 @@
 //! For a description on Markdown, go to the web page of the inventor of
 //! Markdown @url{https://daringfireball.net/projects/markdown/@}.
 
-import Regexp.PCRE;
+#if constant(Regexp.PCRE2.Plain)
+import Regexp.PCRE2;
+#else
+import Regexp.PCRE1;
+#define Plain Widestring
+#endif
 
 #define nl() (options->newline ? "\n" : "")
 
@@ -202,7 +207,7 @@ protected constant default_options = ([
 
 protected class R
 {
-  inherit Widestring : ws;
+  inherit Plain : ws;
 
   protected string src;
 
