@@ -57,6 +57,7 @@ PIKECLASS _pcre
    CVAR pcre2_code_16 *re16;
    CVAR pcre2_code_32 *re32;
    CVAR uint32_t options;
+   CVAR int jit;
    PIKEVAR string pattern;
 
    static void create_re_width(struct cq__Regexp_PCRE2_cq__pcre_struct *that,
@@ -87,6 +88,9 @@ PIKECLASS _pcre
          that->options,
          &errorcode,&erroffset,
          NULL /* table */ );
+       if (result)
+         errorcode = (THIS->jit ?
+                      pcre2_jit_compile_8(result, PCRE2_JIT_COMPLETE) : 0);
        break;
      case sixteenbit:
        result=THIS->re16=pcre2_compile_16(
@@ -95,6 +99,9 @@ PIKECLASS _pcre
          that->options,
          &errorcode,&erroffset,
          NULL /* table */ );
+       if (result)
+         errorcode = (THIS->jit ?
+                      pcre2_jit_compile_16(result, PCRE2_JIT_COMPLETE) : 0);
        break;
      case thirtytwobit:
        result=THIS->re32=pcre2_compile_32(
@@ -103,6 +110,9 @@ PIKECLASS _pcre
          that->options,
          &errorcode,&erroffset,
          NULL /* table */ );
+       if (result)
+         errorcode = (THIS->jit ?
+                      pcre2_jit_compile_32(result, PCRE2_JIT_COMPLETE) : 0);
        break;
      default:
        Pike_error("Invalid size_shift!\n");
@@ -112,6 +122,11 @@ PIKECLASS _pcre
        push_pcre2_error_message(errorcode);
        Pike_error("error calling pcre_compile [%d]: %pS\n",
                   (int)erroffset,Pike_sp[-1].u.string);
+     } else if (errorcode < 0 && errorcode != PCRE2_ERROR_JIT_BADOPTION &&
+                errorcode != PCRE2_ERROR_JIT_UNSUPPORTED) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre2_jit_compile: %pS\n",
+                  Pike_sp[-1].u.string);
      }
 
      if (error.func)
@@ -228,16 +243,36 @@ PIKECLASS _pcre
            (PCRE2_UTF | PCRE2_NEVER_UCP | PCRE2_MATCH_INVALID_UTF)))
        THIS->options |= PCRE2_UCP | PCRE2_NEVER_UTF;
 
+     THIS->jit = 0;
+
      create_re_width(THIS, pattern->size_shift);
    }
 
    /*! @decl object study()
     *!
-    *!  Do nothing (backward compat)
+    *!  Request JIT compilation
     */
 
    PIKEFUN object study()
    {
+     int errorcode = 0;
+     if (!THIS->jit) {
+       if (errorcode >= 0 && THIS->re8)
+         errorcode = pcre2_jit_compile_8(THIS->re8, PCRE2_JIT_COMPLETE);
+       if (errorcode >= 0 && THIS->re16)
+         errorcode = pcre2_jit_compile_16(THIS->re16, PCRE2_JIT_COMPLETE);
+       if (errorcode >= 0 && THIS->re32)
+         errorcode = pcre2_jit_compile_32(THIS->re32, PCRE2_JIT_COMPLETE);
+       if (errorcode == PCRE2_ERROR_JIT_BADOPTION ||
+           errorcode == PCRE2_ERROR_JIT_UNSUPPORTED)
+         ; // JIT not available
+       else if (errorcode < 0) {
+         push_pcre2_error_message(errorcode);
+         Pike_error("error calling pcre2_jit_compile: %pS\n",
+                    Pike_sp[-1].u.string);
+       } else
+         THIS->jit = 1;
+     }
      RETURN this_object();
    }
 
