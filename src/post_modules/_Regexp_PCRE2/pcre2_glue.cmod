@@ -31,6 +31,7 @@ DECLARATIONS
 
 /* Used with pcre2_config() when the return value is a string */
 typedef char verstring24[24];
+typedef char targetstring64[64];
 
 static void push_pcre2_error_message(int errorcode)
 {
@@ -55,7 +56,11 @@ PIKECLASS _pcre
    CVAR pcre2_code_8 *re8;
    CVAR pcre2_code_16 *re16;
    CVAR pcre2_code_32 *re32;
+   CVAR pcre2_match_data_8 *md8;
+   CVAR pcre2_match_data_16 *md16;
+   CVAR pcre2_match_data_32 *md32;
    CVAR uint32_t options;
+   CVAR int jit;
    PIKEVAR string pattern;
 
    static void create_re_width(struct cq__Regexp_PCRE2_cq__pcre_struct *that,
@@ -86,6 +91,9 @@ PIKECLASS _pcre
          that->options,
          &errorcode,&erroffset,
          NULL /* table */ );
+       if (result)
+         errorcode = (THIS->jit ?
+                      pcre2_jit_compile_8(result, PCRE2_JIT_COMPLETE) : 0);
        break;
      case sixteenbit:
        result=THIS->re16=pcre2_compile_16(
@@ -94,6 +102,9 @@ PIKECLASS _pcre
          that->options,
          &errorcode,&erroffset,
          NULL /* table */ );
+       if (result)
+         errorcode = (THIS->jit ?
+                      pcre2_jit_compile_16(result, PCRE2_JIT_COMPLETE) : 0);
        break;
      case thirtytwobit:
        result=THIS->re32=pcre2_compile_32(
@@ -102,6 +113,9 @@ PIKECLASS _pcre
          that->options,
          &errorcode,&erroffset,
          NULL /* table */ );
+       if (result)
+         errorcode = (THIS->jit ?
+                      pcre2_jit_compile_32(result, PCRE2_JIT_COMPLETE) : 0);
        break;
      default:
        Pike_error("Invalid size_shift!\n");
@@ -111,6 +125,14 @@ PIKECLASS _pcre
        push_pcre2_error_message(errorcode);
        Pike_error("error calling pcre_compile [%d]: %pS\n",
                   (int)erroffset,Pike_sp[-1].u.string);
+     } else if (errorcode < 0 && errorcode != PCRE2_ERROR_JIT_BADOPTION
+#ifdef PCRE2_ERROR_JIT_UNSUPPORTED
+                && errorcode != PCRE2_ERROR_JIT_UNSUPPORTED
+#endif
+                ) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre2_jit_compile: %pS\n",
+                  Pike_sp[-1].u.string);
      }
 
      if (error.func)
@@ -207,6 +229,18 @@ PIKECLASS _pcre
      THIS->pattern = pattern;
      add_ref(pattern);
 
+     if (THIS->md8) {
+       pcre2_match_data_free_8(THIS->md8);
+       THIS->md8 = NULL;
+     }
+     if (THIS->md16) {
+       pcre2_match_data_free_16(THIS->md16);
+       THIS->md16 = NULL;
+     }
+     if (THIS->md32) {
+       pcre2_match_data_free_32(THIS->md32);
+       THIS->md32 = NULL;
+     }
      if (THIS->re8) {
        pcre2_code_free_8(THIS->re8);
        THIS->re8 = NULL;
@@ -227,16 +261,39 @@ PIKECLASS _pcre
            (PCRE2_UTF | PCRE2_NEVER_UCP | PCRE2_MATCH_INVALID_UTF)))
        THIS->options |= PCRE2_UCP | PCRE2_NEVER_UTF;
 
+     THIS->jit = 0;
+
      create_re_width(THIS, pattern->size_shift);
    }
 
    /*! @decl object study()
     *!
-    *!  Do nothing (backward compat)
+    *!  Request JIT compilation
     */
 
    PIKEFUN object study()
    {
+     int errorcode = 0;
+     if (!THIS->jit) {
+       if (errorcode >= 0 && THIS->re8)
+         errorcode = pcre2_jit_compile_8(THIS->re8, PCRE2_JIT_COMPLETE);
+       if (errorcode >= 0 && THIS->re16)
+         errorcode = pcre2_jit_compile_16(THIS->re16, PCRE2_JIT_COMPLETE);
+       if (errorcode >= 0 && THIS->re32)
+         errorcode = pcre2_jit_compile_32(THIS->re32, PCRE2_JIT_COMPLETE);
+       if (errorcode == PCRE2_ERROR_JIT_BADOPTION
+#ifdef PCRE2_ERROR_JIT_UNSUPPORTED
+           || errorcode == PCRE2_ERROR_JIT_UNSUPPORTED
+#endif
+           )
+         ; // JIT not available
+       else if (errorcode < 0) {
+         push_pcre2_error_message(errorcode);
+         Pike_error("error calling pcre2_jit_compile: %pS\n",
+                    Pike_sp[-1].u.string);
+       } else
+         THIS->jit = 1;
+     }
      RETURN this_object();
    }
 
@@ -305,8 +362,7 @@ PIKECLASS _pcre
  *!
  *!     @value ERROR.NULL
  *!
- *!   Either code or subject was passed as NULL, or ovector was NULL
- *!   and oversize was not zero.
+ *!   Either the code, subject, or match_data argument was passed as NULL.
  *!
  *!     @value ERROR.BADOPTION
  *!
@@ -320,12 +376,10 @@ PIKECLASS _pcre
  *!
  *!     @value ERROR.NOMEMORY
  *!
- *!   If a pattern contains back references, but the ovector that is
- *!   passed to pcre_exec() is not big enough to remember the
- *!   referenced substrings, PCRE2 gets a block of memory at the start
- *!   of matching to use for this purpose. If the call via
- *!   pcre_malloc() fails, this error is given. The memory is freed at
- *!   the end of matching.
+ *!   Heap memory is used to remember backtracking points. This error is given
+ *!   when the memory allocation function (default or custom) fails. Note that
+ *!   a different error, @[ERROR.HEAPLIMIT], is given if the amount of memory
+ *!   needed exceeds the heap limit.
  *!
  *!     @value ERROR.NOSUBSTRING
  *!
@@ -339,6 +393,10 @@ PIKECLASS _pcre
  *!   match_limit field in a pcre_extra structure (or defaulted) was
  *!   reached. See the description above.
  *!
+ *!     @value ERROR.HEAPLIMIT
+ *!
+ *!   The heap limit was reached.
+ *!
  *!     @value ERROR.CALLOUT
  *!
  *!   This error is never generated by pcre_exec() itself. It is
@@ -348,14 +406,11 @@ PIKECLASS _pcre
  *! @endint
  */
 
-#define OVECTOR_SIZE 3000 /* multiple of three; possible hits*3 */
-
    PIKEFUN int|array(int) exec(string subject,
                                void|int startoffset)
    {
      struct array *res;
 
-     int ovector[OVECTOR_SIZE];
      PCRE2_SIZE off=0;
      uint32_t opts=0;
 
@@ -383,7 +438,7 @@ PIKECLASS _pcre
        PCRE2_SIZE *ovector = NULL;
        struct pike_string *sub = subject;
        struct string_builder s;
-       ONERROR error, error2;
+       ONERROR error;
        
        if (sub->size_shift < THIS->pattern->size_shift) {
          /* Need to widen subject */
@@ -400,52 +455,43 @@ PIKECLASS _pcre
        case eightbit:
          if (!THIS->re8)
            create_re_width(THIS, eightbit);
-         {
-           pcre2_match_data_8 *match_data =
-             pcre2_match_data_create_from_pattern_8(THIS->re8, NULL);
-           SET_ONERROR(error2, pcre2_match_data_free_8, match_data);
-           rc=pcre2_match_8(THIS->re8,
-                            STR0(sub),sub->len,
-                            off,opts,
-                            match_data,NULL);
-           if (rc>=0) {
-             ovector = pcre2_get_ovector_pointer_8(match_data);
-             len = pcre2_get_ovector_count_8(match_data) * 2;
-           }
+         if (!THIS->md8)
+           THIS->md8 = pcre2_match_data_create_from_pattern_8(THIS->re8, NULL);
+         rc=pcre2_match_8(THIS->re8,
+                          STR0(sub),sub->len,
+                          off,opts,
+                          THIS->md8,NULL);
+         if (rc>=0) {
+           ovector = pcre2_get_ovector_pointer_8(THIS->md8);
+           len = pcre2_get_ovector_count_8(THIS->md8) * 2;
          }
          break;
        case sixteenbit:
          if (!THIS->re16)
            create_re_width(THIS, sixteenbit);
-         {
-           pcre2_match_data_16 *match_data =
-             pcre2_match_data_create_from_pattern_16(THIS->re16, NULL);
-           SET_ONERROR(error2, pcre2_match_data_free_16, match_data);
-           rc=pcre2_match_16(THIS->re16,
-                             STR1(sub),sub->len,
-                             off,opts,
-                             match_data,NULL);
-           if (rc>=0) {
-             ovector = pcre2_get_ovector_pointer_16(match_data);
-             len = pcre2_get_ovector_count_16(match_data) * 2;
-           }
+         if (!THIS->md16)
+           THIS->md16 = pcre2_match_data_create_from_pattern_16(THIS->re16, NULL);
+         rc=pcre2_match_16(THIS->re16,
+                           STR1(sub),sub->len,
+                           off,opts,
+                           THIS->md16,NULL);
+         if (rc>=0) {
+           ovector = pcre2_get_ovector_pointer_16(THIS->md16);
+           len = pcre2_get_ovector_count_16(THIS->md16) * 2;
          }
          break;
        case thirtytwobit:
          if (!THIS->re32)
            create_re_width(THIS, thirtytwobit);
-         {
-           pcre2_match_data_32 *match_data =
-             pcre2_match_data_create_from_pattern_32(THIS->re32, NULL);
-           SET_ONERROR(error2, pcre2_match_data_free_32, match_data);
-           rc=pcre2_match_32(THIS->re32,
-                             (PCRE2_SPTR32)STR2(sub),sub->len,
-                             off,opts,
-                             match_data,NULL);
-           if (rc>=0) {
-             ovector = pcre2_get_ovector_pointer_32(match_data);
-             len = pcre2_get_ovector_count_32(match_data) * 2;
-           }
+         if (!THIS->md32)
+           THIS->md32 = pcre2_match_data_create_from_pattern_32(THIS->re32, NULL);
+         rc=pcre2_match_32(THIS->re32,
+                           (PCRE2_SPTR32)STR2(sub),sub->len,
+                           off,opts,
+                           THIS->md32,NULL);
+         if (rc>=0) {
+           ovector = pcre2_get_ovector_pointer_32(THIS->md32);
+           len = pcre2_get_ovector_count_32(THIS->md32) * 2;
          }
          break;
        default:
@@ -473,9 +519,52 @@ PIKECLASS _pcre
          }
          push_array(res);
        }
-       CALL_AND_UNSET_ONERROR (error2);
        if (error.func)
          CALL_AND_UNSET_ONERROR (error);
+     }
+   }
+
+/* init and exit */
+
+#ifdef PIKE_NULL_IS_SPECIAL
+   INIT
+   {
+     THIS->re8=NULL;
+     THIS->re16=NULL;
+     THIS->re32=NULL;
+     THIS->md8=NULL;
+     THIS->md16=NULL;
+     THIS->md32=NULL;
+     THIS->pattern=NULL;
+   }
+#endif
+
+   EXIT
+     gc_trivial;
+   {
+     if (THIS->md8) {
+       pcre2_match_data_free_8(THIS->md8);
+       THIS->md8 = NULL;
+     }
+     if (THIS->md16) {
+       pcre2_match_data_free_16(THIS->md16);
+       THIS->md16 = NULL;
+     }
+     if (THIS->md32) {
+       pcre2_match_data_free_32(THIS->md32);
+       THIS->md32 = NULL;
+     }
+     if (THIS->re8) {
+       pcre2_code_free_8(THIS->re8);
+       THIS->re8 = NULL;
+     }
+     if (THIS->re16) {
+       pcre2_code_free_16(THIS->re16);
+       THIS->re16 = NULL;
+     }
+     if (THIS->re32) {
+       pcre2_code_free_32(THIS->re32);
+       THIS->re32 = NULL;
      }
    }
 
@@ -573,6 +662,20 @@ PIKE_MODULE_INIT
  *!	The output is an integer that gives the default match limit for
  *!     pcre2_match().
  *!
+ *! @decl constant buildconfig_HEAPLIMIT
+ *!     (from the pcre2api man-page)
+ *!     The output is an integer that gives, in kibibytes, the default
+ *!     limit for the amount of heap memory used by @[match()].
+ *!
+ *! @decl constant buildconfig_JIT
+ *!     (from the pcre2api man-page)
+ *!     The output is an integer that is set to one if support for
+ *!     just-in-time compiling is included in the library; otherwise it is set
+ *!     to zero. Note that having the support in the library does not guarantee
+ *!     that JIT will be used for any given match, and neither does it
+ *!     guarantee that JIT will actually be able to function, because it may
+ *!     not be able to allocate executable memory in some environments.
+ *!
  *! @decl constant buildconfig_UNICODE_VERSION
  *!     (from the pcre2api man-page)
  *!     If PCRE2 has been compiled without Unicode support, the buffer is
@@ -582,6 +685,13 @@ PIKE_MODULE_INIT
  *! @decl constant buildconfig_VERSION
  *!     (from the pcre2api man-page)
  *!     The buffer is filled with the PCRE2 version string.
+ *!
+ *! @decl optional constant buildconfig_JITTARGET
+ *!     (from the pcre2api man-page)
+ *!     The buffer is filled with a string that contains the name of the
+ *!     architecture for which the JIT compiler is configured, for example
+ *!     "x86 32bit (little endian + unaligned)".
+ *!     If JIT support is not available, this constant does not exist.
  */
 
 #define FIGURE_BUILD_TIME_OPTION(X,T,CT)				\
@@ -602,11 +712,20 @@ PIKE_MODULE_INIT
 #ifdef PCRE2_CONFIG_MATCHLIMIT
   FIGURE_BUILD_TIME_OPTION(MATCHLIMIT,uint32_t,integer);
 #endif
+#ifdef PCRE2_CONFIG_HEAPLIMIT
+  FIGURE_BUILD_TIME_OPTION(HEAPLIMIT,uint32_t,integer);
+#endif
+#ifdef PCRE2_CONFIG_JIT
+  FIGURE_BUILD_TIME_OPTION(JIT,uint32_t,integer);
+#endif
 #ifdef PCRE2_CONFIG_UNICODE_VERSION
   FIGURE_BUILD_TIME_OPTION(UNICODE_VERSION,verstring24,string);
 #endif
 #ifdef PCRE2_CONFIG_VERSION
   FIGURE_BUILD_TIME_OPTION(VERSION,verstring24,string);
+#endif
+#ifdef PCRE2_CONFIG_JITTARGET
+  FIGURE_BUILD_TIME_OPTION(JITTARGET,targetstring64,string);
 #endif
 
   /*! @module NEWLINE
@@ -1051,6 +1170,7 @@ PIKE_MODULE_INIT
     *! @decl constant NOMEMORY
     *! @decl constant NOSUBSTRING
     *! @decl constant MATCHLIMIT
+    *! @decl constant HEAPLIMIT
     *! @decl constant CALLOUT
     *!   Documented in @[_pcre()->exec()].
     */
@@ -1065,6 +1185,9 @@ PIKE_MODULE_INIT
    add_integer_constant("NOSUBSTRING",PCRE2_ERROR_NOSUBSTRING,0);
 #ifdef PCRE2_ERROR_MATCHLIMIT
    add_integer_constant("MATCHLIMIT",PCRE2_ERROR_MATCHLIMIT,0);
+#endif
+#ifdef PCRE2_ERROR_HEAPLIMIT
+   add_integer_constant("HEAPLIMIT",PCRE2_ERROR_HEAPLIMIT,0);
 #endif
 #ifdef PCRE2_ERROR_CALLOUT
    add_integer_constant("CALLOUT",PCRE2_ERROR_CALLOUT,0);
