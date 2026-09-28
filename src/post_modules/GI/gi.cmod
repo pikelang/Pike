@@ -1178,14 +1178,17 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
           if (TYPEOF(Pike_sp[-2]) == T_FUNCTION) {
             parent = Pike_sp[-2].u.object;
             parent_identifier = SUBTYPEOF(Pike_sp[-2]);
+          } else if (p->flags & PROGRAM_NEEDS_PARENT) {
+            Pike_error("Parent lost, cannot clone program.\n");
           }
           obj = low_clone(p);
           push_object(obj);
           call_c_initializers(obj);
           stack_swap();
           init_gi_gobject(obj, gobj);
-          if ((p->flags & PROGRAM_USES_PARENT) && parent) {
-            add_ref(PARENT_INFO(obj)->parent = parent);
+          if (p->flags & PROGRAM_USES_PARENT) {
+            PARENT_INFO(obj)->parent = parent;
+            add_ref(parent);
             PARENT_INFO(obj)->parent_identifier = parent_identifier;
           }
           call_pike_initializers(obj, 1);
@@ -1241,6 +1244,8 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
           if (TYPEOF(Pike_sp[-2]) == T_FUNCTION) {
             parent = Pike_sp[-2].u.object;
             parent_identifier = SUBTYPEOF(Pike_sp[-2]);
+          } else if (p->flags & PROGRAM_NEEDS_PARENT) {
+            Pike_error("Parent lost, cannot clone program.\n");
           }
           obj = low_clone(p);
           push_object(obj);
@@ -1248,7 +1253,10 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
           stack_swap();
           set_pointer_in_pointer_object(obj, gbox);
           if (p->flags & PROGRAM_USES_PARENT) {
-            add_ref(PARENT_INFO(obj)->parent = parent);
+            PARENT_INFO(obj)->parent = parent;
+            if (parent) {
+              add_ref(parent);
+            }
             PARENT_INFO(obj)->parent_identifier = parent_identifier;
           }
           if (find_inherited_prog(p, GI_GBoxed_program) >= 0) {
