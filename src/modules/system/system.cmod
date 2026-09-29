@@ -413,15 +413,27 @@ void f_resolvepath(INT32 args)
 #elif defined(HAVE_REALPATH)
   THREADS_ALLOW_UID();
   do {
-    /* Later revisions of POSIX define realpath() to dynamically
-     * allocate the result if passed NULL.
+    /* In POSIX.1-2008 and later realpath(3C) dynamically allocates
+     * the result when passed a NULL output buffer.
      * cf https://www.gnu.org/software/hurd/hurd/porting/guidelines.html
      */
+#ifdef HAVE_WORKING_REALPATH
     if ((buf = realpath(path, NULL))) {
       free_ptr = buf;
       len = strlen(buf);
+    }
+#else
+    /* In POSIX.1-2001 the behavior of realpath() when provided a NULL
+     * buffer was unspecified. Some implementations (like eg Solaris 8
+     * and old Linux) failed cleanly with errno EINVAL, but others
+     * (like eg MacOS X 10.5 failed with SIGBUS).
+     */
+    buf = NULL;
+    errno = EINVAL;
+#endif
+
 #ifdef PATH_MAX
-    } else if (errno == EINVAL) {
+    if (!buf && (errno == EINVAL)) {
       /* Old implementations (eg Solaris 8) of realpath(3C) fail
        * with EINVAL if either argument is NULL.
        *
@@ -438,8 +450,8 @@ void f_resolvepath(INT32 args)
       if ((buf = realpath(path, buf))) {
         len = strlen(buf);
       }
-#endif
     }
+#endif
   } while(0);
   THREADS_DISALLOW_UID();
 #else /* !HAVE_RESOLVEPATH && !HAVE_REALPATH */
