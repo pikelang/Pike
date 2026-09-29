@@ -104,6 +104,41 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown lchown \
 	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo \
         getloadavg daemon clonefile copy_file_range)
 
+if test "x$ac_cv_func_realpath" = "xyes"; then
+    AC_MSG_CHECKING([if realpath survives a NULL buffer])
+    AC_CACHE_VAL(pike_cv_realpath_survives_NULL, [
+        AC_TRY_RUN([
+#include <unistd.h>
+#include <stdlib.h>
+int main(int argc, char **argv)
+{
+    alarm(1);
+    if (realpath("/", (void*)0)) {
+        return 0;
+    }
+    return 1;
+}
+        ], [ pike_cv_realpath_survives_NULL="yes" ],
+           [ pike_cv_realpath_survives_NULL="no" ],
+           [
+               case "x$pike_cv_posix_c_source" in
+                   x19*|x2001*)
+                       pike_cv_realpath_survives_NULL="no"
+                       ;;
+                   *)
+                       # NULL is supported in POSIX.1-2008 and later.
+                       pike_cv_realpath_survives_NULL="yes"
+                       ;;
+               esac
+           ])
+    ])
+    AC_MSG_RESULT($pike_cv_realpath_survives_NULL)
+    if test "x$pike_cv_realpath_survives_NULL" = "xyes"; then
+        AC_DEFINE(HAVE_WORKING_REALPATH, 1,
+          [Define this if your realpath is POSIX.1-2008 or later.])
+    fi
+fi
+
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
   AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
   AC_CACHE_VAL(pike_cv_setpgrp_bsd, [
