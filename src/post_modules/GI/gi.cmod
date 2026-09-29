@@ -1188,7 +1188,9 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
           init_gi_gobject(obj, gobj);
           if (p->flags & PROGRAM_USES_PARENT) {
             PARENT_INFO(obj)->parent = parent;
-            add_ref(parent);
+            if (parent) {
+              add_ref(parent);
+            }
             PARENT_INFO(obj)->parent_identifier = parent_identifier;
           }
           call_pike_initializers(obj, 1);
