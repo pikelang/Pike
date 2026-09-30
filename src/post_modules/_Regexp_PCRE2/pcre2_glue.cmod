@@ -258,7 +258,11 @@ PIKECLASS _pcre
        options && TYPEOF(*options) == PIKE_T_INT ? options->u.integer : 0;
      
      if (!(THIS->options &
-           (PCRE2_UTF | PCRE2_NEVER_UCP | PCRE2_MATCH_INVALID_UTF)))
+           (PCRE2_UTF | PCRE2_NEVER_UCP
+#ifdef PCRE2_MATCH_INVALID_UTF
+            | PCRE2_MATCH_INVALID_UTF
+#endif
+            )))
        THIS->options |= PCRE2_UCP | PCRE2_NEVER_UTF;
 
      THIS->jit = 0;
@@ -973,12 +977,19 @@ PIKE_MODULE_INIT
    */
   add_integer_constant("LITERAL",PCRE2_LITERAL,0);
 
-  /*! @decl constant MATCH_INVALID_UTF
+#ifdef PCRE2_MATCH_INVALID_UTF
+  /*! @decl optional constant MATCH_INVALID_UTF
    *! (from the pcre2api manpage) This option forces @[UTF] (see below) and
    *! also enables support for matching in subject strings that contain
    *! invalid UTF sequences.
+   *!
+   *! @note
+   *!   This symbol is not present in all versions of PCRE2. It was
+   *!   added in PCRE2 10.34.
    */
-  add_integer_constant("MATCH_INVALID_UTF",PCRE2_MATCH_INVALID_UTF,0);
+  add_integer_constant("MATCH_INVALID_UTF",PCRE2_MATCH_INVALID_UTF,
+                       ID_OPTIONAL);
+#endif
 
   /*! @decl constant MATCH_UNSET_BACKREF
    *! (from the pcre2api manpage) If this option is set, a backreference
