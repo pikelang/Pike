@@ -1778,6 +1778,7 @@ mapping abbr2zones =
      "America/Santo_Domingo",
      "America/Thunder_Bay",
      "America/Toronto",
+     "America/Winnipeg",
      "EST",
      "EST5EDT",
    }),
@@ -3398,7 +3399,7 @@ mapping timezone_expert_tree =
                0:"Antarctica/Troll",
             ]),
          -3600:
-            ([ "test":10243800, // 1970-04-29 13:30:00
+            ([ "test":-69890400, // 1967-10-15 02:00:00
                -3600:
                   ([ "test":-2021169296, // 1905-12-14 20:05:04
                      0:

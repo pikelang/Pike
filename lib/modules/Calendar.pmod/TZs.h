@@ -2438,13 +2438,17 @@ class Europe_Dublin
       if (ux>=-684972000) // from 1948 Apr 18  2:00s
          return tz5 || (tz5=TZrules.GB_Eire(0,"GMT/IST"));
       if (ux>=-699487200) // from 1947 Nov  2  2:00s
-         return tz7 || (tz7=Rule.Timezone(0,"GMT"));
+         return tz6 || (tz6=Rule.Timezone(0,"GMT"));
       if (ux>=-719445600) // from 1947 Mar 16  2:00s
-         return tz6 || (tz6=Rule.Timezone(-3600,"IST"));
+         return tz7 || (tz7=Rule.Timezone(-3600,"IST"));
       if (ux>=-733356000) // from 1946 Oct  6  2:00s
-         return tz7 || (tz7=Rule.Timezone(0,"GMT"));
+         return tz6 || (tz6=Rule.Timezone(0,"GMT"));
       if (ux>=-942012000) // from 1940 Feb 25  2:00s
-         return tz6 || (tz6=Rule.Timezone(-3600,"IST"));
+         return tz7 || (tz7=Rule.Timezone(-3600,"IST"));
+      if (ux>=-1388534400) // from 1926
+         return tz5 || (tz5=TZrules.GB_Eire(0,"GMT/IST"));
+      if (ux>=-1399071600) // from 1925 Sep Sun>=16 2:00s
+         return tz6 || (tz6=Rule.Timezone(0,"GMT"));
       if (ux>=-1517011200) // from 1921 Dec  6
          return tz5 || (tz5=TZrules.GB_Eire(0,"GMT/IST"));
       if (ux>=-1680471279) // from 1916 Oct  1  2:00s independence
@@ -4793,9 +4797,13 @@ constant America_Thunder_Bay=America_Toronto;
 class America_Winnipeg
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
+      if (ux>=1793480400) // from 2026 Nov  1  2:00
+         return tz5 || (tz5=Rule.Timezone(18000,"EST"));
+      if (ux>=1793386800) // from 2026 Oct 31
+         return tz4 || (tz4=TZrules.Canada(21600,"CDT"));
       if (ux>=1136052000) // from 2006
          return tz3 || (tz3=TZrules.Canada(21600,"C%sT"));
       if (ux>=-2602258284) // from 1887 Jul 16
