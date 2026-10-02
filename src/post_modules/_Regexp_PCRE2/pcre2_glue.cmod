@@ -785,16 +785,24 @@ PIKE_MODULE_INIT
 
   start_new_program();
 
-  /*! @decl constant ALLOW_EMPTY_CLASS
+#ifdef PCRE2_ALLOW_EMPTY_CLASS
+  /*! @decl optional constant ALLOW_EMPTY_CLASS
    *! (from the pcre2api manpage) By default, for compatibility with Perl,
    *! a closing square bracket thatimmediately follows an opening one is
    *! treated as a data character for the class. When ALLOW_EMPTY_CLASS is
    *! set, it terminates the class, which therefore contains no characters
    *! and so can never match.
+   *!
+   *! @note
+   *!   This symbol is not present in all versions of PCRE2. It was
+   *!   added in PCRE2 10.30.
    */
-  add_integer_constant("ALLOW_EMPTY_CLASS",PCRE2_ALLOW_EMPTY_CLASS,0);
+  add_integer_constant("ALLOW_EMPTY_CLASS",PCRE2_ALLOW_EMPTY_CLASS,
+                       ID_OPTIONAL);
+#endif
 
-  /*! @decl constant ALT_BSUX
+#ifdef PCRE2_ALT_BSUX
+  /*! @decl optional constant ALT_BSUX
    *! (from the pcre2api manpage) This option request alternative handling
    *! of three escape sequences, which makes PCRE2's behaviour more like
    *! ECMAscript (aka JavaScript). When it is set:
@@ -816,8 +824,14 @@ PIKE_MODULE_INIT
    *!     zero, one, or two digits (so, for example, \xz matches a
    *!     binary zero character followed by z).
    *! @endol
+   *!
+   *! @note
+   *!   This symbol is not present in all versions of PCRE2. It was
+   *!   added in PCRE2 10.32.
    */
-  add_integer_constant("ALT_BSUX",PCRE2_ALT_BSUX,0);
+  add_integer_constant("ALT_BSUX",PCRE2_ALT_BSUX,
+                       ID_OPTIONAL);
+#endif
 
   /*! @decl constant ALT_CIRCUMFLEX
    *! (from the pcre2api manpage) In multiline mode (when @[MULTILINE]
@@ -839,8 +853,8 @@ PIKE_MODULE_INIT
    *! ordinary "[...]" character classes.
    *!
    *! @note
-   *!   This symbol is not present in all versions of PCRE2. It is
-   *!   known to not be present in PCRE2 10.42 and present in 10.47.
+   *!   This symbol is not present in all versions of PCRE2. It was
+   *!   added in PCRE2 10.45.
    */
   add_integer_constant("ALT_EXTENDED_CLASS",PCRE2_ALT_EXTENDED_CLASS,
                        ID_OPTIONAL);
@@ -966,7 +980,8 @@ PIKE_MODULE_INIT
    */
   add_integer_constant("FIRSTLINE",PCRE2_FIRSTLINE,0);
 
-  /*! @decl constant LITERAL
+#ifdef PCRE2_LITERAL
+  /*! @decl optional constant LITERAL
    *! (from the pcre2api manpage) If this option is set, all
    *! meta-characters in the pattern are disabled, and it is
    *! treated as a literal string. Matching literal strings with
@@ -974,8 +989,14 @@ PIKE_MODULE_INIT
    *!of doing it. If you are doing a lot of literal matching and
    *! are worried about efficiency, you should consider
    *! using other approaches.
+   *!
+   *! @note
+   *!   This symbol is not present in all versions of PCRE2. It was
+   *!   added in PCRE2 10.30.
    */
-  add_integer_constant("LITERAL",PCRE2_LITERAL,0);
+  add_integer_constant("LITERAL",PCRE2_LITERAL,
+                       ID_OPTIONAL);
+#endif
 
 #ifdef PCRE2_MATCH_INVALID_UTF
   /*! @decl optional constant MATCH_INVALID_UTF
