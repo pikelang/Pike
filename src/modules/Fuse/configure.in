@@ -58,6 +58,10 @@ else
         ])
       fi
     ])
+
+    if test x$ac_cv_header_fuse_h = xyes ; then
+        AC_CHECK_HEADERS(sys/statfs.h sys/statvfs.h sys/mount.h sys/param.h)
+    fi
   else
     AC_MSG_RESULT(no)
   fi
