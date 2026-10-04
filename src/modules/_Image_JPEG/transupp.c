@@ -12,6 +12,9 @@
 #undef HAVE_JPEGLIB_H
 #endif
 
+/* Needed for FILE and size_t. */
+#include <stdio.h>
+
 #ifdef HAVE_JPEGLIB_H
 
 /*
@@ -35,18 +38,7 @@
  *         of internals, and added inclusion of jerror.h
  */
 
-#define FILE void
-#define size_t unsigned int
 /* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */
-#if 0
-#ifdef INT16
-#undef INT16
-#endif /* INT16 */
-#ifdef INT32
-#undef INT32
-#endif
-#endif /* 0 */
-
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
 
 /* FAR is defined by windef.h and jmorecfg.h */
