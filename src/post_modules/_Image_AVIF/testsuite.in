@@ -15,6 +15,8 @@ cond_resolv( Image.AVIF.encode, [[
   test_true( stringp(avif_enc) )
 ]])
 
+cond_resolv( Image.AVIF.encode, [[
+
 cond_resolv( Image.AVIF.decode, [[
 
   test_true( objectp(Image.AVIF.decode(avif_enc)) )
@@ -26,6 +28,8 @@ cond_resolv( Image.AVIF.decode, [[
   test_equal( Image.AVIF._decode(avif_enc)->xsize, 8 )
   test_equal( Image.AVIF._decode(avif_enc)->ysize, 8 )
   test_true( objectp(Image.AVIF._decode(avif_enc)->image) )
+
+]])
 
 ]])
 
