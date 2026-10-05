@@ -236,7 +236,8 @@ PMOD_EXPORT void o_cast_to_int(void)
          mantissa of FLOAT_TYPE.  Use MAX_INT_TYPE+1 instead to get a
          power of two (zero mantissa bits needed).  This works because
          if f is e.g. MAX_INT_TYPE+0.9 it gets rounded down anyway.  */
-      if (UNLIKELY(f >= 1+(unsigned INT_TYPE)MAX_INT_TYPE || f < MIN_INT_TYPE)) {
+      if (UNLIKELY(f >= 1+(unsigned INT_TYPE)MAX_INT_TYPE ||
+                   f < MIN_INT_TYPE)) {
         convert_stack_top_to_bignum();
       } else {
         SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer, f);

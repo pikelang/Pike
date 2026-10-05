@@ -1,4 +1,4 @@
-/* -*- mode: C; c-basic.offset: 4; -*-
+/* -*- mode: C; c-basic-offset: 4; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -508,6 +508,7 @@ PIKECLASS _Instance {
 
     static int got_inotify_event(struct fd_callback_box *box, int UNUSED(event))
     {
+        /* FIXME: Check if ref_obj is destructed. */
 	apply(box->ref_obj, "poll", 0);
 	pop_stack();
 	return 0;
