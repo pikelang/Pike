@@ -94,6 +94,9 @@
 #ifdef HAVE_MACH_TASK_INFO_H
 #include <mach/task_info.h>
 #endif
+#ifdef HAVE_MACH_MESSAGE_H
+#include <mach/message.h>
+#endif
 #ifdef HAVE_MACH_TASK_H
 #include <mach/task.h>
 #endif
