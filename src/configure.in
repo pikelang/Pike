@@ -3171,7 +3171,8 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
                  sys/sendfile.h utime.h sys/utime.h \
                  rctl.h xmath.h ymath.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
-		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
+                 sys/prctl.h sys/ioctl.h \
+                 mach/message.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 direct.h CoreServices/CoreServices.h execinfo.h \
 		 mach/mach.h mach/thread_act.h mach/clock.h \
@@ -8319,7 +8320,7 @@ if test -z "$LDSHARED" ; then
     next*) LDSHARED="$REALCC $CFLAGS -nostdlib -r";;
     Linux*) LDSHARED="$REALCC -shared";;
     GNU/kFreeBSD*) LDSHARED="$REALCC -shared";;
-    GNU*) LDSHARED="$REALCC -Wl,-Bshareable";;
+    GNU*) LDSHARED="$REALCC -shared";;
     FreeBSD*) LDSHARED="$REALCC -shared";;
     NetBSD*) LDSHARED="$REALCC -shared";;
     OpenBSD*) LDSHARED="$REALCC -shared";;
