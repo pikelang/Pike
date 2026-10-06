@@ -86,8 +86,6 @@ cond_resolv( Image.AVIF.decode, [[
 
 cond_resolv( Image.AVIF.encode, [[
 
-cond_resolv( Image.AVIF.encode, [[
-
     test_do( add_constant("avif_q_worst",
       Image.AVIF.encode(avif_src, avif_fast | (["quality": Image.AVIF.QUALITY_WORST]))) )
     test_true( stringp(avif_q_worst) )
@@ -141,8 +139,6 @@ cond_resolv( Image.AVIF.encode, [[
     test_true( objectp(Image.AVIF._decode(avif_a_enc)->alpha) )
     test_do( add_constant("avif_a_src") )
     test_do( add_constant("avif_a_enc") )
-
-]])
 
 ]])
 
