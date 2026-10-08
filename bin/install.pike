@@ -1230,6 +1230,7 @@ string fakeroot(string s)
 				   vars->MANDIR_SRC,
 				   vars->DOCDIR_SRC,
 				   vars->TMP_LIBDIR,
+                                   vars->SITE_PREFIX,
 				   vars->fakeroot,
 				 }) - ({ 0 }),regquote)));
   }
@@ -2195,6 +2196,7 @@ class InstallHandler(mapping vars, string prefix) {
 			  "#include_prefix#",
 			  "#share_prefix#",
 			  "#doc_prefix#",
+                          "#site_prefix#",
 			  "#cflags#",
 			  "#ldflags#",
 			}), ({
@@ -2202,6 +2204,8 @@ class InstallHandler(mapping vars, string prefix) {
 			  replace(include_prefix,"\\","\\\\"),
 			  replace(share_prefix||"#share_prefix#", "\\", "\\\\"),
 			  replace(doc_prefix||"#doc_prefix#", "\\", "\\\\"),
+                          replace(vars->SITE_PREFIX||"#site_prefix#",
+                                  "\\", "\\\\"),
 			  replace(cflags||"", "\\", "\\\\"),
 			  replace(ldflags||"", "\\", "\\\\"),
 			}));
@@ -2299,6 +2303,7 @@ class InstallHandler(mapping vars, string prefix) {
 		       vars->TMP_BINDIR,
 		       vars->MANDIR_SRC,
 		       vars->DOCDIR_SRC,
+                       vars->SITE_PREFIX,
 		       vars->TMP_LIBDIR,
 		       vars->BASEDIR,
 		       vars->fakeroot,
