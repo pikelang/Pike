@@ -2624,6 +2624,12 @@ protected void create()
   doc_prefix = "#doc_prefix#";
 #endif
 
+#if "#site_prefix#"[0]!='#'
+  // Add path for site-local files.
+  add_include_path("#site_prefix#/include");
+  add_module_path("#site_prefix#/include");
+#endif
+
 #if constant(__embedded_resource_directory)
   // for use with embedded interpreters
   // add path for architecture-dependant files
