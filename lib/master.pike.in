@@ -2580,10 +2580,10 @@ protected void create()
   doc_prefix = "#doc_prefix#";
 #endif
 
-#if "#site_prefix#"[0]!='#'
+#if "#local_prefix#"[0]!='#'
   // Add path for site-local files.
-  add_include_path("#site_prefix#/include");
-  add_module_path("#site_prefix#/include");
+  add_include_path("#local_prefix#/include");
+  add_module_path("#local_prefix#/module");
 #endif
 
 #if constant(__embedded_resource_directory)

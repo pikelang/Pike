@@ -1230,7 +1230,7 @@ string fakeroot(string s)
 				   vars->MANDIR_SRC,
 				   vars->DOCDIR_SRC,
 				   vars->TMP_LIBDIR,
-                                   vars->SITE_PREFIX,
+                                   vars->LOCAL_PREFIX,
 				   vars->fakeroot,
 				 }) - ({ 0 }),regquote)));
   }
@@ -2196,7 +2196,7 @@ class InstallHandler(mapping vars, string prefix) {
 			  "#include_prefix#",
 			  "#share_prefix#",
 			  "#doc_prefix#",
-                          "#site_prefix#",
+                          "#local_prefix#",
 			  "#cflags#",
 			  "#ldflags#",
 			}), ({
@@ -2204,7 +2204,7 @@ class InstallHandler(mapping vars, string prefix) {
 			  replace(include_prefix,"\\","\\\\"),
 			  replace(share_prefix||"#share_prefix#", "\\", "\\\\"),
 			  replace(doc_prefix||"#doc_prefix#", "\\", "\\\\"),
-                          replace(vars->SITE_PREFIX||"#site_prefix#",
+                          replace(vars->LOCAL_PREFIX||"#local_prefix#",
                                   "\\", "\\\\"),
 			  replace(cflags||"", "\\", "\\\\"),
 			  replace(ldflags||"", "\\", "\\\\"),
@@ -2303,7 +2303,7 @@ class InstallHandler(mapping vars, string prefix) {
 		       vars->TMP_BINDIR,
 		       vars->MANDIR_SRC,
 		       vars->DOCDIR_SRC,
-                       vars->SITE_PREFIX,
+                       vars->LOCAL_PREFIX,
 		       vars->TMP_LIBDIR,
 		       vars->BASEDIR,
 		       vars->fakeroot,
@@ -4323,6 +4323,11 @@ int main(int argc, array(string) argv)
   foreach(argv[1..], string foo)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
+
+  // Ignore some variables if they are set to empty.
+  foreach(({ "LOCAL_PREFIX", }), string var) {
+    if (vars[var] == "") m_delete(vars, var);
+  }
 
   if(vars->BASEDIR) {
     if(vars->BASEDIR[-1]!='/') vars->BASEDIR += "/";
