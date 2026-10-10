@@ -62,6 +62,14 @@ Fix your permissions.
 ])
 fi
 
+PIKE_MAJOR_VERSION="`awk '/PIKE_MAJOR_VERSION/ { print $3; exit; }' <\"$srcdir/version.h\"`"
+PIKE_MINOR_VERSION="`awk '/PIKE_MINOR_VERSION/ { print $3; exit; }' <\"$srcdir/version.h\"`"
+PIKE_BUILD_VERSION="`awk '/PIKE_BUILD_VERSION/ { print $3; exit; }' <\"$srcdir/version.h\"`"
+
+echo
+echo "Configuring Pike v$PIKE_MAJOR_VERSION.$PIKE_MINOR_VERSION.$PIKE_BUILD_VERSION..."
+echo
+
 AC_PROG_MAKE_SET
 
 rm -f "conftest_VPATH.in" 2>/dev/null
@@ -1034,6 +1042,17 @@ MY_AC_ARG_WITH(relocatable_dumped_modules,
 	       MY_DESCR([--with-relocatable-dumped-modules],
 			[make dumped modules relocatable]),
 	       [with_relocatable_dumped_modules=yes])
+local_prefix=""
+AC_ARG_WITH(local_prefix,
+            MY_DESCR([--with-local-prefix],
+                     [add a site local specific directory to the search path]),
+            [if test "x$withval" = "xyes"; then
+                 # Default to .../share/pike/maj.min
+                 local_prefix="$datarootdir/pike/$PIKE_MAJOR_VERSION.$PIKE_MINOR_VERSION"
+             else
+                 local_prefix="$withval"
+             fi])
+AC_SUBST(local_prefix)
 AC_ARG_WITH(dynamic_modules, MY_DESCR([--without-dynamic-modules],
 				      [link modules statically]))
 MY_AC_ARG_WITH(static_linking, MY_DESCR([--with-static-linking],
