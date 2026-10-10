@@ -58,6 +58,7 @@ data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
 man_prefix = @mandir@
 include_prefix = @includedir@/pike
+local_prefix = @local_prefix@
 
 # Arguments for test_pike.pike used by the verify targets.
 TESTARGS_NOFORK = -a -a$(SRCDIR) -a$(LIBDIR_SRC) -v
@@ -695,7 +696,7 @@ install: pike-complete-stamp
 	include_prefix="$(include_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
-	MANDIR_SRC="$(MANDIR_SRC)" \
+	MANDIR_SRC="$(MANDIR_SRC)" LOCAL_PREFIX="$(local_prefix)" \
 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
 	cflags="@DYNAMIC_MODULE_FLAGS@" ldflags="" \
@@ -706,7 +707,7 @@ install_interactive: pike-complete-stamp
 	exec_prefix="$(bindir)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
-	MANDIR_SRC="$(MANDIR_SRC)" \
+	MANDIR_SRC="$(MANDIR_SRC)" LOCAL_PREFIX="$(local_prefix)" \
 	cflags="@DYNAMIC_MODULE_FLAGS@" ldflags="" \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
