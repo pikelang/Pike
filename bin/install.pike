@@ -483,7 +483,7 @@ string|zero wix_version;
 #endif
 
 int last_len;
-int redump_all;
+int redump_all; // 1: Redump all modules. -1: Dump no modules.
 string pike;
 
 int no_gui;
@@ -2245,6 +2245,8 @@ class InstallHandler(mapping vars, string prefix) {
   // dump modules (and master)
   void dump_modules()
   {
+    if (redump_all < 0) return;
+
     string master=combine_path(lib_prefix,"master.pike");
     Stdio.Stat s1=file_stat(master);
     Stdio.Stat s2=file_stat(master+".o");
@@ -2437,9 +2439,10 @@ class InstallHandler(mapping vars, string prefix) {
 
 	do_install_master(combine_path(vars->LIBDIR_SRC,"master.pike.in"));
 	do_install_aux();
-	
-	install_dir(vars->TMP_LIBDIR,lib_prefix,1);
-	install_dir(vars->LIBDIR_SRC,lib_prefix,1);
+
+        int dump = (redump_all > -1);
+        install_dir(vars->TMP_LIBDIR, lib_prefix, dump);
+        install_dir(vars->LIBDIR_SRC, lib_prefix, dump);
 
 	install_header_files(vars->SRCDIR,include_prefix);
 	install_header_files(combine_path(vars->SRCDIR,"code"),
@@ -2632,14 +2635,14 @@ class InstallHandler(mapping vars, string prefix) {
       f->close();
       status("Finalizing",pike_bin_file,"done");
       if(install_file(pike_bin_file,pike,0755)) {
-	redump_all=1;
+        redump_all |= 1;
       }
       rm(pike_bin_file);
     }
     else {
       error_msg ("Warning! Failed to finalize master location!\n");
       if(install_file(pike_bin_file,pike,0755)) {
-	redump_all=1;
+        redump_all |= 1;
       }
     }
   }
@@ -4238,6 +4241,7 @@ int main(int argc, array(string) argv)
     ({"--finalize",Getopt.NO_ARG,({"--finalize"})}),
     ({"--install-master",Getopt.NO_ARG,({"--install-master"})}),
     ({"no-autodoc",Getopt.NO_ARG,({"--no-autodoc","--no-refdoc"})}),
+    ({"no-dump",Getopt.NO_ARG,({"--no-dump"})}),
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
     ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
@@ -4258,6 +4262,10 @@ int main(int argc, array(string) argv)
 	  no_autodoc = 1;
 	  break;
 
+        case "no-dump":
+          redump_all = -1;
+          break;
+
 	case "no-gui":
 	  no_gui=1;
 	  break;
@@ -4275,7 +4283,7 @@ int main(int argc, array(string) argv)
 	  break;
 
         case "--redump-all":
-	  redump_all = 1;
+          redump_all |= 1;
 	  break;
 
 	  // The following two are used to install the right dlls for
