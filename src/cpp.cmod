@@ -1909,7 +1909,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
       size_t limit = (size_t)~0;
 
       ref_push_string(filename);
-      if (!safe_apply_current(f_CPP_read_include_fun_num, 1) ||
+      if (!safe_apply_current2(f_CPP_read_include_fun_num, 1, "NULL") ||
           !((1<<TYPEOF(Pike_sp[-1])) & (BIT_STRING|BIT_INT))) {
         cpp_handle_exception (this, "Couldn't read include file.");
         push_empty_string();
@@ -1925,7 +1925,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
       if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
         ref_push_string(sval->u.string);
 
-        if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+        if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
             (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
           cpp_error(this, "Invalid encoding for embedded file.\n");
           push_empty_string();
@@ -2431,7 +2431,7 @@ static void cpp_constant(struct CPP_struct *this, int value)
     /* Handle constant(.foo) */
     push_static_text("");
 
-    if (safe_apply_current(f_CPP_handle_import_fun_num, 1) &&
+    if (safe_apply_current2(f_CPP_handle_import_fun_num, 1, "NULL") &&
 	((1<<TYPEOF(Pike_sp[-1])) & (BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))) {
       res = !(SAFE_IS_ZERO(Pike_sp-1) && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED);
     } else {
@@ -3256,7 +3256,7 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
 
     push_static_text("ebcdic-us");
 
-    if (safe_apply_current(f_CPP_decode_charset_fun_num, 2) &&
+    if (safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") &&
 	(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
       /* Various consistency checks. */
       if ((Pike_sp[-1].u.string->size_shift) ||
@@ -3328,7 +3328,7 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
 
     /* Decode the string */
 
-    if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+    if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
 	(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
       cpp_handle_exception (this, "Error decoding with charset %pS", new_str);
       free_string (new_str);
@@ -5540,7 +5540,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                     ref_push_string(new_file);
 
-                    if (!safe_apply_current(f_CPP_read_include_fun_num, 1) ||
+                    if (!safe_apply_current2(f_CPP_read_include_fun_num, 1, "NULL") ||
 			 !((1<<TYPEOF(Pike_sp[-1])) & (BIT_STRING|BIT_INT))) {
                       cpp_handle_exception (this, "Couldn't read include file.");
                       pop_n_elems(Pike_sp-save_sp);
@@ -5580,7 +5580,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                           Pike_sp[-1].u.string = new_str;
                         } else if (charset) {
                           ref_push_string(charset);
-                          if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+                          if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
 			      (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
                             cpp_handle_exception (this,
                                                   "Charset decoding failed for included file.");
@@ -5921,7 +5921,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   /* The charset name */
                   push_string( make_shared_binary_pcharp( ADD_PCHARP(data,p),pos-p));
 
-                  if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+                  if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
 		      (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
                     cpp_handle_exception (this, NULL);
                   } else {
