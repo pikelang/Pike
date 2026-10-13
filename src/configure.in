@@ -2955,7 +2955,7 @@ EOF
       else
 	AC_TRY_RUN([
 #include "y.tab.c"
-],pure_parser_works=yes,pure_parser_works=no,pure_parser_works=no)
+],pure_parser_works=yes,pure_parser_works=no,pure_parser_works=yes)
 	rm -f y.tab.*
 	if test "$pure_parser_works" = "yes"; then
 	  break
@@ -6109,7 +6109,11 @@ int main(int argc, char *argv[])
     ],
       pike_cv_hardware_alignment=`cat conftest.out.2`,
       pike_cv_hardware_alignment=4,
-      pike_cv_hardware_alignment=4
+      if test "x$with_abi" = "x64"; then
+          pike_cv_hardware_alignment=8
+      else
+          pike_cv_hardware_alignment=4
+      fi
     )
   fi
 ])
@@ -6322,7 +6326,7 @@ AC_SUBST(PAXCTL_ALLOW_MPROTECT)
 
 ########################################################################
 
-AC_MSG_CHECKING([for the RDTSC instruction (x86)])
+AC_MSG_CHECKING([for the RDTSC instruction (x86 and amd64)])
 AC_CACHE_VAL(pike_cv_have_rdtsc, [
 AC_TRY_RUN([
 
@@ -6338,7 +6342,7 @@ static long long rdtsc(void)
 #else
    __asm__ __volatile__ ("rdtsc" :"=a" (l), "=d" (h));
 #endif
-   return (((long long)h)<<32)|l;
+   return (((long long)h)<][<32)|l;
 }
 
 int main(void)
@@ -8614,7 +8618,8 @@ __attribute__ ((visibility("default")))
 __declspec(dllexport)
 #endif
 void testfunc2(void) { exit(0); }
-], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
+],  pike_cv_sys_dynamic_loading=yes,  pike_cv_sys_dynamic_loading=no,
+    pike_cv_sys_dynamic_loading=yes)
     CFLAGS="$OLD_CFLAGS"
     CC="$OLD_CC"
   else
