@@ -1,388 +1,573 @@
 <chapter title="Pike Test Suite">
 
-  <p><fixme>The goals of the test suite and an overview of it</fixme></p>
+  <p>
+    The test suite is used to check the compiler, interpreter and
+    standard modules. It detects regressions, exercises error handling
+    and boundary cases, and helps find problems that depend on the
+    operating system, available libraries or build configuration.
+    Tests should be added when introducing a feature or fixing a bug,
+    and should typically be kept near the code they exercise.
+  </p>
 
-<section title="Running Tests">
+  <p>
+    Most tests are written in <tt>testsuite.in</tt> files in the
+    <tt>src/</tt> and <tt>lib/</tt> trees. These files are processed
+    with an m4 script <tt>bin/mktestsuite</tt> that expands their macros
+    into files named <tt>testsuite</tt>, which are then executed one test
+    at a time by <ref>Tools.Standalone.test_pike</ref>. Larger tests may
+    instead be standalone Pike scripts with a <tt>.test</tt> suffix.
+    Such files are useful for tests involving callbacks, processes
+    or an event loop.
+  </p>
 
-  <p>The most common way of running tests from the test suite is to
-  use the top level make target <tt>verify</tt> which installs a test
-  Pike in the build directory and use it while running the entire test
-  suite. The following test-related make targets are defined in the top
-  level make file.</p>
-
-  <dl>
-
-  <dt>tinstall</dt>
-  <dd>Makes and installs a test Pike binary in the build directory. If
-  a test Pike binary was already installed, it will first be
-  removed.</dd>
-
-  <dt>just_verify</dt>
-  <dd>Runs the test suite with the flags "<tt>-F -a -v</tt>", without
-  installing a new test Pike binary.</dd>
-
-  <dt>testsuites</dt>
-  <dd>Creates testsuite files in the build tree from the
-  testsuite.in-files in the src/ and lib/ trees.</dd>
-
-  <dt>verify</dt>
-  <dd>Runs the <tt>testsuites</tt>, <tt>tinstall</tt> and
-  <tt>just_verify</tt> targets.</dd>
-
-  <dt>verify_installed</dt>
-  <dd>Runs the test suit with the flags "<tt>-F -a -v</tt>", with the
-  Pike binary installed on the system.</dd>
-
-  <dt>check</dt>
-  <dd>Alias for the <tt>verify</tt> make target.</dd>
-
-  <dt>sure</dt>
-  <dd>Alias for the <tt>verify</tt> make target.</dd>
-
-  <dt>verbose_verify</dt>
-  <dd>Runs the <tt>tinstall</tt> make target and then runs the test
-  suite with the flags "<tt>-F -v -v -a</tt>".</dd>
-
-  <dt>gdb_verify</dt>
-  <dd>Runs the test suite inside of gdb. The test suite is started
-  with the flags "<tt>-F -v -v -a</tt>".</dd>
-
-  <dt>valgrind_verify</dt>
-  <dd>Runs the test suite inside of valgrind. The test suite is
-  started with the flags "<tt>-F -v -a</tt>".</dd>
-
-  <dt>valgrind_just_verify</dt>
-  <dd>Runs the test suite inside of valgrind, without installing a
-  test pike. The test suite is started with the flags "<tt>-F -v
-  -a</tt>".</dd>
-
-  </dl>
-
-  <p>It is possible to alter the flags given to the
-  <tt>test_install</tt> program by using the <tt>TESTARGS</tt> make
-  variable.</p>
+  <section title="Running Tests">
+    <p>
+      From the source tree's top directory, the usual command is:
+    </p>
 
 <example>
-make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
+make verify
 </example>
 
-<subsection title="The Test Program">
+    <p>
+      This generates the test suites, builds a test installation and runs
+      it. Use <tt>BUILDDIR</tt> to select a particular build configuration
+      when needed. The principal test-related make targets are:
+    </p>
 
-  <p>The actual testing is done by the program
-  <tt>bin/test_pike.pike</tt>, which can be run as a stand alone
-  application to test any Pike binary with any test suite or test
-  suites. The Pike binary that executes the test program will be
-  tested, and it will be tested with the test suites provided as
-  arguments to the test program.</p>
+    <dl>
+      <dt><tt>testsuites</tt></dt>
+      <dd>Generate tests from <tt>testsuite.in</tt> files, including the
+        compiler and interpreter suite, native modules and Pike modules.</dd>
+      <dt><tt>tinstall</tt></dt>
+      <dd>Build a test installation in the build directory, replacing the
+        previous test installation.</dd>
+      <dt><tt>verify</tt></dt>
+      <dd>Generate suites, make the test installation and run its tests.
+        This also exercises the installation layout.</dd>
+      <dt><tt>just_verify</tt></dt>
+      <dd>Generate suites and run the Pike in the build tree without
+        making a new test installation.</dd>
+      <dt><tt>verify_installed</tt></dt>
+      <dd>Generate suites and test the Pike installed in the configured
+        installation directory instead of the build-tree interpreter.</dd>
+      <dt><tt>check</tt>, <tt>sure</tt></dt>
+      <dd>Aliases for <tt>verify</tt>.</dd>
+      <dt><tt>verbose_verify</tt></dt>
+      <dd>Run the build-tree tests with additional verbosity.</dd>
+      <dt><tt>gdb_verify</tt></dt>
+      <dd>Run the build-tree test runner under gdb.</dd>
+      <dt><tt>valgrind_verify</tt>, <tt>valgrind_just_verify</tt></dt>
+      <dd>Run the test installation or build-tree interpreter under
+        Valgrind. Use <tt>VALGRINDARGS</tt> for Valgrind options.</dd>
+    </dl>
+
+    <p>
+      <tt>TESTARGS</tt> supplies arguments to the
+      <ref>Tools.Standalone.test_pike</ref> test runner, not to the
+      installation program. It replaces the default arguments rather than
+      adding to them. The defaults normally run each suite in a separate
+      process and discover suites in the build tree and script tests in
+      the source trees. Include the discovery options or explicit suite
+      paths you need when overriding them. For example, to run only the core
+      suite with detailed diagnostics:
+    </p>
 
 <example>
-/home/visbur/Pike/7.2/bin/pike bin/test_pike.pike testsuite1 testsuite2
+make just_verify TESTARGS="-v3 -f testsuite"
 </example>
 
-  <p>The individual testsuite files are generated from testsuite.in files
-  scattered about the lib/ and src/ trees. When you run the make targets
-  described above, those are made for you automagically, but to do it by hand
-  (i e if you added a test to one of them), cd to the top directory and run</p>
+    <p>
+      The make recipes run the test suite from the build directory, so
+      relative paths in <tt>TESTARGS</tt> are relative to that directory.
+      Generated native-module suites are under <tt>modules/</tt> and
+      <tt>post_modules/</tt>; suites from <tt>lib/</tt> are under
+      <tt>tlib/</tt>.
+    </p>
+
+    <subsection title="Running an individual suite">
+      <p>
+        <tt>pike -x test_pike</tt> runs tests using the interpreter that
+        executes the command. To test an uninstalled build, use the
+        <tt>bin/pike</tt> script, which selects its master and module paths.
+        Replace <tt>arch</tt> below with the actual build-directory name:
+      </p>
 
 <example>
 make testsuites
+bin/pike -x test_pike -v3 build/arch/testsuite
+pike -x test_pike -v3 lib/modules/Protocols.pmod/WebSocket.test
 </example>
 
-  <p>The testsuite files have now appeared in build/<i>arch</i> in
-  locations corresponding to where they lived in the pike tree, except
-  those from the lib/ hierarchy; those end up in
-  build/<i>arch</i>/tlib.</p>
+      <p>
+        The last command tests the installed Pike, including its modules.
+        Generated macro suites must have the basename <tt>testsuite</tt>;
+        the runner does not accept arbitrary names for that format.
+        <tt>bin/test_pike.pike</tt> is a compatibility entry point for the
+        standalone tool. Use <tt>pike -x test_pike --help</tt> to inspect
+        the options provided by the interpreter being tested.
+      </p>
+    </subsection>
 
-  <p>The test_pike.pike program takes the following attributes.</p>
+    <subsection title="Runner options">
+      <dl>
+        <dt>-a, --auto[=directory]</dt>
+        <dd>Discover files named <tt>testsuite</tt> and files ending in
+          <tt>.test</tt> recursively. The default directory to search
+          is the current directory. Repeat the option to search several trees.
+          Presence of the file <tt>no_testsuites</tt> excludes its containing
+          directory and its descendants.</dd>
+        <dt>-v[level], --verbose[=level]</dt>
+        <dd>Increase verbosity. Level 1 shows progress, level 2 identifies
+          cases and skipped conditions, level 3 prints test source, level
+          4 also reports timings, and level 10 prints the final source
+          including the runner's wrappers. Repeated verbosity options
+          add their levels.</dd>
+        <dt>-sN, --start-test=N</dt>
+        <dd>Start at the one-based test number N in each suite. Earlier
+          setup tests are not executed.</dd>
+        <dt>-eN, --end-after=N</dt>
+        <dd>Stop after the completed-test counter exceeds N. The current
+          runner checks after execution, so <tt>-e0</tt> runs one case
+          and <tt>-e1</tt> can run two.</dd>
+        <dt>-f, --fail</dt>
+        <dd>Stop after the first failed test.</dd>
+        <dt>-F, --forked</dt>
+        <dd>Run each suite in a separate subprocess, isolating its
+          interpreter state from other suites.</dd>
+        <dt>-lN, --loop=N</dt>
+        <dd>Repeat the suites N times; the default is one pass.</dd>
+        <dt>-p, --prompt</dt>
+        <dd>Ask before executing each test.</dd>
+        <dt>-tN, --trace=N</dt>
+        <dd>Enable Pike tracing at the requested level.</dd>
+        <dt>-c[level], --check[=level]</dt>
+        <dd>Enable interpreter consistency checks when supported by the
+          build. Positive levels add checks before tests; higher levels
+          add checks around compilation and execution. Level 4 also
+          forces garbage collection before tests. A negative level checks
+          periodically instead.</dd>
+        <dt>-m, --mem, --memory</dt>
+        <dd>Report memory allocations after the tests.</dd>
+        <dt>-S, --omit-slow-tests</dt>
+        <dd>This causes the symbol <tt>OMIT_SLOW_TESTS</tt> to be #defined,
+          allowing tests that take time to detect slow machines and reduce
+          work-load.</dd>
+        <dt>--failed-cond, --failed-conditionals</dt>
+        <dd>Print conditions that caused tests to be skipped.</dd>
+        <dt>-T, --notty</dt>
+        <dd>Use output suitable for a log rather than an interactive
+          terminal.</dd>
+        <dt>--subproc-start=command</dt>
+        <dd>Prefix subprocess commands, for example when running child
+          interpreters under Valgrind.</dd>
+        <dt>--no-watchdog</dt>
+        <dd>Disable timeout monitoring. Normally the watchdog interrupts
+          an unresponsive test after ten minutes, or forty minutes in a
+          dmalloc build. Disable it only when needed for investigation,
+          such as when running in a debugger.</dd>
+        <dt>--watchdog=pid</dt>
+        <dd>Run the watchdog process for a specified process. This option
+          is normally used internally by the runner.</dd>
+        <dt>-d, --debug</dt>
+        <dd>Open a debug port when supported by the build.</dd>
+        <dt>-h, --help</dt>
+        <dd>List the runner's available options.</dd>
+      </dl>
 
-  <dl>
+<example>
+bin/pike -x test_pike -v3 -f -s12 -e0 build/arch/testsuite
+bin/pike -x test_pike -F --auto=lib/modules
+</example>
 
-  <dt>-h, --help</dt>
-  <dd>Displays a help message listing all possible arguments.</dd>
+      <p>
+        A nonzero exit status indicates failure. Failed tests typically
+        output the failed test's testsuite filename and line number and
+        the actual and expected values. The summary also reports skipped
+        tests; these are tests for which the preconditionals failed (like
+        eg missing a module or the wrong OS).
+      </p>
+    </subsection>
+  </section>
 
-  <dt>-a, --auto</dt>
-  <dd>Let the test program find the testsuits self. It will search for
-  files named <tt>testsuite</tt> or <tt>module_testsuite</tt> in the
-  current working directory and all subdirectories.</dd>
+  <section title="Writing New Tests">
+    <p>
+      Put a small, self-contained regression test in the suite nearest
+      the affected code or in a testsuite that already covers that
+      subsystem. A test suite should aim to cover common inputs, defaults,
+      empty values, limits, invalid arguments and cleanup after errors.
+      Use deterministic inputs and local resources; avoid depending on
+      an external server or exact wall-clock timing.
+    </p>
 
-  <dt>--no-watchdog</dt>
-  <dd>Normally the the test program has a watchdog activated that
-  aborts testing if a test takes more than 20 minutes to complete (or
-  80 minutes if Pike is compiled with dmalloc). With this argument the
-  watchdog will not be used.</dd>
+    <subsection title="A complete testsuite.in example">
+      <p>
+        A macro suite is delimited by <tt>START_MARKER</tt> and
+        <tt>END_MARKER</tt>. Use m4 quoting, <tt>[[</tt> and <tt>]]</tt>,
+        around code containing commas or other macro syntax. For example,
+        save the following as <tt>/tmp/pike-example/testsuite.in</tt>:
+      </p>
 
-  <dt>--watchdog=pid</dt>
-  <dd>Run only the watchdog and monitor the process with the given pid.</dd>
+<example>
+START_MARKER
 
-  <dt>-v[level], --verbose[=level]</dt>
-
-  <dd>Select the level of verbosity. Every verbose level includes the
-  printouts from the levels below.
-  <matrix>
-  <r><c>0</c><c>No extra printouts.</c></r>
-  <r><c>1</c><c>Some additional information printed out after every
-                finished block of tests.</c></r>
-  <r><c>2</c><c>Some extra information about test that will or won't be
-                run.</c></r>
-  <r><c>3</c><c>Every test is printed out.</c></r>
-  <r><c>4</c><c>Time spent in individual tests are printed out.</c></r>
-  <r><c>10</c><c>The actual pike code compiled, including wrappers, is
-                 printed. Note that the code will be quoted.</c></r>
-  </matrix>
-
-<pre>
-$ pike bin/test_pike.pike -v1 testsuite 
-Doing tests in testsuite (1 tests)
-Total tests: 1  (0 tests skipped)       
-</pre>
-
-<pre>
-$ pike bin/test_pike.pike -v2 testsuite
-Doing tests in testsuite (1 tests)
-Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
-Failed tests: 0.                        
-Total tests: 1  (0 tests skipped)
-</pre>
-
-<pre>
-$ pike bin/test_pike.pike -v4 testsuite 
-Doing tests in testsuite (1 tests)
-Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
-  0: mixed a() { 
-  1:   object s = ADT.Stack();
-  2:   s-&gt;push(1);
-  3:   return s-&gt;pop();
-  4: ; }
-  5: mixed b() { return 1; }
-
-Time in a(): 0.000, Time in b(): 0.000000
-Failed tests: 0.                        
-Total tests: 1  (0 tests skipped)
-</pre>
-
-<pre>
-$ pike bin/test_pike.pike -v10 testsuite 
-Doing tests in testsuite (1 tests)
-Doing test 1 (1 total) at /home/nilsson/Pike/7.3/lib/modules/ADT.pmod/testsuite.in:9
-  0: mixed a() { 
-  1:   object s = ADT.Stack();
-  2:   s-&gt;push(1);
-  3:   return s-&gt;pop();
-  4: ; }
-  5: mixed b() { return 1; }
-
-  0: mixed a() { 
-  1:   object s = ADT.Stack();
-  2:   s-&gt;push(1);
-  3:   return s-&gt;pop();
-  4: ; }
-  5: mixed b() { return 1; }
-  6: int __cpp_line=__LINE__; int __rtl_line=[int]backtrace()[-1][1];
-  7: 
-  8: int \30306\30271\30310=0;
-  9: 
-
-Time in a(): 0.000, Time in b(): 0.000000
-Failed tests: 0.                        
-Total tests: 1  (0 tests skipped)
-</pre>
-  </dd>
-
-  <dt>-p, --prompt</dt>
-  <dd>The user will be asked before every test is run.</dd>
-
-  <dt>-sX, --start-test=X</dt>
-  <dd>Where in the testsuite testing should start, e.g. ignores X
-  tests in every testsuite.</dd>
-
-  <dt>-eX, --end-after=X</dt>
-  <dd>How many tests should be run.</dd>
-
-  <dt>-f, --fail</dt>
-  <dd>If set, the test program exits on first failure.</dd>
-
-  <dt>-F, --fork</dt>
-  <dd>If set, each testsuite will run in a separate process.</dd>
-
-  <dt>-lX, --loop=X</dt>
-  <dd>The number of times the testsuite should be run. Default is 1.</dd>
-
-  <dt>-tX, --trace=X</dt>
-  <dd>Run tests with trace level X.</dd>
-
-  <dt>-c[X], --check[=X]</dt>
-  <dd>The level of extra pike consistency checks performed.
-  <matrix>
-  <r><c>1</c><c>_verify_internals is run before every test.</c></r>
-  <r><c>2</c><c>_verify_internals is run after every compilation.</c></r>
-  <r><c>3</c><c>_verify_internals is run after every test.</c></r>
-  <r><c>4</c><c>An extra gc and _verify_internals is run before
-    every test.</c></r>
-  <r><c>X&lt;0</c><c>For values below zero, _verify_internals will be run
-    before every n:th test, where n=abs(X).</c></r>
-  </matrix>
-  </dd>
-
-  <dt>-m, --mem, --memory</dt>
-  <dd>Prints out memory allocations after the tests.</dd>
-
-  <dt>-T, --notty</dt>
-  <dd>Format output for non-tty.</dd>
-
-  <dt>-d, --debug</dt>
-  <dd>Opens a debug port.</dd>
-
-  </dl>
-
-</subsection>
-
-</section>
-
-<section title="Writing New Tests">
-
-  <p>Whenever you write a new function in a module or in Pike itself
-  it is good to add a few test cases in the test suite to ensure that
-  regressions are spotted as soon as they appear or to aid in finding
-  problems when porting Pike to another platform. Since you have
-  written the code, you are the one best suited to come up with tricky
-  tests cases. A good test suite for a function includes both some
-  trivial tests to ensure that the basic functionality works and some
-  nasty tests to test the borderlands of what the function is capable
-  of, e.g. empty in parameters.</p>
-
-  <p>Also, when a bug in Pike has been found, a minimized test case
-  the triggers the bug should also be added to the test suite. After
-  all, this test case has proven to be a useful once.</p>
-
-  <subsection title="test_any">
-    <p>The test_any macro tests if the result of two pike expressions
-    are similar, e.g. if a==b. Technically the actual test preformed
-    is !(a!=b). The first expression should be a complete block, that
-    returns a value, while the other expression should be a simple
-    pike statement.</p>
-    <example>
+test_eq(sizeof("Pike"), 4)
+test_equal([[reverse(({1, 2, 3}))]], [[({3, 2, 1})]])
 test_any([[
-  int f (int i) {i = 0; return i;};
-  return f (1);
-]],0)
-</example>
-  </subsection>
+  array(int) values = ({1, 2, 3});
+  return sizeof(values);
+]], 3)
+test_eval_error([[error("Expected failure.\n");]])
 
-  <subsection title="test_any_equal">
-    <p>The test_any_equal macro tests if the result of two pike
-    expressions are identical, e.g. if equal(a,b). The first
-    expression should be a complete block, that returns a value, while
-    the other expression should be a simple pike statement.</p>
-    <example>
+END_MARKER
+</example>
+
+      <p>
+        From the source tree's top directory, generate and run it with:
+      </p>
+
+<example>
+bin/mktestsuite /tmp/pike-example/testsuite.in &gt; /tmp/pike-example/testsuite
+pike -x test_pike -v3 /tmp/pike-example/testsuite
+</example>
+
+      <p>
+        Normal in-tree tests are generated by <tt>make testsuites</tt>.
+        A generated case contains wrapper functions, usually <tt>a()</tt>
+        for the operation and <tt>b()</tt> for its expected result. Each
+        case is compiled separately. Local variables and declarations in
+        one case therefore do not establish local state for another.
+        If state needs to be passed to later tests <ref>add_constant()</ref>
+        may be used. Note that such symbols must be removed by the time
+        the test suite completes. The expected expression is evaluated
+        too, so keep it simple and independent of the operation being tested.
+      </p>
+    </subsection>
+
+    <subsection title="test_eq and test_any">
+      <p>
+        <tt>test_eq(expression, expected)</tt> compares the two results
+        with <expr>==</expr>. <tt>test_any(code, expected)</tt> performs
+        the same comparison, but its first argument is a function body
+        that must return the result. Use it when setup or several
+        statements are needed. For separate arrays, mappings or multisets,
+        use the deep-comparison variants instead.
+      </p>
+
+<example>
+test_eq(1e1, 10.0)
+test_any([[
+  string text = "hello";
+  return upper_case(text);
+]], "HELLO")
+</example>
+    </subsection>
+
+    <subsection title="test_equal and test_any_equal">
+      <p>
+        These variants compare results with <expr>equal()</expr>, which
+        compares container contents recursively. <tt>test_equal</tt>
+        takes expressions; <tt>test_any_equal</tt> takes a function body
+        followed by an expected expression. Equal contents do not imply
+        that two containers have the same identity.
+      </p>
+
+<example>
+test_equal([[({1, 2}) + ({3})]], [[({1, 2, 3})]])
 test_any_equal([[
-  mixed a=({1,2,3});
-  a[*] += 1;
-  return a;
-]], [[ ({2,3,4}) ]])
+  array(int) values = ({1, 2, 3});
+  return reverse(values);
+]], [[({3, 2, 1})]])
 </example>
-  </subsection>
+    </subsection>
 
-  <subsection title="test_eq">
-    <p>The test_eq macro tests if the result of two pike statements
-    are similar, e.g. if a==b. Technicaly the actual test performed is
-    !(a!=b).</p>
+    <subsection title="test_approx and test_any_approx">
+      <p>
+        These macros compare floating-point results using a tolerance
+        derived from the interpreter's floating-point precision.
+        <tt>test_approx</tt> takes expressions and <tt>test_any_approx</tt>
+        takes a function body and an expected expression. Prefer them to
+        exact equality when rounding differences are expected. They do
+        not accept a caller-specified tolerance; use an explicit bounds
+        check when the algorithm requires one.
+      </p>
+
 <example>
-test_eq(1e1,10.0);
+test_approx(0.1 + 0.2, 0.3)
+test_any_approx([[return 0.1 + 0.2;]], 0.3)
 </example>
-  </subsection>
+    </subsection>
 
-  <subsection title="test_equal">
-    <p>The test_equal macro tests if the result of two pike statements
-    are identical, e.g. if equal(a,b).</p>
-<example>
-test_equal([[ ({10,20})[*] + 30  ]], [[ ({40, 50}) ]])
-</example>
-  </subsection>
+    <subsection title="test_true, test_false and test_do">
+      <p>
+        <tt>test_true(expression)</tt> requires a true result and
+        <tt>test_false(expression)</tt> requires a false result, using
+        Pike's normal truth rules. <tt>test_do(code)</tt> compiles and
+        executes statements; it fails on compilation errors, unexpected
+        warnings or an uncaught exception. It does not compare a return
+        value. Use an assertion inside the body when necessary.
+      </p>
 
-  <subsection title="test_do">
-    <p>test_do simply executes its code. This test fails if there is
-    any compilation error or if an error is thrown during
-    execution.</p>
 <example>
+test_true(has_prefix("Pike", "Pi"))
+test_false(has_prefix("Pike", "Py"))
 test_do([[
-  int x;
-  if (time())
-    x = 1;
-  else
-    foo: break foo;
+  object file = Stdio.File();
+  destruct(file);
 ]])
 </example>
-  </subsection>
+    </subsection>
 
-  <subsection title="test_true">
-    <p>This test succeeds if the pike expression is evaluated into a
-    non-zero value.</p>
-<example>
-test_true([[1.0e-40]]);
-</example>
-  </subsection>
+    <subsection title="test_compile and test_compile_any">
+      <p>
+        <tt>test_compile(code)</tt> wraps statements in a function and
+        verifies that they compile without errors or warnings. It does
+        not execute them. <tt>test_compile_any(program)</tt> compiles a
+        complete program without adding a function wrapper; use it for
+        top-level declarations, inheritance and classes.
+      </p>
 
-  <subsection title="test_false">
-    <p>This test succeeds if the pike expression is evaluated into a
-    zero value.</p>
 <example>
-test_false(glob("*f","foo"))
-</example>
-  </subsection>
-
-  <subsection title="test_compile">
-    <p>The test_compile macro only tries to compile an expression. It
-    fails upon compilarion warnings or errors.</p>
-<example>
-test_compile([[Stdio.File foo=Stdio.File();]])
-</example>
-  </subsection>
-
-  <subsection title="test_compile_any">
-    <p>Tests if the code compiles, just as <tt>test_compile</tt>, but
-    is a complete block of code and not just an expression.</p>
-<example>
+test_compile([[Stdio.File file = Stdio.File();]])
 test_compile_any([[
-  void foo() 
-  {
-    Stdio.File bar(int x, int y)
-    { 
-      return 0;
-    }; 
-  } 
+  class Counter {
+    int value;
+    int increment() { return ++value; }
+  }
 ]])
 </example>
-  </subsection>
+    </subsection>
 
-  <subsection title="test_compile_error">
-    <p>Does the inverse of <tt>test_compile</tt>; verifies that the
-    code does not compile.</p>
-<example>
-test_compile_error([[ int a="a"; ]])
-</example>
-  </subsection>
+    <subsection title="test_compile_error and test_compile_error_any">
+      <p>
+        These verify that compilation fails, rather than that execution
+        throws an exception. <tt>test_compile_error</tt> wraps statements
+        in a function. <tt>test_compile_error_any</tt> takes a complete
+        program. Use an unambiguous error so an unrelated diagnostic does
+        not accidentally satisfy the test.
+      </p>
 
-  <subsection title="test_compile_error_any">
-    <p>Does the inverse of <tt>test_compile_any</tt>; verifies that
-    the code does not compile.</p>
 <example>
+test_compile_error([[int value = "not an integer";]])
 test_compile_error_any([[
-  int a=5;
-  string b="a";
-  a=b;
+  int value = "not an integer";
 ]])
 </example>
-  </subsection>
+    </subsection>
 
-  <subsection title="test_compile_warning" />
-  <subsection title="test_eval_error" />
-  <subsection title="test_define_program" />
-  <subsection title="test_program" />
-  <subsection title="cond" />
-  <subsection title="ifefun" />
-  <subsection title="nonregression" />
+    <subsection title="test_compile_warning">
+      <p>
+        This wraps statements in a function and succeeds if compilation
+        produces a warning without a compilation error. It does not
+        require a particular warning text or run the resulting program.
+        For example, a constant that is hidden by an inherited variable
+        produces a warning:
+      </p>
 
-</section>
+<example>
+test_compile_warning([[
+  class A { int value = 6; }
+  class B {
+    constant value = 5;
+    inherit A;
+  }
+]])
+</example>
 
+      <p>
+        Ordinary execution tests also reject unexpected warnings. If
+        a known warning is incidental to another test, the affected
+        cases should be wrapped with <tt>ignore_warning(message, tests)</tt>.
+        Avoid broad suppression that could hide new warnings. That helper
+        suppresses matching warnings; it does not assert their presence.
+      </p>
+    </subsection>
+
+    <subsection title="test_eval_error">
+      <p>
+        <tt>test_eval_error(code)</tt> expects an exception while compiling
+        or executing the supplied function body. For historical reasons,
+        a compilation error also satisfies this macro. To test a runtime
+        failure specifically, keep the body compilable and use dynamic
+        arguments where a static type check would otherwise reject the
+        call. The macro does not inspect the exception's contents; use
+        <expr>catch</expr> and a comparison test when those matter.
+      </p>
+
+<example>
+test_eval_error([[error("Expected failure.\n");]])
+test_any([[
+  mixed failure = catch { error("Expected failure.\n"); };
+  return failure[0];
+]], "Expected failure.\n")
+</example>
+    </subsection>
+
+    <subsection title="test_define_program">
+      <p>
+        <tt>test_define_program(name, body)</tt> creates a class from the
+        supplied body and installs it as a global constant for later
+        tests. It is useful when several cases need the same helper
+        program. Remove the constant after use so it does not affect
+        subsequent tests. A selected range must include the definition
+        before cases that depend on it.
+      </p>
+
+<example>
+test_define_program(GuideCounter, [[
+  int value;
+  int increment() { return ++value; }
+]])
+test_any([[
+  object counter = GuideCounter();
+  counter-&gt;increment();
+  return counter-&gt;increment();
+]], 2)
+test_do(add_constant("GuideCounter"))
+</example>
+    </subsection>
+
+    <subsection title="test_program">
+      <p>
+        <tt>test_program(program)</tt> compiles a complete program,
+        instantiates it and calls its <tt>a()</tt> method. That method
+        must return a true value for the test to succeed. This permits
+        helper methods, variables, inheritance and lfuns in the same
+        test program. <tt>test_program_eq(program, expected)</tt> and
+        <tt>test_program_equal(program, expected)</tt> compare its result
+        with <expr>==</expr> and <expr>equal()</expr>, respectively.
+      </p>
+
+<example>
+test_program([[
+  int value;
+  int increment() { return ++value; }
+  int a() { return increment() == 1 &amp;&amp; increment() == 2; }
+]])
+</example>
+    </subsection>
+
+    <subsection title="cond, cond_resolv and ifefun">
+      <p>
+        <tt>cond(expression, tests)</tt> runs the enclosed cases only if
+        its Pike expression is true. A false condition skips cases rather
+        than failing them; an error in a condition is a test failure.
+        Conditions are cached by the runner, so they should check stable
+        capabilities rather than changing per-test state.
+      </p>
+
+      <p>
+        <tt>cond_resolv(name, tests)</tt> checks whether a module or other
+        named value can be resolved. <tt>ifefun(name, tests)</tt> checks
+        for a global built-in function or constant. These are runtime
+        availability checks, not C preprocessor tests. Use
+        <tt>cond_begin(expression)</tt> and <tt>cond_end</tt> when a
+        condition spans a longer group of cases; always balance them.
+      </p>
+
+<example>
+cond([[sizeof("Pike") == 4]], [[
+  test_eq(lower_case("PIKE"), "pike")
+]])
+cond_resolv(Stdio, [[
+  test_true(programp(Stdio.File))
+]])
+ifefun(sizeof, [[
+  test_eq(sizeof(""), 0)
+]])
+</example>
+
+      <p>
+        Guard optional features with their actual availability conditions.
+        Do not make a broken feature look optional by skipping on the
+        result being tested. Use <tt>--failed-cond</tt> to check why cases
+        were skipped.
+      </p>
+    </subsection>
+
+    <subsection title="Regression tests">
+      <p>
+        A regression test uses the ordinary test macros; no special
+        <tt>nonregression</tt> macro is provided by the current suite
+        generator. Reduce the original failure to a small example and
+        assert the intended result or error. Add a short comment recording
+        the bug or issue and why the case is significant. Test the
+        smallest relevant boundary on either side of the failure, and
+        ensure the case does not pass merely because unrelated setup
+        failed.
+      </p>
+    </subsection>
+  </section>
+
+  <section title="Standalone script tests">
+    <p>
+      A script test has a <tt>.test</tt> suffix and begins a comment
+      containing the marker <tt>TEST: RUN-AS-PIKE-SCRIPT</tt>. The
+      runner starts it in a child interpreter using the interpreter
+      under test. A script may use its own assertion helpers and event
+      loop. It should report its result with
+      <ref>Tools.Testsuite.report_result()</ref>; and report skipped cases
+      separately from successful and failed assertions.
+    </p>
+
+<example>
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+
+int main()
+{
+  int succeeded;
+  int failed;
+
+  if (equal(reverse(({1, 2, 3})), ({3, 2, 1})))
+    succeeded++;
+  else {
+    failed++;
+    werror("reverse() returned an unexpected result.\n");
+  }
+
+  Tools.Testsuite.report_result(succeeded, failed);
+  return failed ? 1 : 0;
+}
+</example>
+
+    <p>
+      Save the above as <tt>example.test</tt> and run
+      <tt>pike -x test_pike -v3 example.test</tt>. An uncaught exception or
+      abnormal child-process termination is a failure. A script containing
+      several assertions should report their individual counts rather than
+      just whether <tt>main()</tt> completed.
+    </p>
+
+    <p>
+      A macro suite can invoke a script with
+      <ref>Tools.Testsuite.run_script()</ref> and use <tt>test_tests</tt>
+      with a complete program whose <tt>a()</tt> returns the resulting
+      array of success, failure and skip counts. Prefer a directly
+      discovered <tt>.test</tt> file when no macro-suite integration is
+      needed. See <tt>lib/modules/Protocols.pmod/WebSocket.test</tt> for
+      a larger script test.
+    </p>
+  </section>
+
+  <section title="Investigating and reporting failures">
+    <p>
+      Re-run the smallest failing suite using the same Pike binary and
+      module paths. Increase verbosity to inspect the generated code and
+      select the failing test with <tt>-s</tt> and <tt>-e</tt>. If that test
+      depends on earlier setup, include those cases too. Use <tt>-l</tt>
+      to investigate failures that require repeated execution, and an
+      interpreter with runtime debugging enabled when investigating
+      consistency-check failures.
+    </p>
+
+    <p>
+      Distinguish an unavailable optional feature from a failed assertion,
+      an unexpected warning, a compiler error, a crash or a watchdog
+      timeout. Keep the complete diagnostics and record the Pike version,
+      platform, build options and command used to reproduce the problem.
+      Where relevant, compare debug and optimized builds or use gdb and
+      Valgrind. After fixing the focused case, run the surrounding suite
+      and <tt>make verify</tt> to check for interactions.
+    </p>
+  </section>
 </chapter>
-
