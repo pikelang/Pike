@@ -166,10 +166,6 @@ array(string) split(string data)
         pos--;
         break;
 
-      case '=':
-        pos++;
-        break;
-
       default:
 
         int regexp_context() {
@@ -185,18 +181,25 @@ array(string) split(string data)
 
           return keywords[t] || punctuators[t];
         };
-        if( regexp_context() )
-        {
+        // Scan a RegularExpressionLiteral body starting at @[p] (ie
+        // just after the leading slash). Returns the position just
+        // after the literal and its flags, or 0 if it isn't
+        // terminated before the end of the line.
+        int scan_regexp(int p) {
           int in_range = 0;
 
         loop:while( 1 ) {
-            switch( data[pos] ) {
+            switch( data[p] ) {
+            case 0:
+            case '\n': case '\r': case 0x2028: case 0x2029:
+              return 0;
             case '\\':
-              pos++;
+              p++;
+              if( (< 0, '\n', '\r', 0x2028, 0x2029 >)[data[p]] ) return 0;
               break;
             case '/':
               if(!in_range) {
-                pos++;
+                p++;
                 break loop;
               }
               break;
@@ -207,20 +210,22 @@ array(string) split(string data)
               in_range=0;
               break;
             }
-            pos++;
+            p++;
           }
 
           // Really all of ID_Continue
-          while( (< 'd', 'g', 'i', 'm', 's', 'u', 'v', 'y' >)[data[pos]] ) pos++;
+          while( (< 'd', 'g', 'i', 'm', 's', 'u', 'v', 'y' >)[data[p]] ) p++;
 
-          //          werror("%O\n", data[start..pos-1]);
-          break;
-        }
-        else
-        {
-          if( data[pos]=='=' ) pos++;
-          break;
-        }
+          //          werror("%O\n", data[start..p-1]);
+          return p;
+        };
+
+        int end;
+        if( regexp_context() && (end = scan_regexp(pos)) )
+          pos = end;
+        else if( data[pos]=='=' )
+          // DivideAssign (/=).
+          pos++;
         break;
 
       case '*':
