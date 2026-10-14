@@ -200,6 +200,7 @@ int test_tzdata() {
   if (pike_tzdata_version != found_version) {
     write("Calendar tzdata version %s is outdated. Latest: %s %s\n",
           pike_tzdata_version, found_version, found_date);
+    write("Get new tzdata files from http://www.iana.org/time-zones\n");
     return 1;
   }
   return 0;
@@ -246,11 +247,10 @@ array(int) read_version() {
 
 void assert_version() {
   array v = read_version();
-  if( v[0]!=__REAL_MAJOR__ || v[1]!=__REAL_MINOR__ ||
-      v[2]!=__REAL_BUILD__ ) {
+  if( v[0]!=__REAL_MAJOR__ || v[1]!=__REAL_MINOR__ || v[2]!=__REAL_BUILD__ ) {
     write("You must be running the Pike you want to test.\n");
-    write("%d %d\n%d %d\n%d %d\n", v[0], __REAL_MAJOR__,
-          v[1], __REAL_MINOR__, v[2], __REAL_BUILD__);
+    write("Checking Pike %d.%d.%d with runtime Pike %d.%d.%d.\n",
+          v[0], v[1], v[2], __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);
     exit(1);
   }
 
@@ -446,6 +446,8 @@ int main(int args)
   failures += test_charset_table("tables.c");
   failures += test_charset_table("misc.c");
   failures += test_unicode();
+  // FIXME: Test that the lower/upper_case() testsuite checks
+  //        all the code points in case_info.h.
   failures += test_tzdata();
   failures += test_realpike();
   failures += test_version();
