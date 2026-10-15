@@ -1353,6 +1353,10 @@ class NScope
   string node_name;
   string type;
   string path;
+  //! Canonical target specified by @alias, and its resolved scope.
+  string alias;
+  NScope canonical;
+  NScope alias_target;
   mapping(string:int(1..1)|NScope) symbols = ([]);
   mapping(string:string|NScope) imported_symbols;
   mapping(string:string|NScope) inherits;
@@ -1367,6 +1371,7 @@ class NScope
     }
     type = tree->get_any_name();
     node_name = name = tree->get_attributes()->name;
+    alias = tree->get_attributes()->alias;
     if (path) {
       name = path + name;
       path = name + ".";
@@ -1490,6 +1495,13 @@ class NScope
 	      } else {
 		scope->enterNode(thing);
 	      }
+              string target = child->get_attributes()->alias ||
+                thing->get_attributes()->alias;
+              if (target) {
+                if (scope->alias && scope->alias != target)
+                  error("Conflicting @alias targets for %s.\n", scope->name);
+                scope->alias = target;
+              }
               h_scope = symbols[n] = scope;
 	    }
 	    break;
@@ -1603,6 +1615,9 @@ class NScope
   string|zero lookup(array(string) path, int(0..1)|void no_imports,
                      multiset(NScope) seen = (<>))
   {
+    if (alias_target && sizeof(path) && !symbols[path[0]])
+      return alias_target->lookup(path, lookup_flags, seen);
+
     if( !sizeof(path) )
       return name;
 
@@ -1691,6 +1706,9 @@ class NScope
   NScope lookup_scope(array(string) path, LookupFlags|void lookup_flags,
                       multiset(NScope) seen = (<>))
   {
+    if (alias_target && sizeof(path) && !symbols[path[0]])
+      return alias_target->lookup_scope(path, lookup_flags, seen);
+
     if( !sizeof(path) ) {
       return this;
     }
@@ -2348,6 +2366,90 @@ void resolveInherits(NScope root)
   }
 }
 
+//! Resolve explicit documentation aliases without changing the XML hierarchy.
+//! Targets are fully qualified within the alias's namespace, or use an
+//! explicit namespace prefix. Missing targets and cycles are errors.
+protected mapping(string:string) resolveAliases(NScope root)
+{
+  array(NScope) scopes = ({});
+  multiset(NScope) collected = (<>);
+  void collect(NScope scope) {
+    if (collected[scope]) return;
+    collected[scope] = 1;
+    scopes += ({ scope });
+    foreach(scope->symbols;; int(1..1)|NScope child) {
+      if (objectp(child)) collect(child);
+    }
+  };
+  collect(root);
+
+  multiset(NScope) resolving = (<>);
+  NScope follow(NScope scope) {
+    if (!scope->alias) return scope;
+    if (scope->canonical) return scope->canonical;
+    if (resolving[scope])
+      error("Cyclic @alias involving %s.\n", scope->name);
+    resolving[scope] = 1;
+
+    array(string) path = splitRef(scope->alias);
+    string namespace = splitRef(scope->name)[0];
+    if (!sizeof(path))
+      error("Empty @alias target for %s.\n", scope->name);
+    if (path[0] == "top::") {
+      path[0] = namespace;
+    } else if (!has_suffix(path[0], "::")) {
+      path = ({ namespace }) + path;
+    }
+
+    NScope target = root;
+    foreach(path, string part) {
+      int(1..1)|NScope child = target->symbols[part] ||
+        target->symbols["/precompiled/" + part];
+      while (!child && target->alias) {
+        follow(target);
+        target = target->alias_target;
+        child = target->symbols[part] ||
+          target->symbols["/precompiled/" + part];
+      }
+      if (!objectp(child))
+        error("Unknown @alias target %O for %s.\n", scope->alias, scope->name);
+      target = child;
+    }
+    NScope canonical = follow(target);
+    if (has_prefix(canonical->name, scope->name + "."))
+      error("Cyclic @alias target inside %s.\n", scope->name);
+    scope->canonical = canonical;
+    scope->alias_target = target;
+    resolving[scope] = 0;
+    return scope->canonical;
+  };
+
+  mapping(string:string) aliases = ([]);
+  foreach(scopes, NScope scope)
+    if (scope->alias) aliases[scope->name] = follow(scope)->name;
+  return aliases;
+}
+
+// Keep the written link text, but canonicalize resolved link destinations.
+protected void canonicalizeAliasRefs(SimpleNode tree,
+                                     mapping(string:string) aliases)
+{
+  if (!sizeof(aliases)) return;
+  array(string) names = indices(aliases);
+  sort(map(names, sizeof), names);
+  names = reverse(names);
+  tree->walk_preorder(lambda(SimpleNode node) {
+    mapping(string:string) attrs = node->get_attributes();
+    if (!attrs || !attrs->resolved) return;
+    foreach(names, string name) {
+      if (attrs->resolved == name || has_prefix(attrs->resolved, name + ".")) {
+        attrs->resolved = aliases[name] + attrs->resolved[sizeof(name)..];
+        break;
+      }
+    }
+  });
+}
+
 //! Resolve all remaining unresolved references in
 //! the documentation tree @[tree].
 //!
@@ -2388,11 +2490,13 @@ void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
   }
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Resolving inherits...\n");
+  mapping(string:string) aliases = resolveAliases(scopestack->scopes);
   resolveInherits(scopestack->scopes);
   scopestack->reset();
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Resolving references...\n");
   doResolveNode(scopestack, tree);
+  canonicalizeAliasRefs(tree, aliases);
   destruct(scopestack);
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Done.\n");
@@ -2421,7 +2525,7 @@ void cleanUndocumented(SimpleNode tree, .Flags|void flags)
 
     string name = n->get_tag_name();
     if(name!="class" && name!="module") return 1;
-    if (n->get_attributes()->keep) return 1;
+    if (n->get_attributes()->keep || n->get_attributes()->alias) return 1;
 
     array ch = n->get_elements()->get_tag_name();
     ch -= ({ "modifiers" });

@@ -221,8 +221,8 @@ private class Extractor {
         .DocParser.Parse parse =
 	  .DocParser.Parse(doc->text, doc->position, flags);
         .DocParser.MetaData metadata = parse->metadata();
-        if (metadata->appears || metadata->belongs)
-          extractorError("@appears or @belongs not allowed in "
+        if (metadata->appears || metadata->belongs || metadata->alias)
+          extractorError("@appears, @belongs or @alias not allowed in "
                          "doc for enum constant");
         if (metadata->type)
           extractorError("@%s not allowed in doc for enum constant",
@@ -411,6 +411,7 @@ private class Extractor {
       object(.DocParser.Parse)|zero parse = 0;
       string|zero appears = 0;
       string|zero belongs = 0;
+      string|zero alias = 0;
       if (doc) {
         parse = .DocParser.Parse(doc->text, doc->position, flags);
         MetaData meta = parse->metadata();
@@ -433,6 +434,9 @@ private class Extractor {
 		parent->findChild(meta->name);
               object(Class)|object(Module) m;
               if (alreadyChild) {
+                if (meta->alias)
+                  extractorError("@alias not allowed on reentrance into %s %s",
+                                 what, meta->name);
                 m = alreadyChild;
                 if (m->objtype != what)
                   extractorError("found @%s %s, but %s has "
@@ -447,6 +451,7 @@ private class Extractor {
                   "namespace": NameSpace])[what]();
                 m->appears = meta->appears;
                 m->belongs = meta->belongs;
+                m->alias = meta->alias;
                 m->name = meta->name;
               }
               doc->xml = parse->doc("_" + what);
@@ -486,6 +491,7 @@ private class Extractor {
         docDecls = meta->decls;
         appears = meta->appears;
         belongs = meta->belongs;
+        alias = meta->alias;
       }
       // Objects added by @decl replace the true objects:
       if (sizeof(docDecls)) {
@@ -502,6 +508,15 @@ private class Extractor {
                              d->objtype, d->name, d->objtype, decls[0]->name);
         }
         decls = docDecls;
+      }
+
+      if (alias) {
+        foreach(decls, PikeObject obj) {
+          if (!(<"class", "module", "method",
+                 "constant", "variable">)[obj->objtype]) {
+            extractorError("@alias not supported for %s", obj->objtype);
+          }
+        }
       }
 
       int wasNonGroupable = 0;
@@ -531,6 +546,7 @@ private class Extractor {
 	// The @appears and @belongs directives regarded _this_file_
 	c->appears = appears;
 	c->belongs = belongs;
+        c->alias = alias;
 	doc = 0;
       }
 
@@ -572,12 +588,14 @@ private class Extractor {
           d->documentation = doc;
           d->appears = appears;
           d->belongs = belongs;
+          d->alias = alias;
           c->addChild(d);
         }
         else {
           DocGroup d = DocGroup(decls, doc);
           d->appears = appears;
           d->belongs = belongs;
+          d->alias = alias;
           c->addGroup(d);
         }
 

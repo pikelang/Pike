@@ -29,6 +29,9 @@ class MetaData {
   string belongs = 0;
   string appears = 0;
 
+  //! Canonical documentation target if this is an alias.
+  string alias = 0;
+
   //! Set of inherits.
   array(PikeObject) inherits = ({});
 }
@@ -56,6 +59,7 @@ enum DocTokenType {
 //! The @[DocTokenType]s for the documentation @@-keywords.
 mapping(string : DocTokenType) keywordtype =
 ([
+  "alias" : METAKEYWORD,
   "appears" : METAKEYWORD,
   "belongs" : METAKEYWORD,
   "class" : METAKEYWORD,
@@ -941,6 +945,8 @@ protected class DocParserClass {
             parseError("@appears before @%s", keyword);
           if (meta->belongs)
             parseError("@belongs before @%s", keyword);
+          if (meta->alias)
+            parseError("@alias before @%s", keyword);
           if (meta->type)
             parseError("@%s can not be combined with @%s", keyword, meta->type);
           meta->type = keyword;
@@ -984,8 +990,10 @@ protected class DocParserClass {
       case "endclass":
       case "endmodule":
 	{
-          if (meta->type || meta->belongs || meta->appears || endkeyword)
+          if (meta->type || meta->belongs || meta->appears ||
+              meta->alias || endkeyword) {
             parseError("@%s must stand alone", keyword);
+          }
           meta->type = endkeyword = keyword;
           .PikeParser nameparser = .PikeParser(arg, currentPosition);
           while (nameparser->peekToken() != EOF)
@@ -1006,6 +1014,8 @@ protected class DocParserClass {
             parseError("@appears before @decl");
           if (meta->belongs)
             parseError("@belongs before @decl");
+          if (meta->alias)
+            parseError("@alias before @decl");
           meta->type = "decl";
           .PikeParser declparser = .PikeParser(arg, currentPosition);
           array(PikeObject)|PikeObject pp = declparser->parseDecl(
@@ -1063,6 +1073,28 @@ protected class DocParserClass {
           meta->decls += ({ .PikeObjects.CppDirective(s) });
 	}
 	break;
+
+      case "alias":
+        {
+          if (meta->type && !(<"module", "class", "decl">)[meta->type])
+            parseError("@alias not allowed here");
+          if (meta->alias)
+            parseError("duplicate @alias");
+          .PikeParser idparser = .PikeParser(arg, currentPosition);
+          string target = idparser->parseIdents();
+          if (idparser->peekToken() == "(") {
+            idparser->readToken();
+            if (idparser->peekToken() != ")")
+              parseError("@alias: only an empty () suffix is allowed");
+            idparser->readToken();
+          }
+          if (!target || has_suffix(target, ".") ||
+              has_suffix(target, "::") || idparser->peekToken() != EOF) {
+            parseError("@alias: expected a canonical identifier, got %O", arg);
+          }
+          meta->alias = target;
+        }
+        break;
 
       case "appears":
 	{

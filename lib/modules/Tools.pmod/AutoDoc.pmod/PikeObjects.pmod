@@ -669,12 +669,16 @@ class DocGroup {
   string appears = 0;
   string belongs = 0;
 
+  //! Canonical documentation target if this is an alias.
+  string alias = 0;
+
   //! @returns
   //!   Returns a string with an XML representation of the documentation.
   string xml(.Flags|void flags) {
     mapping(string:string) m = ([]);
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
+    if (alias) m->alias = alias;
 
     // Check if homogeneous
     mapping (string:int) types = ([]);
@@ -808,6 +812,9 @@ class PikeObject {
   string appears;
   string belongs;
 
+  //! Canonical documentation target if this is an alias.
+  string alias;
+
   //!
   Documentation squeezedInDoc;
 
@@ -841,6 +848,7 @@ class PikeObject {
     if (name)    m->name = name;
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
+    if (alias)   m->alias = alias;
     if (flags & .FLAG_KEEP_EMPTY) m["keep"] = "";
     return m;
   }

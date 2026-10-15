@@ -7,6 +7,40 @@ and their intended use.
 
 ===============================================================================
 
+Keyword:      @alias
+Description:  Mark an existing declaration as an alternate name for a
+              canonical documented declaration. References retain their
+              written text but link to the canonical target.
+              Supports modules, classes, functions, constants and
+              variables. Place before descriptive text and after any
+              explicit @decl, @module or @class tags.
+              Module and class aliases also redirect member references;
+              explicitly marked member aliases may specify other targets.
+              Alias chains resolve to their final canonical target.
+              Targets must exist in the joined documentation tree;
+              missing or conflicting targets and cycles are errors.
+Arguments:    <canonical-name>[()]
+              Where:
+                <canonical-name> is the complete name within the current
+                  namespace, with identifiers separated by dots. An
+                  explicit namespace prefix such as 'predef::' is allowed.
+                An optional empty '()' suffix is accepted for functions.
+Children:     Optional documentation for the alias.
+Groups with:  -
+Examples:     //! @alias predef::Canonical.run()
+              constant old_run = Canonical.run;
+
+              /*! @module Legacy
+               *! @alias Canonical
+               */
+              /*! @endmodule */
+Note:         To alias a Pike module file, put @alias in its first
+              standalone documentation comment, separated from following
+              declarations by a blank line. XML retains an 'alias'
+              attribute on the entity or its docgroup.
+
+_______________________________________________________________________________
+
 Keyword:      @appears
 Description:  Tell where the documentation for an item should be shown.
               Gives the full new name of the item. Must be placed
@@ -93,8 +127,9 @@ Arguments:    <declaration>
               Where:
                 <declaration> is a valid Pike declaration or annotation.
 		A trailing ";" is optional.
-Children:     Documentation for the entity. After all @decl's may follow
-              one of @appears or @belongs.
+Children:     Documentation for the entity. After all @decl's, @alias
+              may specify a canonical documentation target; @appears or
+              @belongs may specify placement.
 Groups with:  @decl
 Examples:
               //! @decl void explode(string victim);

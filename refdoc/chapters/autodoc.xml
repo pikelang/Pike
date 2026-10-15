@@ -1,5 +1,47 @@
 <chapter title='Pike AutoDoc markup'>
 
+<p>
+  AutoDoc is Pike's documentation system for public modules, classes,
+  functions and other declarations. Documentation is kept beside the
+  implementation in specially marked comments, then extracted into XML
+  and rendered as reference documentation. This keeps descriptions and
+  signatures together and allows the same documentation to be presented
+  in different formats.
+</p>
+
+<p>
+  In Pike source, use adjacent <tt>//!</tt> comments to describe a
+  declaration. In C and cmod source, use <tt>/*!</tt> comments with
+  <tt>*!</tt> continuation lines and explicit Pike declarations and scope
+  tags such as <tt>@decl</tt>, <tt>@module</tt> and <tt>@class</tt>.
+  Describe what callers need to know: arguments, results, errors, side
+  effects and any platform or library requirements.
+</p>
+
+<example>
+//! Adds two integers.
+//! @param left
+//! @param right
+//!   The values to add.
+//! @returns
+//!   The sum of the two values.
+int add(int left, int right)
+{
+  return left + right;
+}
+</example>
+
+<p>
+  Consecutive parameter tags share a description in this example.
+  Within descriptions, <tt>@expr{left + right@}</tt> marks a Pike
+  expression and <tt>@[add()]</tt> marks a reference to a documented
+  declaration. The following sections describe comment syntax,
+  association with source declarations and scope tags. The final
+  section describes the intermediate XML format for authors of
+  extractors and documentation tools; ordinary API documentation
+  should normally be written in source comments.
+</p>
+
 <section title='Syntax'>
 
 <subsection title="Line orientation">
@@ -334,7 +376,7 @@ Pike entity the doc is about.</p>
   /*! @endmodule */
 </example>
 
-<p>The <tt>@module</tt> and <tt>@class</tt> too keywords are to work like segment
+<p>The <tt>@module</tt> and <tt>@class</tt> keywords work like segment
 directives in assembler source files. That is, you can have <tt>@module
 foo</tt> in several C files, if the module source is spread over multiple
 files. However, if you write doc for the module itself in several
@@ -726,572 +768,470 @@ Arguments: (the last segment of) the identifier name (ie "." illegal)
 <p>The <tt>@decl</tt> keyword is used to target a specific (...more to come! :-)</p>
 
 </subsection>
+<subsection title="Aliases and canonical documentation">
+
+<p>The <tt>@alias</tt> meta keyword marks an existing declaration as an
+alternate name for a documented API. References to the alternate name
+link to the canonical declaration while retaining the reference text
+written by the author. For example:</p>
+
+<example>
+//! @alias Canonical.run()
+constant old_run = Canonical.run;
+</example>
+
+<p>A reference such as <tt>@[old_run()]</tt> is displayed with that name,
+but its destination is the documentation for <tt>Canonical.run()</tt>.
+The canonical declaration supplies the main documentation; the alias
+needs no repeated description. The tag describes an alias that already
+exists in the API, independently of how its implementation exports it.</p>
+
+<p>Give the complete canonical name within the current namespace, or
+include an explicit namespace prefix such as
+<tt>@alias predef::Canonical.run</tt>. An optional empty <tt>()</tt>
+suffix is accepted for a function. Place <tt>@alias</tt> before the
+comment's descriptive text and after any explicit <tt>@decl</tt>,
+<tt>@module</tt> or <tt>@class</tt> tags. It applies to modules, classes,
+functions, constants and variables.</p>
+
+<p>To document a module file as an alias, put the directive in its first
+standalone documentation comment, separated from following declarations
+by a blank line. For example, in <tt>Legacy.pmod</tt>:</p>
+
+<example>
+//! @alias Canonical
+
+// Existing module implementation follows.
+</example>
+
+<p>This also redirects member references: <tt>@[Legacy.run()]</tt> links
+to <tt>Canonical.run()</tt>. Explicitly marked member aliases can give
+renamed members their own canonical targets. For C or cmod documentation,
+put the directive in the scope or declaration comment:</p>
+
+<example>
+/*! @module Legacy
+ *! @alias Canonical
+ */
+/*! @decl int old_run(int value)
+ *! @alias Canonical.run()
+ */
+/*! @endmodule */
+</example>
+
+<p>The XML retains an <tt>alias</tt> attribute on the entity or its
+<tt>docgroup</tt>. Reference resolution follows alias chains to their
+final canonical target, including for object-type and inheritance links.
+The canonical target must be present in the joined documentation tree.
+Missing targets, conflicting targets and cycles are errors. Resolve
+aliases after joining source fragments, so an alias and its target may
+be documented in different files.</p>
+
+</subsection>
+
 </section>
 
-<p><pre>
+<section title="AutoDoc XML format">
 
+<p>AutoDoc XML separates the declarations being documented from their
+ descriptions. Extractors produce this representation, the joiner merges
+ fragments into a hierarchy and resolves references, and presentation
+ tools render the result. XML examples below show the relevant structure;
+ optional source metadata and attributes are omitted where they are not
+ needed to explain the format.</p>
 
+<subsection title="Documentation pipeline">
 
-                 +--------------------------------------+
-                 | Pike autodoc markup - the XML format |
-                 +--------------------------------------+
+<p>The documentation build proceeds through these stages:</p>
 
-======================================================================
-a) Introduction
-----------------------------------------------------------------------
+<ol>
+<li><p>Write documentation in Pike, C or cmod source comments.</p></li>
+<li><p>Extract declarations and comments into per-source XML fragments
+with <tt>extract_autodoc</tt>.</p></li>
+<li><p>Merge the fragments, resolve references and organize the namespace
+with <tt>join_autodoc</tt> and the XML processing tools.</p></li>
+<li><p>Apply the manual structure and split or render the resulting
+XML into reference pages with the presentation tools.</p></li>
+</ol>
 
-When a piece of documentation is viewed in human-readable format, it
-has gone through the following states:
+<p>The extraction format is an intermediate representation, not HTML.
+ Consumers must retain declaration information and documentation structure
+ even if a particular output format does not display every field.
+ Handwritten manual chapters use a separate <tt>chapter</tt> and
+ <tt>section</tt> structure around the reference material.</p>
 
-  1. Doc written in comments in source code (C or Pike).
+</subsection>
 
-  2. A lot of smaller XML files, one for each source code file.
+<subsection title="Hierarchy and merging">
 
-  3. A big chunk of XML, describing the whole hierarchy.
+<p>The current top-level container is <tt>&lt;autodoc&gt;</tt>. It contains
+ <tt>&lt;namespace&gt;</tt> elements, such as
+ <tt>&lt;namespace name="predef"&gt;</tt> for <tt>predef::</tt> and
+ <tt>&lt;namespace name="lfun"&gt;</tt> for lfun documentation. Modules,
+ classes and other entities are placed inside their namespace and enclosing
+ modules or classes. Earlier formats used an empty-name module as the root;
+ new extractors should use the namespace structure.</p>
 
-  4. A repository of smaller and more manageable XML files.
-
-  5. A HTML page rendered from one such file.
-     (Or a PDF file, or whatever).
-
-The transition from state 1 to state 2 is the extraction of
-documentation from source files. There are several (well, at
-least two) markup formats, and there are occasions where it is
-handy to generate documentation automatically &amp;c. This document
-describes how a file in state 2 should be structured in order to
-be handled correctly by subsequent passes and presented in a
-consistent manner.
-
-======================================================================
-b) Overall structure
-----------------------------------------------------------------------
-
-Each source file adds some number of entities to the whole hierarchy.
-It can contain a class or a module. It can contain an empty module,
-that has its methods and members defined in some other source file,
-and so on. Suppose we have a file containing documentation for the
-class Class in the module Module. The XML skeleton of the file
-would then be:
-
-  &lt;module name=""&gt;
-      &lt;module name="Module"&gt;
-          &lt;class name="Class"&gt;
-              ... perhaps some info on inherits, members &amp;c ...
-              &lt;doc&gt;
-                  ... the documentation of the class Module.Class ...
-              &lt;/doc&gt;
-          &lt;/class&gt;
-      &lt;/module&gt;
-  &lt;/module&gt;
-
-The &lt;module name=""&gt; refers to the top module. That element, and its
-child &lt;module name="Module"&gt;, exist only to put the &lt;class name="Class"&gt;
-in its correct position in the hierarchy. So we can divide the elements
-in the XML file into two groups: skeletal elements and content elements.
-
-Each actual module/class/whatever in the Pike hierarchy maps to at most
-one content element, however it can map to any number of skeletal elements.
-For example, the top module is mapped to a skeletal element in each XML
-file extracted from a single source file. To get from state 2 to state 3
-in the list above, all XML files are merged into one big. All the elements
-that a module or class map to are merged into one, and if one of those
-elements contains documentation (=is a content element), then that
-documentation becomes a child of the merger of the elements.
-
-======================================================================
-c) Grouping
-----------------------------------------------------------------------
-
-Classes and modules always appear as &lt;module&gt; and &lt;class&gt; elements.
-Methods, variables, constants &amp;c, however, can be grouped in the
-source code:
-
-  //! Two variables:
-  int a;
-  int b;
-
-Even a single variable is considered as a group with one member.
-Continuing the example in the previous section, suppose that Module.Class
-has two member variables, a and b, that are documented as a group:
-
-  &lt;module name=""&gt;
-    &lt;module name="Module"&gt;
-      &lt;class name="Class"&gt;
-          ... perhaps some info on inherits, members &amp;c ...
-
-        &lt;docgroup homogen-type="variable"&gt;
-          &lt;variable name="a"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
-          &lt;variable name="b"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
-          &lt;doc&gt;
-            ... documentation for Module.Class.a and Module.Class.b ...
-          &lt;/doc&gt;
-        &lt;/docgroup&gt;
-
-        &lt;doc&gt;
-           ... the documentation of the class Module.Class ...
-        &lt;/doc&gt;
+<example>
+&lt;autodoc&gt;
+  &lt;namespace name="predef"&gt;
+    &lt;module name="Example"&gt;
+      &lt;class name="Counter"&gt;
+        &lt;doc&gt;&lt;text&gt;&lt;p&gt;A counter with independent object state.&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+        &lt;!-- Member declarations and their documentation go here. --&gt;
       &lt;/class&gt;
     &lt;/module&gt;
-  &lt;/module&gt;
-
-If all the children of a &lt;docgroup&gt; are of the same type, e.g. all are
-&lt;method&gt; elements, then the &lt;docgroup&gt; has the attribute homogen-type
-(="method" in the example). If all the children have identical name="..."
-attributes, then the &lt;docgroup&gt; gets a homogen-name="..." attribute aswell.
-
-The &lt;docgroup&gt; has a &lt;doc&gt; child containing the docmentation for the other
-children of the &lt;docgroup&gt;. An entity that cannot be grouped (class, module,
-enum), has a &lt;doc&gt; child of its own instead.
-
-======================================================================
-d) Pike entities
-----------------------------------------------------------------------
-
-Pike entities - classes, modules, methods, variables, constants, &amp;c, have some
-things in common, and many parts of the xml format are the same for all of
-these entities. All entities are represented with an XML element, namely one
-of:
-
-  &lt;class&gt;
-  &lt;constant&gt;
-  &lt;enum&gt;
-  &lt;inherit&gt;
-  &lt;method&gt;
-  &lt;modifier&gt;
-  &lt;module&gt;
-  &lt;typedef&gt;
-  &lt;variable&gt;
-
-The names speak for themselves, except: &lt;modifier&gt; which is used for modifier
-ranges:
-
-  //! Some variables:
-  protected final {
-    int x, y;
-
-    string n;
-  }
-
-A Pike entity may also have the following properties:
-
-  Name - Given as a name="..." attribute:
-    &lt;variable name="i"&gt; ... &lt;/variable&gt;
-
-  Modifiers - Given as a child element &lt;modifiers&gt;:
-    &lt;variable name="i"&gt;
-      &lt;modifiers&gt;
-        &lt;optional/&gt;&lt;protected/&gt;&lt;private/&gt;
-      &lt;/modifiers&gt;
-      ...
-    &lt;/variable&gt;
-  If there are no modifiers before the declaration of the entity, the
-  &lt;modifiers&gt; element can be omitted.
-
-  Source position - Given as a child element &lt;source-position&gt;:
-    &lt;variable name="i"&gt;
-      &lt;source-position file="/home/rolf/hejhopp.pike" first-line="12"/&gt;
-      &lt;modifiers&gt;
-        &lt;optional/&gt;&lt;protected/&gt;&lt;private/&gt;
-      &lt;/modifiers&gt;
-      ...
-    &lt;/variable&gt;
-  The source position is the place in the code tree where the entity is
-  declared or defined. For a method, the attribute last-line="..." can be
-  added to &lt;source-position&gt; to give the range of lines that the method
-  body spans in the source code.
-
-And then there are some things that are specific to each of the types of
-entities:
-
-&lt;class&gt;
-   All inherits of the class are given as child elements &lt;inherit&gt;. If there
-   is doc for the inherits, the &lt;inherit&gt; is repeated inside the appropriate
-   &lt;docgroup&gt;:
-
-     class Bosse {
-       inherit "arne.pike" : Arne;
-       inherit Benny;
-
-       //! Documented inherit
-       inherit Sven;
-     }
-
-     &lt;class name="Bosse"&gt;
-       &lt;inherit name="Arne"&gt;&lt;source-position ... /&gt;
-                            &lt;classname&gt;"arne.pike"&lt;/classname&gt;&lt;/inherit&gt;
-       &lt;inherit&gt;&lt;source-position ... /&gt;
-                &lt;classname&gt;Benny&lt;/classname&gt;&lt;/inherit&gt;
-       &lt;inherit&gt;&lt;source-position ... /&gt;
-                &lt;classname&gt;Sven&lt;/classname&gt;&lt;/inherit&gt;
-       &lt;docgroup homogen-type="inherit"&gt;
-         &lt;doc&gt;
-           &lt;text&gt;&lt;p&gt;Documented inherit&lt;/p&gt;&lt;/text&gt;
-         &lt;/doc&gt;
-         &lt;inherit&gt;&lt;source-position ... /&gt;
-                  &lt;classname&gt;Sven&lt;/classname&gt;&lt;/inherit&gt;
-       &lt;/docgroup&gt;
-       ...
-     &lt;/class&gt;
-
-&lt;constant&gt;
-   Only has a name. The element is empty (or has a &lt;source-position&gt; child.)
+  &lt;/namespace&gt;
+&lt;/autodoc&gt;
+</example>
 
-&lt;enum&gt;
-   Works as a container. Has a &lt;doc&gt; child element with the documentation of
-   the enum itself, and &lt;docgroup&gt; elements with a &lt;constant&gt; for each enum
-   constant. So:
+<p>Each source file may describe only part of a module or class. Enclosing
+ elements establish the fragment's position in the hierarchy even when they
+ have no documentation of their own. These skeletal containers are merged
+ with containers for the same entity from other files. The resulting entity
+ keeps the documented content and combined declarations. Avoid supplying
+ conflicting descriptions of the same module or class in several files.</p>
 
-     enum E
-     //! enum E
-     {
-       //! Three constants:
-       a, b, c,
+</subsection>
 
-       //! One more:
-       d
-     }
+<subsection title="Grouped declarations">
 
-   becomes:
+<p>Modules, classes and enums have their own containers and may carry a
+ <tt>&lt;doc&gt;</tt> child. Methods, variables, constants and other
+ declarations are placed in a <tt>&lt;docgroup&gt;</tt> when they share
+ documentation. Even a single documented declaration forms a group.</p>
 
-     &lt;enum name="E"&gt;
-         &lt;doc&gt;&lt;text&gt;&lt;p&gt;enum E&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
-         &lt;docgroup homogen-type="constant"&gt;
-             &lt;doc&gt;&lt;text&gt;&lt;p&gt;Three constants:&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
-             &lt;constant name="a"/&gt;
-             &lt;constant name="b"/&gt;
-             &lt;constant name="c"/&gt;
-         &lt;/docgroup&gt;
-         &lt;docgroup homogen-name="d" homogen-type="constant"&gt;
-             &lt;doc&gt;&lt;text&gt;&lt;p&gt;One more:&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
-             &lt;constant name="d"/&gt;
-         &lt;/docgroup&gt;
-     &lt;/enum&gt;
+<example>
+//! Two counters.
+int a;
+int b;
+</example>
 
-   Both the &lt;enum&gt; element and the &lt;constant&gt; elements could have
-   &lt;source-position&gt; children, of course.
+<example>
+&lt;docgroup homogen-type="variable"&gt;
+  &lt;doc&gt;&lt;text&gt;&lt;p&gt;Two counters.&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+  &lt;variable name="a"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
+  &lt;variable name="b"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
+&lt;/docgroup&gt;
+</example>
 
-&lt;inherit&gt;
-   The name="..." attribute gives the name after the colon, if any. The name
-   of the inherited class is given in a &lt;classname&gt; child. If a file name is
-   used, the class name is the file name surrounded by quotes (see &lt;class&gt;).
+<p>An <tt>alias</tt> attribute on a docgroup specifies the canonical
+ documentation target of its declarations. The same attribute can appear
+ on a module or class. Joined reference destinations are canonicalized
+ while the alias declaration remains in the XML hierarchy.</p>
 
-&lt;method&gt;
-   The arguments are given inside an &lt;arguments&gt; child. Each argument is
-   given as an &lt;argument name="..."&gt; element. Each &lt;argument&gt; has a &lt;type&gt;
-   child, with the type of the argument. The return type of the method is
-   given inside a &lt;returntype&gt; container:
+<p>The group contains its declarations and their shared description.
+ <tt>homogen-type</tt> identifies the declaration kind when all grouped
+ declarations have that kind. <tt>homogen-name</tt> identifies their common
+ name when they share one, for example overloaded methods. The
+ <tt>&lt;doc&gt;</tt> child is not included when determining either
+ attribute. A consumer should use the actual declarations as well as these
+ grouping hints.</p>
 
-     int a(int x, int y);
+</subsection>
 
-     &lt;method name="a"&gt;
-       &lt;arguments&gt;
-         &lt;argument name="x"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/argument&gt;
-         &lt;argument name="y"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/argument&gt;
-       &lt;/arguments&gt;
-       &lt;returntype&gt;&lt;int/&gt;&lt;/returntype&gt;
-     &lt;/method&gt;
+<subsection title="Entity metadata">
 
-&lt;modifier&gt;
-   Works as a container ... ???
+<p>Entity elements carry their name in a <tt>name</tt> attribute where
+ applicable. Shared metadata can appear as child elements:</p>
 
-&lt;module&gt;
-   Works just like &lt;class&gt;.
+<matrix>
+<r><c><b>Element</b></c><c><b>Meaning</b></c></r>
 
-&lt;typedef&gt;
-   The type is given in a &lt;type&gt; child:
+<r><c><tt>&lt;modifiers&gt;</tt></c><c>Declaration modifiers represented by child elements, for example <tt>&lt;protected/&gt;</tt> or <tt>&lt;final/&gt;</tt>. It can be omitted when no modifiers apply.</c></r>
 
-     typedef float Boat;
+<r><c><tt>&lt;source-position&gt;</tt></c><c>Source filename and starting line in <tt>file</tt> and <tt>first-line</tt> attributes. An optional <tt>last-line</tt> records the end of a declaration or method body.</c></r>
 
-     &lt;typedef name="Boat"&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;/typedef&gt;
+<r><c><tt>&lt;annotations&gt;</tt>, <tt>&lt;attributes&gt;</tt></c><c>Additional declaration annotations and type attributes emitted by extractors that support them.</c></r>
 
-&lt;variable&gt;
-   The type of the variable is given in a &lt;type&gt; child:
+</matrix>
 
-     int x;
+<example>
+&lt;variable name="value"&gt;
+  &lt;source-position file="Example.pmod/Counter.pike" first-line="12"/&gt;
+  &lt;modifiers&gt;&lt;protected/&gt;&lt;/modifiers&gt;
+  &lt;type&gt;&lt;int/&gt;&lt;/type&gt;
+&lt;/variable&gt;
+</example>
 
-     &lt;variable name="x"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
+<p>Source positions describe the implementation location. Reference
+ resolution may add metadata later, so do not assume that every attribute
+ present in joined XML was originally emitted by the source extractor.</p>
 
-======================================================================
-e) Pike types
-----------------------------------------------------------------------
+</subsection>
 
-Above we have seen the types int and float represented as &lt;int/&gt; and &lt;float/&gt;.
-Some of the types are complex, some are simple. The simpler types are just on
-the form &lt;foo/&gt;:
+<subsection title="Entity elements">
 
-  &lt;float/&gt;
-  &lt;mixed/&gt;
-  &lt;program/&gt;
-  &lt;string/&gt;
-  &lt;void/&gt;
+<matrix>
+<r><c><b>Element</b></c><c><b>Contents</b></c></r>
 
-The same goes for mapping, array, function, object, multiset, &amp;c that have
-no narrowing type qualification: &lt;mapping/&gt;, &lt;array/&gt;, &lt;function/&gt; ...
+<r><c><tt>&lt;namespace&gt;</tt>, <tt>&lt;module&gt;</tt>, <tt>&lt;class&gt;</tt></c><c>Containers for child entities, docgroups and optional documentation of the container itself.</c></r>
 
-The complex types are represented as follows:
+<r><c><tt>&lt;method&gt;</tt></c><c>An <tt>arguments</tt> container with ordered <tt>argument</tt> children, and a <tt>returntype</tt> container. Named arguments have a <tt>name</tt> attribute and a <tt>type</tt> child.</c></r>
 
-array
-   If the type of the elements of the array is specified it is given in a
-   &lt;valuetype&gt; child element:
+<r><c><tt>&lt;variable&gt;</tt></c><c>A <tt>type</tt> child describing the variable type.</c></r>
 
-     array(int)
+<r><c><tt>&lt;constant&gt;</tt></c><c>A named constant with optional type and source metadata. A constant representing a type can also have a <tt>typevalue</tt> child.</c></r>
 
-     &lt;array&gt;&lt;valuetype&gt;&lt;int/&gt;&lt;/valuetype&gt;&lt;/array&gt;
+<r><c><tt>&lt;typedef&gt;</tt></c><c>A named type alias with a <tt>type</tt> child.</c></r>
 
-function
-   The types of the arguments and the return type are given (the order
-   of the &lt;argtype&gt; elements is significant, of course):
+<r><c><tt>&lt;enum&gt;</tt></c><c>A container with documentation of the enum and docgroups containing its named <tt>constant</tt> elements.</c></r>
 
-     function(int, string: mixed)
+<r><c><tt>&lt;inherit&gt;</tt></c><c>The inherited program in a <tt>classname</tt> child. An optional <tt>name</tt> attribute holds its local alias.</c></r>
 
-     &lt;function&gt;
-       &lt;argtype&gt;&lt;int/&gt;&lt;/argtype&gt;
-       &lt;argtype&gt;&lt;string/&gt;&lt;/argtype&gt;
-       &lt;returntype&gt;&lt;mixed/&gt;&lt;/returntype&gt;
-     &lt;/function&gt;
+<r><c><tt>&lt;import&gt;</tt></c><c>The imported module in a <tt>classname</tt> child. The optional <tt>symbol</tt> and <tt>recurse</tt> attributes describe symbol-import behavior for consumers that support it.</c></r>
 
-int
-   An int type can have a min and/or max value. The values can be numbers or
-   identifiers:
-
-     int(0..MAX)
-
-     &lt;int&gt;&lt;min&gt;0&lt;/min&gt;&lt;max&gt;MAX&lt;/max&gt;&lt;/int&gt;
-
-mapping
-   The types of the indices and values are given:
-
-     mapping(int:int)
-
-     &lt;mapping&gt;
-       &lt;indextype&gt;&lt;int/&gt;&lt;/indextype&gt;
-       &lt;valuetype&gt;&lt;int/&gt;&lt;/valuetype&gt;
-
-multiset
-   The type of the indices is given:
-
-     multiset(string)
-
-     &lt;multiset&gt;
-       &lt;indextype&gt;&lt;string/&gt;&lt;/indextype&gt;
-     &lt;/multiset&gt;
-
-object
-   If the program/class is specified, it is given as the text child of
-   the &lt;object&gt; element:
-
-     object(Foo.Bar.Ippa)
-
-     &lt;object&gt;Foo.Bar.Ippa&lt;/object&gt;
-
-Then there are two special type constructions. A disjunct type is written
-with the &lt;or&gt; element:
-
-  string|int
-
-  &lt;or&gt;&lt;string/&gt;&lt;int/&gt;&lt;/or&gt;
-
-An argument to a method can be of the varargs type:
-
-  function(string, mixed ... : void)
-
-  &lt;function&gt;
-    &lt;argtype&gt;&lt;string/&gt;&lt;/argtype&gt;
-    &lt;argtype&gt;&lt;varargs&gt;&lt;mixed/&gt;&lt;/varargs&gt;&lt;/argtype&gt;
-    &lt;returntype&gt;&lt;void/&gt;&lt;/returntype&gt;
-  &lt;/function&gt;
-
-======================================================================
-f) Other XML tags
-----------------------------------------------------------------------
-
-p
-   Paragraph.
-
-i
-   Italic.
-
-b
-   Bold.
-
-tt
-   Terminal Type.
-
-pre
-   Preformatted text.
-
-code
-   Program code.
-
-image
-   An image object. Contains the original file path to the image. Has the
-   optional attributes width, height and file, where file is the path to
-   the normalized-filename file.
-
-======================================================================
-g) XML generated from the doc markup
-----------------------------------------------------------------------
-
-The documentation for an entity is put in a &lt;doc&gt; element. The &lt;doc&gt; element
-is either a child of the element representing the entity (in the case of
-&lt;class&gt;, &lt;module&gt;, &lt;enum&gt;, or &lt;modifiers&gt;) or a child of the &lt;docgroup&gt; that
-contains the element representing the entity.
-
-The doc markup has two main types of keywords. Those that create a container
-and those that create a new subsection within a container, implicitly closing
-the previous subsection. Consider e.g.:
-
-  //! @mapping
-  //!   @member int "ip"
-  //!     The IP# of the host.
-  //!   @member string "address"
-  //!     The name of the host.
-  //!   @member float "latitude"
-  //!   @member float "longitude"
-  //!     The coordinates of its physical location.
-  //! @endmapping
-
-Here @mapping and @endmapping create a container, and each @member start a
-new subsection. The two latter @member are grouped together and thus they
-form ONE new subsection together. Each subsection is a &lt;group&gt;, and the
-&lt;group&gt; has one or more &lt;member&gt; children, and a &lt;text&gt; child that contains
-the text that describes the &lt;member&gt;s:
-
-  &lt;mapping&gt;
-      &lt;group&gt;
-          &lt;member&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;index&gt;"ip"&lt;/index&gt;&lt;/member&gt;
-          &lt;text&gt;
-            &lt;p&gt;The IP# of the host.&lt;/p&gt;
-          &lt;/text&gt;
-      &lt;/group&gt;
-      &lt;group&gt;
-          &lt;member&gt;&lt;type&gt;&lt;string/&gt;&lt;/type&gt;&lt;index&gt;"address"&lt;/index&gt;&lt;/member&gt;
-          &lt;text&gt;
-              &lt;p&gt;The name of the host.&lt;/p&gt;
-          &lt;/text&gt;
-      &lt;/group&gt;
-      &lt;group&gt;
-          &lt;member&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;index&gt;"latitude"&lt;/index&gt;&lt;/member&gt;
-          &lt;member&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;index&gt;"longitude"&lt;/index&gt;&lt;/member&gt;
-          &lt;text&gt;
-              &lt;p&gt;The coordinates of its physical location.&lt;/p&gt;
-          &lt;/text&gt;
-      &lt;/group&gt;
-  &lt;/mapping&gt;
-
-Inside a &lt;text&gt; element, there can not only be text, but also a nested level
-of, say @mapping - @endmapping. In that case, the &lt;mapping&gt; element is put in
-the document order place as a sibling of the &lt;p&gt; that contain the text:
-
-  //! @mapping
-  //!   @member mapping "nested-mapping"
-  //!     A mapping inside the mapping:
-  //!     @mapping
-  //!       @member string "zip-code"
-  //!         The zip code.
-  //!     @endmapping
-  //!     And some more text ...
-  //! @endmapping
-
-  becomes:
-
-  &lt;mapping&gt;
-    &lt;group&gt;
-      &lt;member&gt;&lt;type&gt;&lt;mapping/&gt;&lt;/type&gt;&lt;index&gt;"nested-mapping"&lt;/index&gt;&lt;/member&gt;
-        &lt;text&gt;
-          &lt;p&gt;A mapping inside the mapping:&lt;/p&gt;
-          &lt;mapping&gt;
-            &lt;group&gt;
-              &lt;member&gt;&lt;type&gt;&lt;string/&gt;&lt;/type&gt;&lt;index&gt;"zip-code"&lt;/index&gt;&lt;/member&gt;
-              &lt;text&gt;
-                &lt;p&gt;The zip code.&lt;/p&gt;
-              &lt;/text&gt;
-            &lt;/group&gt;
-          &lt;/mapping&gt;
-          &lt;p&gt;And some more text ...&lt;/p&gt;
-        &lt;/text&gt;
-      &lt;/group&gt;
-  &lt;/mapping&gt;
-
-Inside the &lt;p&gt; elements, there may also be some more "layout-ish" tags like
-&lt;b&gt;, &lt;code&gt;, &lt;tt&gt;, &lt;i&gt;, needed to make the text more readable. Those tags are
-expressed as @i{ ... @} in the doc markup. However there are no &lt;br&gt;. A
-paragraph break is done by ending the &lt;p&gt; and beginning a new. A &lt;/p&gt;&lt;p&gt; is
-inserted for each sequence of blank lines in the doc markup:
-
-  //! First paragraph.
-  //!
-  //! Second paragraph.
-  //!
-  //!
-
-  becomes:
-
-  &lt;p&gt;First paragraph.&lt;/p&gt;&lt;p&gt;Second paragraph.&lt;/p&gt;
-
-Note that the text is trimmed from leading and ending whitespaces, and there
-are never any empty &lt;p&gt; elements.
-
-In the example above the keyword `@mapping' translated into &lt;mapping&gt;, whereas
-the keyword `@member string "zip-code"' translated into:
-  &lt;member&gt;&lt;type&gt;&lt;string/&gt;&lt;/type&gt;&lt;index&gt;"zip-code"&lt;/index&gt;&lt;/member&gt;
-
-The translation of keyword-&gt;XML is done differently for each keyword. How it
-is done can be seen in lib/modules/Tools.pmod/AutoDoc.pmod/DocParser.pmod. Most
-keywords just interpret the arguments as a space-separated list, and put their
-values in attributes to the element. In some cases (such as @member) though,
-some more intricate parsing must be done, and the arguments may be complex
-(like Pike types) and are represented as child elements of the element.
-
-======================================================================
-h) Top level sections of different Pike entities.
-----------------------------------------------------------------------
-
-In every doc comment there is an implicit "top container", and subsections can
-be opened in it. E.g.:
-
-  //! A method.
-  //! @param x
-  //!   The horizontal coordinate.
-  //! @param y
-  //!   The vertical coordinate.
-  //! @returns
-  //!   Nothing :)
-  void foo(int x, int y)
-
-becomes:
-
-  &lt;docgroup homogen-name="foo" homogen-type="method"&gt;
-      &lt;doc&gt;
-          &lt;text&gt;&lt;p&gt;A method.&lt;/p&gt;&lt;/text&gt;
-          &lt;group&gt;
-              &lt;param name="x"/&gt;
-              &lt;text&gt;&lt;p&gt;The horizontal coordinate.&lt;/p&gt;&lt;/text&gt;
-          &lt;/group&gt;
-          &lt;group&gt;
-              &lt;param name="y"/&gt;
-              &lt;text&gt;&lt;p&gt;The vertical coordinate.&lt;/p&gt;&lt;/text&gt;
-          &lt;/group&gt;
-          &lt;group&gt;
-              &lt;returns/&gt;
-              &lt;text&gt;&lt;p&gt;Nothing :)&lt;/p&gt;&lt;/text&gt;
-          &lt;/group&gt;
-      &lt;/doc&gt;
-      &lt;method name="foo"&gt;
-         ......
-      &lt;/method&gt;
+<r><c><tt>&lt;directive&gt;</tt></c><c>A named preprocessor directive documented as part of an API.</c></r>
+
+<r><c><tt>&lt;generic&gt;</tt></c><c>A generic parameter with its name, zero-based <tt>index</tt>, type constraint and default type.</c></r>
+
+<r><c><tt>&lt;modifier&gt;</tt></c><c>A modifier-range container for declarations sharing modifiers, corresponding to a block such as <tt>protected final { ... }</tt>.</c></r>
+
+</matrix>
+
+<p>For example, <tt>int add(int left, int right)</tt> has this method
+ declaration:</p>
+
+<example>
+&lt;method name="add"&gt;
+  &lt;arguments&gt;
+    &lt;argument name="left"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/argument&gt;
+    &lt;argument name="right"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/argument&gt;
+  &lt;/arguments&gt;
+  &lt;returntype&gt;&lt;int/&gt;&lt;/returntype&gt;
+&lt;/method&gt;
+</example>
+
+<p>An aliased inheritance declaration such as <tt>inherit Base : Parent;</tt>
+ is represented by <tt>&lt;inherit name="Parent"&gt;</tt> containing
+ <tt>&lt;classname&gt;Base&lt;/classname&gt;</tt>. A filename used in an
+ inheritance declaration retains its quotes in the class-name text.
+ Inheritance declarations are normally carried in docgroups, whether or
+ not they have their own description.</p>
+
+<p>Enum constants may share a description just like variables:</p>
+
+<example>
+&lt;enum name="State"&gt;
+  &lt;doc&gt;&lt;text&gt;&lt;p&gt;A set of states.&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+  &lt;docgroup homogen-type="constant"&gt;
+    &lt;doc&gt;&lt;text&gt;&lt;p&gt;Active states.&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+    &lt;constant name="OPEN"/&gt;
+    &lt;constant name="READY"/&gt;
   &lt;/docgroup&gt;
+  &lt;docgroup homogen-type="constant" homogen-name="CLOSED"&gt;
+    &lt;doc&gt;&lt;text&gt;&lt;p&gt;The final state.&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+    &lt;constant name="CLOSED"/&gt;
+  &lt;/docgroup&gt;
+&lt;/enum&gt;
+</example>
 
-Which "top container" subsections are allowed depends on what type of entity is
-documented:
+</subsection>
 
-ALL      -  &lt;bugs/&gt;
-            &lt;deprecated&gt; ... &lt;/deprecated&gt;
-            &lt;example/&gt;
-            &lt;note/&gt;
-            &lt;seealso/&gt;
+<subsection title="Type descriptions">
 
-&lt;method&gt; -  &lt;param name="..."/&gt;
-            &lt;returns/&gt;
-            &lt;throws/&gt;
-</pre></p></chapter>
+<p>A declaration's <tt>&lt;type&gt;</tt> or <tt>&lt;returntype&gt;</tt>
+ contains a type representation. Unqualified types use empty elements, for
+ example <tt>&lt;int/&gt;</tt>, <tt>&lt;float/&gt;</tt>,
+ <tt>&lt;string/&gt;</tt>, <tt>&lt;mixed/&gt;</tt>,
+ <tt>&lt;program/&gt;</tt> and <tt>&lt;void/&gt;</tt>.
+ Unqualified container types can also use empty elements.
+ Qualified types contain their component types or bounds:</p>
+
+<matrix>
+<r><c><b>Pike type</b></c><c><b>XML representation</b></c></r>
+
+<r><c><tt>array(int)</tt></c><c><tt>&lt;array&gt;&lt;valuetype&gt;&lt;int/&gt;&lt;/valuetype&gt;&lt;/array&gt;</tt></c></r>
+
+<r><c><tt>mapping(string:int)</tt></c><c><tt>&lt;mapping&gt;&lt;indextype&gt;&lt;string/&gt;&lt;/indextype&gt;&lt;valuetype&gt;&lt;int/&gt;&lt;/valuetype&gt;&lt;/mapping&gt;</tt></c></r>
+
+<r><c><tt>multiset(string)</tt></c><c><tt>&lt;multiset&gt;&lt;indextype&gt;&lt;string/&gt;&lt;/indextype&gt;&lt;/multiset&gt;</tt></c></r>
+
+<r><c><tt>int(0..255)</tt></c><c><tt>&lt;int&gt;&lt;min&gt;0&lt;/min&gt;&lt;max&gt;255&lt;/max&gt;&lt;/int&gt;</tt></c></r>
+
+<r><c><tt>string(0..255)</tt></c><c><tt>&lt;string&gt;&lt;min&gt;0&lt;/min&gt;&lt;max&gt;255&lt;/max&gt;&lt;/string&gt;</tt></c></r>
+
+<r><c><tt>object(Example.Counter)</tt></c><c><tt>&lt;object&gt;Example.Counter&lt;/object&gt;</tt></c></r>
+
+<r><c><tt>string|int</tt></c><c><tt>&lt;or&gt;&lt;string/&gt;&lt;int/&gt;&lt;/or&gt;</tt></c></r>
+
+</matrix>
+
+<p>Function types use ordered <tt>&lt;argtype&gt;</tt> children and a
+ <tt>&lt;returntype&gt;</tt> child. A variable-length argument type is
+ wrapped in <tt>&lt;varargs&gt;</tt>. For
+ <tt>function(string, mixed ... : void)</tt>:</p>
+
+<example>
+&lt;function&gt;
+  &lt;argtype&gt;&lt;string/&gt;&lt;/argtype&gt;
+  &lt;argtype&gt;&lt;varargs&gt;&lt;mixed/&gt;&lt;/varargs&gt;&lt;/argtype&gt;
+  &lt;returntype&gt;&lt;void/&gt;&lt;/returntype&gt;
+&lt;/function&gt;
+</example>
+
+<p>Type representations can be nested. For example, an array whose
+ elements are mappings nests a mapping representation inside its
+ <tt>valuetype</tt>. Integer and string bounds are text values and can
+ include identifiers. Consumers should also account for newer type
+ constructions, such as generic bindings, rather than assuming every
+ type is one of the simple empty elements.</p>
+
+</subsection>
+
+<subsection title="Documentation text and groups">
+
+<p>The <tt>&lt;doc&gt;</tt> element contains the description attached to
+ an entity or docgroup. Its initial prose is placed in a
+ <tt>&lt;text&gt;</tt> child with <tt>&lt;p&gt;</tt> paragraphs.
+ Delimiter keywords such as <tt>@param</tt> and <tt>@returns</tt> create
+ <tt>&lt;group&gt;</tt> children. Each group contains its delimiter
+ elements and the <tt>&lt;text&gt;</tt> describing them.</p>
+
+<p>The introductory <tt>add()</tt> example produces this documentation
+ element:</p>
+
+<example>
+&lt;doc&gt;
+  &lt;text&gt;&lt;p&gt;Adds two integers.&lt;/p&gt;&lt;/text&gt;
+  &lt;group&gt;
+    &lt;param name="left"/&gt;
+    &lt;param name="right"/&gt;
+    &lt;text&gt;&lt;p&gt;The values to add.&lt;/p&gt;&lt;/text&gt;
+  &lt;/group&gt;
+  &lt;group&gt;
+    &lt;returns/&gt;
+    &lt;text&gt;&lt;p&gt;The sum of the two values.&lt;/p&gt;&lt;/text&gt;
+  &lt;/group&gt;
+&lt;/doc&gt;
+</example>
+
+<p>Consecutive compatible delimiter tags share a group, so the two
+ parameters above have one description. Containers such as <tt>@mapping</tt>
+ and <tt>@array</tt> have their own groups. For example:</p>
+
+<example>
+//! @mapping
+//!   @member int "ip"
+//!     The numeric address.
+//!   @member float "latitude"
+//!   @member float "longitude"
+//!     The coordinates.
+//! @endmapping
+</example>
+
+<example>
+&lt;mapping&gt;
+  &lt;group&gt;
+    &lt;member&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;index&gt;"ip"&lt;/index&gt;&lt;/member&gt;
+    &lt;text&gt;&lt;p&gt;The numeric address.&lt;/p&gt;&lt;/text&gt;
+  &lt;/group&gt;
+  &lt;group&gt;
+    &lt;member&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;index&gt;"latitude"&lt;/index&gt;&lt;/member&gt;
+    &lt;member&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;index&gt;"longitude"&lt;/index&gt;&lt;/member&gt;
+    &lt;text&gt;&lt;p&gt;The coordinates.&lt;/p&gt;&lt;/text&gt;
+  &lt;/group&gt;
+&lt;/mapping&gt;
+</example>
+
+<p>A group's text can contain further documentation containers. They
+ appear in document order alongside its paragraphs, rather than as
+ children of the delimiter element. Thus a nested mapping description
+ belongs inside the enclosing group's <tt>text</tt>:</p>
+
+<example>
+&lt;mapping&gt;
+  &lt;group&gt;
+    &lt;member&gt;&lt;type&gt;&lt;mapping/&gt;&lt;/type&gt;&lt;index&gt;"nested"&lt;/index&gt;&lt;/member&gt;
+    &lt;text&gt;
+      &lt;p&gt;A mapping containing a postal code:&lt;/p&gt;
+      &lt;mapping&gt;
+        &lt;group&gt;
+          &lt;member&gt;&lt;type&gt;&lt;string/&gt;&lt;/type&gt;&lt;index&gt;"zip-code"&lt;/index&gt;&lt;/member&gt;
+          &lt;text&gt;&lt;p&gt;The postal code.&lt;/p&gt;&lt;/text&gt;
+        &lt;/group&gt;
+      &lt;/mapping&gt;
+      &lt;p&gt;Additional information about the nested mapping.&lt;/p&gt;
+    &lt;/text&gt;
+  &lt;/group&gt;
+&lt;/mapping&gt;
+</example>
+
+<p>Blank lines in the source markup divide paragraphs. Leading and
+ trailing whitespace is trimmed, and empty paragraphs are not emitted.
+ Short markup appears inside paragraphs as inline elements. Container
+ and delimiter arguments are not translated identically: a simple
+ parameter name becomes an attribute, while a mapping member's type and
+ index become child elements. The rules are implemented in
+ <tt>Tools.AutoDoc.DocParser</tt>.</p>
+
+</subsection>
+
+<subsection title="Presentation elements">
+
+<p>Documentation text uses a defined set of formatting elements. Escape
+ literal XML characters in their text; a displayed example containing
+ XML must not accidentally become part of the document hierarchy.</p>
+
+<matrix>
+<r><c><b>Element</b></c><c><b>Purpose</b></c></r>
+
+<r><c><tt>&lt;p&gt;</tt></c><c>A paragraph.</c></r>
+
+<r><c><tt>&lt;h&gt;</tt></c><c>A documentation heading.</c></r>
+
+<r><c><tt>&lt;i&gt;</tt>, <tt>&lt;b&gt;</tt>, <tt>&lt;tt&gt;</tt></c><c>Italic, bold and fixed-width inline text.</c></r>
+
+<r><c><tt>&lt;expr&gt;</tt>, <tt>&lt;code&gt;</tt></c><c>An inline Pike expression or a block of Pike source code.</c></r>
+
+<r><c><tt>&lt;pre&gt;</tt></c><c>Preformatted text that does not require Pike syntax highlighting.</c></r>
+
+<r><c><tt>&lt;ref&gt;</tt></c><c>A reference to a documented entity; reference processing supplies information used by the renderer.</c></r>
+
+<r><c><tt>&lt;image&gt;</tt></c><c>An image with its source path as text. Optional <tt>width</tt> and <tt>height</tt> set dimensions; <tt>file</tt> can identify the normalized image filename.</c></r>
+
+<r><c><tt>&lt;matrix&gt;</tt></c><c>A table containing <tt>r</tt> rows, each containing <tt>c</tt> cells.</c></r>
+
+</matrix>
+
+<p>Use separate paragraphs for paragraph breaks. Source comments should
+ normally use AutoDoc markup such as <tt>@i{...@}</tt> and
+ <tt>@expr{...@}</tt>, rather than injecting presentation XML through
+ <tt>@xml{...@}</tt>. A table, type description or other block belongs in
+ the appropriate documentation-text container, not inside a declaration's
+ type metadata merely because its element name is the same.</p>
+
+</subsection>
+
+<subsection title="Top-level documentation sections">
+
+<p>The legal delimiter tags depend on the entity being documented.
+ General documentation sections include notes, examples, known bugs,
+ deprecation information and related references. Their XML is represented
+ by a group containing the section marker and its text.</p>
+
+<matrix>
+<r><c><b>Context</b></c><c><b>Additional section markers</b></c></r>
+
+<r><c>Any documented entity</c><c><tt>note</tt>, <tt>example</tt>, <tt>bugs</tt>, <tt>deprecated</tt>, <tt>seealso</tt> and other general sections accepted by the markup parser.</c></r>
+
+<r><c>Method</c><c><tt>&lt;param name="..."/&gt;</tt>, <tt>&lt;returns/&gt;</tt> and <tt>&lt;throws/&gt;</tt>.</c></r>
+
+<r><c>Class</c><c><tt>&lt;param name="..."/&gt;</tt> for documented class parameters.</c></r>
+
+<r><c>Enum</c><c><tt>constant</tt> sections describing its enum values.</c></r>
+
+<r><c>Mapping, array and multiset descriptions</c><c><tt>member</tt>, <tt>elem</tt> and <tt>index</tt>, respectively, inside the matching documentation container.</c></r>
+
+</matrix>
+
+<p>These section markers describe prose; they do not replace the
+ declaration elements. For example, a method's <tt>returns</tt> section
+ explains its result, while the method's <tt>returntype</tt> records its
+ declared type. See <ref>Tools.AutoDoc.DocParser</ref> for accepted markup
+ and <ref>Tools.AutoDoc.PikeObjects</ref> for the declaration serializers.</p>
+
+</subsection>
+
+</section>
+</chapter>
