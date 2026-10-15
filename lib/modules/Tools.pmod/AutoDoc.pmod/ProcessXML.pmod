@@ -1616,7 +1616,7 @@ class NScope
                      multiset(NScope) seen = (<>))
   {
     if (alias_target && sizeof(path) && !symbols[path[0]])
-      return alias_target->lookup(path, lookup_flags, seen);
+      return alias_target->lookup(path, no_imports, seen);
 
     if( !sizeof(path) )
       return name;
