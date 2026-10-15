@@ -100,9 +100,9 @@ protected private class Extractor {
                              "'%s %s' doesnt match '%s %s'"
                              " in previous declaration",
                              meta->type, meta->name, c->objtype, c->name);
-          if (meta->appears || meta->belongs)
+          if (meta->appears || meta->belongs || meta->alias)
             extractorErrorAt(token->currentPosition,
-                             "cannot specify @appears or @belongs on"
+                             "cannot specify @appears, @belongs or @alias on"
                              " reentrance into '%s %s'", c->objtype, c->name);
         }
         else {
@@ -150,12 +150,21 @@ protected private class Extractor {
 	  c->documentation = doc;
         c->appears = meta->appears;
         c->belongs = meta->belongs;
+        c->alias = meta->alias;
         tokens = tokens[1..];
         return ({ meta->type, c });
       }
       break;
     case "decl":
       {
+        if (meta->alias) {
+          foreach(decls, PikeObject obj) {
+            if (!(<"method", "constant", "variable">)[obj->objtype]) {
+              extractorErrorAt(token->currentPosition,
+                               "@alias not supported for %s", obj->objtype);
+            }
+          }
+        }
         mapping(string:int) contexts = ([]);
         foreach (decls, PikeObject obj)
           contexts[obj->objtype] = 1;
@@ -187,6 +196,7 @@ protected private class Extractor {
 	}
 	d->appears = meta->appears;
 	d->belongs = meta->belongs;
+        d->alias = meta->alias;
         d->documentation = doc;
         tokens = tokens[1..];
         return ({ d->objtype || "docgroup", d });
