@@ -1353,10 +1353,12 @@ class NScope
   string node_name;
   string type;
   string path;
+
   //! Canonical target specified by @alias, and its resolved scope.
   string alias;
   NScope canonical;
   NScope alias_target;
+
   mapping(string:int(1..1)|NScope) symbols = ([]);
   mapping(string:string|NScope) imported_symbols;
   mapping(string:string|NScope) inherits;
