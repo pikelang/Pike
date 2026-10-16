@@ -135,7 +135,10 @@ when called with MSG(random(1000));.</li>
 <li>A backslash (\) at the end of the line can be used to make the
 definition span several lines.</li>
 <li>It is possible to define macros with a variable list of arguments
-by using the ... syntax.</li>
+by using the ... syntax. A named variadic parameter, such as
+<tt>ARGS ...</tt>, is referenced by that name in the replacement text.
+With an unnamed <tt>...</tt> parameter, use <tt>__VA_ARGS__</tt>, as in
+<tt>#define LOG(...) werror(__VA_ARGS__)</tt>.</li>
 <li>Macros are often formulated so that a semicolon after it is
 apropriate, for improved code readability.</li>
 <li>In Pike code macros and defines are most often written in all caps.</li>
@@ -170,6 +173,8 @@ hash character and the rest of the directive to create indentation in code.</p>
 <insert-move entity="cpp::.#string"/>
 
 <insert-move entity="cpp::.#include"/>
+
+<insert-move entity="cpp::.#embed"/>
 
 <insert-move entity="cpp::.#if"/>
 
@@ -220,6 +225,12 @@ hash character and the rest of the directive to create indentation in code.</p>
   <insert-move entity="cpp::.__DIR__"/>
   <insert-move entity="cpp::.__LINE__"/>
   <insert-move entity="cpp::.__COUNTER__"/>
+  <insert-move entity="cpp::.__STDC_ISO_10646__"/>
+  <insert-move entity="cpp::.__UNICODE_VERSION__"/>
+  <insert-move entity="cpp::.__PIKE_BYTEORDER__"/>
+  <insert-move entity="cpp::.SIZEOF_INT"/>
+  <insert-move entity="cpp::.SIZEOF_FLOAT"/>
+  <insert-move entity="cpp::.__ARGS__"/>
   <insert-move entity="cpp::.__AUTO_BIGNUM__"/>
   <insert-move entity="cpp::.__NT__"/>
   <insert-move entity="cpp::.__PIKE__"/>
@@ -232,11 +243,16 @@ hash character and the rest of the directive to create indentation in code.</p>
 
 <section title="Test functions">
 
-  <p>These functions are used in <ref resolved="cpp::#if">#if</ref> et al
-     expressions to test for presence of symbols.</p>
+  <p>These tests can be used in <ref resolved="cpp::#if">#if</ref> and
+     related expressions. <tt>defined()</tt> tests for a macro,
+     <tt>constant()</tt> tests whether a name resolves to a constant, and
+     <tt>__has_include()</tt> and <tt>__has_embed()</tt> test arguments for
+     the corresponding file directives.</p>
 
   <insert-move entity="cpp::.constant"/>
   <insert-move entity="cpp::.defined"/>
+  <insert-move entity="cpp::.__has_include"/>
+  <insert-move entity="cpp::.__has_embed"/>
 
 </section>
 

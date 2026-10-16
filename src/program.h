@@ -703,7 +703,8 @@ struct inherit
 /* These macros should only be used if (p->flags & PROGRAM_USES_PARENT)
  * is true
  */
-#define LOW_PARENT_INFO(O,P) ((struct parent_info *)(PIKE_OBJ_STORAGE((O)) + (P)->parent_info_storage))
+#define LOW_PARENT_INFO(O,P) \
+  ((struct parent_info *)(PIKE_OBJ_STORAGE((O)) + (P)->parent_info_storage))
 #define PARENT_INFO(O) LOW_PARENT_INFO( (O), (O)->prog)
 
 /*
@@ -712,7 +713,8 @@ struct inherit
  * the object data area.
  * The parent_info_storage member of the program
  * struct tells us where in the object to find this
- * data.
+ * data. An offset of -1 means that no storage has been allocated;
+ * zero is a valid offset.
  */
 struct parent_info
 {

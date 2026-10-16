@@ -1353,10 +1353,12 @@ class NScope
   string node_name;
   string type;
   string path;
+
   //! Canonical target specified by @alias, and its resolved scope.
   string alias;
   NScope canonical;
   NScope alias_target;
+
   mapping(string:int(1..1)|NScope) symbols = ([]);
   mapping(string:string|NScope) imported_symbols;
   mapping(string:string|NScope) inherits;
@@ -1616,7 +1618,7 @@ class NScope
                      multiset(NScope) seen = (<>))
   {
     if (alias_target && sizeof(path) && !symbols[path[0]])
-      return alias_target->lookup(path, lookup_flags, seen);
+      return alias_target->lookup(path, no_imports, seen);
 
     if( !sizeof(path) )
       return name;
