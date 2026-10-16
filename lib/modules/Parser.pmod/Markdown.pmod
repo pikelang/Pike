@@ -219,7 +219,7 @@ protected class R
 
   string `source() { return src; }
 
-  array(string)|zero split_string(string subject)
+  array(string) split_string(string subject)
   {
     array(array(int)) offsets = ({});
 
@@ -228,7 +228,7 @@ protected class R
     });
 
     if (!sizeof(offsets)) {
-      return 0;
+      return ({ subject });
     }
 
     offsets += ({ 0 });
@@ -240,7 +240,7 @@ protected class R
     for (int i; i < sizeof(offsets); i++) {
       c    = offsets[i];
       stop = c && c[0] || sizeof(subject);
-      ret += ({ subject[start .. stop] });
+      ret += ({ subject[start .. stop-1] });
       if (!c) break;
       start = c[1];
     }
@@ -509,7 +509,8 @@ class Parser
         for (int i; i < sizeof(token->header); i++) {
           cell += renderer->tablecell(
             inline_lexer->output(token->header[i]),
-            ([ "header" : true, "align" : token->align[i] ]),
+            ([ "header" : true,
+               "align"  : i < sizeof(token->align) && token->align[i] ]),
             ([]),
           );
         }
@@ -523,7 +524,8 @@ class Parser
           for (int j; j < sizeof(row); j++) {
             cell += renderer->tablecell(
               inline_lexer->output(row[j]),
-              ([ "header" : false, "align" : token->align[j] ]),
+              ([ "header" : false,
+                 "align"  : j < sizeof(token->align) && token->align[j] ]),
               ([]),
             );
           }

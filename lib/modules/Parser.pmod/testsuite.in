@@ -118,6 +118,66 @@ dnl - Parser.Markdown
 
 cond_begin([[Parser["Markdown"] ]])
 
+dnl R()->split_string() returned 0 (not ({ subject })) when the separator
+dnl did not match, which crashed the table lexer on single-column tables
+dnl and rows with fewer cells than the header.
+test_eq(Parser.Markdown.parse("| a |\n|---|\n| 1 |\n"),
+        "<table>\n"
+        "<thead>\n"
+        "<tr>\n"
+        "<th>a</th>\n"
+        "</tr>\n"
+        "</thead>\n"
+        "<tbody>\n"
+        "<tr>\n"
+        "<td>1</td>\n"
+        "</tr>\n"
+        "</tbody>\n"
+        "</table>\n")
+
+dnl R()->split_string() kept the first byte of the separator in every
+dnl field but the last, which both added a stray trailing space to table
+dnl cells and broke left/center column alignment (only the last column,
+dnl terminated by end-of-string rather than a match, was unaffected).
+test_eq(Parser.Markdown.parse("| a | b | c |\n|:--|:-:|--:|\n| 1 | 2 | 3 |\n"),
+        "<table>\n"
+        "<thead>\n"
+        "<tr>\n"
+        "<th style=\"text-align:left\">a</th>\n"
+        "<th style=\"text-align:center\">b</th>\n"
+        "<th style=\"text-align:right\">c</th>\n"
+        "</tr>\n"
+        "</thead>\n"
+        "<tbody>\n"
+        "<tr>\n"
+        "<td style=\"text-align:left\">1</td>\n"
+        "<td style=\"text-align:center\">2</td>\n"
+        "<td style=\"text-align:right\">3</td>\n"
+        "</tr>\n"
+        "</tbody>\n"
+        "</table>\n")
+
+dnl Unguarded token->align[] indexing crashed whenever a header or body
+dnl row had more cells than the delimiter row had columns (an extra cell,
+dnl or a \| escape that this lexer does not honour and so splits into an
+dnl extra cell).
+test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n| 1 | 2 | 3 |\n"),
+        "<table>\n"
+        "<thead>\n"
+        "<tr>\n"
+        "<th>a</th>\n"
+        "<th>b</th>\n"
+        "</tr>\n"
+        "</thead>\n"
+        "<tbody>\n"
+        "<tr>\n"
+        "<td>1</td>\n"
+        "<td>2</td>\n"
+        "<td>3</td>\n"
+        "</tr>\n"
+        "</tbody>\n"
+        "</table>\n")
+
 dnl Bug #10107 (aka https://github.com/pikelang/Pike/issues/40)
 test_eq(Parser.Markdown.parse(#"
 ## Some Stuff
