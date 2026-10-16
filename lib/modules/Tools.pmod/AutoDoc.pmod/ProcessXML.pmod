@@ -1354,7 +1354,7 @@ class NScope
   string type;
   string path;
 
-  //! Canonical target specified by @alias, and its resolved scope.
+  //! Canonical target specified by @@alias, and its resolved scope.
   string alias;
   NScope canonical;
   NScope alias_target;
