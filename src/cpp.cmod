@@ -1502,8 +1502,8 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   and paranthesis.
  *!
  *!   Strings may also be indexed with the @tt{[]@} index operator.
- *!   Finally there are three special "functions" available in @[#if]
- *!   expressions; @[defined()], @[efun()], @[constant()],
+ *!   These expressions also support the special tests
+ *!   @[defined()], @[efun()] (deprecated), @[constant()],
  *!   @[__has_embed()] and @[__has_include()].
  *!
  *! @seealso
@@ -6598,6 +6598,48 @@ PIKEFUN string macro___has_embed(string arg)
  *!
  *! @seealso
  *!   @[__BUILD__]
+ */
+
+/*! @decl constant __ARGS__
+ *!
+ *!   Expands to @expr{__args__@}, the array of arguments passed to an
+ *!   implicit lambda written as a trailing block after a function call.
+ *!
+ *! @example
+ *!   void invoke(function callback) { callback(10, 20); }
+ *!   void run() {
+ *!     invoke() { write("%O\n", __ARGS__); };
+ *!   }
+ */
+
+/*! @decl constant SIZEOF_INT
+ *!
+ *!   The size in bytes of the C @expr{int@} type used to build Pike,
+ *!   corresponding to the build configuration value @expr{SIZEOF_INT@}.
+ *!
+ *! @note
+ *!   For the size in bits of Pike's native @expr{int@} type, see
+ *!   @expr{Pike.get_runtime_info()->int_size@}. That field measures
+ *!   @tt{INT_TYPE@}, which can be wider than C @expr{int@};
+ *!   it need not equal @expr{8 * SIZEOF_INT@}.
+ *!
+ *! @seealso
+ *!   @[Pike.get_runtime_info()]
+ */
+
+/*! @decl constant SIZEOF_FLOAT
+ *!
+ *!   The size in bytes of the C @expr{float@} type used to build Pike,
+ *!   corresponding to the build configuration value @expr{SIZEOF_FLOAT@}.
+ *!
+ *! @note
+ *!   For the size in bits of Pike's native @expr{float@} type, see
+ *!   @expr{Pike.get_runtime_info()->float_size@}. That field measures
+ *!   @tt{FLOAT_TYPE@}, which can be wider than C @expr{float@};
+ *!   it need not equal @expr{8 * SIZEOF_FLOAT@}.
+ *!
+ *! @seealso
+ *!   @[Pike.get_runtime_info()]
  */
 
 /*! @decl constant static_assert
