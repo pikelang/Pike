@@ -1,0 +1,84 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+// Regression tests for issue #10186: strong parent references must survive
+// cycle rotations that break weak links, including links between siblings.
+
+int succeeded;
+int failed;
+
+class Parent
+{
+  array links = ({});
+  mapping weak_links = set_weak_flag(([]), Pike.WEAK_VALUES);
+  int value = 17;
+
+  class Child
+  {
+    array links = ({});
+    mapping weak_links = set_weak_flag(([]), Pike.WEAK_VALUES);
+    function(mixed:void) report;
+
+    protected void _destruct()
+    {
+      mixed failure = catch {
+        if (value != 17) error("Parent was destructed first.\n");
+      };
+      // The callback is stored here so reporting still works if our
+      // parent has already been destructed.
+      report(failure);
+    }
+  }
+
+  protected void _destruct() { value = 0; }
+}
+
+void make_garbage(array(array(int)) edges)
+{
+  array(object) nodes = ({});
+  for (int i = 0; i < 3; i++) {
+    object parent = Parent();
+    nodes += ({ parent });
+    for (int j = 0; j < 3; j++) {
+      object child = parent->Child();
+      child->report = lambda(mixed failure) {
+        if (failure) {
+          failed++;
+          werror("GC parent order: %s", describe_error(failure));
+        }
+        else succeeded++;
+      };
+      nodes += ({ child });
+    }
+  }
+
+  foreach (edges; int i; array(int) edge) {
+    if (edge[2]) nodes[edge[0]]->weak_links[i] = nodes[edge[1]];
+    else nodes[edge[0]]->links += ({ nodes[edge[1]] });
+  }
+}
+
+int main()
+{
+  // Nodes 0, 4 and 8 are parents; each is followed by its three children.
+  // Edges contain the source, target and whether the reference is weak.
+  foreach (({
+    // A weak-link rotation must clear the old incoming link flags.
+    ({ ({ 4, 2, 1 }), ({ 3, 5, 0 }), ({ 8, 3, 0 }),
+       ({ 7, 11, 0 }), ({ 0, 6, 1 }), ({ 7, 9, 0 }),
+       ({ 4, 6, 0 }), ({ 8, 7, 0 }), ({ 8, 9, 1 }) }),
+    // Multiple siblings must all precede their common parent, even when
+    // that parent is already on a cycle piece list.
+    ({ ({ 11, 2, 1 }), ({ 0, 6, 0 }), ({ 6, 1, 0 }),
+       ({ 4, 7, 0 }), ({ 0, 11, 0 }), ({ 8, 6, 0 }),
+       ({ 11, 3, 0 }) })
+  }), array(array(int)) edges) {
+    int before = succeeded + failed;
+    make_garbage(edges);
+    gc();
+    if (succeeded + failed - before != 9) {
+      failed++;
+      werror("GC parent order: expected nine child destructors.\n");
+    }
+  }
+  Tools.Testsuite.report_result(succeeded, failed);
+  return !!failed;
+}
