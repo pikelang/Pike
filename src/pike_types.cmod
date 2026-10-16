@@ -16355,12 +16355,35 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
   visit_leave(t, PIKE_T_TYPE, extra);
 }
 
-#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+/* Types are acyclic. Weak collection only considers direct references,
+ * so no type-table traversal is needed outside debug/cleanup builds. */
+static struct pike_type *gc_pending_weak_types;
 
-/* This is only enough gc stuff to detect leaking pike_type structs
- * and to locate references to them. More is needed if types are
- * extended to contain pointers to other memory objects or if they
- * might contain cycles. */
+void gc_queue_weak_type(struct pike_type *t)
+{
+#ifdef PIKE_DEBUG
+  if (t->frame)
+    Pike_fatal("Type already has a GC frame in gc_queue_weak_type.\n");
+#endif
+  /* Types never enter the cycle pass. Their extra GC references keep
+   * every queued node alive until its link has been read and cleared. */
+  t->frame = (struct gc_rec_frame *)gc_pending_weak_types;
+  gc_pending_weak_types = t;
+}
+
+void gc_free_all_weak_types(void)
+{
+  while (gc_pending_weak_types) {
+    struct pike_type *t = gc_pending_weak_types;
+    gc_pending_weak_types = (struct pike_type *)t->frame;
+    t->frame = NULL;
+    get_marker(t)->gc_flags &= ~GC_GOT_DEAD_REF;
+    gc_free_extra_ref(t);
+    free_type(t);
+  }
+}
+
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
 
 void gc_mark_type_as_referenced(struct pike_type *t)
 {
@@ -16387,6 +16410,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case PIKE_T_BIND:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
       /* FALLTHROUGH */
+      case PIKE_T_AUTO:
       case PIKE_T_MULTISET:
       case T_NOT:
       case PIKE_T_TYPE:
@@ -16552,6 +16576,17 @@ void gc_check_type (struct pike_type *t)
     }
   } GC_LEAVE;
 }
+
+#ifdef PIKE_DEBUG
+void gc_touch_all_types(void)
+{
+  size_t e;
+  for (e = 0; e <= pike_type_hash_size; e++) {
+    struct pike_type *t;
+    for (t = pike_type_hash[e]; t; t = t->next) debug_gc_touch(t);
+  }
+}
+#endif
 
 void gc_check_all_types (void)
 {

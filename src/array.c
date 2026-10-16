@@ -2928,7 +2928,7 @@ PMOD_EXPORT void visit_array (struct array *a, int action, void *extra)
 static void gc_check_array(struct array *a)
 {
   GC_ENTER (a, T_ARRAY) {
-    if(a->type_field & BIT_COMPLEX)
+    if(a->type_field & BIT_GC_REFERENCES)
     {
       if (a->flags & ARRAY_WEAK_FLAG) {
 	gc_check_weak_svalues(ITEM(a), a->size);
@@ -2953,7 +2953,7 @@ PMOD_EXPORT void gc_mark_array_as_referenced(struct array *a)
 	DOUBLELINK (first_array, a); /* Linked in first. */
       }
 
-      if (a->type_field & BIT_COMPLEX)
+      if (a->type_field & BIT_GC_REFERENCES)
       {
 	if (a->flags & ARRAY_WEAK_FLAG) {
 	  TYPE_FIELD t;
@@ -2994,7 +2994,7 @@ PMOD_EXPORT void real_gc_cycle_check_array(struct array *a, int weak)
       Pike_fatal("Trying to gc cycle check some *_empty_array.\n");
 #endif
 
-    if (a->type_field & BIT_COMPLEX)
+    if (a->type_field & BIT_GC_REFERENCES)
     {
       TYPE_FIELD t = a->flags & ARRAY_WEAK_FLAG ?
 	gc_cycle_check_weak_svalues(ITEM(a), a->size) :

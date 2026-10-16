@@ -8072,6 +8072,104 @@ test_do(add_constant("blatinka");)
     return !sizeof (a);
   }]], 1);
 
+// Type references in weak containers are weak even without complex values.
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  array a = set_weak_flag(({_typeof(n)}), 1);
+  mapping k = set_weak_flag(([_typeof(n+1):17]), Pike.WEAK_INDICES);
+  mapping v = set_weak_flag(([17:_typeof(n+2)]), Pike.WEAK_VALUES);
+  mapping b = set_weak_flag(([_typeof(n+3):_typeof(n+4)]),
+                            Pike.WEAK_INDICES|Pike.WEAK_VALUES);
+  multiset m = set_weak_flag((<_typeof(n+5)>), Pike.WEAK_INDICES);
+  gc();
+  return !a[0] && !sizeof(k) && !sizeof(v) && !sizeof(b) && !sizeof(m);
+]], 1)
+
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  object h = class {
+    __weak__ mixed value;
+    __weak__ typeof(_typeof(0)) typed;
+  }();
+  h->value = _typeof(n);
+  h->typed = _typeof(n+1);
+  gc();
+  return !h->value && !h->typed;
+]], 1)
+
+// A strong reference to a compound type keeps its child types alive.
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  mixed held = _typeof(n)|_typeof(1.0);
+  array a = set_weak_flag(({held, _typeof(n)}), 1);
+  gc();
+  if (a[0] != held || !a[1]) return 0;
+  held = 0;
+  gc();
+  // The parent is weak-only now; its child still had an ordinary ref.
+  if (a[0] || !a[1]) return 0;
+  gc();
+  return !a[1];
+]], 1)
+
+// Ordinary references from cyclic garbage also defer type collection.
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  mixed t = _typeof(n);
+  array a = set_weak_flag(({t}), 1);
+  object|zero holder = class {
+    mixed value;
+    array cycle;
+  }();
+  holder->value = t;
+  holder->cycle = ({holder});
+  t = 0;
+  holder = 0;
+  gc();
+  if (!a[0]) return 0;
+  gc();
+  return !a[0];
+]], 1)
+
+// Clearing a weak index must defer freeing its otherwise unheld type value.
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  mapping m = set_weak_flag(([_typeof(n):_typeof(n+1)|_typeof(1.0)]),
+                            Pike.WEAK_INDICES);
+  gc();
+  return !sizeof(m);
+]], 1)
+
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  mixed t = _typeof(n)|_typeof(1.0);
+  array a = ({t});
+  mapping m = ([17:t]);
+  array w = set_weak_flag(({t}), 1);
+  t = 0;
+  gc();
+  if (!w[0] || w[0] != a[0] || w[0] != m[17]) return 0;
+  a = ({});
+  gc();
+  if (!w[0] || w[0] != m[17]) return 0;
+  m = ([]);
+  gc();
+  return !w[0];
+]], 1)
+
+// A live program keeps its identifier types alive.
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  program|zero p = compile_string(sprintf(
+    "int(%d..%d) f() { return %d; }", n, n, n));
+  array a = set_weak_flag(({_typeof(p()->f)}), 1);
+  gc();
+  if (!a[0]) return 0;
+  p = 0;
+  gc();
+  return !a[0];
+]], 1)
+
   test_any_equal([[{
     array a = set_weak_flag (({1, "foo", 3.14}), 1);
     gc();

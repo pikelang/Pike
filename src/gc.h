@@ -363,7 +363,7 @@ void debug_gc_free_extra_ref(void *a);
 int debug_gc_is_referenced(void *a);
 int gc_mark_external (void *a, const char *place);
 void debug_really_free_gc_frame(struct gc_frame *l);
-int gc_do_weak_free(void *a);
+int gc_do_weak_free(void *a, TYPE_T type);
 void gc_delayed_free(void *a, int type);
 void debug_gc_mark_enqueue(queue_call call, void *data);
 int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type));
@@ -398,6 +398,10 @@ void cleanup_gc(void);
   DMALLOC_TOUCH_MARKER(VP, real_gc_check(debug_malloc_pass(VP)))
 #define gc_check_weak(VP) \
   DMALLOC_TOUCH_MARKER(VP, real_gc_check_weak(debug_malloc_pass(VP)))
+
+/* Values whose references require GC check/mark traversal. Extends
+ * BIT_COMPLEX with acyclic type nodes to support weak type references. */
+#define BIT_GC_REFERENCES (BIT_COMPLEX|BIT_TYPE)
 
 /* An object is considered live if its program has the flag
  * PROGRAM_LIVE_OBJ set. That flag gets set if:

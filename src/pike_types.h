@@ -496,6 +496,11 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
 PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra);
 void gc_mark_type_as_referenced(struct pike_type *t);
 void gc_check_type (struct pike_type *t);
+void gc_queue_weak_type(struct pike_type *t);
+void gc_free_all_weak_types(void);
+#ifdef PIKE_DEBUG
+void gc_touch_all_types(void);
+#endif
 void gc_check_all_types (void);
 int type_may_overload(struct pike_type *type, int lfun);
 void yyexplain_nonmatching_types(int severity_level,

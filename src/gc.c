@@ -2430,7 +2430,7 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
 #define CHECK_REC_STACK(p1, p1n, p2, p2n) do {} while (0)
 #endif	/* !PIKE_DEBUG */
 
-int gc_do_weak_free(void *a)
+int gc_do_weak_free(void *a, TYPE_T type)
 {
   struct marker *m;
 
@@ -2454,6 +2454,16 @@ int gc_do_weak_free(void *a)
 #else
   m = get_marker(a);
 #endif
+
+  if (type == PIKE_T_TYPE) {
+    /* Only collect types with exclusively direct weak references at
+     * the end of the check pass. An ordinary reference, including one
+     * from another type, keeps the type until a later GC. */
+    if (m->weak_refs < 0) goto should_free;
+    gc_ext_weak_refs -= m->weak_refs;
+    m->weak_refs = 0;
+    return 0;
+  }
 
   if (Pike_in_gc != GC_PASS_ZAP_WEAK) {
     if (m->weak_refs < 0)
@@ -2484,6 +2494,7 @@ should_free:
      * instead. */
     gc_add_extra_ref(a);
     m->gc_flags |= GC_GOT_DEAD_REF;
+    if (type == PIKE_T_TYPE) gc_queue_weak_type(a);
 #ifdef PIKE_DEBUG
     delayed_freed++;
 #endif
@@ -2516,6 +2527,13 @@ void gc_delayed_free(void *a, int type)
 #else
   m = get_marker(a);
 #endif
+
+  if (type == PIKE_T_TYPE) {
+    gc_add_extra_ref(a);
+    m->gc_flags |= GC_GOT_DEAD_REF;
+    gc_queue_weak_type(a);
+    return;
+  }
 
   if (m->gc_flags & GC_MARKED) {
     /* Note that we can get marked things here, e.g. if the index in a
@@ -3641,6 +3659,7 @@ size_t do_gc(int explicit_call)
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
     gc_touch_all_strings();
+    gc_touch_all_types();
 #endif
     if (n != (unsigned) num_objects && !got_unlinked_things)
       Pike_fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
@@ -3811,6 +3830,7 @@ size_t do_gc(int explicit_call)
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
     gc_touch_all_strings();
+    gc_touch_all_types();
 #endif
     if (n != (unsigned) num_objects && !got_unlinked_things)
       Pike_fatal("Object count wrong in gc; expected %d, got %d.\n", num_objects, n);
@@ -3865,6 +3885,8 @@ size_t do_gc(int explicit_call)
    * necessary to free the objects before the programs. */
   if (gc_internal_program)
     unreferenced += gc_free_all_unreferenced_programs();
+
+  gc_free_all_weak_types();
 
   if (free_extra_frames > tot_max_free_extra_frames)
     tot_max_free_extra_frames = free_extra_frames;

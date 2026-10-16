@@ -3111,7 +3111,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
       }
 
       if(gc_mark(md, T_MAPPING_DATA) &&
-	 ((md->ind_types | md->val_types) & BIT_COMPLEX)) {
+         ((md->ind_types | md->val_types) & BIT_GC_REFERENCES)) {
 	TYPE_FIELD ind_types = 0, val_types = 0;
 	if (MAPPING_DATA_IN_USE(md)) {
 	  /* Must leave the mapping data untouched if it's busy. */
@@ -3165,7 +3165,7 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
       Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
-    if ((md->ind_types | md->val_types) & BIT_COMPLEX) {
+    if ((md->ind_types | md->val_types) & BIT_GC_REFERENCES) {
       TYPE_FIELD ind_types = 0, val_types = 0;
       if (MAPPING_DATA_IN_USE(md)) {
 	/* Must leave the mapping data untouched if it's busy. */
@@ -3211,7 +3211,7 @@ static void gc_check_mapping(struct mapping *m)
 {
   struct mapping_data *md = m->data;
 
-  if((md->ind_types | md->val_types) & BIT_COMPLEX)
+  if((md->ind_types | md->val_types) & BIT_GC_REFERENCES)
     GC_ENTER (m, T_MAPPING) {
       INT32 e;
       struct keypair *k;
