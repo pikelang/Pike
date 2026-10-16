@@ -3471,6 +3471,10 @@ static void compile_compiler(void)
    * Remove the one we added above, so that we don't get it double.
    */
   p2->xstorage = 0;
+  /* Keep the fake parent's address unchanged while its offset is invalid. */
+  assert(p2->parent_info_storage == 0);
+  Pike_compiler->fake_object->storage++;
+  p2->parent_info_storage = -1;
 
   end_class("PikeCompiler", 0);
   /* end_class()/end_program() has zapped the inherit once again,

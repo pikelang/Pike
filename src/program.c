@@ -3811,6 +3811,7 @@ PMOD_EXPORT struct program *low_allocate_program(INT32 id)
 {
   struct program *p=alloc_program();
   memset(p, 0, sizeof(struct program));
+  p->parent_info_storage = -1;
   gc_fast_init_marker(p);
   p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
@@ -3828,6 +3829,32 @@ PMOD_EXPORT struct program *low_allocate_program(INT32 id)
   p->lfuns[0] = (NUM_LFUNS >> 4) + 1;		/* __INIT et al. */
 
   return p;
+}
+
+/* Fake objects only need their parent information. Before parent storage
+ * has been allocated, the offset is -1: leave one byte after the allocation
+ * start for the storage pointer, so LOW_PARENT_INFO still reaches it.
+ * Once the offset becomes valid, use an ordinary storage allocation.
+ */
+static char *allocate_fake_object_storage(ptrdiff_t parent_offset)
+{
+  size_t size = sizeof(struct parent_info) +
+    (parent_offset < 0 ? 1 : parent_offset);
+  char *storage;
+
+#ifdef PIKE_DEBUG
+  if (size < 256 * sizeof(struct svalue)) size = 256 * sizeof(struct svalue);
+#endif
+  storage = malloc(size);
+#ifdef PIKE_DEBUG
+  if (storage) {
+    /* Stipple to find illegal accesses outside the parent information. */
+    memset(storage, 0x55, size);
+    PIKE_MEM_WO_RANGE(storage, size);
+  }
+#endif
+  if (storage && parent_offset < 0) storage -= parent_offset;
+  return storage;
 }
 
 /**
@@ -3917,18 +3944,9 @@ PMOD_EXPORT void low_start_new_program(struct program *p,
 
   Pike_compiler->malloc_size_program = ALLOC_STRUCT(program);
   Pike_compiler->fake_object=alloc_object();
-
-#ifdef PIKE_DEBUG
-  Pike_compiler->fake_object->storage=(char *)malloc(256 * sizeof(struct svalue));
-  if (Pike_compiler->fake_object->storage) {
-    /* Stipple to find illegal accesses */
-    memset(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
-    PIKE_MEM_WO_RANGE (Pike_compiler->fake_object->storage,
-		       256 * sizeof (struct svalue));
-  }
-#else
-  Pike_compiler->fake_object->storage=(char *)malloc(sizeof(struct parent_info));
-#endif
+  Pike_compiler->fake_object->flags = 0;
+  Pike_compiler->fake_object->storage =
+    allocate_fake_object_storage(p->parent_info_storage);
   if (!Pike_compiler->fake_object->storage) {
     yyerror("Out of memory when allocating object storage.");
   }
@@ -3952,15 +3970,17 @@ PMOD_EXPORT void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 
   if (Pike_compiler->fake_object->storage) {
+    struct parent_info *parent_info =
+      LOW_PARENT_INFO(Pike_compiler->fake_object, p);
     if(name)
     {
-      /* Fake objects have parents regardless of PROGRAM_USES_PARENT */
-      if((((struct parent_info *)Pike_compiler->fake_object->storage)->parent=Pike_compiler->previous->fake_object))
-	add_ref(Pike_compiler->previous->fake_object);
-      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=id;
+      /* Fake objects have parents regardless of PROGRAM_USES_PARENT. */
+      if ((parent_info->parent = Pike_compiler->previous->fake_object))
+        add_ref(parent_info->parent);
+      parent_info->parent_identifier = id;
     }else{
-      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent=0;
-      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=0;
+      parent_info->parent = NULL;
+      parent_info->parent_identifier = 0;
     }
   }
 
@@ -4484,12 +4504,15 @@ static void toss_compilation_resources(void)
 {
   if(Pike_compiler->fake_object)
   {
-    if( ((struct parent_info *)Pike_compiler->fake_object->storage)->parent )
-    {
-      free_object(((struct parent_info *)Pike_compiler->fake_object->storage)->parent);
-
-      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent=0;
+    struct object *fake = Pike_compiler->fake_object;
+    struct parent_info *parent_info = LOW_PARENT_INFO(fake, fake->prog);
+    if (parent_info->parent) {
+      free_object(parent_info->parent);
+      parent_info->parent = NULL;
     }
+    /* Restore the allocation start before the object frees its storage. */
+    if (fake->prog->parent_info_storage < 0)
+      fake->storage += fake->prog->parent_info_storage;
 
     free_program(Pike_compiler->fake_object->prog);
     Pike_compiler->fake_object->prog=0;
@@ -5507,23 +5530,32 @@ struct program *end_first_pass(int finish)
     prog=Pike_compiler->new_program;
     add_ref(prog);
 
-    Pike_compiler->new_program->flags |= PROGRAM_PASS_1_DONE;
+    /* Pass one programs may be cloned by module initializers. We thus
+     * need to reserve their parent storage now, and then keep the offset
+     * stable in later passes.
+     *
+     * Note that zero is a valid offset; only -1 means that it is unallocated.
+     */
+    if ((prog->flags & PROGRAM_USES_PARENT) &&
+        (prog->parent_info_storage < 0)) {
+      struct object *fake = Pike_compiler->fake_object;
+      ptrdiff_t offset = add_xstorage(sizeof(struct parent_info),
+                                      ALIGNOF(struct parent_info), 0);
+      char *storage = allocate_fake_object_storage(offset);
+      if (!storage)
+        Pike_error("Out of memory allocating compiler parent storage.\n");
+      memcpy(storage + offset, LOW_PARENT_INFO(fake, prog),
+             sizeof(struct parent_info));
+      /* Free the old storage. */
+      free(fake->storage + prog->parent_info_storage);
+      fake->storage = storage;
+      prog->parent_info_storage = offset;
+    }
+
+    prog->flags |= PROGRAM_PASS_1_DONE;
 
     if(finish)
     {
-      if(Pike_compiler->new_program->flags & PROGRAM_USES_PARENT)
-      {
-        if (!Pike_compiler->new_program->parent_info_storage) {
-          Pike_compiler->new_program->parent_info_storage =
-            add_xstorage(sizeof(struct parent_info),
-                         ALIGNOF(struct parent_info),
-                         0);
-        }
-      }else{
-	/* Cause errors if used hopefully */
-	Pike_compiler->new_program->parent_info_storage=-1;
-      }
-
       fixate_program();
       if(Pike_compiler->num_parse_error)
       {
@@ -9207,6 +9239,7 @@ int low_program_index_no_free(struct svalue *to, struct program *p, int e,
     parent_info.parent = parent;
     parent_info.parent_identifier = parent_identifier;
     fake_object.prog = p;
+    fake_object.flags = 0;
     fake_object.refs = 1;
     fake_object.next = fake_object.prev = NULL;
     fake_object.storage = ((char *)&parent_info) - p->parent_info_storage;
