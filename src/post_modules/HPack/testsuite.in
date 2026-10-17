@@ -254,6 +254,17 @@ test_eq(buf->read_int8(), 0xbf)
 test_do(add_constant("buf"))
 test_do(add_constant("G"))
 
+dnl Encoding a header whose name is known (with several distinct
+dnl values already indexed, e.g. one of the ":status" static table
+dnl rows) but whose value is not one of those must still reuse one
+dnl of the known name indices.
+test_do([[add_constant("G", Standards.HPack.Context());]])
+test_do([[add_constant("I", Standards.HPack.Context());]])
+test_equal(I->decode(G->encode(({ ({ ":status", "999" }) }))),
+           ({ ({ ":status", "999" }) }))
+test_do(add_constant("G"))
+test_do(add_constant("I"))
+
 test_do(add_constant("F"))
 test_do(add_constant("E"))
 test_do(add_constant("D"))

@@ -658,7 +658,8 @@ class Context
       } else if (entry[""]) {
         entry = entry[""];
       } else {
-        entry = entry[sort(indices(entry))[0]];
+        // Any existing index for this header name will do.
+        entry = values(entry)[0];
       }
       if (entry < 0) {
         entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
