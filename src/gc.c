@@ -2012,14 +2012,12 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
   return ret;
 }
 
-PMOD_EXPORT INT32 real_gc_check_weak(void *a)
+static INT32 low_gc_check_weak(void *a)
 {
   struct marker *m;
   INT32 ret;
 
 #ifdef PIKE_DEBUG
-  if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
-    gc_fatal (a, 0, "gc_check_weak() called outside GC_ENTER.\n");
   if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_check_weak()");
@@ -2043,6 +2041,36 @@ PMOD_EXPORT INT32 real_gc_check_weak(void *a)
   ret=m->gc_refs++;
   if (m->gc_refs == *(INT32 *) a)
     m->gc_flags |= GC_NOT_REFERENCED;
+  return ret;
+}
+
+PMOD_EXPORT INT32 real_gc_check_weak(void *a)
+{
+#ifdef PIKE_DEBUG
+  if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
+    gc_fatal(a, 0, "gc_check_weak() called outside GC_ENTER.\n");
+#endif
+  return low_gc_check_weak(a);
+}
+
+/* Global weak roots have no enclosing Pike object. Retain their named
+ * source for debug/reference-location checks without inventing an owner.
+ */
+INT32 real_gc_check_weak_external(void *a, const char *place)
+{
+  INT32 ret;
+#if defined(PIKE_DEBUG) || defined(GC_MARK_DEBUG)
+  const char *old_place = gc_found_place;
+  gc_found_place = place;
+#else
+  (void)place;
+#endif
+  GC_ENTER(NULL, PIKE_T_UNKNOWN) {
+    ret = low_gc_check_weak(a);
+  } GC_LEAVE;
+#if defined(PIKE_DEBUG) || defined(GC_MARK_DEBUG)
+  gc_found_place = old_place;
+#endif
   return ret;
 }
 
@@ -2114,6 +2142,7 @@ PMOD_EXPORT void locate_references(void *a)
   GC_ENTER (NULL, PIKE_T_UNKNOWN) {
     mark_externals();
     call_callback(& gc_callbacks, NULL);
+    gc_check_type_binop_cache();
 
     gc_check_all_arrays();
     gc_check_all_multisets();
@@ -3676,6 +3705,7 @@ size_t do_gc(int explicit_call)
   mark_externals();
 #endif
   call_callback(& gc_callbacks, NULL);
+  gc_check_type_binop_cache();
 
   ACCEPT_UNFINISHED_TYPE_FIELDS {
     gc_check_all_arrays();
@@ -3728,6 +3758,7 @@ size_t do_gc(int explicit_call)
       gc_mark_run_queue();
       gc_mark_all_objects();
       gc_mark_run_queue();
+      gc_mark_type_binop_cache();
 #ifdef PIKE_DEBUG
       if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */
@@ -3799,6 +3830,7 @@ size_t do_gc(int explicit_call)
     /* Zap weak references from external to internal things. That
      * occurs when something has both external weak refs and nonweak
      * cyclic refs from internal things. */
+    gc_mark_type_binop_cache();
     gc_zap_ext_weak_refs_in_mappings();
     gc_zap_ext_weak_refs_in_arrays();
     gc_zap_ext_weak_refs_in_multisets();
@@ -3867,6 +3899,7 @@ size_t do_gc(int explicit_call)
 #endif
 
   GC_POP_CALL_FRAME();	/* We can now free the frame. */
+  gc_free_type_binop_cache();
 
   /* Now we free the unused stuff. The extra refs to gc_internal_*
    * added above are removed just before the calls so we'll get the

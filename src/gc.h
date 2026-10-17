@@ -356,6 +356,7 @@ PMOD_EXPORT void gc_watch(void *a);
 void debug_gc_touch(void *a);
 PMOD_EXPORT INT32 real_gc_check(void *a);
 PMOD_EXPORT INT32 real_gc_check_weak(void *a);
+INT32 real_gc_check_weak_external(void *a, const char *place);
 void exit_gc(void);
 PMOD_EXPORT void locate_references(void *a);
 void debug_gc_add_extra_ref(void *a);
@@ -398,6 +399,9 @@ void cleanup_gc(void);
   DMALLOC_TOUCH_MARKER(VP, real_gc_check(debug_malloc_pass(VP)))
 #define gc_check_weak(VP) \
   DMALLOC_TOUCH_MARKER(VP, real_gc_check_weak(debug_malloc_pass(VP)))
+#define gc_check_weak_external(VP, PLACE) \
+  DMALLOC_TOUCH_MARKER(VP, \
+    real_gc_check_weak_external(debug_malloc_pass(VP), (PLACE)))
 
 /* Values whose references require GC check/mark traversal. Extends
  * BIT_COMPLEX with acyclic type nodes to support weak type references. */

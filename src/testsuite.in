@@ -8072,6 +8072,23 @@ test_do(add_constant("blatinka");)
     return !sizeof (a);
   }]], 1);
 
+// Exercise cached type operations across compilations and collections.
+test_any([[
+  array(program) saved = ({});
+  for (int i = 0; i < 30; i++) {
+    program p = compile_string(sprintf(
+      "int(%d..%d) value() { return %d; }\n"
+      "array(mapping(string:int(%d..%d))) wrap() { "
+      "return ({ ([\"value\":value()]) }); }\n", i, i, i, i, i));
+    if (!(i % 5)) saved += ({p});
+    gc();
+    if (p()->wrap()[0]->value != i) return 0;
+    foreach (saved; int j; program previous)
+      if (previous()->value() != j * 5) return 0;
+  }
+  return 1;
+]], 1)
+
 // Type references in weak containers are weak even without complex values.
 test_any([[
   int n = 0x60000000 + random(0x10000000);
