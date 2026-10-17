@@ -588,6 +588,34 @@ class Context
     buf->add(str);
   }
 
+  //! Encode the prefix for a literal header field, selecting the
+  //! correct representation based on @[flags].
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param flags
+  //!   Encoding flags. Cf @[encode_header()].
+  //!
+  //! @param entry
+  //!   Index of the header name, or @expr{0@} for a new (literal) name.
+  protected void put_literal_prefix(Stdio.Buffer buf, HPackFlags flags,
+                                     int entry)
+  {
+    if (flags & HEADER_INDEXED_MASK) {
+      if (flags & HEADER_NEVER_INDEXED) {
+        // 6.2.3 Literal Header Field Never Indexed.
+        put_int(buf, 0x10, 0x0f, entry);
+      } else {
+        // 6.2.2 Literal Header Field without Incremental Indexing.
+        put_int(buf, 0x00, 0x0f, entry);
+      }
+    } else {
+      // 6.2.1 Literal Header Field with Incremental Indexing.
+      put_int(buf, 0x40, 0x3f, entry);
+    }
+  }
+
   //! Encode a single HPack header.
   //!
   //! @param buf
@@ -635,31 +663,9 @@ class Context
       if (entry < 0) {
 	entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
       }
-      if (flags & HEADER_INDEXED_MASK) {
-	if (flags & HEADER_NEVER_INDEXED) {
-	  // 6.2.3 Literal Header Field Never Indexed.
-	  put_int(buf, 0x10, 0x0f, entry);
-	} else {
-	  // 6.2.2 Literal Header Field without Incremental Indexing.
-	  put_int(buf, 0x00, 0x0f, entry);
-	}
-      } else {
-	// 6.2.1 Literal Header Field with Incremental Indexing.
-	put_int(buf, 0x40, 0x3f, entry);
-      }
+      put_literal_prefix(buf, flags, entry);
     } else {
-      if (flags & HEADER_INDEXED_MASK) {
-	if (flags & HEADER_NEVER_INDEXED) {
-	  // 6.2.3 Literal Header Field Never Indexed.
-	  put_int(buf, 0x10, 0x0f, 0);
-	} else {
-	  // 6.2.2 Literal Header Field without Incremental Indexing.
-	  put_int(buf, 0x00, 0x0f, 0);
-	}
-      } else {
-	// 6.2.1 Literal Header Field with Incremental Indexing.
-	put_int(buf, 0x40, 0x3f, 0);
-      }
+      put_literal_prefix(buf, flags, 0);
       put_string(buf, header);
     }
     put_string(buf, value);
