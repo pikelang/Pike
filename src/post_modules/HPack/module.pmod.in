@@ -514,7 +514,10 @@ class Context
   {
     array(array(string(8bit))) res = ({});
     while (sizeof(buf)) {
-      res += ({ decode_header(buf) });
+      array(string(8bit)|HPackFlags) header = decode_header(buf);
+      if (header) {
+        res += ({ header });
+      }
     }
     return res;
   }

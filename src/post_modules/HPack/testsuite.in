@@ -225,6 +225,22 @@ dnl bytes remaining in the buffer must raise an error rather than
 dnl silently truncate the header or value.
 test_eval_error(D->decode(H("4005 6162")))
 
+dnl A header block consisting only of a Dynamic Table Size Update
+dnl must decode to an empty array of headers, not an array containing
+dnl a bogus UNDEFINED entry.
+test_equal(D->decode(H("20")), ({}))
+
+dnl The size update above still evicts entries immediately, even
+dnl though it is discarded by decode(). A later decode() call on the
+dnl same Context must see the already-evicted dynamic table.
+test_do([[add_constant("G", Standards.HPack.Context(256));]])
+test_equal(G->decode(H("400a 6375 7374 6f6d 2d6b 6579 0d63 7573"
+                        "746f 6d2d 6865 6164 6572")),
+           ({ ({ "custom-key", "custom-header" }) }))
+test_equal(G->decode(H("20")), ({}))
+test_eval_error(G->decode(H("be")))
+test_do(add_constant("G"))
+
 test_do(add_constant("F"))
 test_do(add_constant("E"))
 test_do(add_constant("D"))
