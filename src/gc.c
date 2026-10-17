@@ -210,6 +210,7 @@ struct link_frame		/* See cycle checking blurb below. */
 struct gc_rec_frame		/* See cycle checking blurb below. */
 {
   void *data;
+  void *strong_ref;		/* Outgoing strong reference, if any. */
   int rf_flags;
   struct gc_rec_frame *prev;	/* The previous frame in the recursion stack.
 				 * NULL for frames not in the stack (i.e. on a
@@ -240,16 +241,18 @@ struct gc_rec_frame		/* See cycle checking blurb below. */
 #define GC_PREV_STRONG		0x0002
 #define GC_PREV_BROKEN		0x0004
 #define GC_MARK_LIVE		0x0008
-#define GC_ON_KILL_LIST		0x0010
+#define GC_ON_KILL_LIST	0x0010
+#define GC_ORDER_PENDING	0x0020
 #ifdef PIKE_DEBUG
-#define GC_ON_CYCLE_PIECE_LIST	0x0020
-#define GC_FRAME_FREED		0x0040
-#define GC_FOLLOWED_NONSTRONG	0x0080
-#define GC_IS_VALID_CP_CYCLE_ID	0x0100
+#define GC_ON_CYCLE_PIECE_LIST	0x0100
+#define GC_FRAME_FREED		0x0200
+#define GC_FOLLOWED_NONSTRONG	0x0400
+#define GC_IS_VALID_CP_CYCLE_ID	0x0800
 #endif
 
 static struct gc_rec_frame sentinel_frame = {
   (void *) (ptrdiff_t) -1,
+  NULL,
   0,
   (struct gc_rec_frame *) (ptrdiff_t) -1,
   (struct gc_rec_frame *) (ptrdiff_t) -1,
@@ -349,8 +352,9 @@ static struct gc_rec_frame *kill_list_last = NULL;
  *    other, and the second (the one being referenced by the strong
  *    ref) has the GC_PREV_STRONG bit set. A rotation never breaks the
  *    list inside a sequence of strong refs.
- *    FIXME: What about when there are multiple strong references to
- *           an object?
+ *    This protects traversal chains. The explicit strong_ref links and
+ *    gc_order_cycle also preserve dependencies when several things share
+ *    the same strong reference target.
  *
  * o  The GC_PREV_WEAK bit is set in the next frame for every link on
  *    the stack where no preceding frame reference any following frame
@@ -428,8 +432,8 @@ static struct gc_rec_frame *kill_list_last = NULL;
  * they are popped off while being part of unfinished cycles. Since
  * there are no more outgoing refs at that point, there can be no more
  * rotations that affect the order between the rec frame and its
- * predecessor. Therefore the order on a cycle piece list is optimal
- * (in as far as the gc destruct order policy goes). Any further
+ * predecessor. This gives the tentative order on a cycle piece list;
+ * gc_order_cycle subsequently enforces all strong dependencies. Any further
  * rotations can move the predecessor around, but it can always be
  * treated as one unit together with its cycle piece list.
  *
@@ -441,8 +445,8 @@ static struct gc_rec_frame *kill_list_last = NULL;
  *
  * When a cycle identifier frame is popped off the stack, the frame
  * together with its cycle piece list represent the complete cycle,
- * and the list holds an optimal order for destructing it. The frames
- * are freed at that point, except for the ones which correspond to
+ * and the list is ordered by gc_order_cycle before destructing it. The
+ * frames are freed at that point, except for the ones which correspond to
  * live objects, which instead are linked in order into the beginning
  * of the kill list. That list, whose beginning is pointed to by
  * kill_list, holds the final destruct order for all live objects.
@@ -2008,14 +2012,12 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
   return ret;
 }
 
-PMOD_EXPORT INT32 real_gc_check_weak(void *a)
+static INT32 low_gc_check_weak(void *a)
 {
   struct marker *m;
   INT32 ret;
 
 #ifdef PIKE_DEBUG
-  if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
-    gc_fatal (a, 0, "gc_check_weak() called outside GC_ENTER.\n");
   if (gc_is_watching && (m = find_marker(a)) && m->gc_flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     gc_watched_found (m, "gc_check_weak()");
@@ -2039,6 +2041,36 @@ PMOD_EXPORT INT32 real_gc_check_weak(void *a)
   ret=m->gc_refs++;
   if (m->gc_refs == *(INT32 *) a)
     m->gc_flags |= GC_NOT_REFERENCED;
+  return ret;
+}
+
+PMOD_EXPORT INT32 real_gc_check_weak(void *a)
+{
+#ifdef PIKE_DEBUG
+  if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
+    gc_fatal(a, 0, "gc_check_weak() called outside GC_ENTER.\n");
+#endif
+  return low_gc_check_weak(a);
+}
+
+/* Global weak roots have no enclosing Pike object. Retain their named
+ * source for debug/reference-location checks without inventing an owner.
+ */
+INT32 real_gc_check_weak_external(void *a, const char *place)
+{
+  INT32 ret;
+#if defined(PIKE_DEBUG) || defined(GC_MARK_DEBUG)
+  const char *old_place = gc_found_place;
+  gc_found_place = place;
+#else
+  (void)place;
+#endif
+  GC_ENTER(NULL, PIKE_T_UNKNOWN) {
+    ret = low_gc_check_weak(a);
+  } GC_LEAVE;
+#if defined(PIKE_DEBUG) || defined(GC_MARK_DEBUG)
+  gc_found_place = old_place;
+#endif
   return ret;
 }
 
@@ -2110,6 +2142,7 @@ PMOD_EXPORT void locate_references(void *a)
   GC_ENTER (NULL, PIKE_T_UNKNOWN) {
     mark_externals();
     call_callback(& gc_callbacks, NULL);
+    gc_check_type_binop_cache();
 
     gc_check_all_arrays();
     gc_check_all_multisets();
@@ -2426,7 +2459,7 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
 #define CHECK_REC_STACK(p1, p1n, p2, p2n) do {} while (0)
 #endif	/* !PIKE_DEBUG */
 
-int gc_do_weak_free(void *a)
+int gc_do_weak_free(void *a, TYPE_T type)
 {
   struct marker *m;
 
@@ -2450,6 +2483,16 @@ int gc_do_weak_free(void *a)
 #else
   m = get_marker(a);
 #endif
+
+  if (type == PIKE_T_TYPE) {
+    /* Only collect types with exclusively direct weak references at
+     * the end of the check pass. An ordinary reference, including one
+     * from another type, keeps the type until a later GC. */
+    if (m->weak_refs < 0) goto should_free;
+    gc_ext_weak_refs -= m->weak_refs;
+    m->weak_refs = 0;
+    return 0;
+  }
 
   if (Pike_in_gc != GC_PASS_ZAP_WEAK) {
     if (m->weak_refs < 0)
@@ -2480,6 +2523,7 @@ should_free:
      * instead. */
     gc_add_extra_ref(a);
     m->gc_flags |= GC_GOT_DEAD_REF;
+    if (type == PIKE_T_TYPE) gc_queue_weak_type(a);
 #ifdef PIKE_DEBUG
     delayed_freed++;
 #endif
@@ -2512,6 +2556,13 @@ void gc_delayed_free(void *a, int type)
 #else
   m = get_marker(a);
 #endif
+
+  if (type == PIKE_T_TYPE) {
+    gc_add_extra_ref(a);
+    m->gc_flags |= GC_GOT_DEAD_REF;
+    gc_queue_weak_type(a);
+    return;
+  }
 
   if (m->gc_flags & GC_MARKED) {
     /* Note that we can get marked things here, e.g. if the index in a
@@ -2662,6 +2713,7 @@ static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
   r->next = (struct gc_rec_frame *) (ptrdiff_t) -1;
 #endif
   r->data = data;
+  r->strong_ref = NULL;
   r->u.link_top = NULL;
   r->prev = stack_top;
   r->cycle_id = r;
@@ -2868,6 +2920,8 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
     return 0;
   }
 
+  if (weak < 0) stack_top->strong_ref = data;
+
   if (stack_top == &sentinel_frame)
     pm = NULL;
   else {
@@ -2985,15 +3039,19 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
       }
 
       if (weakly_refd) {
+        struct gc_rec_frame *rot_beg;
+
 	/* The backward link is normal or strong and there are one or
 	 * more weak links in the cycle. Let's break it at the last
 	 * one (to avoid having to clobber the others after the
 	 * rotation). */
 	CYCLE_DEBUG_MSG (weakly_refd, "gc_cycle_push, weak break");
-	/* If the backward link points into a cycle, we rotate the
-	 * whole cycle up the stack. See the "cycle checking" blurb
-	 * above for rationale. */
-	rotate_rec_stack (cycle_frame->cycle_id, weakly_refd);
+        /* If the backward link points into a cycle, rotate the whole
+         * cycle up the stack. The incoming reference replaces the old
+         * link into the rotated segment, including its link flags. */
+        rot_beg = rotate_rec_stack (cycle_frame->cycle_id, weakly_refd);
+        rot_beg->rf_flags &= ~(GC_PREV_WEAK|GC_PREV_BROKEN);
+        if (weak < 0) rot_beg->rf_flags |= GC_PREV_STRONG;
 	CHECK_REC_STACK (cycle_frame, "cycle_frame",
 			 weakly_refd, "weakly_refd");
       }
@@ -3122,6 +3180,63 @@ mark_live:
   return 1;
 }
 
+/* Order a completed cycle by its strong references. Several children can
+ * share a parent, including parents already on a cycle piece list, so stack
+ * adjacency alone cannot preserve all these dependencies through rotations.
+ * Keep the existing order unless a strong dependency requires a change.
+ *
+ * All frames are off the recursion stack now. Reuse prev/next for child
+ * lists, u.last_cycle_piece for the traversal stack, and cycle_id for the
+ * output list. cycle_piece keeps the original order until traversal ends.
+ */
+static struct gc_rec_frame *gc_order_cycle(struct gc_rec_frame *cycle)
+{
+  struct gc_rec_frame *r, *first = NULL, **last = &first;
+
+  if (!cycle->cycle_piece) return cycle;
+  for (r = cycle; r && !r->strong_ref; r = r->cycle_piece) {}
+  if (!r) return cycle;
+
+  for (r = cycle; r; r = r->cycle_piece) {
+    r->rf_flags |= GC_ORDER_PENDING;
+    r->prev = r->next = r->u.last_cycle_piece = NULL;
+  }
+  for (r = cycle; r; r = r->cycle_piece) {
+    struct marker *m;
+    if (r->strong_ref && (m = find_marker(r->strong_ref)) && m->frame &&
+        (m->frame->rf_flags & GC_ORDER_PENDING)) {
+      struct gc_rec_frame *parent = m->frame;
+      if (parent->prev) parent->u.last_cycle_piece->next = r;
+      else parent->prev = r;
+      parent->u.last_cycle_piece = r;
+    }
+  }
+
+  for (r = cycle; r; r = r->cycle_piece) {
+    struct gc_rec_frame *p = r;
+    if (!(p->rf_flags & GC_ORDER_PENDING)) continue;
+    p->u.last_cycle_piece = NULL;
+    while (p) {
+      struct gc_rec_frame *child = p->prev;
+      if (child) {
+        p->prev = child->next;
+        if (!(child->rf_flags & GC_ORDER_PENDING)) continue;
+        child->u.last_cycle_piece = p;
+        p = child;
+      }
+      else {
+        *last = p;
+        last = &p->cycle_id;
+        p->rf_flags &= ~GC_ORDER_PENDING;
+        p = p->u.last_cycle_piece;
+      }
+    }
+  }
+  *last = NULL;
+  for (r = first; r; r = r->cycle_id) r->cycle_piece = r->cycle_id;
+  return first;
+}
+
 static void gc_cycle_pop(void)
 {
 #ifdef PIKE_DEBUG
@@ -3231,6 +3346,8 @@ static void gc_cycle_pop(void)
 #endif
 
       CYCLE_DEBUG_MSG (popped, "gc_cycle_pop, popping cycle");
+
+      popped = gc_order_cycle(popped);
 
       do {
 	struct marker *m = find_marker (popped->data);
@@ -3584,6 +3701,7 @@ size_t do_gc(int explicit_call)
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
     gc_touch_all_strings();
+    gc_touch_all_types();
 #endif
     if (n != (unsigned) num_objects && !got_unlinked_things)
       Pike_fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
@@ -3600,6 +3718,7 @@ size_t do_gc(int explicit_call)
   mark_externals();
 #endif
   call_callback(& gc_callbacks, NULL);
+  gc_check_type_binop_cache();
 
   ACCEPT_UNFINISHED_TYPE_FIELDS {
     gc_check_all_arrays();
@@ -3652,6 +3771,7 @@ size_t do_gc(int explicit_call)
       gc_mark_run_queue();
       gc_mark_all_objects();
       gc_mark_run_queue();
+      gc_mark_type_binop_cache();
 #ifdef PIKE_DEBUG
       if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */
@@ -3723,6 +3843,7 @@ size_t do_gc(int explicit_call)
     /* Zap weak references from external to internal things. That
      * occurs when something has both external weak refs and nonweak
      * cyclic refs from internal things. */
+    gc_mark_type_binop_cache();
     gc_zap_ext_weak_refs_in_mappings();
     gc_zap_ext_weak_refs_in_arrays();
     gc_zap_ext_weak_refs_in_multisets();
@@ -3754,6 +3875,7 @@ size_t do_gc(int explicit_call)
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
     gc_touch_all_strings();
+    gc_touch_all_types();
 #endif
     if (n != (unsigned) num_objects && !got_unlinked_things)
       Pike_fatal("Object count wrong in gc; expected %d, got %d.\n", num_objects, n);
@@ -3790,6 +3912,7 @@ size_t do_gc(int explicit_call)
 #endif
 
   GC_POP_CALL_FRAME();	/* We can now free the frame. */
+  gc_free_type_binop_cache();
 
   /* Now we free the unused stuff. The extra refs to gc_internal_*
    * added above are removed just before the calls so we'll get the
@@ -3808,6 +3931,8 @@ size_t do_gc(int explicit_call)
    * necessary to free the objects before the programs. */
   if (gc_internal_program)
     unreferenced += gc_free_all_unreferenced_programs();
+
+  gc_free_all_weak_types();
 
   if (free_extra_frames > tot_max_free_extra_frames)
     tot_max_free_extra_frames = free_extra_frames;
@@ -3872,9 +3997,19 @@ size_t do_gc(int explicit_call)
 #ifdef PIKE_DEBUG
       {
 	struct gc_rec_frame *r;
-	for (r = kill_list; r != &sentinel_frame; r = r->next)
-	  /* Can't do this while the list is being freed below. */
-	  CHECK_KILL_LIST_FRAME (r);
+        for (r = kill_list; r != &sentinel_frame; r = r->next)
+          r->rf_flags |= GC_ORDER_PENDING;
+        for (r = kill_list; r != &sentinel_frame; r = r->next) {
+          struct marker *m;
+          /* Check all strong dependencies before any destructor runs. */
+          CHECK_KILL_LIST_FRAME (r);
+          if (r->strong_ref && (m = find_marker(r->strong_ref)) && m->frame &&
+              (m->frame->rf_flags & GC_ON_KILL_LIST) &&
+              !(m->frame->rf_flags & GC_ORDER_PENDING))
+            gc_fatal(r->data, 0,
+                     "Invalid strong reference destruction order.\n");
+          r->rf_flags &= ~GC_ORDER_PENDING;
+        }
       }
 
       /* A helper to locate garbage through trampolines.

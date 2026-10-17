@@ -710,6 +710,53 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
     }
   }
 
+  /* This property requires all children to be invariant. Do not inherit
+   * it through the OR propagation of flags above (or the inversion of
+   * flags for T_NOT). Keep operators, scopes, attributes, bindings and
+   * transitive types on the ordinary remapping path. Also leave joiners
+   * and negations there: rebuilding them can normalize a closed type.
+   */
+  t->flags &= ~PT_FLAG_REMAP_INVARIANT;
+  switch (type) {
+  case T_OBJECT:
+  case T_VOID:
+  case T_ZERO:
+  case T_INT:
+  case T_FLOAT:
+  case T_MIXED:
+    t->flags |= PT_FLAG_REMAP_INVARIANT;
+    break;
+
+  case T_MULTISET:
+  case T_TYPE:
+  case PIKE_T_AUTO:
+    if (car && (car->flags & PT_FLAG_REMAP_INVARIANT)) {
+      t->flags |= PT_FLAG_REMAP_INVARIANT;
+    }
+    break;
+
+  case T_PROGRAM:
+    if (car && (car->type == T_OBJECT)) {
+      t->flags |= PT_FLAG_REMAP_INVARIANT;
+    }
+    break;
+
+  case T_ARRAY:
+  case T_STRING:
+    /* Rebuilding a zero-length type discards its content type. */
+    if (car && (car->type == T_ZERO)) break;
+    /* FALLTHRU */
+  case T_FUNCTION:
+  case T_MANY:
+  case T_TUPLE:
+  case T_MAPPING:
+    if (car && cdr &&
+        (car->flags & cdr->flags & PT_FLAG_REMAP_INVARIANT)) {
+      t->flags |= PT_FLAG_REMAP_INVARIANT;
+    }
+    break;
+  }
+
 #ifdef DEBUG_MALLOC
   switch(type & PIKE_T_MASK) {
   case T_FUNCTION:
@@ -3711,11 +3758,25 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 
 /******/
 
+struct mapping *get_call_state_mapping(struct call_state *cs)
+{
+  if (!cs->m) cs->m = allocate_mapping(4);
+  if (cs->pending_argno >= 0) {
+    push_int(cs->pending_argno);
+    push_constant_text("argno");
+    mapping_insert(cs->m, Pike_sp-1, Pike_sp-2);
+    pop_n_elems(2);
+    cs->pending_argno = -1;
+  }
+  return cs->m;
+}
+
 struct remap_state {
   unsigned char map[0x20];	/* Remap current ==> new (char). */
   unsigned INT32 allocated;	/* Bitmask of allocated new markers. */
   struct mapping *markers[2];	/* Mapping(s) marker ==> type. */
   struct mapping *state;	/* User-level state. */
+  struct call_state *call_state; /* Borrowed; materialize state on demand. */
 };
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -3724,6 +3785,7 @@ struct remap_state {
     REMAP.markers[0] = NULL;				\
     REMAP.markers[1] = NULL;				\
     REMAP.state = NULL;					\
+    REMAP.call_state = NULL;                                     \
   } while(0)
 #else
 #define INIT_REMAP_STATE(REMAP) do {			\
@@ -3746,6 +3808,17 @@ static inline void exit_remap_state(struct remap_state *remap)
   }
 }
 #define EXIT_REMAP_STATE(REMAP) exit_remap_state(&REMAP)
+
+static struct mapping *get_remap_state_mapping(struct remap_state *remap)
+{
+  if (remap->call_state) {
+    struct mapping *state = get_call_state_mapping(remap->call_state);
+    if (!remap->state) add_ref(remap->state = state);
+  } else if (!remap->state) {
+    remap->state = allocate_mapping(4);
+  }
+  return remap->state;
+}
 
 #ifdef PIKE_DEBUG
 static void simple_describe_remap_state(struct remap_state *remap)
@@ -4079,14 +4152,11 @@ static void push_remap_markers(struct pike_type *t,
 			       enum pt_remap_flags flags)
 {
   if (!t || (flags & PT_FLAG_REMAP_INHIBIT) ||
-      (!remap && !(flags & PT_FLAG_REMAP_EVAL_MARKERS))) {
+      (!remap && !(flags & PT_FLAG_REMAP_EVAL_MARKERS)) ||
+      (t->flags & PT_FLAG_REMAP_INVARIANT)) {
     push_finished_type(t);
     return;
   }
-
-  /* FIXME: Use the type flags to detect whether we can just push
-   *        the type verbatim.
-   */
 
   switch(t->type & PIKE_T_MASK) {
   case T_ASSIGN:
@@ -4651,7 +4721,234 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 					  enum pt_cmp_flags aflags,
 					  enum pt_cmp_flags bflags,
 					  enum pt_remap_flags remap_flags);
+/* Memoize operations on closed, context-independent types. Entries own
+ * weak references, so their pointer keys cannot be reused while cached.
+ * Cache NULL results too: failed intersections are common in call checks.
+ */
+#define TYPE_BINOP_CACHE_SIZE 4096
+
+enum type_binop_cache_status {
+  TYPE_BINOP_CACHE_EMPTY,
+  TYPE_BINOP_CACHE_VALID,
+  TYPE_BINOP_CACHE_EVICT
+};
+
+static struct type_binop_cache_entry {
+  struct pike_type *a, *b, *result;
+  unsigned int op, aflags, bflags, remap_flags, external;
+  enum type_binop_cache_status status;
+} type_binop_cache[TYPE_BINOP_CACHE_SIZE];
+
+static struct type_binop_cacheability_entry {
+  struct pike_type *type;
+  int cacheable;
+} type_binop_cacheability[TYPE_BINOP_CACHE_SIZE];
+
+/* Enabled by default. PIKE_BINOP_CACHE=0 disables it; "verify" recomputes
+ * every hit and checks that neither the result nor remap state changed.
+ */
+static int type_binop_cache_mode;
+static unsigned long type_binop_cache_verified;
+
+static void report_type_binop_cache(void)
+{
+  fprintf(stderr, "Verified %lu type binop cache hits.\n",
+          type_binop_cache_verified);
+}
+
+static void clear_type_binop_cache_entry(struct type_binop_cache_entry *e)
+{
+  e->status = TYPE_BINOP_CACHE_EMPTY;
+  free_type(e->a);
+  free_type(e->b);
+  free_type(e->result);
+  e->a = e->b = e->result = NULL;
+}
+
+static void clear_type_binop_cache(void)
+{
+  unsigned int i;
+  for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
+    if (type_binop_cache[i].status != TYPE_BINOP_CACHE_EMPTY)
+      clear_type_binop_cache_entry(&type_binop_cache[i]);
+    free_type(type_binop_cacheability[i].type);
+    type_binop_cacheability[i].type = NULL;
+  }
+}
+
+static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
+{
+  struct type_binop_cacheability_entry *e;
+  int cacheable;
+  if (!t) return 1;
+  if (t->flags & (PT_FLAG_MARK_ASSIGN|PT_FLAG_MASK_GENERICS)) return 0;
+  switch (t->type) {
+  case PIKE_T_INT: case PIKE_T_FLOAT: case PIKE_T_ZERO:
+  case PIKE_T_VOID: case PIKE_T_MIXED:
+    return 1;
+  default: break;
+  }
+  e = &type_binop_cacheability[
+    ((size_t)t >> 4) & (TYPE_BINOP_CACHE_SIZE - 1)];
+  if (e->type == t) return e->cacheable;
+  /* Very deep types can still use the ordinary operation without adding
+   * an unbounded cacheability walk to its stack usage. */
+  if (depth == 128) return 0;
+  switch (t->type) {
+  case PIKE_T_OR: case PIKE_T_AND: case PIKE_T_ARRAY: case PIKE_T_STRING:
+  case PIKE_T_MAPPING: case PIKE_T_FUNCTION: case PIKE_T_MANY:
+  case PIKE_T_TUPLE:
+    cacheable = type_binop_cacheable(t->car, depth + 1) &&
+      type_binop_cacheable(t->cdr, depth + 1);
+    break;
+  case PIKE_T_MULTISET: case PIKE_T_NOT:
+    cacheable = type_binop_cacheable(t->car, depth + 1);
+    break;
+  default:
+    /* In particular, exclude program/object identities, attributes,
+     * scopes and markers. They can depend on compiler or remap state.
+     */
+    cacheable = 0;
+    break;
+  }
+  free_type(e->type);
+  e->type = t;
+  add_ref(t);
+  e->cacheable = cacheable;
+  return cacheable;
+}
+
+void gc_check_type_binop_cache(void)
+{
+  unsigned int i;
+  if (type_binop_cache_mode <= 0) return;
+  for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
+    struct type_binop_cache_entry *e = &type_binop_cache[i];
+    if (e->status != TYPE_BINOP_CACHE_EMPTY) {
+      if (e->a) gc_check_weak_external(e->a, " as type binop cache operand");
+      if (e->b) gc_check_weak_external(e->b, " as type binop cache operand");
+      if (e->result)
+        gc_check_weak_external(e->result, " as type binop cache result");
+    }
+    if (type_binop_cacheability[i].type)
+      gc_check_weak_external(type_binop_cacheability[i].type,
+                             " in type binop cacheability cache");
+  }
+}
+
+void gc_mark_type_binop_cache(void)
+{
+  unsigned int i, j;
+  struct pike_type **refs[3];
+  union anything u;
+  if (type_binop_cache_mode <= 0) return;
+  for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
+    struct type_binop_cache_entry *e = &type_binop_cache[i];
+    if (e->status != TYPE_BINOP_CACHE_EMPTY) {
+      refs[0] = &e->a;
+      refs[1] = &e->b;
+      refs[2] = &e->result;
+      for (j = 0; j < 3; j++) if (*refs[j]) {
+        u.type = *refs[j];
+        if (gc_mark_weak_short_svalue(&u, PIKE_T_TYPE))
+          e->status = TYPE_BINOP_CACHE_EVICT;
+        *refs[j] = u.type;
+      }
+    }
+    if (type_binop_cacheability[i].type) {
+      u.type = type_binop_cacheability[i].type;
+      gc_mark_weak_short_svalue(&u, PIKE_T_TYPE);
+      type_binop_cacheability[i].type = u.type;
+    }
+  }
+}
+
+void gc_free_type_binop_cache(void)
+{
+  unsigned int i;
+  /* Other fields of an evicted entry can still hold registered weak
+   * references. Process them through mark/zap before releasing them in
+   * the free pass, when cascading frees are allowed again.
+   */
+  if (type_binop_cache_mode <= 0) return;
+  for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++)
+    if (type_binop_cache[i].status == TYPE_BINOP_CACHE_EVICT)
+      clear_type_binop_cache_entry(&type_binop_cache[i]);
+}
+
+static struct pike_type *uncached_type_binop(enum pt_binop op,
+  struct pike_type *a, struct pike_type *b, struct remap_state *remap,
+  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags,
+  enum pt_remap_flags remap_flags);
+
 static struct pike_type *low_type_binop(enum pt_binop op,
+  struct pike_type *a, struct pike_type *b, struct remap_state *remap,
+  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags,
+  enum pt_remap_flags remap_flags)
+{
+  struct type_binop_cache_entry *e;
+  struct pike_type *result;
+  size_t hash;
+  if (!type_binop_cache_mode || (remap_flags & PT_FLAG_REMAP_TRACE) ||
+      !type_binop_cacheable(a, 0) || !type_binop_cacheable(b, 0))
+    return uncached_type_binop(op, a, b, remap, aflags, bflags, remap_flags);
+
+  hash = ((size_t)a >> 4) ^ ((size_t)b >> 2) ^ (op * 7919) ^
+    (aflags * 71) ^ (bflags * 19) ^ (remap_flags * 3) ^ !!remap;
+  e = &type_binop_cache[hash & (TYPE_BINOP_CACHE_SIZE - 1)];
+  if (e->status == TYPE_BINOP_CACHE_VALID && e->a == a && e->b == b &&
+      e->op == (unsigned int)op && e->aflags == (unsigned int)aflags &&
+      e->bflags == (unsigned int)bflags &&
+      e->remap_flags == (unsigned int)remap_flags && e->external == !!remap) {
+    result = e->result;
+    if (result) add_ref(result);
+    if (type_binop_cache_mode == 2) {
+      struct pike_type *actual;
+      struct remap_state before;
+      struct mapping_data *markers0 = remap && remap->markers[0] ?
+        remap->markers[0]->data : NULL;
+      struct mapping_data *markers1 = remap && remap->markers[1] ?
+        remap->markers[1]->data : NULL;
+      if (remap) before = *remap;
+      /* Recursive calls may replace this cache entry. Keep our own
+       * reference to the expected result throughout verification.
+       */
+      actual = uncached_type_binop(op, a, b, remap, aflags, bflags,
+                                   remap_flags);
+      if (actual != result)
+        Pike_fatal("Type binop cache result mismatch.\n");
+      if (remap &&
+          (memcmp(before.map, remap->map, sizeof(before.map)) ||
+           before.allocated != remap->allocated ||
+           before.state != remap->state ||
+           markers0 != (remap->markers[0] ? remap->markers[0]->data : NULL) ||
+           markers1 != (remap->markers[1] ? remap->markers[1]->data : NULL)))
+        Pike_fatal("Type binop cache remap state changed.\n");
+      free_type(actual);
+      type_binop_cache_verified++;
+    }
+    return result;
+  }
+
+  result = uncached_type_binop(op, a, b, remap, aflags, bflags, remap_flags);
+  /* Recursion may have populated this slot since the lookup. */
+  if (e->status != TYPE_BINOP_CACHE_EMPTY) clear_type_binop_cache_entry(e);
+  e->a = a;
+  e->b = b;
+  e->result = result;
+  if (a) add_ref(a);
+  if (b) add_ref(b);
+  if (result) add_ref(result);
+  e->op = op;
+  e->aflags = aflags;
+  e->bflags = bflags;
+  e->remap_flags = remap_flags;
+  e->external = !!remap;
+  e->status = TYPE_BINOP_CACHE_VALID;
+  return result;
+}
+
+static struct pike_type *uncached_type_binop(enum pt_binop op,
 					struct pike_type *a,
 					struct pike_type *b,
 					struct remap_state *remap,
@@ -5324,10 +5621,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  ref_push_type_value(a->cdr);
 	  ref_push_type_value(b);
 	  if (remap) {
-	    if (!remap->state) {
-	      remap->state = allocate_mapping(4);
-	    }
-	    ref_push_mapping(remap->state);
+            ref_push_mapping(get_remap_state_mapping(remap));
 	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 4,
 				"pop_type_attribute");
 	  } else {
@@ -5404,10 +5698,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	ref_push_type_value(a);
 	ref_push_type_value(b->cdr);
 	if (remap) {
-	  if (!remap->state) {
-	    remap->state = allocate_mapping(4);
-	  }
-	  ref_push_mapping(remap->state);
+          ref_push_mapping(get_remap_state_mapping(remap));
 	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 4,
 			      "push_type_attribute");
 	} else {
@@ -12214,12 +12505,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 			       cs, sval CHECK_CALL_ARGS);
     if (!res) return NULL;
     if (c) {
-      if (!cs->m) {
-	cs->m = allocate_mapping(0);
-      }
       ref_push_string((struct pike_string *)fun_type->car);
       ref_push_type_value(res);
-      ref_push_mapping(cs->m);
+      ref_push_mapping(get_call_state_mapping(cs));
       safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "apply_type_attribute");
       if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
@@ -12495,15 +12783,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       }
 #endif /* PIKE_DEBUG */
 
-      if (!cs->m) {
-	cs->m = allocate_mapping(4);
-      }
-      add_ref(remap.state = cs->m);
-
-      push_int(cs->argno);
-      push_constant_text("argno");
-      mapping_insert(cs->m, Pike_sp-1, Pike_sp-2);
-      pop_n_elems(2);
+      /* Attribute handlers share state across arguments and alternatives.
+       * Defer both allocation and the argno update until they observe it.
+       */
+      remap.call_state = cs;
+      cs->pending_argno = cs->argno;
 
       /* No need to perform advanced checking in the trivial case... */
       if (arg_type != (tmp2 = fun_type->car)) {
@@ -12623,9 +12907,6 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  struct compilation *c = MAYBE_THIS_COMPILATION;
 	  if (c) {
 	    /* Perform extra argument checking based on the attribute. */
-	    if (!cs->m) {
-	      cs->m = allocate_mapping(0);
-	    }
 	    ref_push_string((struct pike_string *)tmp2->car);
 	    if (sval) {
 	      push_svalue(sval);
@@ -12634,7 +12915,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	    }
 	    ref_push_type_value(arg_match);
 	    ref_push_type_value(res);
-	    ref_push_mapping(cs->m);
+            ref_push_mapping(get_call_state_mapping(cs));
 	    safe_apply_current(PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM, 5);
 	    if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
 	      /* Got an alternative type for fun_type.
@@ -12951,12 +13232,9 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     tmp = new_get_return_type(fun_type->cdr, cs, flags);
     if (!tmp) break;
     if (c) {
-      if (!cs->m) {
-	cs->m = allocate_mapping(0);
-      }
       ref_push_string((struct pike_string *)fun_type->car);
       push_undefined();
-      ref_push_mapping(cs->m);
+      ref_push_mapping(get_call_state_mapping(cs));
       safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "apply_type_attribute");
       if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
@@ -13173,12 +13451,9 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
        tmp = tmp->cdr) {
   redo:
     if (tmp->type == PIKE_T_ATTRIBUTE) {
-      if (!cs->m) {
-	cs->m = allocate_mapping(0);
-      }
       ref_push_string((struct pike_string *)tmp->car);
       ref_push_type_value(tmp->cdr);
-      ref_push_mapping(cs->m);
+      ref_push_mapping(get_call_state_mapping(cs));
       safe_apply_current2(PC_EVAL_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "eval_type_attribute");
       if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
@@ -16164,6 +16439,12 @@ static int type_stack_mmap, pike_type_mark_stack_mmap;
 
 void init_types(void)
 {
+  const char *mode = getenv("PIKE_BINOP_CACHE");
+
+  type_binop_cache_mode = mode && !strcmp(mode, "0") ? 0 :
+    mode && !strcmp(mode, "verify") ? 2 : 1;
+  if (type_binop_cache_mode == 2) atexit(report_type_binop_cache);
+
   /* Initialize hashtable here. */
   pike_type_hash = xcalloc(sizeof(struct pike_type *),
                            (PIKE_TYPE_HASH_SIZE+1));
@@ -16263,6 +16544,8 @@ void init_types(void)
 
 void cleanup_pike_types(void)
 {
+  clear_type_binop_cache();
+
   if (concurrent_future_program) {
     free_program(concurrent_future_program);
     concurrent_future_program = NULL;
@@ -16547,12 +16830,35 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
   visit_leave(t, PIKE_T_TYPE, extra);
 }
 
-#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+/* Types are acyclic. Weak collection only considers direct references,
+ * so no type-table traversal is needed outside debug/cleanup builds. */
+static struct pike_type *gc_pending_weak_types;
 
-/* This is only enough gc stuff to detect leaking pike_type structs
- * and to locate references to them. More is needed if types are
- * extended to contain pointers to other memory objects or if they
- * might contain cycles. */
+void gc_queue_weak_type(struct pike_type *t)
+{
+#ifdef PIKE_DEBUG
+  if (t->frame)
+    Pike_fatal("Type already has a GC frame in gc_queue_weak_type.\n");
+#endif
+  /* Types never enter the cycle pass. Their extra GC references keep
+   * every queued node alive until its link has been read and cleared. */
+  t->frame = (struct gc_rec_frame *)gc_pending_weak_types;
+  gc_pending_weak_types = t;
+}
+
+void gc_free_all_weak_types(void)
+{
+  while (gc_pending_weak_types) {
+    struct pike_type *t = gc_pending_weak_types;
+    gc_pending_weak_types = (struct pike_type *)t->frame;
+    t->frame = NULL;
+    get_marker(t)->gc_flags &= ~GC_GOT_DEAD_REF;
+    gc_free_extra_ref(t);
+    free_type(t);
+  }
+}
+
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
 
 void gc_mark_type_as_referenced(struct pike_type *t)
 {
@@ -16579,6 +16885,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case PIKE_T_BIND:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
       /* FALLTHROUGH */
+      case PIKE_T_AUTO:
       case PIKE_T_MULTISET:
       case T_NOT:
       case PIKE_T_TYPE:
@@ -16744,6 +17051,17 @@ void gc_check_type (struct pike_type *t)
     }
   } GC_LEAVE;
 }
+
+#ifdef PIKE_DEBUG
+void gc_touch_all_types(void)
+{
+  size_t e;
+  for (e = 0; e <= pike_type_hash_size; e++) {
+    struct pike_type *t;
+    for (t = pike_type_hash[e]; t; t = t->next) debug_gc_touch(t);
+  }
+}
+#endif
 
 void gc_check_all_types (void)
 {

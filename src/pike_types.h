@@ -73,6 +73,8 @@ extern size_t pike_type_hash_size;
 
 #define PT_FLAG_MASK_GENERICS	0x400400	/* Generics used in tree. */
 
+#define PT_FLAG_REMAP_INVARIANT	0x800000	/* Unchanged by marker remapping. */
+
 #define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
 
 #define PT_FLAG_VOIDABLE	0x2000000
@@ -210,6 +212,7 @@ struct call_state
   struct pike_string *fun_name;
   struct pike_type *matched_type;
   INT32 argno;
+  INT32 pending_argno;           /* Deferred state["argno"] update, or -1. */
 };
 
 #define LOW_INIT_CALL_STATE(CS, NAME, ARGNO, MAP)	do {	\
@@ -222,6 +225,7 @@ struct call_state
     add_ref((CS).fun_name);					\
     (CS).matched_type = NULL;                                   \
     (CS).argno = (ARGNO);					\
+    (CS).pending_argno = -1;                                     \
   } while (0)
 
 #define INIT_CALL_STATE(CS, NAME)	LOW_INIT_CALL_STATE(CS, NAME, 0, NULL)
@@ -229,9 +233,14 @@ struct call_state
 #define FREE_CALL_STATE(CS) free_call_state(&(CS))
 
 static inline void free_type(struct pike_type *t);
+struct mapping *get_call_state_mapping(struct call_state *cs);
 static inline void free_call_state(struct call_state *cs)
 {
   if (cs->m) {
+    /* A caller-supplied mapping must receive deferred updates even if
+     * no attribute handler needed to inspect it.
+     */
+    if (cs->pending_argno >= 0) get_call_state_mapping(cs);
     free_mapping(cs->m);
     cs->m = NULL;
   }
@@ -244,6 +253,7 @@ static inline void free_call_state(struct call_state *cs)
     cs->matched_type = NULL;
   }
   cs->argno = 0;
+  cs->pending_argno = -1;
 }
 
 /*
@@ -502,6 +512,14 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
 PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra);
 void gc_mark_type_as_referenced(struct pike_type *t);
 void gc_check_type (struct pike_type *t);
+void gc_check_type_binop_cache(void);
+void gc_mark_type_binop_cache(void);
+void gc_free_type_binop_cache(void);
+void gc_queue_weak_type(struct pike_type *t);
+void gc_free_all_weak_types(void);
+#ifdef PIKE_DEBUG
+void gc_touch_all_types(void);
+#endif
 void gc_check_all_types (void);
 int type_may_overload(struct pike_type *type, int lfun);
 void yyexplain_nonmatching_types(int severity_level,

@@ -2430,10 +2430,10 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       PRE FREE_WEAK(U, T, ZAP) GC_DO(U, multiset); break;		\
     case T_MAPPING:							\
       PRE FREE_WEAK(U, T, ZAP) GC_DO(U, mapping); break;		\
-    DO_IF_DEBUG_OR_CLEANUP (						\
-    case T_TYPE:							\
-      PRE DO_TYPE(U, type); break;					\
-    );									\
+    case PIKE_T_TYPE:							\
+      PRE FREE_WEAK(U, T, ZAP)					\
+      DO_IF_DEBUG_OR_CLEANUP (DO_TYPE(U, type));			\
+      break;								\
     case PIKE_T_FREE:							\
       /* Skip to next svalue. Typically continue or break. */		\
       DO_SKIP;								\
@@ -2442,7 +2442,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 #define DONT_FREE_WEAK(U, T, ZAP)
 
 #define FREE_WEAK(U, T, ZAP)						\
-      if (gc_do_weak_free(U.refs)) {					\
+      if (gc_do_weak_free(U.refs, T)) {					\
 	ZAP();								\
 	freed = 1;							\
 	break;								\
@@ -2513,7 +2513,7 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
     GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, FREE_WEAK,
 		      GC_DONT_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, DO_MARK_OBJ_WEAK,
-		      DO_MARK_STRING, GC_DO_MARK, continue);
+                      DO_MARK_STRING, GC_DONT_MARK, continue);
     t = accumulate_type_field(s, t);
   }
   return freed ? t : 0;
@@ -2540,7 +2540,7 @@ int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
     GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
 		      GC_DONT_MARK, {if (!u->refs) return 0;},
 		      DO_FUNC_SHORT_SVALUE, DO_MARK_OBJ_WEAK,
-		      DO_MARK_STRING, GC_DO_MARK, break);
+                      DO_MARK_STRING, GC_DONT_MARK, break);
   } while (0);
   return freed;
 }
@@ -2660,7 +2660,8 @@ void real_gc_free_svalue(struct svalue *s)
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
       Pike_fatal("gc_free_svalue() called in invalid gc pass.\n");
 #endif
-    if (REFCOUNTED_TYPE(TYPEOF(*s)) && TYPEOF(*s) <= MAX_COMPLEX &&
+    if (REFCOUNTED_TYPE(TYPEOF(*s)) &&
+        (TYPEOF(*s) <= MAX_COMPLEX || TYPEOF(*s) == PIKE_T_TYPE) &&
 	*(s->u.refs) == 1)
       gc_delayed_free(s->u.refs, TYPEOF(*s));
   }
@@ -2675,7 +2676,8 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
       Pike_fatal("gc_free_short_svalue() called in invalid gc pass.\n");
 #endif
-    if (REFCOUNTED_TYPE(type) && type <= MAX_COMPLEX && *u->refs == 1)
+    if (REFCOUNTED_TYPE(type) && (type <= MAX_COMPLEX || type == PIKE_T_TYPE) &&
+        *u->refs == 1)
       gc_delayed_free(u->refs, type);
   }
   free_short_svalue(u, type);
