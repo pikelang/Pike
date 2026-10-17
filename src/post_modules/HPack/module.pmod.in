@@ -94,7 +94,7 @@ constant static_header_tab = ({
 //! @param i
 //!   Value to store in the index for the key.
 protected void update_index(mapping(string(8bit):int|mapping(string(8bit):int)) index,
-			    int i, array(string(8bit)) key)
+                            int i, array(string(8bit)) key)
 {
   if (!index[key[0]]) {
     if (key[1] == "") {
@@ -144,10 +144,10 @@ constant DEFAULT_HEADER_TABLE_SIZE = 4096;
 
 //! Flags for @[Context()->encode_header()] et al.
 enum HPackFlags {
-  HEADER_INDEXED = 0,		//! Indexed header.
-  HEADER_NOT_INDEXED = 1,	//! Unindexed header.
-  HEADER_NEVER_INDEXED = 2,	//! Never indexed header.
-  HEADER_INDEXED_MASK = 3,	//! Bitmask for indexing mode.
+  HEADER_INDEXED = 0,           //! Indexed header.
+  HEADER_NOT_INDEXED = 1,       //! Unindexed header.
+  HEADER_NEVER_INDEXED = 2,     //! Never indexed header.
+  HEADER_INDEXED_MASK = 3,      //! Bitmask for indexing mode.
 };
 
 //! Context for an HPack encoder or decoder.
@@ -277,7 +277,7 @@ class Context
       dynamic_headers = dynamic_headers[dynamic_prefix..];
       dynamic_prefix = 0;
       foreach(dynamic_headers; int i; array(string(8bit)) entry) {
-	update_index(header_index, ~i, entry);
+        update_index(header_index, ~i, entry);
       }
     }
   }
@@ -551,7 +551,7 @@ class Context
   //! @param value
   //!   Integer value to encode.
   protected void put_int(Stdio.Buffer buf, int(0..255) bits, int(0..255) mask,
-			 int value)
+                         int value)
   {
     if (value < mask) {
       buf->add_int(bits | value, 1);
@@ -634,34 +634,34 @@ class Context
   //! @seealso
   //!   @[encode()], @[decode_header()]
   void encode_header(Stdio.Buffer buf, string(8bit) header, string(8bit) value,
-		     HPackFlags|void flags)
+                     HPackFlags|void flags)
   {
     int|mapping(string(8bit):int) entry = header_index[header];
     if (entry) {
       if (intp(entry)) {
-	if (value == "") {
-	  // 6.1 Indexed header.
-	  if (entry < 0) {
-	    entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
-	  }
-	  put_int(buf, 0x80, 0x7f, entry);
-	  return;
-	}
+        if (value == "") {
+          // 6.1 Indexed header.
+          if (entry < 0) {
+            entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+          }
+          put_int(buf, 0x80, 0x7f, entry);
+          return;
+        }
       } else if (entry[value] && !(flags & HEADER_INDEXED_MASK)) {
-	entry = entry[value];
-	// 6.1 Indexed header.
-	if (entry < 0) {
-	  entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
-	}
-	put_int(buf, 0x80, 0x7f, entry);
-	return;
+        entry = entry[value];
+        // 6.1 Indexed header.
+        if (entry < 0) {
+          entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+        }
+        put_int(buf, 0x80, 0x7f, entry);
+        return;
       } else if (entry[""]) {
-	entry = entry[""];
+        entry = entry[""];
       } else {
-	entry = entry[sort(indices(entry))[0]];
+        entry = entry[sort(indices(entry))[0]];
       }
       if (entry < 0) {
-	entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+        entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
       }
       put_literal_prefix(buf, flags, entry);
     } else {

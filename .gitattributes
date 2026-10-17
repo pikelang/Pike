@@ -943,7 +943,6 @@ Makefile.rl -space_indent tab_indent
 /src/post_modules/GTK2/source/support.c mixed_indent
 /src/post_modules/HPack/hpack.cmod mixed_indent
 /src/post_modules/HPack/mk_huffman.pike mixed_indent
-/src/post_modules/HPack/module.pmod.in mixed_indent
 /src/post_modules/HPack/testsuite.in mixed_indent
 /src/post_modules/JSON/JSON.pmod.in mixed_indent
 /src/post_modules/JSON/json.cmod mixed_indent
