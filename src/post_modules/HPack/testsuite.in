@@ -216,6 +216,10 @@ dnl Decoding a truncated varint continuation byte (0x3f with no
 dnl following byte) must raise an error rather than hang.
 test_eval_error(D->decode("\x3f"))
 
+dnl A header block consisting of many consecutive Dynamic Table Size
+dnl Update entries (0x20) must decode without growing the C stack.
+test_eq(D->decode_header(Stdio.Buffer("\x20" * 100000)), UNDEFINED)
+
 test_do(add_constant("F"))
 test_do(add_constant("E"))
 test_do(add_constant("D"))

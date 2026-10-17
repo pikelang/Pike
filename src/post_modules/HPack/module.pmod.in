@@ -405,91 +405,95 @@ class Context
   //!   @[decode()], @[encode_header()]
   array(string(8bit)|HPackFlags) decode_header(Stdio.Buffer buf)
   {
-    if (!sizeof(buf)) return UNDEFINED;
+    while (1) {
+      if (!sizeof(buf)) return UNDEFINED;
 
-    int c = buf->read_int(1);
-    if (c & 0x80) {
-      // 6.1 Indexed Header Field Representation.
-      c &= 0x7f;
-      if (!c) {
-	error("Invalid header: 0x80.\n");
-      }
-      if (c == 0x7f) {
-	c += get_long_int(buf);
-      }
-      array(string(8bit)) tuple = get_indexed_header(c);
-      if (!tuple) {
-	error("Unknown header.\n");
-      }
-      return tuple;
-    } else if (c & 0x40) {
-      // 6.2.1 Literal Header Field with Incremental Indexing.
-      string(8bit) header;
+      int c = buf->read_int(1);
+      if (c & 0x80) {
+        // 6.1 Indexed Header Field Representation.
+        c &= 0x7f;
+        if (!c) {
+          error("Invalid header: 0x80.\n");
+        }
+        if (c == 0x7f) {
+          c += get_long_int(buf);
+        }
+        array(string(8bit)) tuple = get_indexed_header(c);
+        if (!tuple) {
+          error("Unknown header.\n");
+        }
+        return tuple;
+      } else if (c & 0x40) {
+        // 6.2.1 Literal Header Field with Incremental Indexing.
+        string(8bit) header;
 
-      c &= 0x3f;
-      if (!c) {
-	// New name.
-	header = get_string(buf);
+        c &= 0x3f;
+        if (!c) {
+          // New name.
+          header = get_string(buf);
+        } else {
+          // Indexed.
+          if (c == 0x3f) {
+            c += get_long_int(buf);
+          }
+          array(string(8bit)) tuple = get_indexed_header(c);
+          if (!tuple) {
+            error("Unknown header.\n");
+          }
+          header = tuple[0];
+        }
+
+        string(8bit) value = get_string(buf);
+        add_header(header, value);
+        return ({ header, value });
+      } else if (!(c & 0xe0)) {
+        // 6.2.2 Literal Header Field without Indexing.
+        // 6.2.3 Literal Header Field Never Indexed.
+        HPackFlags flags = (c & 0x10) && HEADER_NEVER_INDEXED;
+        string(8bit) header;
+        c &= 0x0f;
+        if (!c) {
+          // New name.
+          header = get_string(buf);
+        } else {
+          // Indexed name.
+          if (c == 0x0f) {
+            c += get_long_int(buf);
+          }
+          array(string(8bit)) tuple = get_indexed_header(c);
+          if (!tuple) {
+            error("Unknown header.\n");
+          }
+          header = tuple[0];
+        }
+
+        string(8bit) value = get_string(buf);
+        if (flags) {
+          return ({ header, value, flags });
+        }
+        return ({ header, value });
+      } else if (c & 0x20) {
+        // 6.3 Dynamic Table Size Update.
+        c &= 0x1f;
+        if (c == 0x1f) {
+          c += get_long_int(buf);
+        }
+        // FIXME: MUST be less than the protocol specified limit.
+        if (c > static_max_size) {
+          // MUST be less than the protocol specified limit.
+          error("Invalid dynamic max size (%d > %d.\n", c, static_max_size);
+        }
+        dynamic_max_size = c;
+        if (dynamic_max_size < dynamic_size) {
+          evict_dynamic_headers();
+        }
+        // Loop instead of recursing: a header block consisting of
+        // many consecutive size updates must not grow the C stack.
+        continue;
       } else {
-	// Indexed.
-	if (c == 0x3f) {
-	  c += get_long_int(buf);
-	}
-	array(string(8bit)) tuple = get_indexed_header(c);
-	if (!tuple) {
-	  error("Unknown header.\n");
-	}
-	header = tuple[0];
+        // NOT_REACHED
+        error("Invalid encoding.\n");
       }
-
-      string(8bit) value = get_string(buf);
-      add_header(header, value);
-      return ({ header, value });
-    } else if (!(c & 0xe0)) {
-      // 6.2.2 Literal Header Field without Indexing.
-      // 6.2.3 Literal Header Field Never Indexed.
-      HPackFlags flags = (c & 0x10) && HEADER_NEVER_INDEXED;
-      string(8bit) header;
-      c &= 0x0f;
-      if (!c) {
-	// New name.
-	header = get_string(buf);
-      } else {
-	// Indexed name.
-	if (c == 0x0f) {
-	  c += get_long_int(buf);
-	}
-	array(string(8bit)) tuple = get_indexed_header(c);
-	if (!tuple) {
-	  error("Unknown header.\n");
-	}
-	header = tuple[0];
-      }
-
-      string(8bit) value = get_string(buf);
-      if (flags) {
-	return ({ header, value, flags });
-      }
-      return ({ header, value });
-    } else if (c & 0x20) {
-      // 6.3 Dynamic Table Size Update.
-      c &= 0x1f;
-      if (c == 0x1f) {
-	c += get_long_int(buf);
-      }
-      // FIXME: MUST be less than the protocol specified limit.
-      if (c > static_max_size) {
-	// MUST be less than the protocol specified limit.
-	error("Invalid dynamic max size (%d > %d.\n", c, static_max_size);
-      }
-      dynamic_max_size = c;
-      if (dynamic_max_size < dynamic_size) {
-	evict_dynamic_headers();
-      }
-      return decode_header(buf);
-    } else {
-      // NOT_REACHED
-      error("Invalid encoding.\n");
     }
   }
 
