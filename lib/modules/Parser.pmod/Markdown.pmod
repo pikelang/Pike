@@ -1138,6 +1138,33 @@ class Renderer
     options = opts;
   }
 
+  // Counts how many times each heading id has been used, so repeats can
+  // be deduplicated by appending "-1", "-2", etc, GitHub-style.
+  protected mapping(string:int) heading_ids = ([]);
+
+  // Lower-cases raw and keeps unicode word characters (letters, digits),
+  // collapsing every run of anything else into a single "-". Leading and
+  // trailing "-" are dropped rather than kept, so trailing punctuation
+  // (e.g. "Hi there!") does not leave a dangling dash.
+  protected string slugify(string raw)
+  {
+    String.Buffer buf = String.Buffer();
+    bool last_dash = true;
+
+    foreach ((array(int))lower_case(raw), int c) {
+      if (Unicode.is_wordchar(c)) {
+        buf->putchar(c);
+        last_dash = false;
+      } else if (!last_dash) {
+        buf->putchar('-');
+        last_dash = true;
+      }
+    }
+
+    string id = buf->get();
+    return sizeof(id) && id[-1] == '-' ? id[..<1] : id;
+  }
+
   //! Collect additional attributes from the token and render them as HTML
   //! attributes. Default attributes can be provided.
   string attrs(mapping token, mapping|void dflt)
@@ -1189,7 +1216,10 @@ class Renderer
   //!
   string heading(string text, int level, string raw, mapping token)
   {
-    string id = options->header_prefix + lower_case(REGX("[^\\w]+")->replace(raw, "-"));
+    string slug = slugify(raw);
+    string base = options->header_prefix + (sizeof(slug) ? slug : "section");
+    string id = heading_ids[base] ? base + "-" + heading_ids[base] : base;
+    heading_ids[base] = (heading_ids[base] || 0) + 1;
     return "<h"
       + level
       + attrs(token, (["id": id]))

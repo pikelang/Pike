@@ -200,6 +200,29 @@ test_eq(Parser.Markdown.parse("```js\nx\n```\n\nSome text.\n"),
         "</code></pre>\n"
         "<p>Some text.</p>\n")
 
+dnl Heading anchor ids were built with a `[^\w]+` regexp whose `\w` only
+dnl recognizes ASCII word characters, so every non-ASCII letter was
+dnl replaced with "-" and lost entirely.
+test_eq(Parser.Markdown.parse("# \305sa \326berg\n"),
+        "<h1 id=\"\345sa-\366berg\">\305sa \326berg</h1>\n")
+
+dnl Trailing punctuation left a dangling "-" instead of being stripped.
+test_eq(Parser.Markdown.parse("# Hi there!\n"),
+        "<h1 id=\"hi-there\">Hi there!</h1>\n")
+
+dnl Ids were never deduplicated: repeated headings got the same id.
+test_eq(Parser.Markdown.parse("# Foo\n\n# Foo\n\n# Foo\n"),
+        "<h1 id=\"foo\">Foo</h1>\n"
+        "<h1 id=\"foo-1\">Foo</h1>\n"
+        "<h1 id=\"foo-2\">Foo</h1>\n")
+
+dnl A heading made entirely of non-word characters slugifies to "", but
+dnl an empty id is not usable as a fragment anchor, so it falls back to
+dnl "section" (still deduplicated like any other id).
+test_eq(Parser.Markdown.parse("# !!!\n\n# ???\n"),
+        "<h1 id=\"section\">!!!</h1>\n"
+        "<h1 id=\"section-1\">???</h1>\n")
+
 dnl Bug #10107 (aka https://github.com/pikelang/Pike/issues/40)
 test_eq(Parser.Markdown.parse(#"
 ## Some Stuff
