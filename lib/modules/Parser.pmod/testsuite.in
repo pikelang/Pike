@@ -178,6 +178,28 @@ test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n| 1 | 2 | 3 |\n"),
         "</tbody>\n"
         "</table>\n")
 
+dnl image() ignored its title argument and wrote the alt text into the
+dnl title attribute instead.
+test_eq(Parser.Markdown.parse("![a](/i.png \"Real Title\")\n"),
+        "<p><img alt=\"a\" src=\"/i.png\" title=\"Real Title\"></p>\n")
+
+dnl Ordered lists dropped their start number: the bullet text was
+dnl reduced to a boolean "ordered" flag, and separately the list_start
+dnl token was clobbered (by `token` being reassigned while rendering the
+dnl list's children) before being handed to the renderer.
+test_eq(Parser.Markdown.parse("3. three\n4. four\n"),
+        "<ol start=\"3\">\n"
+        "<li>three</li>\n"
+        "<li>four</li>\n"
+        "</ol>\n")
+
+dnl code() emitted its trailing newline inside </code></pre> instead of
+dnl after it, unlike every other block-level renderer method.
+test_eq(Parser.Markdown.parse("```js\nx\n```\n\nSome text.\n"),
+        "<pre><code class='lang-js'>x\n"
+        "</code></pre>\n"
+        "<p>Some text.</p>\n")
+
 dnl Bug #10107 (aka https://github.com/pikelang/Pike/issues/40)
 test_eq(Parser.Markdown.parse(#"
 ## Some Stuff
@@ -192,7 +214,8 @@ Some text post code fence
 "), #"<h2 id=\"some-stuff\">Some Stuff</h2>
 <pre><code class='lang-html'>
 &lt;head&gt;&lt;/head&gt;
-</code></pre><p>Some text post code fence</p>
+</code></pre>
+<p>Some text post code fence</p>
 ")
 
 cond_end // Parser.Markdown

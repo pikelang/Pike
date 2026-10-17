@@ -546,13 +546,14 @@ class Parser
 
       case "list_start":
         bool ordered = token->ordered;
+        mapping list_token = token;
         body = "";
 
         while (next()->type != "list_end") {
           body += tok();
         }
 
-        return renderer->list(body, ordered, token);
+        return renderer->list(body, ordered, list_token);
 
       case "list_item_start":
         body = "";
@@ -767,7 +768,8 @@ class Lexer
 
         SRC_SUBSTR();
         PUSH_TOKEN(([ "type"    : "list_start",
-                      "ordered" : sizeof(bull) > 1 ]));
+                      "ordered" : sizeof(bull) > 1,
+                      "start"   : sizeof(bull) > 1 ? (int)bull : 0 ]));
 
         // Get each top-level item.
         cap = rules->item->split_all(cap[0]); //cap[0].match(rules->item);
@@ -1161,13 +1163,13 @@ class Renderer
     }
 
     if (!lang) {
-      return sprintf("<pre%s><code>%s%s</code></pre>", attrs(token),
+      return sprintf("<pre%s><code>%s%s</code></pre>%[2]s", attrs(token),
                      !escaped ? encode_html(code, true) : code,
                      nl());
     }
 
     return sprintf(
-      "<pre%s><code class='%s%s'>%s%s</code></pre>", attrs(token),
+      "<pre%s><code class='%s%s'>%s%s</code></pre>%[4]s", attrs(token),
       options->lang_prefix,
       encode_html(lang),
       !escaped ? encode_html(code, true) : code,
@@ -1201,7 +1203,10 @@ class Renderer
   //!
   string list(string body, void|bool ordered, mapping token)
   {
-    return sprintf("<%s%s>%s%s</%[0]s>%[2]s", ordered ? "ol" : "ul", attrs(token), nl(), body);
+    mapping start = (ordered && token->start && token->start != 1)
+                    ? (["start": (string)token->start]) : 0;
+    return sprintf("<%s%s>%s%s</%[0]s>%[2]s", ordered ? "ol" : "ul",
+                   attrs(token, start), nl(), body);
   }
 
   //!
@@ -1305,11 +1310,13 @@ class Renderer
   }
 
   //!
-  string image(string url, string title, string text, mapping token)
+  string image(string url, string|zero title, string text, mapping token)
   {
-    string i = sprintf("<img src='%s' alt='%s'", url, text);
-    if (text) i += sprintf(" title='%s'", text);
-    return i + (options->xhtml ? "/>" : ">");
+    return sprintf(
+      "<img%s%s",
+      attrs(token, (["src": url, "alt": text, "title": title])),
+      options->xhtml ? "/>" : ">"
+    );
   }
 }
 
