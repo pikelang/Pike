@@ -1,99 +1,316 @@
 <chapter title="Pike BNF">
-  <contents>
-    <p><b>Caveat lector:</b> This is a simplified BNF and is <b>NOT</b>
-      the normative grammar for Pike.
-    </p>
-    <pre>
- program              ::=   definition+
- definition           ::=   import | inheritance | function_declaration | function_definition | variables | constant | class_def
- import               ::=   modifiers+ "import" ( constant_identifier | string ) ";" 
- inheritance          ::=   modifiers+ "inherit" program_specifier ( ":" identifier )? ";" 
- function_declaration ::=   modifiers+ type identifier "(" ( arguments | prot_arguments )? ")" ";"
- function_definition  ::=   modifiers+ type identifier "(" arguments? ")" block 
- variables            ::=   modifiers+ type variable_names ";"
- variable_names       ::=   variable_name ( "," variable_name )*
- variable_name        ::=   identifier ( "=" expression2 )?
- constant             ::=   modifiers+ "constant" constant_names ";" 
- constant_names       ::=   constant_name ( "," constant_name )*
- constant_name        ::=   identifier "=" expression2
- class_def            ::=   modifiers+ class ";"?
-<!-- Is it arguments or arguments? in class? -->
- class                ::=   "class" identifier? ( "(" arguments ")" )? "{" program "}"
- modifiers            ::=   ( "extern" | "final" | "inline" | "local" | "optional" | "private" |
-                              "protected" | "public" | "static" | "variant" )
- block                ::=   "{" statement* "}"
- statement            ::=   expression ";" | cond | while | do_while | for | switch | return | block | foreach | ";" 
- cond                 ::=   "if" statement ( "else" statement )?
- while                ::=   "while" "(" expression ")" statement
- do_while             ::=   "do" statement "while" "(" expression ")" ";" 
- for                  ::=   "for" "(" expression? ";" expression? ";" expression? ")" statement
- switch               ::=   "switch" "(" expression ")" block
- case_block           ::=   "{" ( case | default | statement | break | continue )* "}"
- case                 ::=   "case" expression [ ".." expression ] ":"
- default              ::=   "default" ":"
-<!-- It can't be expression6 here, since that would make foreach(x, "hello") valid -->
- foreach              ::=   "foreach" "(" expression "," expression6 ")" statement
-<!-- Labelled breaks -->
- break                ::=   "break" ";"
- continue             ::=   "continue" ";"
- expression           ::=   expression2 ( "," expression2 )*
- expression2          ::=   ( lvalue ( "=" | "+=" | "*=" | "/=" | "&amp;=" | "|=" | "^=" | "&lt;&lt;=" | "&gt;&gt;=" | "%=" ) )* expression3
- expression3          ::=   expression4 '?' expression3 ":" expression3 
- expression4          ::=   ( expression5 ( "||" | "&amp;&amp;" | "|" | "^" | "&amp;" | "==" | "!=" | "&gt;" | "&lt;" | "&gt;=" | "&lt;=" | "&lt;&lt;" |
-                            "&gt;&gt;" | "+" | "*" | "/" | "%" ) )* expression5
- expression5          ::=   expression6 | "(" type ")" expression5 | "--" expression6 | "++" expression6 | expression6 "--" |
-                            expression6 "++" | "~" expression5 | "-" expression5 
- expression6          ::=   string | int | float | catch | gauge | typeof | sscanf | lambda | class | constant_identifier | call |
-                            index | mapping | multiset | array | parenthesis | arrow 
- int                  ::=   "-"? ( ["1" - "9"] digit* | hex_int | bin_int | oct_int | "'" character "'" )
- hex_int              ::=   "0" ( "x" | "X" ) hex_number
- hex_number           ::=   hex_digit+
- hex_digit            ::=   ( digit | ["a" - "f"] | ["A" - "F"] )
- bin_int              ::=   "0" ( "b" | "B" ) bin_number
- bin_number           ::=   bin_digit+
- bin_digit            ::=   ( "1" | "0" )
- oct_int              ::=   "0" oct_number
- oct_number           ::=   oct_digit+
- oct_digit            ::=   ["0" - "7"]
- float                ::=   "-"? digit* "." digit+ ( ( "e" | "E" ) "-"? digit+ )?
- catch                ::=   "catch" ( "(" expression ")" | block )
- gauge                ::=   "gauge" ( "(" expression ")" | block )
- sscanf               ::=   "sscanf" "(" expression2 "," expression2 ( "," lvalue )* ")" 
- lvalue               ::=   expression6 | type identifier | "[" ( lvalue ( "," lvalue )* ","? )? "]"
- lambda               ::=   "lambda" "(" arguments? ")" block
- constant_identifier  ::=   "."? identifier ( "." identifier )*
- call                 ::=   expression6 "(" expression_list ")"
- index_expression     ::=   "&lt;"? expression
- index                ::=   expression6 "[" ( index_expression | ".." index_expression | index_expression ".." | index_expresion ".." index_expresion ) "]"
- array                ::=   "({" expression_list "})"
- multiset             ::=   "(&lt;" expression_list "&gt;)"
- mapping              ::=   "([" ( expression ":" expression ( "," expression ":" expression )* ","? )? "])"
- arrow                ::=   expression6 "-&gt;" identifier
- parenthesis          ::=   "(" expression ")"
- expression_list      ::=   ( splice_expression ( "," splice_expression )* ","? )?
- splice_expression    ::=   "@"? expression2
- type                 ::=   int_type | "string" | "float" | "program" | object_type | program_specifier |
-                            mapping_type | array_type | multiset_type | function [ function_type ]
- int_type             ::=   "int" ( "(" ( digit+ | ".." digit+ | digit+ ".." | digit+ ".." digit+ ) ")" )?
- object_type          ::=   "object" ( "(" program_specifier ")" )?
- mapping_type         ::=   "mapping" ( "(" type ":" type ")" )?
- array_type           ::=   "array" ( "(" type ")" )?
- multiset_type        ::=   "multiset" ( "(" type ")" )?
- function_type        ::=   "function"  ( "(" type ( "," type )* "..."? ":" type ")" )?
- arguments            ::=   ( argument ( "," argument )* varargs? | varargs ) ","?
- argument             ::=   type identifier
- varargs              ::=   type "..." identifier
- prot_arguments       ::=   ( type ( "," type )* ( type "..." )? | ( type "..." ) ) ","?
- program_specifier    ::=   string_constant | constant_identifier
- string               ::=   ( 0x22 character* 0x22 )+
- hex4                 ::=   hex_digit hex_digit hex_digit hex_digit
- character            ::=   [0x0000 - 0xffff] | "\" oct_number | "\x" hex_number | "\d" digit* | "\u" hex4 | "\U" hex4 hex4 | "\a" | "\b" | "\t" | "\n" | "\v" | "\f" | "\r" | "\" 0x22 | "\\"
- identifier           ::=   letter { letter | digit } | "`+" | "`/" | "`%" | "`*" | "`&amp;" | "`|" | "`^" | "`~" |
-                            "`&lt;" | "`&lt;&lt;" | "`&lt;=" | "`&gt;" | "`&gt;&gt;" | "`&gt;=" | "`==" | "`!=" | "`!" | "`()" | "`-" |
-                            "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="
- letter               ::=   ["a"-"z"] | ["A"-"Z"] | "_"
- digit                ::=   ["0"-"9"]
-    </pre>
-  </contents>
-</chapter>
 
+<p><b>Caveat lector:</b> This is a simplified grammar for Pike 9.0 and is
+<b>NOT</b> the normative grammar. The compiler grammar is maintained in
+<tt>src/language.yacc</tt>; it takes precedence over this overview.</p>
+
+<section title="Notation">
+
+<p>This chapter uses extended BNF: quoted strings are literal tokens, <tt>|</tt>
+separates alternatives, parentheses group expressions, and <tt>?</tt>,
+<tt>*</tt> and <tt>+</tt> mean optional, zero or more, and one or more
+occurrences. These operators apply to the preceding item or group; quoted
+punctuation has its literal meaning. Whitespace between tokens is omitted.</p>
+<p>This is a simplified description of valid syntax, not a grammar for building
+a parser. Name lookup, constant-expression requirements, valid assignment
+destinations, type constraints and context restrictions are checked separately.
+Preprocessor directives are handled before this grammar is applied.</p>
+
+</section>
+
+<section title="Definitions">
+
+<p>A program may be empty. Annotations, modifiers and declaration attributes
+are optional. Annotations precede modifiers; declaration attributes follow
+them. Class implicit <tt>create()</tt> arguments are also members, and a
+variadic (<tt>...</tt>) argument (if any) must be last and cannot have a
+default value.</p>
+
+<example>
+program              ::= ( definition | ";" )*
+definition           ::= import | inheritance | function | variables | constant
+                       | class_definition | enum_definition | typedef
+                       | generic_declaration
+                       | annotation ";" | "@" "constant" ";"
+                       | static_assertion ";"
+                       | modifiers "{" program "}"
+modifiers            ::= ( annotation ":" )* modifier*
+modifier             ::= "extern" | "final" | "inline" | "local" | "optional"
+                       | "private" | "protected" | "public" | "static"
+                       | "variant"
+                       | "__async__" | "__generator__" | "__weak__"
+                       | "__unused__"
+annotation           ::= "@" assignment_expression
+attributes           ::= attribute*
+attribute            ::= "__attribute__" "(" string ","? ")"
+                       | ( "__deprecated__" | "__experimental__" | "__factory__"
+                           ) ( "(" ")" )?
+import               ::= "import" assignment_expression ";"
+inheritance          ::= modifiers "inherit" assignment_expression
+                           ( ":" ( identifier | string ) )? ";"
+function             ::= modifiers attributes type "constant"? identifier
+                           "(" arguments ")" ( block | ";" )
+variables            ::= modifiers attributes type "constant"?
+                           variable_names ";"
+variable_names       ::= variable_name ( "," variable_name )*
+variable_name        ::= identifier ( "=" assignment_expression )?
+constant             ::= modifiers attributes "constant" cast_type?
+                           constant_names ";"
+constant_names       ::= constant_name ( "," constant_name )*
+constant_name        ::= identifier "=" assignment_expression
+class_definition     ::= modifiers attributes "class" identifier class_tail
+anonymous_class      ::= "class" class_tail
+class_tail           ::= generic_parameters? ( "(" create_arguments ")" )?
+                           "{" program "}"
+create_arguments     ::= ( create_argument ( "," create_argument )*
+                           ( "," varargs_create_argument )?
+                         | varargs_create_argument )? ","?
+create_argument      ::= modifiers attributes type identifier
+                           ( "=" assignment_expression )?
+varargs_create_argument ::= modifiers attributes type "..." identifier
+arguments            ::= ( argument ( "," argument )*
+                           ( "," varargs_argument )?
+                         | varargs_argument )? ","?
+argument             ::= type identifier? ( "=" assignment_expression )?
+varargs_argument     ::= type "..." identifier?
+enum_definition      ::= modifiers attributes enum
+enum                 ::= "enum" identifier?
+                           "{" ( enum_member ( "," enum_member )* ","? )? "}"
+enum_member          ::= attributes identifier ( "=" assignment_expression )?
+typedef              ::= modifiers "typedef" type identifier ";"
+generic_declaration  ::= "__generic__" generic_parameter
+                           ( "," generic_parameter )* ";"
+generic_parameters   ::= "(&lt;" ( generic_parameter
+                           ( "," generic_parameter )* ","? )? "&gt;)"
+generic_parameter    ::= type? identifier ( "=" type )?
+static_assertion     ::= "_Static_assert" "(" assignment_expression ","
+                           assignment_expression ")"
+</example>
+
+</section>
+
+<section title="Statements">
+
+<p>Conditions and loop clauses may declare local variables. The semicolon form
+of <tt>foreach</tt> can bind an index, a value, neither or both. The comma-form
+of <tt>foreach</tt> requires an assignable destination. Case labels are only
+valid in switch statements; break and continue targets must be valid enclosing
+statements.</p>
+<p>Note that case ranges accept both <tt>..</tt> and <tt>...</tt>; the latter
+is new in Pike 9.0 and is accepted for C2Y syntax compatibility. Type ranges
+and slicing accept only <tt>..</tt>.</p>
+
+<example>
+block                ::= "{" statement* "}"
+statement            ::= init_expression ";" | import | block | ";"
+                       | cond | while | do_while | for | foreach | switch
+                       | case | "default" ":" | return | break | continue
+                       | identifier ":" statement
+                       | local_constant | local_function | local_class
+init_expression      ::= expression | type variable_names
+local_constant       ::= "constant" cast_type? constant_names ";"
+local_function       ::= ( "__async__" | "__generator__" )?
+                           type identifier "(" arguments ")" block
+local_class          ::= "class" identifier class_tail
+cond                 ::= "if" "(" init_expression ")" statement
+                           ( "else" statement )?
+while                ::= "while" "(" init_expression ")" statement
+do_while             ::= "do" statement "while" "(" init_expression ")" ";"
+for                  ::= "for" "(" init_expression? ";" init_expression? ";"
+                           init_expression? ")" statement
+foreach              ::= "foreach" "(" assignment_expression foreach_bindings
+                           ")" statement
+foreach_bindings     ::= "," lvalue | ";" lvalue? ";" lvalue?
+switch               ::= "switch" "(" init_expression ")" statement
+case                 ::= "case" init_expression ":"
+                       | "case" init_expression case_range_operator
+                           init_expression? ":"
+                       | "case" case_range_operator init_expression ":"
+case_range_operator  ::= ".." | "..."
+return               ::= ( "continue" | "break" )? "return" init_expression? ";"
+break                ::= "break" identifier? ";"
+continue             ::= "continue" identifier? ";"
+lvalue               ::= assignment_expression | type identifier ( "="
+                           assignment_expression )?
+                       | "[" lvalue ( "," lvalue )* "]"
+</example>
+
+</section>
+
+<section title="Expressions and precedence">
+
+<p>The productions below follow operator precedence from lowest to highest.
+Assignment, the conditional operator and exponentiation associate to the right.
+Other binary operators associate to the left. The left-hand side of an
+assignment and operands of increment and decrement must be assignable.
+Multi-assign, such as <tt>[a, b] = values</tt>, supports only the
+<tt>=</tt> operator.</p>
+
+<example>
+expression           ::= assignment_expression ( "," assignment_expression )*
+assignment_expression ::= conditional_expression
+                        | logical_or_expression assignment_operator
+                           assignment_expression
+                        | "[" lvalue ( "," lvalue )* "]" "="
+                           assignment_expression
+assignment_operator  ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**="
+                       | "&amp;=" | "|=" | "^="
+                       | "&lt;&lt;=" | "&gt;&gt;=" | "?="
+conditional_expression ::= logical_or_expression ( "?" expression ":"
+                           assignment_expression )?
+logical_or_expression ::= logical_and_expression
+                           ( "||" logical_and_expression )*
+logical_and_expression ::= bitwise_or_expression
+                           ( "&amp;&amp;" bitwise_or_expression )*
+bitwise_or_expression ::= bitwise_xor_expression ( "|" bitwise_xor_expression )*
+bitwise_xor_expression ::= bitwise_and_expression
+                           ( "^" bitwise_and_expression )*
+bitwise_and_expression ::= equality_expression ( "&amp;" equality_expression )*
+equality_expression  ::= relational_expression
+                           ( ( "==" | "!=" ) relational_expression )*
+relational_expression ::= shift_expression ( ( "&lt;" | "&gt;" | "&lt;="
+                            | "&gt;=" ) shift_expression )*
+shift_expression     ::= additive_expression ( ( "&lt;&lt;" | "&gt;&gt;" )
+                           additive_expression )*
+additive_expression  ::= multiplicative_expression
+                           ( ( "+" | "-" ) multiplicative_expression )*
+multiplicative_expression ::= cast_expression
+                           ( ( "*" | "/" | "%" ) cast_expression )*
+cast_expression      ::= unary_expression
+                       | "(" cast_type ")" cast_expression
+                       | "[" cast_type "]" cast_expression
+cast_type            ::= builtin_type ( "|" type_atom )*
+unary_expression     ::= power_expression
+                       | ( "!" | "~" | "+" | "-" ) cast_expression
+power_expression     ::= prefix_expression ( "**" power_expression )?
+prefix_expression    ::= ( "++" | "--" )? chain_expression
+chain_expression     ::= postfix_expression ( safe_suffix safe_follow_suffix* )*
+postfix_expression   ::= name | primary_expression generic_bindings?
+                       | postfix_expression ordinary_suffix generic_bindings?
+                       | postfix_expression ( "++" | "--" )
+ordinary_suffix      ::= safe_follow_suffix | "." member_name | "[" "*" "]"
+safe_follow_suffix   ::= "(" expression_list ")" block?
+                       | "[" assignment_expression "]"
+                       | "[" range_bound ".." range_bound "]"
+                       | "-&gt;" arrow_member
+safe_suffix          ::= "(?" expression_list ")" block?
+                       | "[?" assignment_expression "]"
+                       | "[?" range_bound ".." range_bound "]"
+                       | "-&gt;?" arrow_member
+range_bound          ::= ( "&lt;"? init_expression )?
+member_name          ::= identifier | integer_literal | string_literal
+arrow_member         ::= identifier | reserved_word
+primary_expression   ::= integer_literal | float_literal | string
+                       | array | mapping | multiset
+                       | "(" expression ")" | catch | gauge | typeof | sscanf
+                       | lambda
+                       | anonymous_class | enum | generic_selection
+                       | static_assertion
+expression_list      ::= ( splice_expression ( "," splice_expression )* ","? )?
+splice_expression    ::= "@"? assignment_expression
+array                ::= "({" expression_list "})"
+multiset             ::= "(&lt;" expression_list "&gt;)"
+mapping              ::= "([" ( association ( "," association )* ","? )? "])"
+association          ::= assignment_expression ":" assignment_expression
+catch                ::= "catch" ( "(" init_expression ")" | block )
+gauge                ::= "gauge" ( "(" init_expression ")" | block )
+typeof               ::= "typeof" "(" assignment_expression ")"
+sscanf               ::= "sscanf" "(" assignment_expression ","
+                           assignment_expression ( "," lvalue )* ")"
+lambda               ::= ( "__async__" | "__generator__" )?
+                           "lambda" "(" arguments ")" block
+generic_selection    ::= "_Generic" "(" assignment_expression ","
+                           generic_association ( "," generic_association )* ")"
+generic_association  ::= ( type | "default" ) ":" assignment_expression
+</example>
+
+</section>
+
+<section title="Names and types">
+
+<p>A leading dot looks up a module relative to the source file. Scope prefixes
+select inherited, enclosing, predefined or versioned names. Generic bindings use
+<tt>(&lt;...&gt;)</tt>. Not every syntactically valid name is meaningful in
+every scope.</p>
+<p>Identifier types include class names and typedefs. Explicit casts must start
+with a built-in type; a soft cast uses square brackets. Type ranges may be
+unions of individual integers and open or closed ranges. A <tt>bit</tt> or
+<tt>bits</tt> suffix, as in <tt>int(8bit)</tt>, denotes an unsigned bit width.
+Array and string types can constrain length as well as element or character
+type.</p>
+
+<example>
+name                 ::= name_start ( "." member_name )* generic_bindings?
+name_start           ::= identifier | "." ( identifier | string_literal )
+                       | "global" "." identifier
+                       | "predef" "::" identifier | version "::" identifier
+                       | "continue" "::" "this_function" | "::" identifier
+                       | scope_prefix identifier
+scope_prefix         ::= ( identifier | string | "local" | "global" ) "::"
+                           ( ( identifier | "local" ) "::" )*
+version              ::= digit+ "." digit+
+generic_bindings     ::= "(&lt;" ( type ( "," type )* ","? )? "&gt;)"
+type                 ::= type_atom ( "|" type_atom )*
+type_atom            ::= builtin_type | name | typeof
+builtin_type         ::= "mixed" | "void" | "auto" | "__unknown__" | "float"
+                       | int_type | string_type | object_type | program_type
+                       | mapping_type | array_type | multiset_type
+                       | function_type
+                       | "__attribute__" "(" string "," type ")"
+                       | ( "__deprecated__" | "__experimental__" | "__factory__"
+                           ) "(" type ")"
+int_type             ::= "int" ( "(" integer_ranges ")" )?
+integer_ranges       ::= integer_range ( "|" integer_range )*
+integer_range        ::= signed_integer | signed_integer? ".." signed_integer?
+                       | bit_width
+signed_integer       ::= "-"? integer_literal
+bit_width            ::= integer_literal ( "bit" | "bits" )
+string_type          ::= "string" ( "(" ( integer_ranges | integer_ranges ":"
+                           integer_ranges? | ":" integer_ranges ) ")" )?
+object_type          ::= "object" ( "(" ( type | string ) ")" )?
+program_type         ::= "program" ( "(" ( type | string ) ")" )?
+array_type           ::= "array" ( "(" ( type | integer_ranges ":" type?
+                           | ":" type ) ")" )?
+mapping_type         ::= "mapping" ( "(" type ":" type ")" )?
+multiset_type        ::= "multiset" ( "(" type ")" )?
+function_type        ::= "function" ( "(" function_arguments ":" type ")" )?
+function_arguments   ::= ( type ( "," type )* ( "..." | "," )? )?
+</example>
+
+</section>
+
+<section title="Lexical elements">
+
+<p><tt>integer_literal</tt>, <tt>float_literal</tt> and <tt>string_literal</tt>
+stand for tokens recognized by the lexer. Integers include zero, decimal,
+hexadecimal, binary and octal literals, and single-quoted character constants. A
+leading sign is a unary operator, not part of a numeric token. Floating-point
+literals include exponent notation. Strings support escapes and adjacent string
+literals concatenate; <tt>__func__</tt> also contributes a string segment.</p>
+<p><tt>word</tt> denotes an ordinary identifier accepted by the lexer, excluding
+reserved keywords. This includes names containing non-ASCII characters, subject
+to the lexer's character rules. Operator identifiers and getter/setter names are
+also identifier tokens. <tt>reserved_word</tt> stands for a keyword or reserved
+identifier accepted after an arrow. The abbreviated productions below show their
+spelling; no whitespace is allowed inside an identifier, a version prefix or a
+bit-width token. See the Lexical Grammar and Preprocessor chapters for literal
+and preprocessing details. The current lexical implementation is in
+<tt>src/lexer.h</tt> and <tt>src/cpp.cmod</tt>.</p>
+
+<example>
+string               ::= ( string_literal | "__func__" )+
+identifier           ::= word | operator_identifier | accessor_identifier
+operator_identifier  ::= ( "`" | "``" | "```" ) operator_name
+operator_name        ::= "+" | "+=" | "-" | "*" | "**" | "/" | "%" | "&amp;"
+                       | "|" | "^" | "~"
+                       | "&lt;" | "&lt;&lt;" | "&lt;=" | "&gt;" | "&gt;&gt;"
+                       | "&gt;=" | "==" | "!=" | "!" | "="
+                       | "()" | "-&gt;" | "-&gt;=" | "[]" | "[]=" | "[..]"
+accessor_identifier  ::= "`" "-&gt;"? word "="?
+digit                ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8"
+                       | "9"
+</example>
+
+</section>
+
+</chapter>
