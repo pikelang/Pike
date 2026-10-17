@@ -241,6 +241,19 @@ test_equal(G->decode(H("20")), ({}))
 test_eval_error(G->decode(H("be")))
 test_do(add_constant("G"))
 
+dnl Evicting an older duplicate (header, value) entry must not
+dnl untrack a still-live newer duplicate of the same pair: a later
+dnl encode of that pair must still resolve to a one-byte indexed
+dnl reference instead of being wrongly re-literal-encoded.
+test_do([[add_constant("G", Standards.HPack.Context(100));]])
+test_do(G->decode(H("4001780179" "4001780179" "40017a0177")))
+test_do([[add_constant("buf", Stdio.Buffer());]])
+test_do(G->encode_header(buf, "x", "y"))
+test_eq(sizeof(buf), 1)
+test_eq(buf->read_int8(), 0xbf)
+test_do(add_constant("buf"))
+test_do(add_constant("G"))
+
 test_do(add_constant("F"))
 test_do(add_constant("E"))
 test_do(add_constant("D"))

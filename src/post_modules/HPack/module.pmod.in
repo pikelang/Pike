@@ -254,12 +254,19 @@ class Context
       int sz = sizeof(entry[0]) + sizeof(entry[1]) + 32;
       dynamic_size -= sz;
       dynamic_headers[i] = UNDEFINED;
-      mapping|int m;
-      if (mappingp(m = header_index[entry[0]])) {
-	m_delete(m, entry[1]);
-	if (sizeof(m)) {
-	  continue;
-	}
+
+      // Only remove the lookup entry if it still points at the slot
+      // being evicted; a newer duplicate (header, value) pair may
+      // already have overwritten it with a still-live index.
+      mapping|int m = header_index[entry[0]];
+      if (mappingp(m)) {
+        if (m[entry[1]] != ~i) continue;
+        m_delete(m, entry[1]);
+        if (sizeof(m)) {
+          continue;
+        }
+      } else if (m != ~i) {
+        continue;
       }
       m_delete(header_index, entry[0]);
     }
