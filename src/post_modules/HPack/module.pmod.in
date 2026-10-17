@@ -339,6 +339,9 @@ class Context
     int res;
     int c;
     do {
+      if (!sizeof(buf)) {
+        error("Truncated HPack integer.\n");
+      }
       c = buf->read_int(1);
       res |= (c & 0x7f)<<shift;
       shift += 7;

@@ -212,6 +212,10 @@ test_hpack("88c1 6196 d07a be94 1054 d444 a820 0595"
 		    "foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1" }) })]])
 
 
+dnl Decoding a truncated varint continuation byte (0x3f with no
+dnl following byte) must raise an error rather than hang.
+test_eval_error(D->decode("\x3f"))
+
 test_do(add_constant("F"))
 test_do(add_constant("E"))
 test_do(add_constant("D"))
