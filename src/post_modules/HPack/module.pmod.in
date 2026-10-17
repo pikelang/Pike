@@ -494,7 +494,7 @@ class Context
         // FIXME: MUST be less than the protocol specified limit.
         if (c > static_max_size) {
           // MUST be less than the protocol specified limit.
-          error("Invalid dynamic max size (%d > %d.\n", c, static_max_size);
+          error("Invalid dynamic max size (%d > %d).\n", c, static_max_size);
         }
         dynamic_max_size = c;
         if (dynamic_max_size < dynamic_size) {
