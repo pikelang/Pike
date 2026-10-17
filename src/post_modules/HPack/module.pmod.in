@@ -228,6 +228,9 @@ class Context
   protected void create(int|void protocol_dynamic_max_size)
   {
     if (!zero_type(protocol_dynamic_max_size)) {
+      if (protocol_dynamic_max_size < 0) {
+        error("Invalid dynamic table size: %d.\n", protocol_dynamic_max_size);
+      }
       dynamic_max_size = this::static_max_size = protocol_dynamic_max_size;
     }
   }
