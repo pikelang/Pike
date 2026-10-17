@@ -359,6 +359,9 @@ class Context
       len += get_long_int(buf);
     }
     string s = buf->read(len);
+    if (!stringp(s)) {
+      error("Truncated HPack string.\n");
+    }
     if (c & 0x80) {
       // Huffman encoded.
       return huffman_decode(s);

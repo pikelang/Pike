@@ -220,6 +220,11 @@ dnl A header block consisting of many consecutive Dynamic Table Size
 dnl Update entries (0x20) must decode without growing the C stack.
 test_eq(D->decode_header(Stdio.Buffer("\x20" * 100000)), UNDEFINED)
 
+dnl A string literal that declares a length longer than the number of
+dnl bytes remaining in the buffer must raise an error rather than
+dnl silently truncate the header or value.
+test_eval_error(D->decode(H("4005 6162")))
+
 test_do(add_constant("F"))
 test_do(add_constant("E"))
 test_do(add_constant("D"))
