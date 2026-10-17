@@ -713,6 +713,53 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
     }
   }
 
+  /* This property requires all children to be invariant. Do not inherit
+   * it through the OR propagation of flags above (or the inversion of
+   * flags for T_NOT). Keep operators, scopes, attributes, bindings and
+   * transitive types on the ordinary remapping path. Also leave joiners
+   * and negations there: rebuilding them can normalize a closed type.
+   */
+  t->flags &= ~PT_FLAG_REMAP_INVARIANT;
+  switch (type) {
+  case T_OBJECT:
+  case T_VOID:
+  case T_ZERO:
+  case T_INT:
+  case T_FLOAT:
+  case T_MIXED:
+    t->flags |= PT_FLAG_REMAP_INVARIANT;
+    break;
+
+  case T_MULTISET:
+  case T_TYPE:
+  case PIKE_T_AUTO:
+    if (car && (car->flags & PT_FLAG_REMAP_INVARIANT)) {
+      t->flags |= PT_FLAG_REMAP_INVARIANT;
+    }
+    break;
+
+  case T_PROGRAM:
+    if (car && (car->type == T_OBJECT)) {
+      t->flags |= PT_FLAG_REMAP_INVARIANT;
+    }
+    break;
+
+  case T_ARRAY:
+  case T_STRING:
+    /* Rebuilding a zero-length type discards its content type. */
+    if (car && (car->type == T_ZERO)) break;
+    /* FALLTHRU */
+  case T_FUNCTION:
+  case T_MANY:
+  case T_TUPLE:
+  case T_MAPPING:
+    if (car && cdr &&
+        (car->flags & cdr->flags & PT_FLAG_REMAP_INVARIANT)) {
+      t->flags |= PT_FLAG_REMAP_INVARIANT;
+    }
+    break;
+  }
+
 #ifdef DEBUG_MALLOC
   switch(type & PIKE_T_MASK) {
   case T_FUNCTION:
@@ -3714,11 +3761,25 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 
 /******/
 
+struct mapping *get_call_state_mapping(struct call_state *cs)
+{
+  if (!cs->m) cs->m = allocate_mapping(4);
+  if (cs->pending_argno >= 0) {
+    push_int(cs->pending_argno);
+    push_constant_text("argno");
+    mapping_insert(cs->m, Pike_sp-1, Pike_sp-2);
+    pop_n_elems(2);
+    cs->pending_argno = -1;
+  }
+  return cs->m;
+}
+
 struct remap_state {
   unsigned char map[0x20];	/* Remap current ==> new (char). */
   unsigned INT32 allocated;	/* Bitmask of allocated new markers. */
   struct mapping *markers[2];	/* Mapping(s) marker ==> type. */
   struct mapping *state;	/* User-level state. */
+  struct call_state *call_state; /* Borrowed; materialize state on demand. */
 };
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -3727,6 +3788,7 @@ struct remap_state {
     REMAP.markers[0] = NULL;				\
     REMAP.markers[1] = NULL;				\
     REMAP.state = NULL;					\
+    REMAP.call_state = NULL;                                     \
   } while(0)
 #else
 #define INIT_REMAP_STATE(REMAP) do {			\
@@ -3749,6 +3811,17 @@ static inline void exit_remap_state(struct remap_state *remap)
   }
 }
 #define EXIT_REMAP_STATE(REMAP) exit_remap_state(&REMAP)
+
+static struct mapping *get_remap_state_mapping(struct remap_state *remap)
+{
+  if (remap->call_state) {
+    struct mapping *state = get_call_state_mapping(remap->call_state);
+    if (!remap->state) add_ref(remap->state = state);
+  } else if (!remap->state) {
+    remap->state = allocate_mapping(4);
+  }
+  return remap->state;
+}
 
 #ifdef PIKE_DEBUG
 static void simple_describe_remap_state(struct remap_state *remap)
@@ -4082,14 +4155,11 @@ static void push_remap_markers(struct pike_type *t,
 			       enum pt_remap_flags flags)
 {
   if (!t || (flags & PT_FLAG_REMAP_INHIBIT) ||
-      (!remap && !(flags & PT_FLAG_REMAP_EVAL_MARKERS))) {
+      (!remap && !(flags & PT_FLAG_REMAP_EVAL_MARKERS)) ||
+      (t->flags & PT_FLAG_REMAP_INVARIANT)) {
     push_finished_type(t);
     return;
   }
-
-  /* FIXME: Use the type flags to detect whether we can just push
-   *        the type verbatim.
-   */
 
   switch(t->type & PIKE_T_MASK) {
   case T_ASSIGN:
@@ -5544,10 +5614,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  ref_push_type_value(a->cdr);
 	  ref_push_type_value(b);
 	  if (remap) {
-	    if (!remap->state) {
-	      remap->state = allocate_mapping(4);
-	    }
-	    ref_push_mapping(remap->state);
+            ref_push_mapping(get_remap_state_mapping(remap));
 	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 4,
 				"pop_type_attribute");
 	  } else {
@@ -5611,10 +5678,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	ref_push_type_value(a);
 	ref_push_type_value(b->cdr);
 	if (remap) {
-	  if (!remap->state) {
-	    remap->state = allocate_mapping(4);
-	  }
-	  ref_push_mapping(remap->state);
+          ref_push_mapping(get_remap_state_mapping(remap));
 	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 4,
 			      "push_type_attribute");
 	} else {
@@ -12307,12 +12371,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 			       cs, sval CHECK_CALL_ARGS);
     if (!res) return NULL;
     if (c) {
-      if (!cs->m) {
-	cs->m = allocate_mapping(0);
-      }
       ref_push_string((struct pike_string *)fun_type->car);
       ref_push_type_value(res);
-      ref_push_mapping(cs->m);
+      ref_push_mapping(get_call_state_mapping(cs));
       safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "apply_type_attribute");
       if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
@@ -12588,15 +12649,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       }
 #endif /* PIKE_DEBUG */
 
-      if (!cs->m) {
-	cs->m = allocate_mapping(4);
-      }
-      add_ref(remap.state = cs->m);
-
-      push_int(cs->argno);
-      push_constant_text("argno");
-      mapping_insert(cs->m, Pike_sp-1, Pike_sp-2);
-      pop_n_elems(2);
+      /* Attribute handlers share state across arguments and alternatives.
+       * Defer both allocation and the argno update until they observe it.
+       */
+      remap.call_state = cs;
+      cs->pending_argno = cs->argno;
 
       /* No need to perform advanced checking in the trivial case... */
       if (arg_type != (tmp2 = fun_type->car)) {
@@ -12716,9 +12773,6 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  struct compilation *c = MAYBE_THIS_COMPILATION;
 	  if (c) {
 	    /* Perform extra argument checking based on the attribute. */
-	    if (!cs->m) {
-	      cs->m = allocate_mapping(0);
-	    }
 	    ref_push_string((struct pike_string *)tmp2->car);
 	    if (sval) {
 	      push_svalue(sval);
@@ -12727,7 +12781,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	    }
 	    ref_push_type_value(arg_match);
 	    ref_push_type_value(res);
-	    ref_push_mapping(cs->m);
+            ref_push_mapping(get_call_state_mapping(cs));
 	    safe_apply_current(PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM, 5);
 	    if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
 	      /* Got an alternative type for fun_type.
@@ -13036,12 +13090,9 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     tmp = new_get_return_type(fun_type->cdr, cs, flags);
     if (!tmp) break;
     if (c) {
-      if (!cs->m) {
-	cs->m = allocate_mapping(0);
-      }
       ref_push_string((struct pike_string *)fun_type->car);
       push_undefined();
-      ref_push_mapping(cs->m);
+      ref_push_mapping(get_call_state_mapping(cs));
       safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "apply_type_attribute");
       if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
@@ -13258,12 +13309,9 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
        tmp = tmp->cdr) {
   redo:
     if (tmp->type == PIKE_T_ATTRIBUTE) {
-      if (!cs->m) {
-	cs->m = allocate_mapping(0);
-      }
       ref_push_string((struct pike_string *)tmp->car);
       ref_push_type_value(tmp->cdr);
-      ref_push_mapping(cs->m);
+      ref_push_mapping(get_call_state_mapping(cs));
       safe_apply_current2(PC_EVAL_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "eval_type_attribute");
       if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {

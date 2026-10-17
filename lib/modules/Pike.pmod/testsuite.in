@@ -27,4 +27,60 @@ test_any_equal([[
 test_equal(__get_first_arg_type(typeof(predef::intp)),
 	   typeof((mixed)0))
 
+dnl Caller-supplied state must receive argno even without attributes,
+dnl including when the argument does not match.
+test_any_equal([[
+  array results = ({});
+  foreach (({ typeof(1), typeof(1.0) }), mixed arg) {
+    mapping state = ([ "argno":99, "keep":17 ]);
+    mixed cont = __low_check_call(typeof(lambda(int x) { return x; }),
+                                 arg, 2, state);
+    results += ({ ({ !!cont, state }) });
+  }
+  mapping state = ([ "argno":99 ]);
+  __get_return_type(typeof(lambda() { return 1; }), state);
+  return results + ({ state });
+]], ({ ({ 1, ([ "argno":1, "keep":17 ]) }),
+       ({ 0, ([ "argno":1, "keep":17 ]) }), ([ "argno":99 ]) }))
+
+dnl Attribute callbacks share state. Mutations survive subsequent callbacks,
+dnl while checking the next argument resets argno to its actual position.
+test_any_equal([[
+  class Environment {
+    inherit CompilerEnvironment;
+    array events = ({});
+    class PikeCompiler {
+      inherit ::this_program;
+      int apply_type_attribute(string attr, mixed cont, mapping state) {
+        events += ({ ({ "apply", attr, state->argno, state->cookie }) });
+        state->argno = 71;
+        state->cookie = 123;
+        return 1;
+      }
+      mixed push_type_attribute(string attr, mixed a, mixed b, mapping state) {
+        events += ({ ({ "push", attr, state->argno, state->cookie }) });
+        state->cookie = 123;
+        return 1;
+      }
+      mixed apply_attribute_constant(string attr, mixed value, mixed arg,
+                                     mixed cont, mapping state) {
+        events += ({ ({ "constant", attr, state->argno, state->cookie }) });
+        state->argno = 72;
+        state->cookie = 123;
+        return UNDEFINED;
+      }
+    }
+  }
+  object env = Environment();
+  env->compile("__attribute__(\"outer\", function("
+               "__attribute__(\"one\", int), __attribute__(\"two\", int):int)) f;"
+               "int test() { return f(1,2); }");
+  return env->events[..5];
+]], ({ ({ "push", "one", 1, 0 }),
+       ({ "constant", "one", 1, 123 }),
+       ({ "apply", "outer", 72, 123 }),
+       ({ "push", "two", 2, 123 }),
+       ({ "constant", "two", 2, 123 }),
+       ({ "apply", "outer", 72, 123 }) }))
+
 END_MARKER
