@@ -102,16 +102,82 @@ string dirlist( string dir, string rel_dir )
         if( t == "application/octet-stream" )
             t = "<span style='color:darkgrey'>unknown</span>";
 
+        string html_link = (!s->isdir && has_suffix(lower_case(fn), ".md"))
+            ? sprintf(" <a href='%s?format'>[HTML]</a>", path)
+            : "";
+
         res +=
-            sprintf("<tr class='%s'><td><a href='%s%s'>%s%[2]s</a></td>"
+            sprintf("<tr class='%s'><td><a href='%s%s'>%s%[2]s</a>%[6]s</td>"
 		    "<td align='right'>%s</td>"
 		    "<td align='right'>%s</td></tr>\n",
                     (i&1?"odd":"even"),
                     path, s->isdir?"/":"",
 		    Parser.encode_html_entities(fn), t,
-                    s->isdir?"":String.int2size(s->size));
+                    s->isdir?"":String.int2size(s->size),
+                    html_link);
     }
     return res+"</table></body></html>\n";
+}
+
+constant md_style = #"
+  body { margin:0 auto; padding:1em 2em; max-width:50em; line-height:1.6;
+         font-family:system-ui, sans-serif; color:#24292f; background:#fff; }
+  a { color:#0969da; }
+  h1, h2 { border-bottom:1px solid #d8dee4; padding-bottom:.2em; }
+  h1, h2, h3, h4 { line-height:1.25; margin:1.5em 0 .6em; }
+  code { font-family:ui-monospace, monospace; font-size:.9em;
+         background:#eff1f3; border-radius:4px; padding:.15em .35em; }
+  pre { background:#f6f8fa; border-radius:6px; padding:1em; overflow-x:auto; }
+  pre code { background:none; padding:0; }
+  blockquote { margin:1em 0; padding:0 1em; color:#57606a;
+               border-left:.25em solid #d8dee4; }
+  table { border-collapse:collapse; }
+  th, td { border:1px solid #d8dee4; padding:.4em .8em; }
+  tr:nth-child(even) { background-color:#f6f8fa; }
+  img { max-width:100%; }
+  hr { border:0; border-top:1px solid #d8dee4; }
+  @media (prefers-color-scheme: dark) {
+    body { color:#e6edf3; background:#0d1117; }
+    a { color:#4493f8; }
+    h1, h2, hr, th, td, blockquote { border-color:#30363d; }
+    code { background:#21262d; }
+    pre, tr:nth-child(even) { background:#161b22; }
+    blockquote { color:#9198a1; }
+  }
+";
+
+//! Render a markdown file as a standalone HTML document. Returns 0 if
+//! the file could not be read.
+string markdown( string rfile )
+{
+  string md = Stdio.read_file(rfile);
+  if( !md )
+    return "<h3>File not found</h3>";
+
+  // Use the first level one heading as document title, if any.
+  string title;
+  foreach( md/"\n", string line )
+    if( sscanf(String.trim(line), "# %s", title)==1 )
+      break;
+  if( !title || !sizeof(title) )
+    title = (rfile/"/")[-1];
+
+  string body;
+  if( mixed err = catch( body = Parser.Markdown.parse(md) ) )
+  {
+    werror("Markdown error in %s: %s", rfile, describe_error(err));
+    body = "<pre>" + Parser.encode_html_entities(md) + "</pre>";
+  }
+
+  return
+    "<!DOCTYPE html>\n"
+    "<html><head>\n"
+    "<meta charset='utf-8'/>\n"
+    "<meta name='viewport' content='width=device-width, initial-scale=1'/>\n"
+    "<title>" + replace(title, ({"&","<",">"}),
+                        ({"&amp;","&lt;","&gt;"})) + "</title>\n"
+    "<style>" + md_style + "</style>\n"
+    "</head><body>\n" + body + "</body></html>\n";
 }
 
 string file_not_found(string fname)
@@ -175,6 +241,11 @@ void handle_request(Protocols.HTTP.Server.Request request)
         request->response_and_finish( ([ "data":dirlist(file, rel_file),
                                          "extra_heads" : headers,
                                          "type":"text/html" ]) );
+    else if( has_index(request->variables, "format") )
+        request->response_and_finish(
+          ([ "data":markdown(file),
+             "extra_heads" : headers,
+             "type":"text/html; charset=utf-8" ]) );
     else
       request->response_and_finish( ([ "file":Stdio.File(file),
                                        "extra_heads" : headers,
