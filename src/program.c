@@ -5546,8 +5546,12 @@ struct program *end_first_pass(int finish)
         Pike_error("Out of memory allocating compiler parent storage.\n");
       memcpy(storage + offset, LOW_PARENT_INFO(fake, prog),
              sizeof(struct parent_info));
-      /* Free the old storage. */
-      free(fake->storage + prog->parent_info_storage);
+      /* Free the old storage.
+       * Attempt to make Coverity happy by adjusting the pointer separately
+       * from the free() call (cf CID 1703562).
+       */
+      fake->storage += prog->parent_info_storage;
+      free(fake->storage);
       fake->storage = storage;
       prog->parent_info_storage = offset;
     }
