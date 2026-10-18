@@ -8089,6 +8089,11 @@ test_any([[
   return 1;
 ]], 1)
 
+// Compiling this compatibility module compares types of unfinished programs.
+test_any([[
+  return !!compile_string("#pike 7.8\nStdio.File file;\n")();
+]], 1)
+
 // Type references in weak containers are weak even without complex values.
 test_any([[
   int n = 0x60000000 + random(0x10000000);

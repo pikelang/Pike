@@ -2282,6 +2282,13 @@ static void f_compilation_handle_import(INT32 args)
  *!       Do not allow the check.
  *!   @endmixed
  *!
+ *! @note
+ *!   Comparisons that reach this handler through an object's or program's
+ *!   methods may be cached. A cache hit can skip the handler and its side
+ *!   effects, including updates to @[state]. When reached this way, handlers
+ *!   must return consistent results for the same types and must not rely on
+ *!   being called for every comparison.
+ *!
  *! @seealso
  *!   @[push_type_attribute()], @[index_type_attribute()]
  */
@@ -2446,6 +2453,13 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
  *!     @type int(0..0)
  *!       Do not allow the check.
  *!   @endmixed
+ *!
+ *! @note
+ *!   Comparisons that reach this handler through an object's or program's
+ *!   methods may be cached. A cache hit can skip the handler and its side
+ *!   effects, including updates to @[state]. When reached this way, handlers
+ *!   must return consistent results for the same types and must not rely on
+ *!   being called for every comparison.
  *!
  *! @seealso
  *!   @[pop_type_attribute()], @[index_type_attribute()], @[utf8_string]
