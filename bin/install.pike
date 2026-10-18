@@ -25,11 +25,21 @@
 #define USE_GTK
 
 #ifdef USE_GTK
-#if 0 && constant(GI.repository.Gtk.Application)
+#if constant(GI.repository.Gtk.Application) && \
+    (constant(GI.repository.Gtk.__GI_API_VERSION_3_0__) || \
+     constant(GI.repository.Gtk.__GI_API_VERSION_4_0__))
 #define USE_GI
 #define GTK GI.repository.Gtk
 #define GIO GI.repository.Gio
-#define GTK_FLUSH()
+#define GTK_FLUSH() flush_gtk()
+
+// Installation runs synchronously, so service redraws and dialog events
+// while updating the progress labels.
+void flush_gtk()
+{
+  object context = GI.repository.GLib.main_context_default();
+  while (context->pending()) context->iteration(0);
+}
 
 #if constant(GTK.__GI_API_VERSION_3_0__)
 #define USE_GTK3
@@ -56,14 +66,11 @@ class Hbox {
 #ifdef USE_GTK3
     ::pack_start(sub, expand, fill, padding);
 #else
-    if (expand) {
-      sub->hexpand = 1;
-    }
-    if (fill) {
-      sub->halign = GTK.Align.FILL;
-    }
+    sub->hexpand = expand;
+    sub->halign = fill ? GTK.Align.FILL : GTK.Align.CENTER;
     if (padding) {
       sub->set_margin_start(padding);
+      sub->set_margin_end(padding);
     }
     append(sub);
 #endif
@@ -116,14 +123,11 @@ class Vbox {
 #ifdef USE_GTK3
     ::pack_start(sub, expand, fill, padding);
 #else
-    if (expand) {
-      sub->vexpand = 1;
-    }
-    if (fill) {
-      sub->valign = GTK.Align.FILL;
-    }
+    sub->vexpand = expand;
+    sub->valign = fill ? GTK.Align.FILL : GTK.Align.CENTER;
     if (padding) {
       sub->set_margin_top(padding);
+      sub->set_margin_bottom(padding);
     }
     append(sub);
 #endif
@@ -172,7 +176,8 @@ class HbuttonBox {
   protected void create()
   {
     // NB: Horizontal orientation is default.
-    ::create();
+    ::create(([ "margin-start": 15, "margin-end": 15,
+                "margin-top": 15, "margin-bottom": 15 ]));
   }
 
   this_program pack_start(GTK.Widget sub,
@@ -224,6 +229,11 @@ class HbuttonBox {
 #ifdef USE_GTK3
     ::add(sub);
 #else
+    // GtkButtonBox spread its buttons across the available width.
+    // Gtk 4 uses a plain GtkBox, so supply the expanding space explicitly.
+    if (get_first_child()) {
+      append(GTK.Box(([ "hexpand": 1 ])));
+    }
     append(sub);
 #endif
     return this;
@@ -330,7 +340,7 @@ class Label {
     ::create(([ "label": label ]));
   }
 
-  this_program set_justify(GTK.JustificationType justify)
+  this_program set_justify(int justify)
   {
     ::set_justify(justify);
     return this;
@@ -343,8 +353,11 @@ class Image {
 
   protected void create(string path)
   {
-    ::create(([ "file": GIO.file_new_for_path(path), "can-shrink": 0 ]));
-    set_hexpand(1);
+    // Load the welcome GIF explicitly. Picture's file loader may leave it
+    // without a paintable even when GDK can decode the file.
+    object texture = GI.repository.Gdk.Texture_Factory.new_from_file(
+      GIO.file_new_for_path(path));
+    ::create(([ "paintable": texture, "can-shrink": 0 ]));
     set_vexpand(1);
   }
 #else
@@ -353,21 +366,20 @@ class Image {
   protected void create(string path)
   {
     ::create(([ "file": path ]));
-    set_hexpand(1);
     set_vexpand(1);
   }
 #endif
 }
 
-#if constant GTK.Table
-constant Table = GTK.Table;
-#else
 class Table {
   inherit GTK.Grid;
 
-  protected void create(int cols, int rows, int homogenous)
+  protected void create(int cols, int rows, int homogeneous)
   {
-    ::create();
+    ::create(([ "column-homogeneous": homogeneous,
+                "row-homogeneous": homogeneous,
+                "margin-start": 19, "margin-end": 19,
+                "margin-top": 19, "margin-bottom": 19 ]));
   }
 
   this_program attach(GTK.Widget sub, int left, int right, int top, int bottom,
@@ -377,8 +389,11 @@ class Table {
     ::attach(sub, left, top, right-left, bottom-top);
     return this;
   }
-}
+
+#ifdef USE_GTK3
+  void child_notify(string ignored) {}
 #endif
+}
 
 class Entry
 {
@@ -392,6 +407,8 @@ class Entry
     } else {
       ::create();
     }
+    // Let the entry column take the extra width when the window grows.
+    set_hexpand(1);
   }
 }
 
@@ -1347,84 +1364,83 @@ void do_abort()
 
 void update_entry2()
 {
-#ifdef USE_GI
-  if (entry1["has-focus"]) return;
-#endif
   entry2->set_text( combine_path( entry1 -> get_text(), "bin/pike") );
 }
 
+#ifdef USE_GI
+void filechooser_response(object selector, int response, object entry)
+{
+  if (response == GTK.ResponseType.ACCEPT) {
+    object|zero file = selector->get_file();
+    string|zero path = file && file->get_path();
+    if (path) {
+      entry->set_text(path);
+      if (entry == entry1) update_entry2();
+    }
+  }
+  selector->destroy();
+}
+
+void select_path(object entry, int directory)
+{
+  // FileChooserDialog is available in both GTK 3 and GTK 4, including
+  // GTK 4 versions predating FileDialog.
+  object selector = GTK.FileChooserDialog(([
+    "title": directory ? "Pike installation prefix" : "Pike binary name",
+    "action": directory ? GTK.FileChooserAction.SELECT_FOLDER :
+                          GTK.FileChooserAction.SAVE,
+    "transient-for": window1,
+    "modal": 1,
+  ]));
+  selector->add_button("Cancel", GTK.ResponseType.CANCEL);
+  selector->add_button("Select", GTK.ResponseType.ACCEPT);
+  selector->connect("response", filechooser_response, entry);
+
+  string path = entry->get_text();
+  // A proposed installation path need not exist yet. In that case the
+  // chooser can use its default folder; the entries remain editable.
+  catch {
+    if (directory) {
+      selector->set_file(GIO.file_new_for_path(path));
+    } else {
+#ifdef USE_GTK3
+      selector->set_current_folder(dirname(path));
+#else
+      selector->set_current_folder(GIO.file_new_for_path(dirname(path)));
+#endif
+    }
+  };
+  if (!directory) selector->set_current_name(basename(path));
+  selector->show();
+}
+#else
 void close_fileselector(object button, object selector)
 {
-  if (selector->hide) {
-    selector->hide();
-  }
+  selector->hide();
   destruct(selector);
 }
 
-void set_filename(object button, array ob, mixed... rest)
+void set_filename(object button, array ob, mixed ... rest)
 {
-  string path = "";
-#ifdef USE_GI
-#if constant(GTK.FileDialog)
-  GTK.FileDialog selector = button;
-  object entry = rest[0];
-  GIO.File file;
-  if (entry == entry1) {
-    file = selector->select_folder_finish(ob);
-  } else {
-    file = selector->save_finish(ob);
-  }
-  path = file->get_path();
-#else
-  object selector=ob[0];
-  object entry=ob[1];
-  path = selector->get_filename();
-#endif
-#else
-  object selector=ob[0];
-  object entry=ob[1];
-  path = selector->get_filename();
-#endif
-  entry->set_text(path);
-  if(entry == entry1)
-    update_entry2();
-  close_fileselector(button,selector);
+  object selector = ob[0];
+  object entry = ob[1];
+  entry->set_text(selector->get_filename());
+  if (entry == entry1) update_entry2();
+  close_fileselector(button, selector);
 }
+#endif
 
 void selectdir(object button, object entry)
 {
 #ifdef USE_GI
-#if constant(GTK.FileDialog)
-  string initial_path = entry->get_text();
-  GI.repository.Gio.File path =
-    GI.repository.Gio.file_new_for_path(initial_path);
-  GTK.FileDialog selector;
-  selector = GTK.FileDialog(([ "title": "Pike installation prefix",
-                               //"initial-name": basename(initial_path),
-                               "initial-folder": path,
-                               "accept-label": "Select",
-                               "modal": 1,
-                            ]));
-  selector->select_folder(window1, UNDEFINED, set_filename, entry);
+  select_path(entry, 1);
 #else
-  GTK.FileChooserDialog selector;
-  selector = GTK.FileChooserDialog(([ "title": "Pike installation prefix",
-                                      "modal": 1,
-                                   ]));
-  selector->set_file(GI.repository.Gio.file_new_for_path(basename(entry->get_text())));
-  selector->add_button("OK", GTK.ResponseType.ACCEPT)->
-    connect("clicked", set_filename, selector, entry);
-  selector->add_button("Cancel", GTK.ResponseType.CANCEL)->
-    connect("clicked", close_fileselector, selector);
-  selector->show();
-#endif
-#else
-  object selector;
-  selector=GTK.FileSelection("Pike installation prefix");
+  object selector = GTK.FileSelection("Pike installation prefix");
   selector->set_filename(entry->get_text());
   selector->ok_button()->signal_connect("clicked", set_filename,
-                                        ({ selector, entry }) );
-  selector->cancel_button()->signal_connect("clicked",close_fileselector,selector);
+                                        ({ selector, entry }));
+  selector->cancel_button()->signal_connect("clicked", close_fileselector,
+                                            selector);
   selector->show();
 #endif
 }
@@ -1432,42 +1448,14 @@ void selectdir(object button, object entry)
 void selectfile(object button, object entry)
 {
 #ifdef USE_GI
-#if constant(GTK.FileDialog)
-  string other_path = entry->get_text();
-  string initial_path = entry->get_text();
-  GI.repository.Gio.File path =
-    GI.repository.Gio.file_new_for_path(dirname(initial_path));
-  GTK.FileDialog selector;
-  selector = GTK.FileDialog(([ "title": "Pike binary name",
-                               "initial-name": "pike" /*initial_path*/,
-#if 1
-                               /* "initial-file": path, */
-                               "initial-folder": path,
-#endif
-                               "accept-label": "Select",
-                               "modal": 1,
-                            ]));
-  selector->set_initial_folder(path);
-  selector->save(window1, UNDEFINED, set_filename, entry);
+  select_path(entry, 0);
 #else
-  GTK.FileChooserDialog selector;
-  selector = GTK.FileChooserDialog(([ "title": "Pike binary name",
-                                     "modal": 1,
-                                  ]));
-  selector->set_file(GI.repository.Gio.file_new_for_path(basename(entry->get_text())));
-  selector->add_button("OK", GTK.ResponseType.ACCEPT)->
-    connect("clicked", set_filename, selector, entry);
-  selector->add_button("Cancel", GTK.ResponseType.CANCEL)->
-    connect("clicked", close_fileselector, selector);
-  selector->show();
-#endif
-#else
-  object selector;
-  selector=GTK.FileSelection("Pike binary name");
+  object selector = GTK.FileSelection("Pike binary name");
   selector->set_filename(entry->get_text());
   selector->ok_button()->signal_connect("clicked", set_filename,
-                                        ({ selector, entry }) );
-  selector->cancel_button()->signal_connect("clicked",close_fileselector,selector);
+                                        ({ selector, entry }));
+  selector->cancel_button()->signal_connect("clicked", close_fileselector,
+                                            selector);
   selector->show();
 #endif
 }
@@ -1546,7 +1534,29 @@ class Frame
 {
   inherit GTK.Frame;
 
+#ifdef USE_GI
+  protected void create()
+  {
+    // Match the outside padding of Gtk 2's set_border_width(11).
+    ::create(([ "margin-start": 11, "margin-end": 11,
+                "margin-top": 11, "margin-bottom": 11 ]));
+#ifdef USE_GTK4
+    // Gtk 4 removed set_shadow_type(); request a visible frame with CSS.
+    object css = GTK.CssProvider();
+    css->load_from_data("frame { border: 1px solid alpha(currentColor, 0.35); }",
+                        -1);
+    get_style_context()->add_provider(css, GTK.STYLE_PROVIDER_PRIORITY_APPLICATION);
+#endif
+  }
+#endif
+
 #ifdef USE_GTK3
+  this_program set_shadow_type(int shadow)
+  {
+    ::set_shadow_type(shadow);
+    return this;
+  }
+
   // Make it compatible with GTK.Widget.
   void child_notify(string ingored)
   {
@@ -1686,7 +1696,7 @@ class WelcomeBox
                                   combine_path(prefix, "bin"),
                                   "pike"));
 #ifdef USE_GI
-    entry1->connect("move-focus", update_entry2);
+    entry1->connect("changed", update_entry2);
     button1->connect("clicked", cancel);
     button2->connect("clicked", next);
     button4->connect("clicked", selectfile, entry2);
@@ -1731,43 +1741,33 @@ class WizardWindow
 
 int begin_wizard(array(string) argv, string prefix)
 {
-  int ret = -1;
-
 #ifdef USE_GI
   GTK.Application app =
     GTK.Application(([ "application_id": "apps.pike.installer",
-                       "flags": GIO.ApplicationFlags.HANDLES_OPEN ]));
-  app->connect("open",
-               lambda(GTK.Application app, mixed ... args) {
-                 werror("OPEN: %O\n", args);
-                 app->add_window(window1 = WizardWindow(prefix));
-                 window1->set_visible(1);
-               });
-  app->connect("activate",
-               lambda(GTK.Application app) {
-                 if (sizeof(app->get_windows())) return;
-                 werror("No windows.\n");
-                 app->quit();
-               });
+                       "flags": GIO.ApplicationFlags.NON_UNIQUE ]));
+  app->connect("activate", lambda(GTK.Application app) {
+    if (!window1) {
+      app->add_window(window1 = WizardWindow(prefix));
+    }
+#ifdef USE_GTK3
+    window1->show_all();
+#endif
+    window1->present();
+  });
+
+  // The installer has already parsed its arguments. Do not let
+  // GApplication interpret installation options or paths as its own.
+  return app->run(({ string_to_utf8(sizeof(argv) ? argv[0] :
+                                   "pike-installer") }));
 #else
-  // FIXME:
-  // We should display the GPL licence and make the user
-  // click 'agree' first
-  //
+  // FIXME: Display the GPL licence and ask the user to agree first.
   GTK.setup_gtk(argv);
   window1 = WizardWindow(prefix);
-#endif
-
-#ifdef USE_GI
-  app->run(sizeof(argv), argv);
-
-  return 0;
-#else
   window1->show_all();
-
   return -1;
 #endif
 }
+
 #endif
 
 // Recalculate adhoc signature hashes on macOS after updating the master cookie
@@ -4077,7 +4077,11 @@ int pre_install(array(string) argv)
 	if(!no_gui)
 	{
 #ifndef __NT__ // We are using GTK on Win32!! no DISPLAY required
-	  if(getenv("DISPLAY"))
+#ifdef USE_GI
+          if(getenv("DISPLAY") || getenv("WAYLAND_DISPLAY"))
+#else
+          if(getenv("DISPLAY"))
+#endif
 #endif
 	  {
             return begin_wizard(argv, prefix);
