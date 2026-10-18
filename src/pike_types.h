@@ -132,7 +132,7 @@ enum pt_binop
   };
 
 /*
- * Flags used by intersect_types() and subtract_types().
+ * Flags used by type_binop() and pike_types_le().
  */
 enum pt_cmp_flags
   {
@@ -438,16 +438,6 @@ struct pike_type *type_binop(enum pt_binop op,
 			     enum pt_cmp_flags aflags,
 			     enum pt_cmp_flags bflags,
 			     enum pt_remap_flags remap_flags);
-struct pike_type *subtract_types(struct pike_type *a,
-				 struct pike_type *b,
-				 enum pt_cmp_flags aflags,
-				 enum pt_cmp_flags bflags,
-				 enum pt_remap_flags remap_flags);
-struct pike_type *intersect_types(struct pike_type *a,
-				  struct pike_type *b,
-				  enum pt_cmp_flags aflags,
-				  enum pt_cmp_flags bflags,
-				  enum pt_remap_flags remap_flags);
 int match_types(struct pike_type *a,struct pike_type *b);
 int pike_types_le(struct pike_type *a, struct pike_type *b,
 		  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags);

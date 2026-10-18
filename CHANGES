@@ -26,14 +26,20 @@ o Syntax for using multi-assign in function calls.
 Bug fixes
 ---------
 
+o predef::backtrace()
+
+  Improved handling of frames whose arguments are not fully initialized.
+
 o predef::{en,de}code_value()
 
   Several fixes related to encoding and decoding of programs.
 
 o Cpp
 
-  Fixed line numbering issue when handling multi-line comments
-  in arguments to macros.
+  - Fixed line numbering issue when handling multi-line comments
+    in arguments to macros.
+
+  - Improved cleanup when preprocessor callbacks throw errors.
 
 o Compiler
 

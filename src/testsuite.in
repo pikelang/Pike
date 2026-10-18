@@ -12683,6 +12683,44 @@ test_eq(`%(4.5, Gmp.mpz(2)), Gmp.mpz(0))
 
 // - `&
 
+test_any([[
+  // Obtain type values without adding the implicit zero from an
+  // uninitialized variable. Exercise the operator at run time too.
+  function(string:mixed) type_of = lambda(string name) {
+    return compile_string("mixed get(" + name + " value) { "
+                          "return typeof(value); }")()->get();
+  };
+  foreach (({
+    ({ "mixed", "int", "int" }),
+    ({ "int", "string", "" }),
+    ({ "int(1..10)", "int(5..15)", "int(5..10)" }),
+    ({ "int(1..10)", "int(20..30)", "" }),
+    ({ "int|string", "int|float", "int" }),
+    ({ "array(int|string)", "array(int)", "array(int)" }),
+    ({ "mapping(int|string:int)", "mapping(int:int|float)",
+       "mapping(int:int)" }),
+    ({ "multiset(int|string)", "multiset(string)", "multiset(string)" }),
+    ({ "function", "function(int:int)", "function(int:int)" }),
+    // Function argument types are contravariant.
+    ({ "function(int:int)", "function(string:int)",
+       "function(int|string:int)" }),
+    ({ "function(int:int)", "function(int|float:int)",
+       "function(int|float:int)" }),
+    ({ "function(int:int|string)", "function(int:int|float)",
+       "function(int:int)" }),
+    ({ "function(int:int)", "function(int:string)", "" }),
+  }), array(string) spec) {
+    mixed a = type_of(spec[0]), b = type_of(spec[1]);
+    mixed expected = sizeof(spec[2]) ? type_of(spec[2]) : UNDEFINED;
+    foreach (({ a & b, b & a }), mixed result) {
+      if (result != expected || zero_type(result) != zero_type(expected))
+        error("%s & %s: expected %O, got %O.\n",
+              spec[0], spec[1], expected, result);
+    }
+  }
+  return 1;
+]], 1)
+
 test_do([[
    class A (int x) { protected mixed `&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
    add_constant("A",A);
