@@ -452,9 +452,17 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o predef::backtrace()
+
+  Improved handling of frames whose arguments are not fully initialized.
+
 o predef::{en,de}code_value()
 
   Several fixes related to encoding and decoding of programs.
+
+o predef::getcwd()
+
+  Fixed a memory leak in the current directory cache.
 
 o ADT.CircularList
 
@@ -468,8 +476,10 @@ o Charset
 
 o Cpp
 
-  Fixed line numbering issue when handling multi-line comments
-  in arguments to macros.
+  - Fixed line numbering issue when handling multi-line comments
+    in arguments to macros.
+
+  - Improved cleanup when preprocessor callbacks throw errors.
 
 o Compiler
 
@@ -495,6 +505,29 @@ o Compiler
 
   - The compiler now allows some C2Y syntax.
 
+  - Fixed allocation of parent information for nested classes.
+
+o Crypto & Nettle
+
+  - Fixed POLY1305 and UMAC32 MAC calculation.
+
+  - IGE and ABC cipher modes now use the entire initialization vector.
+
+  - Fixed reference handling in PCBC mode.
+
+  - HKDF.extract() now returns the extracted key, and HKDF.expand()
+    rejects output lengths exceeding the limit in RFC 5869.
+
+  - AES128_CTR_DRBG now checks that it has been seeded before use.
+
+o Image.JPEG
+
+  Fixed a remaining 64-bit portability issue in image transformations.
+
+o Parser.ECMAScript
+
+  Fixed handling of template strings containing nested expressions.
+
 o Runtime
 
   - The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
@@ -505,6 +538,11 @@ o Runtime
     not interrupted when ignored signals are received. By always
     installing a SIGCHLD signal handler, we can guarantee that
     pthread_kill(THREAD, SIGCHLD) will interrupt the specified thread.
+
+  - Fixed garbage collection destruction order when several strong
+    references point to the same object.
+
+  - Improved hashing of functions belonging to the same object.
 
 o Operator functions
 
@@ -560,6 +598,23 @@ o Protocols.HTTP.Server
 
   Header names in "extra_heads" will not have their case modified.
 
+  Improved validation of request framing and generated headers to
+  protect against request smuggling and header injection. Request size
+  limits now also apply to chunked requests, and request headers are
+  limited to 16 KB.
+
+  Fixed handling of pipelined keep-alive requests, HTTP/1.0 responses,
+  chunked response headers and TLS renegotiation.
+
+o Protocols.HTTP.Query
+
+  Fixed timeout calculation for asynchronous requests.
+
+o SSL
+
+  Improved session reuse and handling of session tickets, key exchange
+  errors and the maximum fragment length extension.
+
 o SSL.File: Propagate fatal alerts to close and write callbacks.
 
   SSL did not call the close_callback on SSL.File()s that connect outgoing
@@ -574,9 +629,30 @@ o Standards.JSON and Standards.JSON5
 
   encode() now allows other threads to run every now and then.
 
+o Standards.PEM, Standards.PKCS and Standards.X509
+
+  Improved handling of malformed PEM data, unknown certificate OIDs
+  and curves, and invalid RSA keys. Fixed PKCS.PFX decoding and X.509
+  certificate date encoding for 2050 and later.
+
+o Standards.URI
+
+  URIs containing CR, LF or NUL are now rejected.
+
 o Stdio.File: Support concurrent close() during read() and write().
 
   Previously this had an inconsistent behavior.
+
+o Stdio.Port
+
+  Improved handling of accept callbacks that have been destructed or
+  throw errors.
+
+o Thread
+
+  - interrupt() now passes along the supplied message.
+
+  - Fixed a condition variable race on NT.
 
 o Tools.Standalone.autodoc_to_split_html
 
@@ -609,6 +685,20 @@ o The new stricter type checker may expose old bugs that the
   old type checker did not find.
 
 o Iterator API changed. See "Simplified the Iterator API" above.
+
+o Fuse
+
+  run() now returns a status instead of terminating the process.
+  Several Operations callbacks now receive the handle returned by
+  open() or opendir(). The readdir() callback API has been extended
+  with directory offsets and optional file information.
+
+o Regexp.PCRE
+
+  Regexp.PCRE and the convenience functions in Regexp now use PCRE2
+  when available, falling back to PCRE1 otherwise. The two libraries
+  have some syntax differences. Use Regexp.PCRE1 or Regexp.PCRE2
+  explicitly when a particular implementation is required.
 
 o Sql.Sql is no longer a wrapper class, but a function.
 
@@ -856,7 +946,8 @@ o Protocols.LysKOM
 
 o Regexp.PCRE2
 
-  Support libpcre2.
+  Support libpcre2, including wide strings and JIT compilation through
+  the Studied class. The old PCRE module is available as Regexp.PCRE1.
 
 o Web.Auth & Web.Api
 o Web.EngineIO & Web.SocketIO
@@ -896,6 +987,12 @@ o Command-line options
 
       $ pike '-DFOO(X)=X'
 
+o Compiler and runtime performance
+
+  Reduced type checking overhead by caching type operations and avoiding
+  unnecessary temporary types and mappings. Also reduced function call
+  frame allocation overhead and recursion during local variable binding.
+
 o Runtime support for C11-threads
 
   - The runtime will now use C11 threads on non NT if pthreads
@@ -920,8 +1017,12 @@ o predef::equal()
 
 o predef::gc()
 
-  gc() called with a weak mapping as argument now removes weak references
-  that are only held by that mapping.
+  - gc() called with a weak mapping as argument now removes weak references
+    that are only held by that mapping.
+
+  - Type values can now be collected when only weak references remain,
+    including references in arrays, mappings, multisets and object
+    variables. Nested weak-only types may require several gc() calls.
 
 o predef::m_clear()
 
@@ -933,11 +1034,15 @@ o predef::m_delete()
 
   - m_delete() now supports atomic test and remove.
 
-o predef::sprintf %x
+o predef::sprintf()
 
-  %X and %x can now be used on 8-bit wide strings to get a hexadecimal
-  representation of their contents. Just calling sprintf("%x",data) is
-  the same as calling String.string2hex(data).
+  - %X and %x can now be used on 8-bit wide strings to get a hexadecimal
+    representation of their contents. Just calling sprintf("%x",data) is
+    the same as calling String.string2hex(data).
+
+  - Linebreak modes (%= and %/) now use the column width separately from
+    the field width. This allows wrapping text without padding each line
+    to the full column width, using eg "%;*-=s".
 
 o ADT.CircularList
 
@@ -950,13 +1055,17 @@ o ADT.Heap
 
   - Added low_pop().
 
+o ADT.Queue
+
+  Added unget() to prepend an element to the queue.
+
 o Backend.PollDeviceBackend
 
   - Support using port_create() on recent Solaris.
 
 o Calendar
 
-  - Timezone data updated to tzdb-2025b.
+  - Timezone data updated to tzdb-2026e.
 
   - The timezone expert system has been updated for the first time
     in quite a while.
@@ -994,6 +1103,18 @@ o Filesystem.Monitor
 
   The filesystem monitoring system now uses accelleration via
   Inotify et al.
+
+o Fuse
+
+  - Added support for Fuse 3.x.
+
+  - Multiple concurrent mounts are supported with Fuse 2.6 and later.
+
+  - Added directory handles, directory offsets and additional file
+    operation callbacks. Handles returned by open() are now passed
+    to the corresponding file operations.
+
+  - Many Operations callbacks are now optional.
 
 o Gmp
 
@@ -1312,6 +1433,16 @@ o Tools.Hilfe
 
   Support __generator__ and __async__ modifiers.
 
+o Tools.Shoot and Tools.Standalone.benchmark
+
+  - Added run_sync() and the --single-process/--sync option to run
+    benchmarks in the current process.
+
+  - Added --load to display previously saved JSON results, including
+    results read from standard input.
+
+  - Improved comparison output and reporting of measurement variance.
+
 o Tools.Standalone.precompile
 
   - Program identifiers can now be preallocated, allowing method prototypes
@@ -1320,7 +1451,7 @@ o Tools.Standalone.precompile
   - Attempt to keep comments in place for EXTRA. This fixes some issues
     where autodoc comments were moved around.
 
-o Unicode 10.0.0.
+o Unicode 18.0.0.
 
 o Unicode.is_whitespace()
 
@@ -1338,6 +1469,12 @@ o call_function() has been deprecated. Use `()() instead.
 
 o Stdio.Buffer()->match has been deprecated.
   Use Stdio.Buffer()->sscanf() instead.
+
+o Fuse.Operations.utime() has been deprecated. Use utimens() instead.
+
+o Regexp.PCRE2.Widestring and Regexp.PCRE2.StudiedWidestring are
+  deprecated compatibility classes. The ordinary classes now handle
+  all string widths.
 
 
 Removed features and modules
@@ -1420,6 +1557,10 @@ o Support undocumented enums with documented constants.
 
 o Added @h for custom section headers.
 
+o Added @alias for alternate names of documented symbols. References
+  to an alias link to the canonical declaration, including members of
+  aliased modules and classes.
+
 o Lots of previously undocumented symbols are now documented.
 
 o Add some support for documenting annotations.
@@ -1427,6 +1568,8 @@ o Add some support for documenting annotations.
 o Lots of broken cross-references have been fixed.
 
 o Some documentation has been regenerated and updated.
+
+o Updated the language grammar, Autodoc and testsuite chapters.
 
 
 Building and installing
@@ -1442,6 +1585,20 @@ o C99 assumed
   anymore and C99 compiler support is assumed.
 
 o GCC 15.2.1 supported.
+
+o Improved support for cross-compiling, GNU Hurd and BSD systems.
+
+o Added --with-local-prefix to configure a directory for site-local
+  include files and modules, shared by installations of Pike.
+
+o The installer accepts --no-dump to skip dumping the master and
+  Pike modules.
+
+o Added a release_checks make target for checking release data and
+  consistency. Xenofarm now runs these checks too.
+
+o The testsuite supports multiple and nested conditional requirements
+  for individual tests.
 
 
 Issues fixed
@@ -1462,7 +1619,8 @@ Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3658, #3681, #4312,
   #10154, #10155, #10156, #10158, #10159, #10160, #10161, #10162, #10163,
   #10164, #10165, #10167, #10168, #10170, #10171, #10173, #10174, #10175,
   #10176, #10177, #10178, #10179, #10180, #10181, #10182, #10183, #10185,
-  #10187, #10188, #10191, #10192, #10193, #10195, #10196, #10197, #10198,
-  #10200, #10201, #10202, #10203, #10204, #10205, #10206, #10207, #10208,
-  #10209, #10210, #10211, #10212, #10213, #10214, #10216, #10217, #10218,
-  #10219, #10220, #10221, #10222, #10223, #10224, #10225, #10231
+  #10186, #10187, #10188, #10191, #10192, #10193, #10195, #10196, #10197,
+  #10198, #10199, #10200, #10201, #10202, #10203, #10204, #10205, #10206,
+  #10207, #10208, #10209, #10210, #10211, #10212, #10213, #10214, #10216,
+  #10217, #10218, #10219, #10220, #10221, #10222, #10223, #10224, #10225,
+  #10227, #10228, #10231, #10233, #10234
