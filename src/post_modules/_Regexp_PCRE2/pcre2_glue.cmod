@@ -46,6 +46,429 @@ static void push_pcre2_error_message(int errorcode)
   push_string(finish_string_builder(&s));
 }
 
+/*! @class CalloutBlock
+ *!
+ *! Context object passed to callout functions.
+ *!
+ *! @seealso
+ *!   @[MatchContext.set_callout()]
+ */
+PIKECLASS CalloutBlock
+{
+  /* Note: pcre2_callout_block is assumed to be the same across all widths,
+     just with the string pointers pointing to different width strings */
+  CVAR pcre2_callout_block_8 *block;
+  CVAR enum size_shift shift;
+
+  /*! @decl int callout_number
+   *!
+   *! For a numerical callout, this contains the number of the callout
+   *! in the range 0-255.  It is 255 for automatically generated callouts.
+   */
+  PIKEFUN int `callout_number()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    push_int(block->callout_number);
+  }
+
+  /*! @decl int capture_top
+   *!
+   *! Contains one more than the number of the highest captured substring
+   *! so far.
+   *!
+   *! @seealso
+   *!   @[offset_vector], @[capture_last]
+   */
+  PIKEFUN int `capture_top()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    push_int(block->capture_top);
+  }
+
+  /*! @decl int capture_last
+   *!
+   *! Contains the number of the most recently captured substring.
+   *! The values of the fields @[capture_top] and @[capture_last] do not
+   *! always differ by one; for example, when the callout in the pattern
+   *! ((a)(b))(?C2) is taken, @[capture_last] is 1 but @[capture_top] is 4.
+   *!
+   *! @seealso
+   *!   @[offset_vector], @[capture_top]
+   */
+  PIKEFUN int `capture_last()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    push_int(block->capture_last);
+  }
+
+  /*! @decl array(int) offset_vector
+   *!
+   *! The contents of offset_vector[2] to offset_vector[@[capture_top]*2-1]
+   *! can be inspected in order to extract substrings that have been matched
+   *! so far, in the same way as extracting substrings after a match has
+   *! completed.  The values in offset_vector[0] and offset_vector[1] are
+   *! always -1 because the match is by definition not complete.
+   *! Substrings that have not been captured but whose numbers are less than
+   *! capture_top also have both of their offset_vector slots set to -1.
+   */
+  PIKEFUN array(int) `offset_vector()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    PCRE2_SIZE i, len = 2*block->capture_top;
+    PCRE2_SIZE *ovector = block->offset_vector;
+    struct array *res;
+    
+    res=allocate_array(len);
+    for (i=0; i<len; i++) {
+      SET_SVAL(ITEM(res)[i], T_INT, NUMBER_NUMBER, integer,
+               ovector[i]);
+    }
+    push_array(res);
+  }
+
+  /*! @decl string|zero mark
+   *!
+   *! Contains the name of the most recently passed (*MARK), (*PRUNE),
+   *! or (*THEN) item in the match, or 0 if no such items have been passed.
+   *! Instances of (*PRUNE) or (*THEN) without a name do not obliterate a
+   *! previous (*MARK).
+   */
+  PIKEFUN string|zero `mark()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+
+    if (block->mark)
+      push_string(make_shared_pcharp(MKPCHARP(block->mark, THIS->shift)));
+    else
+      push_undefined();
+  }
+
+  /*! @decl string subject
+   *!
+   *! The string that was passed to the matching function
+   */
+  PIKEFUN string `subject()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+
+    push_string(make_shared_wide_string(block->subject,
+                                        block->subject_length, THIS->shift));
+  }
+
+  /*! @decl int start_match
+   *!
+   *! Normally the offset within the subject at which the current match
+   *! attempt started.  However, if the escape sequence \K has been
+   *! encountered, this value is changed to reflect the modified starting
+   *! point.  If the pattern is not anchored, the callout function may
+   *! be called several times from the same point in the pattern for different
+   *! starting points in the subject.
+   */
+  PIKEFUN int `start_match()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    push_int(block->start_match);
+  }
+
+  /*! @decl int current_position
+   *!
+   *! The offset within the subject of the current match pointer.
+   */
+  PIKEFUN int `current_position()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    push_int(block->current_position);
+  }
+
+  /*! @decl int pattern_position
+   *!
+   *! The offset in the pattern string to the next item to be matched.
+   */
+  PIKEFUN int `pattern_position()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    push_int(block->pattern_position);
+  }  
+  
+  /*! @decl int next_item_length
+   *!
+   *! The length of the next item to be processed in the pattern string.
+   *! When the callout is at the end of the pattern, the length is zero.
+   *! When the callout precedes an opening parenthesis, the length includes
+   *! meta characters that follow the parenthesis.  For example, in a callout
+   *! before an assertion such as (?=ab) the length is 3. For an alternation
+   *! bar or a closing parenthesis, the length is one, unless a closing
+   *! parenthesis is followed by a quantifier, in which case its length is
+   *! included.  (This changed in release 10.23. In earlier releases,
+   *! before an opening parenthesis the length was that of the entire group,
+   *! and before an alternation bar or a closing parenthesis the length was
+   *! zero.)
+   */
+  PIKEFUN int `next_item_length()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    push_int(block->next_item_length);
+  }  
+
+  /*! @decl int callout_string_offset
+   *!
+   *! The code unit offset to the start of the callout argument string within
+   *! the original pattern string.
+   */
+  PIKEFUN int `callout_string_offset()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    if (block->version >= 1)
+      push_int(block->callout_string_offset);
+    else
+      push_undefined();
+  }
+
+  /*! @decl string callout_string
+   *!
+   *! For callouts with string arguments, @[callout_number] is always zero,
+   *! and this field contains the string that is contained within the pattern.
+   */
+  PIKEFUN string `callout_string()
+  {
+    pcre2_callout_block_8 *block = THIS->block;
+    if (block->version >= 1 && block->callout_string != NULL)
+      push_string(make_shared_wide_string(block->callout_string,
+                                          block->callout_string_length,
+                                          THIS->shift));
+    else
+      push_undefined();
+  }
+
+  /*! @decl int callout_flags
+   *!
+   *! This field is always zero when JIT is being used.  When JIT is not
+   *! being used, the following bits may be set:
+   *! @int
+   *!   @value CALLOUT.STARTMATCH
+   *!     This is set for the first callout after the start of matching for
+   *!     each new starting position in the subject.
+   *!   @value CALLOUT.BACKTRACK
+   *!       This is set if there has been a matching backtrack since the
+   *!       previous callout, or since the start of matching if this is the
+   *!       first callout.
+   *! @endint
+   *! Both bits are set when a backtrack has caused a "bumpalong" to a new
+   *! starting position in the subject.
+   */
+  PIKEFUN int `callout_flags()
+  {
+    /* 10.31 added both callout_flags and PCRE2_CALLOUT_STARTMATCH */
+#ifdef PCRE2_CALLOUT_STARTMATCH
+    pcre2_callout_block_8 *block = THIS->block;
+    if (block->version >= 2)
+      push_int(block->callout_flags);
+    else
+#endif
+      push_undefined();
+  }
+
+  PIKEFUN void create()
+    flags ID_PROTECTED;
+  {
+    Pike_error("The CalloutBlock type cannot be instantiated\n");
+  }
+}
+/*! @endclass
+ */
+
+/*! @class MatchContext
+ *!
+ *! Object that can be provided to @[_pcre()->exec()] for extra context.
+ */
+PIKECLASS MatchContext
+{
+   CVAR pcre2_match_context_8 *ctx8;
+   CVAR pcre2_match_context_16 *ctx16;
+   CVAR pcre2_match_context_32 *ctx32;
+   PIKEVAR function|void callout flags ID_PROTECTED|ID_PRIVATE;
+
+   static int callout_wrapper(void *block, void *context,
+                              enum size_shift shift)
+   {
+     struct cq__Regexp_PCRE2_MatchContext_struct *ME = context;
+     struct object *o = NULL;
+     struct cq__Regexp_PCRE2_CalloutBlock_struct *cb;
+     int rc;
+     JMP_BUF recovery;
+     struct svalue *save_sp = Pike_sp;
+
+     if (SETJMP(recovery)) {
+       UNSETJMP(recovery);
+       call_handle_error();
+       pop_n_elems(Pike_sp - save_sp);
+       if (o)
+         destruct_object(o, DESTRUCT_EXPLICIT);
+       return PCRE2_ERROR_CALLOUT;
+     }
+     push_object(o = fast_clone_object(cq__Regexp_PCRE2_CalloutBlock_program));
+     cb = (struct cq__Regexp_PCRE2_CalloutBlock_struct *)get_storage(o, cq__Regexp_PCRE2_CalloutBlock_program);
+     cb->block = block;
+     cb->shift = shift;
+     apply_svalue(&ME->callout, 1);
+     if (PIKE_TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
+       rc = Pike_sp[-1].u.integer;
+     else
+       rc = PCRE2_ERROR_CALLOUT;
+     pop_n_elems(Pike_sp - save_sp);
+     destruct_object(o, DESTRUCT_EXPLICIT);
+     UNSETJMP(recovery);
+     return rc;
+   }
+
+   static int callout_wrapper8(pcre2_callout_block_8 *block, void *context)
+   {
+     return callout_wrapper(block, context, eightbit);
+   }
+   
+   static int callout_wrapper16(pcre2_callout_block_16 *block, void *context)
+   {
+     return callout_wrapper(block, context, sixteenbit);
+   }
+
+   static int callout_wrapper32(pcre2_callout_block_32 *block, void *context)
+   {
+     return callout_wrapper(block, context, thirtytwobit);
+   }
+
+   static void create_ctx_width(struct cq__Regexp_PCRE2_MatchContext_struct *that,
+                                enum size_shift width)
+   {
+     void *result;
+     int errorcode = 0;
+
+     switch (width) {
+     case eightbit:
+       result=that->ctx8=pcre2_match_context_create_8(NULL);
+       if (result) {
+         if (PIKE_TYPEOF(that->callout))
+           errorcode = pcre2_set_callout_8(result, callout_wrapper8, that);
+       }
+       break;
+     case sixteenbit:
+       result=that->ctx16=pcre2_match_context_create_16(NULL);
+       if (result) {
+         if (PIKE_TYPEOF(that->callout))
+           errorcode = pcre2_set_callout_16(result, callout_wrapper16, that);
+       }
+       break;
+     case thirtytwobit:
+       result=that->ctx32=pcre2_match_context_create_32(NULL);
+       if (result) {
+         if (PIKE_TYPEOF(that->callout))
+           errorcode = pcre2_set_callout_32(result, callout_wrapper32, that);
+       }
+       break;
+     default:
+       Pike_error("Invalid size_shift!\n");
+     }
+
+     if (!result) {
+       Pike_error("No memory for match context\n");
+     } else if (errorcode < 0) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error creating match context: %pS\n",
+                  Pike_sp[-1].u.string);
+     }
+   }
+
+   /*! @decl void set_callout(function(CalloutBlock:int)|void callout)
+    *!
+    *! Set up a callout function to call at specified points during a
+    *! matching operation.
+    *!
+    *! Within a regular expression, (?C<arg>) indicates a point at which the
+    *! external function is to be called.  Different callout points can be
+    *! identified by putting a number less than 256 after the letter C.
+    *! The default value is zero.  Alternatively, the argument may be a
+    *! delimited string.  The starting delimiter must be one of
+    *! @tt{` ' " ^ % # $ {@} and the ending delimiter is the same as the
+    *! start, except for @tt{{@}, where the ending delimiter is @tt{}@}.
+    *! If the ending delimiter is needed within the string, it must
+    *! be doubled.
+    *!
+    *! If the @[OPTION.AUTO_CALLOUT] bit is set when a pattern is compiled,
+    *! callouts are automatically inserted, all with number 255, before each
+    *! item in the pattern except for immediately before or after an explicit
+    *! callout.
+    *!
+    *! @param callout
+    *!   The function to call.  If the function return zero, matching
+    *!   proceeds as normal.  If the value is greater than zero, matching
+    *!   fails at the current point, but the testing of other matching
+    *!   possibilities goes ahead, just as if a lookahead assertion had failed.
+    *!   If the value is less than zero, the match is abandoned, and the
+    *!   matching function returns the negative value.  In particular,
+    *!   @[ERROR.NOMATCH] forces a standard "no match" failure.
+    *!   The error number @[ERROR.CALLOUT] is reserved for use by callout
+    *!   functions; it will never be used by PCRE2 itself.
+    */
+   PIKEFUN void set_callout(function(CalloutBlock:int)|void callout)
+   {
+     int errorcode = 0;
+     if (callout)
+       assign_svalue(&THIS->callout, callout);
+     else {
+       free_svalue(&THIS->callout);
+       clear_svalues_undefined(&THIS->callout, 1);
+     }
+
+     if (THIS->ctx8 && errorcode >= 0)
+       errorcode = pcre2_set_callout_8(THIS->ctx8,
+                                       (callout? callout_wrapper8 : NULL),
+                                       THIS);
+     if (THIS->ctx16 && errorcode >= 0)
+       errorcode = pcre2_set_callout_16(THIS->ctx16,
+                                        (callout? callout_wrapper16 : NULL),
+                                        THIS);
+     if (THIS->ctx32 && errorcode >= 0)
+       errorcode = pcre2_set_callout_32(THIS->ctx32,
+                                        (callout? callout_wrapper32 : NULL),
+                                        THIS);
+     if (errorcode < 0) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre2_set_callout: %pS\n",
+                  Pike_sp[-1].u.string);
+     }
+     pop_stack();
+   }
+
+#ifdef PIKE_NULL_IS_SPECIAL
+   INIT
+   {
+     THIS->ctx8=NULL;
+     THIS->ctx16=NULL;
+     THIS->ctx32=NULL;
+   }
+#endif
+
+   EXIT
+     gc_trivial;
+   { 
+     if (THIS->ctx8) {
+       pcre2_match_context_free_8(THIS->ctx8);
+       THIS->ctx8 = NULL;
+     }
+     if (THIS->ctx16) {
+       pcre2_match_context_free_16(THIS->ctx16);
+       THIS->ctx16 = NULL;
+     }
+     if (THIS->ctx32) {
+       pcre2_match_context_free_32(THIS->ctx32);
+       THIS->ctx32 = NULL;
+     }
+   }
+
+}
+/*! @endclass
+ */
+
+
 /*** _pcre the regexp object ***********************************/
 
 /*! @class _pcre
@@ -335,9 +758,13 @@ PIKECLASS _pcre
      }
    }
 
-/*! @decl int|array exec(string subject,void|int startoffset)
+/*! @decl int|array exec(string subject,void|int startoffset,	@
+ *!                      MatchContext|void context)
  *!     Matches the regexp against @[subject], starting at
  *!     @[startoffset] if it is given.
+ *!
+ *!     If @[context] is given, it is a @[MatchContext] object providing
+ *!     additional context for the match, such as a callout function.
  *!
  *!     If the match is successful, the return value is an array that
  *!     holds the offsets of all matches:
@@ -411,7 +838,8 @@ PIKECLASS _pcre
  */
 
    PIKEFUN int|array(int) exec(string subject,
-                               void|int startoffset)
+                               void|int startoffset,
+                               MatchContext|void context)
    {
      struct array *res;
 
@@ -443,6 +871,7 @@ PIKECLASS _pcre
        struct pike_string *sub = subject;
        struct string_builder s;
        ONERROR error;
+       struct cq__Regexp_PCRE2_MatchContext_struct *match_context = NULL;
        
        if (sub->size_shift < THIS->pattern->size_shift) {
          /* Need to widen subject */
@@ -455,16 +884,26 @@ PIKECLASS _pcre
        } else
          error.func = NULL;
 
+       if (context != NULL) {
+         if ((match_context =
+              get_storage(context, cq__Regexp_PCRE2_MatchContext_program))
+             == NULL)
+           SIMPLE_ARG_TYPE_ERROR("exec", 3, "Regexp.PCRE2.MatchContext");
+       }
+       
        switch(sub->size_shift) {
        case eightbit:
          if (!THIS->re8)
            create_re_width(THIS, eightbit);
          if (!THIS->md8)
            THIS->md8 = pcre2_match_data_create_from_pattern_8(THIS->re8, NULL);
+         if (match_context && !match_context->ctx8)
+           create_ctx_width(match_context, eightbit);
          rc=pcre2_match_8(THIS->re8,
                           STR0(sub),sub->len,
                           off,opts,
-                          THIS->md8,NULL);
+                          THIS->md8,
+                          (match_context? match_context->ctx8 : NULL));
          if (rc>=0) {
            ovector = pcre2_get_ovector_pointer_8(THIS->md8);
            len = pcre2_get_ovector_count_8(THIS->md8) * 2;
@@ -475,10 +914,13 @@ PIKECLASS _pcre
            create_re_width(THIS, sixteenbit);
          if (!THIS->md16)
            THIS->md16 = pcre2_match_data_create_from_pattern_16(THIS->re16, NULL);
+         if (match_context && !match_context->ctx16)
+           create_ctx_width(match_context, sixteenbit);
          rc=pcre2_match_16(THIS->re16,
                            STR1(sub),sub->len,
                            off,opts,
-                           THIS->md16,NULL);
+                           THIS->md16,
+                           (match_context? match_context->ctx16 : NULL));
          if (rc>=0) {
            ovector = pcre2_get_ovector_pointer_16(THIS->md16);
            len = pcre2_get_ovector_count_16(THIS->md16) * 2;
@@ -489,10 +931,13 @@ PIKECLASS _pcre
            create_re_width(THIS, thirtytwobit);
          if (!THIS->md32)
            THIS->md32 = pcre2_match_data_create_from_pattern_32(THIS->re32, NULL);
+         if (match_context && !match_context->ctx32)
+           create_ctx_width(match_context, thirtytwobit);
          rc=pcre2_match_32(THIS->re32,
                            (PCRE2_SPTR32)STR2(sub),sub->len,
                            off,opts,
-                           THIS->md32,NULL);
+                           THIS->md32,
+                           (match_context? match_context->ctx32 : NULL));
          if (rc>=0) {
            ovector = pcre2_get_ovector_pointer_32(THIS->md32);
            len = pcre2_get_ovector_count_32(THIS->md32) * 2;
@@ -1192,6 +1637,28 @@ PIKE_MODULE_INIT
     */
   
 
+   /*! @module CALLOUT
+    */
+
+   /*! @decl constant STARTMATCH
+    *! @decl constant BACKTRACK
+    *!  Documented in @[CalloutBlock()->callout_flags].
+    */
+
+   start_new_program();
+   /* documented in callout_flags */
+#ifdef PCRE2_CALLOUT_STARTMATCH
+   add_integer_constant("STARTMATCH",PCRE2_CALLOUT_STARTMATCH,0);
+#endif
+#ifdef PCRE2_CALLOUT_BACKTRACK
+   add_integer_constant("BACKTRACK",PCRE2_CALLOUT_BACKTRACK,0);
+#endif
+
+   END_PROGRAM_MAKE_SUBMODULE("CALLOUT");
+
+   /*! @endmodule CALLOUT
+    */
+   
    /*! @module ERROR
     */
 

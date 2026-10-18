@@ -71,6 +71,70 @@ test_equal(Regexp.PCRE2("[a\u3042\U0001F130].")->
            split2("\U0001F131\U0001F13B\U0001F130\U0001F137\U0001F130"),
            ({"\u{1f130}\u{1f137}"}))
 
+test_any_equal([[
+  array a = ({});
+  Regexp.PCRE2.MatchContext mcon = Regexp.PCRE2.MatchContext();
+  mcon->set_callout(lambda(Regexp.PCRE2.CalloutBlock block) {
+    a += ({ block, mkmapping(indices(block), values(block)) });
+    // Flags will depend on e.g. JIT availability
+    if (has_index(a[-1], "callout_flags") && intp(a[-1]->callout_flags))
+       a[-1]->callout_flags = 0;
+    return 0;
+  });
+  return ({
+    Regexp.PCRE2("((a)(*MARK:Levengood)(b))(?C17)[ck]*(d)(?C'owari')")->
+      match("0123456789abcdef", 0, mcon)
+  }) + a;
+]], [[({ 1, 0, ([
+  "callout_flags": 0,
+  "callout_number": 17,
+  "callout_string": 0,
+  "callout_string_offset": 0,
+  "capture_last": 1,
+  "capture_top": 4,
+  "current_position": 12,
+  "mark": "Levengood",
+  "next_item_length": 5,
+  "offset_vector": ({
+        -1,
+        -1,
+        10,
+        12,
+        10,
+        11,
+        11,
+        12
+    }),
+  "pattern_position": 31,
+  "start_match": 10,
+  "subject": "0123456789abcdef"
+]), 0, ([
+  "callout_flags": 0,
+  "callout_number": 0,
+  "callout_string": "owari",
+  "callout_string_offset": 43,
+  "capture_last": 4,
+  "capture_top": 5,
+  "current_position": 14,
+  "mark": "Levengood",
+  "next_item_length": 0,
+  "offset_vector": ({ /* 10 elements */
+        -1,
+        -1,
+        10,
+        12,
+        10,
+        11,
+        11,
+        12,
+        13,
+        14
+    }),
+  "pattern_position": 50,
+  "start_match": 10,
+  "subject": "0123456789abcdef"
+])})]])
+
 cond_end // Regexp.PCRE2.Plain
 
 END_MARKER

@@ -44,6 +44,16 @@ class Plain
       }
    }
 
+   protected MatchContext|zero handle_match_context(MatchContext|function(CalloutBlock:int)|void context)
+   {
+      if (functionp(context)) {
+         function(CalloutBlock:int) callout = context;
+         context = MatchContext();
+         context->set_callout(callout);
+      }
+      return context;
+   }
+
 //! Matches a subject against the pattern,
 //! returns an array where the first element are the whole match,
 //! and the subsequent are the matching subpatterns.
@@ -58,9 +68,10 @@ class Plain
 //!              "f"
 //!          })
 //! @endcode
-   array(string)|int(0..0) split2(string subject,void|int startoffset)
+   array(string)|int(0..0) split2(string subject,void|int startoffset,
+                                  MatchContext|function(CalloutBlock:int)|void context)
    {
-      array(int)|int v=exec(subject,startoffset);
+      array(int)|int v=exec(subject,startoffset,handle_match_context(context));
       if (intp(v)) return handle_exec_error([int]v);
       return split_subject(subject,[array(int)]v);
    }
@@ -83,9 +94,10 @@ class Plain
 //!                 0
 //!             })
 //! @endcode
-   array(string)|int(0..0) split(string subject,void|int startoffset)
+   array(string)|int(0..0) split(string subject,void|int startoffset,
+                                 MatchContext|function(CalloutBlock:int)|void context)
    {
-      array(string)|int(0..0) v=split2(subject,startoffset);
+      array(string)|int(0..0) v=split2(subject,startoffset,context);
       if (intp(v)) return v;
       if (sizeof(v)>1) return v[1..];
       else return copy_value(({0}));
@@ -101,9 +113,10 @@ class Plain
 //! > Regexp.PCRE2.Plain("is fun")->match("pike isn't fun");
 //! Result: 0
 //! @endcode
-   int(0..1) match(string subject,void|int startoffset)
+   int(0..1) match(string subject,void|int startoffset,
+                   MatchContext|function(CalloutBlock:int)|void context)
    {
-      array(int)|int v=exec(subject,startoffset);
+      array(int)|int v=exec(subject,startoffset,handle_match_context(context));
       if (intp(v)) return handle_exec_error([int]v);
       return 1;
    }
@@ -182,9 +195,10 @@ class Plain
 //! > Regexp.PCRE2("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka");
 //! Result: "agurka-boom-fooabadoom"
 //! @endcode
-   string replace1(string subject,string|function(string:string) with)
+   string replace1(string subject,string|function(string:string) with,
+                   MatchContext|function(CalloutBlock:int)|void context)
    {
-      array(int)|int v=exec(subject,0);
+      array(int)|int v=exec(subject,0,handle_match_context(context));
       if (intp(v) && !handle_exec_error([int]v))
          return subject;
 
@@ -232,12 +246,14 @@ class Plain
 //! @endcode
    this_program matchall(string subject,
                          function(array(string)|void,
-                                  array(int)|void:mixed|void) callback)
+                                  array(int)|void:mixed|void) callback,
+                         MatchContext|function(CalloutBlock:int)|void context)
    {
       int i=0;
+      context = handle_match_context(context);
       for (;;)
       {
-         array(int)|int v=exec(subject,i);
+         array(int)|int v=exec(subject,i,context);
          if (intp(v) && !handle_exec_error([int]v))
             return this;
          callback(split_subject(subject,v),v);
