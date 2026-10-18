@@ -287,6 +287,11 @@ PIKECLASS MatchContext
    CVAR pcre2_match_context_16 *ctx16;
    CVAR pcre2_match_context_32 *ctx32;
    PIKEVAR function|void callout flags ID_PROTECTED|ID_PRIVATE;
+   CVAR PCRE2_SIZE offset_limit;
+   CVAR uint32_t heap_limit;
+   CVAR uint32_t match_limit;
+   CVAR uint32_t depth_limit;
+   CVAR unsigned limits_set;
 
    static int callout_wrapper(void *block, void *context,
                               enum size_shift shift)
@@ -348,6 +353,14 @@ PIKECLASS MatchContext
        if (result) {
          if (PIKE_TYPEOF(that->callout))
            errorcode = pcre2_set_callout_8(result, callout_wrapper8, that);
+         if ((that->limits_set & 1) && errorcode >= 0)
+           errorcode = pcre2_set_offset_limit_8(result, that->offset_limit);
+         if ((that->limits_set & 2) && errorcode >= 0)
+           errorcode = pcre2_set_heap_limit_8(result, that->heap_limit);
+         if ((that->limits_set & 4) && errorcode >= 0)
+           errorcode = pcre2_set_match_limit_8(result, that->match_limit);
+         if ((that->limits_set & 8) && errorcode >= 0)
+           errorcode = pcre2_set_depth_limit_8(result, that->depth_limit);
        }
        break;
      case sixteenbit:
@@ -355,6 +368,14 @@ PIKECLASS MatchContext
        if (result) {
          if (PIKE_TYPEOF(that->callout))
            errorcode = pcre2_set_callout_16(result, callout_wrapper16, that);
+         if ((that->limits_set & 1) && errorcode >= 0)
+           errorcode = pcre2_set_offset_limit_16(result, that->offset_limit);
+         if ((that->limits_set & 2) && errorcode >= 0)
+           errorcode = pcre2_set_heap_limit_16(result, that->heap_limit);
+         if ((that->limits_set & 4) && errorcode >= 0)
+           errorcode = pcre2_set_match_limit_16(result, that->match_limit);
+         if ((that->limits_set & 8) && errorcode >= 0)
+           errorcode = pcre2_set_depth_limit_16(result, that->depth_limit);
        }
        break;
      case thirtytwobit:
@@ -362,6 +383,14 @@ PIKECLASS MatchContext
        if (result) {
          if (PIKE_TYPEOF(that->callout))
            errorcode = pcre2_set_callout_32(result, callout_wrapper32, that);
+         if ((that->limits_set & 1) && errorcode >= 0)
+           errorcode = pcre2_set_offset_limit_32(result, that->offset_limit);
+         if ((that->limits_set & 2) && errorcode >= 0)
+           errorcode = pcre2_set_heap_limit_32(result, that->heap_limit);
+         if ((that->limits_set & 4) && errorcode >= 0)
+           errorcode = pcre2_set_match_limit_32(result, that->match_limit);
+         if ((that->limits_set & 8) && errorcode >= 0)
+           errorcode = pcre2_set_depth_limit_32(result, that->depth_limit);
        }
        break;
      default:
@@ -433,6 +462,129 @@ PIKECLASS MatchContext
      if (errorcode < 0) {
        push_pcre2_error_message(errorcode);
        Pike_error("error calling pcre2_set_callout: %pS\n",
+                  Pike_sp[-1].u.string);
+     }
+     pop_stack();
+   }
+
+   /*! @decl void set_offset_limit(int value)
+    *!
+    *! Limit how far an unanchored search can advance in the subject string.
+    *! The default value is -1.  The @[_pcre()->exec()] function returns
+    *! @[ERROR.NOMATCH] if a match with a starting point before or at the
+    *! given offset is not found.
+    */   
+   PIKEFUN void set_offset_limit(int value)
+   {
+     int errorcode = 0;
+     PCRE2_SIZE limit = (value < 0? PCRE2_UNSET : (PCRE2_SIZE)value);
+     THIS->offset_limit = limit;
+     THIS->limits_set |= 1u;
+     if (THIS->ctx8 && errorcode >= 0)
+       errorcode = pcre2_set_offset_limit_8(THIS->ctx8, limit);
+     if (THIS->ctx16 && errorcode >= 0)
+       errorcode = pcre2_set_offset_limit_16(THIS->ctx16, limit);
+     if (THIS->ctx32 && errorcode >= 0)
+       errorcode = pcre2_set_offset_limit_32(THIS->ctx32, limit);
+     if (errorcode < 0) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre2_set_offset_limit: %pS\n",
+                  Pike_sp[-1].u.string);
+     }
+     pop_stack();
+   }
+
+   /*! @decl void set_heap_limit(int value)
+    *!
+    *! Specify, in units of kibibytes (1024 bytes), the maximum amount
+    *! of heap memory that pcre2_match() may use to hold backtracking
+    *! information when running an interpretive match.
+    */   
+   PIKEFUN void set_heap_limit(int value)
+   {
+     int errorcode = 0;
+     THIS->heap_limit = value;
+     THIS->limits_set |= 2u;
+     if (THIS->ctx8 && errorcode >= 0)
+       errorcode = pcre2_set_heap_limit_8(THIS->ctx8, value);
+     if (THIS->ctx16 && errorcode >= 0)
+       errorcode = pcre2_set_heap_limit_16(THIS->ctx16, value);
+     if (THIS->ctx32 && errorcode >= 0)
+       errorcode = pcre2_set_heap_limit_32(THIS->ctx32, value);
+     if (errorcode < 0) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre2_set_heap_limit: %pS\n",
+                  Pike_sp[-1].u.string);
+     }
+     pop_stack();
+   }
+   
+   /*! @decl void set_match_limit(int value)
+    *!
+    *! The match_limit parameter provides a means of preventing PCRE2
+    *! from using up too many computing resources when processing patterns
+    *! that are not going to match, but which have a very large number of
+    *! possibilities in their search trees. The classic example is a pattern
+    *! that uses nested unlimited repeats.
+    *!
+    *! There is an internal counter in pcre2_match() that is incremented each
+    *! time round its main matching loop.  If this value reaches the match
+    *! limit, pcre2_match() returns the negative value @[ERROR.MATCHLIMIT].
+    *! This has the effect of limiting the amount of backtracking that can take
+    *! place.  For patterns that are not anchored, the count restarts from zero
+    *! for each position in the subject string.
+    *!
+    *! When pcre2_match() is called with a pattern that was successfully
+    *! processed by pcre2_jit_compile(), the way in which matching is executed
+    *! is entirely different.  However, there is still the possibility of
+    *! runaway matching that goes on for a very long time, and so the
+    *! match_limit value is also used in this case (but in a different way)
+    *! to limit how long the matching can continue.
+    */   
+   PIKEFUN void set_match_limit(int value)
+   {
+     int errorcode = 0;
+     THIS->match_limit = value;
+     THIS->limits_set |= 4u;
+     if (THIS->ctx8 && errorcode >= 0)
+       errorcode = pcre2_set_match_limit_8(THIS->ctx8, value);
+     if (THIS->ctx16 && errorcode >= 0)
+       errorcode = pcre2_set_match_limit_16(THIS->ctx16, value);
+     if (THIS->ctx32 && errorcode >= 0)
+       errorcode = pcre2_set_match_limit_32(THIS->ctx32, value);
+     if (errorcode < 0) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre2_set_match_limit: %pS\n",
+                  Pike_sp[-1].u.string);
+     }
+     pop_stack();
+   }
+
+   /*! @decl void set_depth_limit(int value)
+    *!
+    *! Limit the depth of nested backtracking in pcre2_match().
+    *! Each time a nested backtracking point is passed, a new memory frame is
+    *! used to remember the state of matching at that point.  Thus, this
+    *! parameter indirectly limits the amount of memory that is used in
+    *! a match. However, because the size of each memory frame depends on
+    *! the number of capturing  parentheses, the actual memory limit varies
+    *! from pattern to pattern.  This limit was more useful in versions
+    *! before 10.30, where function recursion was used for backtracking.
+    */   
+   PIKEFUN void set_depth_limit(int value)
+   {
+     int errorcode = 0;
+     THIS->depth_limit = value;
+     THIS->limits_set |= 8u;
+     if (THIS->ctx8 && errorcode >= 0)
+       errorcode = pcre2_set_depth_limit_8(THIS->ctx8, value);
+     if (THIS->ctx16 && errorcode >= 0)
+       errorcode = pcre2_set_depth_limit_16(THIS->ctx16, value);
+     if (THIS->ctx32 && errorcode >= 0)
+       errorcode = pcre2_set_depth_limit_32(THIS->ctx32, value);
+     if (errorcode < 0) {
+       push_pcre2_error_message(errorcode);
+       Pike_error("error calling pcre2_set_depth_limit: %pS\n",
                   Pike_sp[-1].u.string);
      }
      pop_stack();
@@ -855,8 +1007,6 @@ PIKECLASS _pcre
          Pike_error("int expected\n");
        off = o;
      }
-
-     /* FIXME: also MATCH_LIMIT and CALLOUT_DATA ... later */
 
      if (off > (PCRE2_SIZE)subject->len) {
        /* PCRE2 returns PCRE2_ERROR_BADOFFSET in this case,
