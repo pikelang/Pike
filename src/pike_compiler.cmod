@@ -3591,11 +3591,63 @@ void push_compiler_frame(int lexical_scope)
   Pike_compiler->compiler_frame=f;
 }
 
+/* Insert a prefix without putting the whole statement list on the right
+ * of a comma node. Otherwise treeopt has to reassociate the entire body
+ * once for every local variable whose name we save below.
+ */
+static node *prepend_statements(node *prefix, node *block)
+{
+  node *n, *parent = NULL;
+
+  if (!prefix) return block;
+  if (!block) return prefix;
+
+  /* Shared comma nodes must not be modified. In that case let treeopt
+   * reassociate the combined prefix and body once instead.
+   */
+  for (n = block; n && n->token == F_COMMA_EXPR; n = CAR(n)) {
+    if (n->refs > 1) return mknode(F_COMMA_EXPR, prefix, block);
+  }
+
+  for (n = block; n && n->token == F_COMMA_EXPR; n = CAR(n)) {
+    n->node_info &= ~OPT_OPTIMIZED;
+    n->node_info |= OPT_TRY_OPTIMIZE | OPT_TYPE_NOT_FIXED;
+    n->tree_info |= prefix->tree_info | n->node_info;
+    parent = n;
+  }
+  if (n) prefix = mknode(F_COMMA_EXPR, prefix, n);
+  if (!parent) return prefix;
+  _CAR(parent) = prefix;
+  prefix->parent = parent;
+  return block;
+}
+
 #undef low_pop_local_variables
 node *low_pop_local_variables(int level, node *block)
 #define low_pop_local_variables(LEVEL, BLOCK)	dmalloc_touch(node *, low_pop_local_variables(LEVEL, dmalloc_touch(node *, BLOCK)))
 {
   struct compilation *c = THIS_COMPILATION;
+  struct compiler_frame *frame = Pike_compiler->compiler_frame;
+  node *names = NULL;
+  int e;
+
+  /* Names precede the body in declaration order, while cleanup follows
+   * it in reverse order. Build the name prefix left-associated too.
+   */
+  for (e = level; e < frame->current_number_of_locals; e++) {
+    struct local_name *var = frame->local_names + e;
+    if (var->def &&
+        ((var->def->token == F_LOCAL) ||
+         (var->def->token == F_LOCAL_INDIRECT)) &&
+        var->name && var->name->len) {
+      node *name = mknode(F_SET_LOCAL_NAME, mklocalnode(e, 0),
+                          mknode(F_ARG_LIST, mkstrnode(var->name),
+                                 mkintnode(var->flags)));
+      names = names ? mknode(F_COMMA_EXPR, names, name) : name;
+    }
+  }
+  block = prepend_statements(names, block);
+
   while(Pike_compiler->compiler_frame->current_number_of_locals > level)
   {
     struct local_name *var;
@@ -3631,15 +3683,6 @@ node *low_pop_local_variables(int level, node *block)
                                      mknode(F_SET_LOCAL_END,
                                             mklocalnode(e, 0), NULL)),
                               NULL));
-      }
-      if (var->name && var->name->len) {
-        /* We have a name. Save the variable info. */
-        block = mknode(F_COMMA_EXPR,
-                       mknode(F_SET_LOCAL_NAME, mklocalnode(e, 0),
-                              mknode(F_ARG_LIST,
-                                     mkstrnode(var->name),
-                                     mkintnode(var->flags))),
-                       block);
       }
     }
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&

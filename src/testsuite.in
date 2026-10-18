@@ -9494,6 +9494,31 @@ test_compile_error_any([[void a(int i){} void b(function(:void) f){} void c(){b(
 test_compile_any([[void a(int i){} function(int:void) b = a;]]);
 test_compile_error_any([[void a(int i){} function(:void) b = a;]]);
 
+// Scope-exit metadata must preserve cleanup order and captured locals.
+test_any_equal([[
+  array(array(int)) log = ({ ({}) });
+  array(function) saved = ({});
+  class Item(array(array(int)) log, int id) {
+    protected void _destruct() { log[0] += ({ id }); }
+  };
+  void scopes() {
+    object a = Item(log, 1);
+    object b = Item(log, 2);
+    {
+      object c = Item(log, 3);
+      object d = Item(log, 4);
+      int captured = 42;
+      saved += ({ lambda() { return captured; } });
+    }
+    {
+      object e = Item(log, 5);
+      object f = Item(log, 6);
+    }
+  };
+  scopes();
+  return ({ log[0], saved[0]() });
+]], ({ ({4, 3, 6, 5, 2, 1}), 42 }))
+
 // Duplicate local variable
 test_compile_error([[void f() {int i; int i;}]]);
 test_compile_error([[void f() {int i; mapping i;}]]);
