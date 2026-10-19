@@ -9541,6 +9541,24 @@ test_compile_error_any([[void a(int i){} void b(function(:void) f){} void c(){b(
 test_compile_any([[void a(int i){} function(int:void) b = a;]]);
 test_compile_error_any([[void a(int i){} function(:void) b = a;]]);
 
+// Distinguish full, partial and zero-only matches in return checking.
+test_compile_any([[int f(int x) { return x; }]])
+test_compile_error([[string f(int x) { return x; }]])
+test_compile_error([[string|zero f(int x) { return x; }]])
+test_compile_error([[string|zero f(int(0..10) x) { return x; }]])
+test_compile_error([[string|zero f(int(-10..0) x) { return x; }]])
+test_compile_error([[string|zero f(int(-10..10) x) { return x; }]])
+test_compile_error([[int|zero f(string|zero x) { return x; }]])
+test_compile_error([[string|zero f(array(int)|zero x) { return x; }]])
+test_compile_error([[int(0..0) f(mixed x) { return x; }]])
+test_compile_any([[int(1..) f(int x) { return x; }]])
+test_compile_any([[int(-5..-1) f(int(-10..-1) x) { return x; }]])
+test_compile_any([[string|zero f(int|void x) { return x; }]])
+test_compile_warning([[
+#pragma strict_types
+int(1..) f(int x) { return x; }
+]])
+
 // Scope-exit metadata must preserve cleanup order and captured locals.
 test_any_equal([[
   array(array(int)) log = ({ ({}) });

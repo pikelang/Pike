@@ -4788,6 +4788,7 @@ static struct type_binop_cacheability_entry {
 static int type_binop_cache_mode;
 static unsigned long type_binop_cache_verified;
 static unsigned long type_binop_empty_cache_verified;
+static unsigned long type_binop_match_verified;
 
 static void report_type_binop_cache(void)
 {
@@ -4795,6 +4796,8 @@ static void report_type_binop_cache(void)
           type_binop_cache_verified);
   fprintf(stderr, "Verified %lu empty-state type binop cache hits.\n",
           type_binop_empty_cache_verified);
+  fprintf(stderr, "Verified %lu type binop match classifications.\n",
+          type_binop_match_verified);
 }
 
 static void clear_type_binop_cache_entry(struct type_binop_cache_entry *e)
@@ -7433,6 +7436,74 @@ struct pike_type *type_binop(enum pt_binop op,
 
   EXIT_REMAP_STATE(remap);
 
+  return ret;
+}
+
+static int type_has_int_bounds(struct pike_type *t, INT32 min, INT32 max)
+{
+  return t && t->type == T_INT &&
+    CAR_TO_INT(t) == min && CDR_TO_INT(t) == max;
+}
+
+/* Compare with A - zero without allocating that type. Return -1 when its
+ * normalization or marker/attribute handling needs the ordinary operation.
+ * VOID_IS_ZERO intentionally does not apply to this extra comparison.
+ */
+static int type_without_zero_equal(struct pike_type *a, struct pike_type *b)
+{
+  if (!a) return !b;
+  if ((a->flags & PT_FLAG_REMAP_INVARIANT) &&
+      !(a->flags & PT_FLAG_NULLABLE)) return a == b;
+  switch (a->type) {
+  case T_ZERO:
+    return !b;
+  case T_MIXED:
+    return b && b->type == T_NOT && b->car == zero_type_string;
+  case T_INT:
+    {
+      INT32 min = CAR_TO_INT(a), max = CDR_TO_INT(a);
+      if (min > 0 || max < 0) return a == b;
+      if (!min) return type_has_int_bounds(b, 1, max);
+      if (!max) return type_has_int_bounds(b, min, -1);
+      return b && b->type == T_OR &&
+        ((type_has_int_bounds(b->car, min, -1) &&
+          type_has_int_bounds(b->cdr, 1, max)) ||
+         (type_has_int_bounds(b->cdr, min, -1) &&
+          type_has_int_bounds(b->car, 1, max)));
+    }
+  case T_OR:
+    if (a->car == zero_type_string)
+      return type_without_zero_equal(a->cdr, b);
+    if (a->cdr == zero_type_string)
+      return type_without_zero_equal(a->car, b);
+    break;
+  }
+  return -1;
+}
+
+struct pike_type *type_binop_with_match(enum pt_binop op,
+  struct pike_type *a, struct pike_type *b,
+  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags,
+  enum pt_remap_flags remap_flags, enum pt_binop_match *match)
+{
+  struct pike_type *ret = type_binop(op, a, b, aflags, bflags, remap_flags);
+  int equal;
+  if (!match) return ret;
+  *match = PT_BINOP_MATCH_UNKNOWN;
+  if (op != PT_BINOP_MINUS) return ret;
+  if (!ret) *match = PT_BINOP_MATCH_ALL;
+  else if (ret == a) *match = PT_BINOP_MATCH_NONE;
+  else if ((equal = type_without_zero_equal(a, ret)) >= 0) {
+    *match = equal ? PT_BINOP_MATCH_ZERO_ONLY : PT_BINOP_MATCH_PARTIAL;
+    if (type_binop_cache_mode == 2) {
+      struct pike_type *without_zero =
+        type_binop(PT_BINOP_MINUS, a, zero_type_string, 0, 0, 0);
+      if (equal != (ret == without_zero))
+        Pike_fatal("Type binop match classification mismatch.\n");
+      free_type(without_zero);
+      type_binop_match_verified++;
+    }
+  }
   return ret;
 }
 

@@ -436,6 +436,21 @@ struct pike_type *type_binop(enum pt_binop op,
 			     enum pt_cmp_flags aflags,
 			     enum pt_cmp_flags bflags,
 			     enum pt_remap_flags remap_flags);
+/* Classification of subtraction for compiler diagnostics. ZERO_ONLY means
+ * the difference equals A - zero, with no comparison flags on that removal.
+ * UNKNOWN leaves this extra check to the caller.
+ */
+enum pt_binop_match {
+  PT_BINOP_MATCH_UNKNOWN,
+  PT_BINOP_MATCH_ALL,
+  PT_BINOP_MATCH_NONE,
+  PT_BINOP_MATCH_ZERO_ONLY,
+  PT_BINOP_MATCH_PARTIAL
+};
+struct pike_type *type_binop_with_match(enum pt_binop op,
+  struct pike_type *a, struct pike_type *b,
+  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags,
+  enum pt_remap_flags remap_flags, enum pt_binop_match *match);
 int match_types(struct pike_type *a,struct pike_type *b);
 int pike_types_le(struct pike_type *a, struct pike_type *b,
 		  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags);
