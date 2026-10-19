@@ -8116,6 +8116,53 @@ test_any([[
   return !!compile_string("#pike 7.8\nStdio.File file;\n")();
 ]], 1)
 
+// String value types retain their character ranges, lengths and attributes.
+test_any([[
+  array(string) strings = ({ "", "ab", "ba", "\0x", "\xff",
+                             "\u0100", "\U0010ffff" });
+  array types = map(strings, _typeof);
+  for (int round = 0; round < 3; round++) {
+    gc();
+    foreach (strings; int i; string s) {
+      string rebuilt = sprintf("%s", s);
+      if (_typeof(rebuilt) != types[i] ||
+          _typeof(reverse(rebuilt)) != types[i]) return 0;
+    }
+  }
+  return types[1] == types[2] && types[1] != _typeof("abc");
+]], 1)
+
+// Arrow indexing still receives the precise type of the identifier name.
+test_any([[
+  class C {
+    protected int `->(string(1:97..122) name) { return sizeof(name); }
+  };
+  return C()->a;
+]], 1)
+
+test_compile_error([[
+  class C {
+    protected int `->(string(1:97..122) name) { return sizeof(name); }
+  };
+  mixed value = C()->ab;
+]])
+
+// The string-type cache must not keep otherwise unreferenced types alive.
+test_any([[
+  string s = sprintf("%c", 0x1000 + random(0x1000)) *
+             (1024 + random(1024));
+  array weak = set_weak_flag(({ _typeof(s) }), 1);
+  gc();
+  if (weak[0]) return 0;
+  mixed held = _typeof(s);
+  gc();
+  if (_typeof(s) != held) return 0;
+  weak[0] = held;
+  held = 0;
+  gc();
+  return !weak[0];
+]], 1)
+
 // Type references in weak containers are weak even without complex values.
 test_any([[
   int n = 0x60000000 + random(0x10000000);

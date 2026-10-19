@@ -13994,6 +13994,9 @@ struct pike_type *get_lax_type_of_svalue( const struct svalue *c )
   return res;
 }
 
+/* Share exact string value types without keeping unused types alive. */
+static struct mapping *string_type_cache;
+
 struct pike_type *get_type_of_svalue(const struct svalue *s)
 {
   struct pike_type *ret;
@@ -14200,20 +14203,36 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     return pop_unfinished_type();
 
   case T_STRING:
-    type_stack_mark();
-    if (s->u.string->len) {
-      INT32 min, max;
-      check_string_range( s->u.string, 0, &min, &max );
-      push_int_type(min, max);
-    } else {
-      push_type(PIKE_T_UNKNOWN);
+    {
+      struct svalue *cached, value;
+      if (!string_type_cache) {
+        string_type_cache = allocate_mapping(128);
+        mapping_set_flags(string_type_cache, MAPPING_WEAK_VALUES);
+      }
+      cached = low_mapping_string_lookup(string_type_cache, s->u.string);
+      if (cached) {
+        copy_pike_type(ret, cached->u.type);
+        return ret;
+      }
+
+      type_stack_mark();
+      if (s->u.string->len) {
+        INT32 min, max;
+        check_string_range(s->u.string, 0, &min, &max);
+        push_int_type(min, max);
+      } else {
+        push_type(PIKE_T_UNKNOWN);
+      }
+      push_int_type(s->u.string->len, s->u.string->len);
+      push_type(T_STRING);
+      if (!s->u.string->len || s->u.string->string_is_utf8) {
+        push_type_attribute(MK_STRING("utf8"));
+      }
+      ret = pop_unfinished_type();
+      SET_SVAL(value, T_TYPE, 0, type, ret);
+      mapping_string_insert(string_type_cache, s->u.string, &value);
+      return ret;
     }
-    push_int_type(s->u.string->len, s->u.string->len);
-    push_type(T_STRING);
-    if (!s->u.string->len || s->u.string->string_is_utf8) {
-      push_type_attribute(MK_STRING("utf8"));
-    }
-    return pop_unfinished_type();
 
   default:
     type_stack_mark();
@@ -15071,6 +15090,10 @@ void init_types(void)
 void cleanup_pike_types(void)
 {
   clear_type_binop_cache();
+  if (string_type_cache) {
+    free_mapping(string_type_cache);
+    string_type_cache = NULL;
+  }
 
   if (concurrent_future_program) {
     free_program(concurrent_future_program);
@@ -15434,6 +15457,8 @@ static void gc_mark_external_types(struct callback *UNUSED(cb),
                                    void *UNUSED(a), void *UNUSED(b))
 {
   unsigned int e;
+  if (string_type_cache)
+    gc_mark_external(string_type_cache, " as string_type_cache");
   for (e = 0; e < NELEM (a_markers); e++) {
     if (a_markers[e])
       gc_mark_external (a_markers[e], " in a_markers");
