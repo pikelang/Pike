@@ -8105,6 +8105,80 @@ test_any([[
   return 1;
 ]], 1)
 
+// Cached argument checks must preserve bindings used to infer the result.
+test_any([[
+  array(program) saved = ({});
+  for (int i = 0; i < 30; i++) {
+    program p = compile_string(sprintf(
+      "#pragma strict_types\n"
+      "mixed inspect(array(int(%d..%d)) a) { "
+      "return ({ typeof(a), typeof(reverse(a)), typeof(a+a), "
+      "typeof(map(a, lambda(int(%d..%d) v) { return v; })) }); }\n",
+      i, i+3, i, i+3));
+    if (!(i % 5)) saved += ({ p });
+    gc();
+    array types = p()->inspect(({ i }));
+    foreach (types, mixed t) if (t != types[0]) return 0;
+    foreach (saved; int j; program previous) {
+      array old_types = previous()->inspect(({ j*5 }));
+      foreach (old_types, mixed t) if (t != old_types[0]) return 0;
+    }
+  }
+  return 1;
+]], 1)
+
+// Compiling this compatibility module compares types of unfinished programs.
+test_any([[
+  return !!compile_string("#pike 7.8\nStdio.File file;\n")();
+]], 1)
+
+// String value types retain their character ranges, lengths and attributes.
+test_any([[
+  array(string) strings = ({ "", "ab", "ba", "\0x", "\xff",
+                             "\u0100", "\U0010ffff" });
+  array types = map(strings, _typeof);
+  for (int round = 0; round < 3; round++) {
+    gc();
+    foreach (strings; int i; string s) {
+      string rebuilt = sprintf("%s", s);
+      if (_typeof(rebuilt) != types[i] ||
+          _typeof(reverse(rebuilt)) != types[i]) return 0;
+    }
+  }
+  return types[1] == types[2] && types[1] != _typeof("abc");
+]], 1)
+
+// Arrow indexing still receives the precise type of the identifier name.
+test_any([[
+  class C {
+    protected int `->(string(1:97..122) name) { return sizeof(name); }
+  };
+  return C()->a;
+]], 1)
+
+test_compile_error([[
+  class C {
+    protected int `->(string(1:97..122) name) { return sizeof(name); }
+  };
+  mixed value = C()->ab;
+]])
+
+// The string-type cache must not keep otherwise unreferenced types alive.
+test_any([[
+  string s = sprintf("%c", 0x1000 + random(0x1000)) *
+             (1024 + random(1024));
+  array weak = set_weak_flag(({ _typeof(s) }), 1);
+  gc();
+  if (weak[0]) return 0;
+  mixed held = _typeof(s);
+  gc();
+  if (_typeof(s) != held) return 0;
+  weak[0] = held;
+  held = 0;
+  gc();
+  return !weak[0];
+]], 1)
+
 // Type references in weak containers are weak even without complex values.
 test_any([[
   int n = 0x60000000 + random(0x10000000);
@@ -9482,6 +9556,49 @@ test_compile_any([[void a(int q){} void b(function(int:void) f){} void c(){b(a);
 test_compile_error_any([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
 test_compile_any([[void a(int i){} function(int:void) b = a;]]);
 test_compile_error_any([[void a(int i){} function(:void) b = a;]]);
+
+// Distinguish full, partial and zero-only matches in return checking.
+test_compile_any([[int f(int x) { return x; }]])
+test_compile_error([[string f(int x) { return x; }]])
+test_compile_error([[string|zero f(int x) { return x; }]])
+test_compile_error([[string|zero f(int(0..10) x) { return x; }]])
+test_compile_error([[string|zero f(int(-10..0) x) { return x; }]])
+test_compile_error([[string|zero f(int(-10..10) x) { return x; }]])
+test_compile_error([[int|zero f(string|zero x) { return x; }]])
+test_compile_error([[string|zero f(array(int)|zero x) { return x; }]])
+test_compile_error([[int(0..0) f(mixed x) { return x; }]])
+test_compile_any([[int(1..) f(int x) { return x; }]])
+test_compile_any([[int(-5..-1) f(int(-10..-1) x) { return x; }]])
+test_compile_any([[string|zero f(int|void x) { return x; }]])
+test_compile_warning([[
+#pragma strict_types
+int(1..) f(int x) { return x; }
+]])
+
+// Scope-exit metadata must preserve cleanup order and captured locals.
+test_any_equal([[
+  array(array(int)) log = ({ ({}) });
+  array(function) saved = ({});
+  class Item(array(array(int)) log, int id) {
+    protected void _destruct() { log[0] += ({ id }); }
+  };
+  void scopes() {
+    object a = Item(log, 1);
+    object b = Item(log, 2);
+    {
+      object c = Item(log, 3);
+      object d = Item(log, 4);
+      int captured = 42;
+      saved += ({ lambda() { return captured; } });
+    }
+    {
+      object e = Item(log, 5);
+      object f = Item(log, 6);
+    }
+  };
+  scopes();
+  return ({ log[0], saved[0]() });
+]], ({ ({4, 3, 6, 5, 2, 1}), 42 }))
 
 // Duplicate local variable
 test_compile_error([[void f() {int i; int i;}]]);

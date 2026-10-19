@@ -270,6 +270,29 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
 
 #define TWOT(X,Y) (((X) << 8)+(Y))
 
+/* A result that consulted an unfinished or unresolved program must not be
+ * memoized. The generation also taints enclosing operations, including those
+ * whose operands do not themselves expose the program dependency.
+ */
+static size_t type_binop_unstable_generation;
+
+static struct program *type_binop_note_program(struct program *p, INT32 id)
+{
+  if (id && (!p || !(p->flags & PROGRAM_FINISHED)))
+    type_binop_unstable_generation++;
+  return p;
+}
+
+static struct program *type_binop_id_to_program(INT32 id)
+{
+  return type_binop_note_program(id_to_program(id), id);
+}
+
+static struct program *type_binop_low_id_to_program(INT32 id, int inhibit)
+{
+  return type_binop_note_program(low_id_to_program(id, inhibit), id);
+}
+
 static int (*program_id_to_id)(int) = NULL;
 
 static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
@@ -514,7 +537,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       if (program_id_to_id) {
         id = program_id_to_id(id);
       }
-      p = low_id_to_program(id, 1);
+      p = type_binop_low_id_to_program(id, 1);
       if ((p && p->num_generics) ||
           ((id < PROG_DYNAMIC_ID_START) && (id & PROG_GENERICS_ID_START))) {
         /* Program that uses generics. */
@@ -2662,7 +2685,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	}
 	/* We need to save the global buffer, in case id_to_program()
 	 * starts running Pike code. */
-	sval.u.program = id_to_program(CDR_TO_INT(t));
+        sval.u.program = type_binop_id_to_program(CDR_TO_INT(t));
 	if (sval.u.program) {
 	  SET_SVAL_TYPE(sval, T_PROGRAM);
 	  SET_SVAL_SUBTYPE(sval, 0);
@@ -3626,7 +3649,7 @@ static struct pike_type *low_object_lfun_type(struct pike_type *t, short lfun)
 	       t->type);
   }
 #endif /* PIKE_DEBUG */
-  p = id_to_program(CDR_TO_INT(t));
+  p = type_binop_id_to_program(CDR_TO_INT(t));
   if(!p) return 0;
   i=FIND_LFUN(p, lfun);
   if(i==-1) return 0;
@@ -3664,7 +3687,7 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
     {
       struct program *p = NULL;
       if (t->cdr) {
-	p = id_to_program(CDR_TO_INT(t));
+        p = type_binop_id_to_program(CDR_TO_INT(t));
       }
       if (p) {
 	int f = FIND_LFUN(p, lfun);
@@ -4697,23 +4720,59 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 					  enum pt_cmp_flags aflags,
 					  enum pt_cmp_flags bflags,
 					  enum pt_remap_flags remap_flags);
-/* Memoize operations on closed, context-independent types. Entries own
- * weak references, so their pointer keys cannot be reused while cached.
+/* Memoize operations on closed types, and on marker-bearing types when
+ * the incoming marker state is empty. The latter also cache the outgoing
+ * marker state. Entries own weak references, so their pointer keys cannot
+ * be reused while cached.
  * Cache NULL results too: failed intersections are common in call checks.
+ * Program ids are assumed not to be reused. Cached results may retain
+ * knowledge of a finished program after the program itself has been freed.
  */
 #define TYPE_BINOP_CACHE_SIZE 4096
 
 enum type_binop_cache_status {
   TYPE_BINOP_CACHE_EMPTY,
   TYPE_BINOP_CACHE_VALID,
-  TYPE_BINOP_CACHE_EVICT
+  TYPE_BINOP_CACHE_EVICT,
+  TYPE_BINOP_CACHE_CONTINUATION
 };
 
 static struct type_binop_cache_entry {
-  struct pike_type *a, *b, *result;
-  unsigned int op, aflags, bflags, remap_flags, external;
+  union {
+    struct {
+      struct pike_type *a, *b, *result;
+      unsigned int op, aflags, bflags, remap_flags;
+    } key;
+    struct {
+      /* Only the two banks of ten marker numbers need storage. */
+      unsigned char map[20];
+      unsigned INT32 allocated;
+      struct mapping *markers[2];
+    } remap;
+  } u;
+  /* 0 = no remap, 1 = arbitrary remap, 2 = initially empty. */
+  unsigned int external;
   enum type_binop_cache_status status;
 } type_binop_cache[TYPE_BINOP_CACHE_SIZE];
+
+static struct type_binop_cache_entry *next_type_binop_cache_entry(
+  struct type_binop_cache_entry *e)
+{
+  return &type_binop_cache[(e - type_binop_cache + 1) &
+                          (TYPE_BINOP_CACHE_SIZE - 1)];
+}
+
+/* A continuation always belongs to the preceding initially-empty entry.
+ * Its tag is enough to identify the pair; keep the ordinary key unchanged.
+ */
+static struct type_binop_cache_entry *type_binop_cache_state(
+  struct type_binop_cache_entry *e)
+{
+  struct type_binop_cache_entry *state;
+  if ((e->external & 3) != 2) return NULL;
+  state = next_type_binop_cache_entry(e);
+  return state->status == TYPE_BINOP_CACHE_CONTINUATION ? state : NULL;
+}
 
 static struct type_binop_cacheability_entry {
   struct pike_type *type;
@@ -4725,20 +4784,41 @@ static struct type_binop_cacheability_entry {
  */
 static int type_binop_cache_mode;
 static unsigned long type_binop_cache_verified;
+static unsigned long type_binop_empty_cache_verified;
+static unsigned long type_binop_match_verified;
 
 static void report_type_binop_cache(void)
 {
   fprintf(stderr, "Verified %lu type binop cache hits.\n",
           type_binop_cache_verified);
+  fprintf(stderr, "Verified %lu empty-state type binop cache hits.\n",
+          type_binop_empty_cache_verified);
+  fprintf(stderr, "Verified %lu type binop match classifications.\n",
+          type_binop_match_verified);
 }
 
 static void clear_type_binop_cache_entry(struct type_binop_cache_entry *e)
 {
+  struct type_binop_cache_entry *state = NULL;
+  if (e->status == TYPE_BINOP_CACHE_EMPTY) return;
+  if (e->status == TYPE_BINOP_CACHE_CONTINUATION) {
+    /* A collision with the second slot evicts its owner as well. */
+    e = &type_binop_cache[(e - type_binop_cache + TYPE_BINOP_CACHE_SIZE - 1) &
+                         (TYPE_BINOP_CACHE_SIZE - 1)];
+  }
+  state = type_binop_cache_state(e);
   e->status = TYPE_BINOP_CACHE_EMPTY;
-  free_type(e->a);
-  free_type(e->b);
-  free_type(e->result);
-  e->a = e->b = e->result = NULL;
+  if (state) {
+    state->status = TYPE_BINOP_CACHE_EMPTY;
+    if (state->u.remap.markers[0]) free_mapping(state->u.remap.markers[0]);
+    if (state->u.remap.markers[1]) free_mapping(state->u.remap.markers[1]);
+    state->u.remap.markers[0] = state->u.remap.markers[1] = NULL;
+  }
+  free_type(e->u.key.a);
+  free_type(e->u.key.b);
+  free_type(e->u.key.result);
+  e->u.key.a = e->u.key.b = e->u.key.result = NULL;
+  e->external = 0;
 }
 
 static void clear_type_binop_cache(void)
@@ -4752,16 +4832,23 @@ static void clear_type_binop_cache(void)
   }
 }
 
+/* 0: not cacheable; 1: independent of marker state; 2: needs empty state;
+ * 3: also may invoke attribute handlers through program metadata. Their
+ * user-state side effects are deliberately not replayed on cache hits.
+ */
 static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
 {
   struct type_binop_cacheability_entry *e;
-  int cacheable;
+  int cacheable, left, right;
   if (!t) return 1;
-  if (t->flags & (PT_FLAG_MARK_ASSIGN|PT_FLAG_MASK_GENERICS)) return 0;
   switch (t->type) {
   case PIKE_T_INT: case PIKE_T_FLOAT: case PIKE_T_ZERO:
   case PIKE_T_VOID: case PIKE_T_MIXED:
     return 1;
+  case '0': case '1': case '2': case '3': case '4':
+  case '5': case '6': case '7': case '8': case '9':
+  case PIKE_T_GENERIC:
+    return 2;
   default: break;
   }
   e = &type_binop_cacheability[
@@ -4773,20 +4860,31 @@ static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
   switch (t->type) {
   case PIKE_T_OR: case PIKE_T_AND: case PIKE_T_ARRAY: case PIKE_T_STRING:
   case PIKE_T_MAPPING: case PIKE_T_FUNCTION: case PIKE_T_MANY:
-  case PIKE_T_TUPLE:
-    cacheable = type_binop_cacheable(t->car, depth + 1) &&
-      type_binop_cacheable(t->cdr, depth + 1);
+  case PIKE_T_TUPLE: case PIKE_T_ASSIGN: case PIKE_T_BIND:
+    left = type_binop_cacheable(t->car, depth + 1);
+    right = type_binop_cacheable(t->cdr, depth + 1);
+    cacheable = left && right ? MAXIMUM(left, right) : 0;
+    break;
+  case PIKE_T_SCOPE:
+    cacheable = type_binop_cacheable(t->cdr, depth + 1);
     break;
   case PIKE_T_MULTISET: case PIKE_T_NOT:
     cacheable = type_binop_cacheable(t->car, depth + 1);
     break;
+  case PIKE_T_OBJECT:
+    cacheable = 3;
+    break;
+  case PIKE_T_PROGRAM:
+    cacheable = type_binop_cacheable(t->car, depth + 1) ? 3 : 0;
+    break;
   default:
-    /* In particular, exclude program/object identities, attributes,
-     * scopes and markers. They can depend on compiler or remap state.
-     */
+    /* Visible attributes still need their argument-checking context. */
     cacheable = 0;
     break;
   }
+  if (cacheable && cacheable < 2 &&
+      (t->flags & (PT_FLAG_MARK_ASSIGN|PT_FLAG_MASK_GENERICS)))
+    cacheable = 2;
   free_type(e->type);
   e->type = t;
   add_ref(t);
@@ -4800,11 +4898,21 @@ void gc_check_type_binop_cache(void)
   if (type_binop_cache_mode <= 0) return;
   for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
     struct type_binop_cache_entry *e = &type_binop_cache[i];
-    if (e->status != TYPE_BINOP_CACHE_EMPTY) {
-      if (e->a) gc_check_weak_external(e->a, " as type binop cache operand");
-      if (e->b) gc_check_weak_external(e->b, " as type binop cache operand");
-      if (e->result)
-        gc_check_weak_external(e->result, " as type binop cache result");
+    if (e->status == TYPE_BINOP_CACHE_VALID ||
+        e->status == TYPE_BINOP_CACHE_EVICT) {
+      struct type_binop_cache_entry *state = type_binop_cache_state(e);
+      if (e->u.key.a) gc_check_weak_external(e->u.key.a, " as type binop cache operand");
+      if (e->u.key.b) gc_check_weak_external(e->u.key.b, " as type binop cache operand");
+      if (e->u.key.result)
+        gc_check_weak_external(e->u.key.result, " as type binop cache result");
+      if (state) {
+        if (state->u.remap.markers[0])
+          gc_check_weak_external(state->u.remap.markers[0],
+                                 " as type binop cache bindings");
+        if (state->u.remap.markers[1])
+          gc_check_weak_external(state->u.remap.markers[1],
+                                 " as type binop cache bindings");
+      }
     }
     if (type_binop_cacheability[i].type)
       gc_check_weak_external(type_binop_cacheability[i].type,
@@ -4820,15 +4928,25 @@ void gc_mark_type_binop_cache(void)
   if (type_binop_cache_mode <= 0) return;
   for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
     struct type_binop_cache_entry *e = &type_binop_cache[i];
-    if (e->status != TYPE_BINOP_CACHE_EMPTY) {
-      refs[0] = &e->a;
-      refs[1] = &e->b;
-      refs[2] = &e->result;
+    if (e->status == TYPE_BINOP_CACHE_VALID ||
+        e->status == TYPE_BINOP_CACHE_EVICT) {
+      struct type_binop_cache_entry *state = type_binop_cache_state(e);
+      refs[0] = &e->u.key.a;
+      refs[1] = &e->u.key.b;
+      refs[2] = &e->u.key.result;
       for (j = 0; j < 3; j++) if (*refs[j]) {
         u.type = *refs[j];
         if (gc_mark_weak_short_svalue(&u, PIKE_T_TYPE))
           e->status = TYPE_BINOP_CACHE_EVICT;
         *refs[j] = u.type;
+      }
+      if (state) {
+        for (j = 0; j < 2; j++) if (state->u.remap.markers[j]) {
+          u.mapping = state->u.remap.markers[j];
+          if (gc_mark_weak_short_svalue(&u, PIKE_T_MAPPING))
+            e->status = TYPE_BINOP_CACHE_EVICT;
+          state->u.remap.markers[j] = u.mapping;
+        }
       }
     }
     if (type_binop_cacheability[i].type) {
@@ -4862,23 +4980,69 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   enum pt_cmp_flags aflags, enum pt_cmp_flags bflags,
   enum pt_remap_flags remap_flags)
 {
-  struct type_binop_cache_entry *e;
+  struct type_binop_cache_entry *e, *cached_state;
   struct pike_type *result;
-  size_t hash;
+  size_t hash, generation;
+  unsigned int external = !!remap;
+  int acache, bcache;
   if (!type_binop_cache_mode || (remap_flags & PT_FLAG_REMAP_TRACE) ||
-      !type_binop_cacheable(a, 0) || !type_binop_cacheable(b, 0))
+      !(acache = type_binop_cacheable(a, 0)) ||
+      !(bcache = type_binop_cacheable(b, 0)))
     return uncached_type_binop(op, a, b, remap, aflags, bflags, remap_flags);
+  if (remap && ((acache >= 2) || (bcache >= 2))) {
+    if (remap->allocated || remap->markers[0] || remap->markers[1])
+      return uncached_type_binop(op, a, b, remap, aflags, bflags, remap_flags);
+    external = 2;
+  }
 
   hash = ((size_t)a >> 4) ^ ((size_t)b >> 2) ^ (op * 7919) ^
-    (aflags * 71) ^ (bflags * 19) ^ (remap_flags * 3) ^ !!remap;
+    (aflags * 71) ^ (bflags * 19) ^ (remap_flags * 3) ^ external;
   e = &type_binop_cache[hash & (TYPE_BINOP_CACHE_SIZE - 1)];
-  if (e->status == TYPE_BINOP_CACHE_VALID && e->a == a && e->b == b &&
-      e->op == (unsigned int)op && e->aflags == (unsigned int)aflags &&
-      e->bflags == (unsigned int)bflags &&
-      e->remap_flags == (unsigned int)remap_flags && e->external == !!remap) {
-    result = e->result;
+  if (e->status == TYPE_BINOP_CACHE_VALID && e->u.key.a == a && e->u.key.b == b &&
+      e->u.key.op == (unsigned int)op && e->u.key.aflags == (unsigned int)aflags &&
+      e->u.key.bflags == (unsigned int)bflags &&
+      e->u.key.remap_flags == (unsigned int)remap_flags &&
+      e->external == external) {
+    result = e->u.key.result;
     if (result) add_ref(result);
-    if (type_binop_cache_mode == 2) {
+    if ((external & 3) == 2 && ((cached_state = type_binop_cache_state(e)) ||
+                              type_binop_cache_mode == 2)) {
+      /* Copies share mapping data until either side changes it. Keep the
+       * cached bindings independent of subsequent argument checking.
+       */
+      unsigned char map[sizeof(remap->map)] = { 0 };
+      unsigned INT32 allocated = 0;
+      struct mapping *markers[2] = { NULL, NULL };
+      if (cached_state) {
+        memcpy(map, cached_state->u.remap.map, 10);
+        memcpy(map + 16, cached_state->u.remap.map + 10, 10);
+        allocated = cached_state->u.remap.allocated;
+        markers[0] = copy_mapping(cached_state->u.remap.markers[0]);
+        markers[1] = copy_mapping(cached_state->u.remap.markers[1]);
+      }
+      if (type_binop_cache_mode == 2) {
+        struct mapping *state = remap->state;
+        struct pike_type *actual = uncached_type_binop(op, a, b, remap,
+          aflags, bflags, remap_flags);
+        if (actual != result ||
+            ((acache < 3 && bcache < 3) && remap->state != state) ||
+            memcmp(map, remap->map, sizeof(map)) ||
+            allocated != remap->allocated ||
+            !mapping_equal_p(markers[0], remap->markers[0], NULL) ||
+            !mapping_equal_p(markers[1], remap->markers[1], NULL))
+          Pike_fatal("Type binop cache empty-state mismatch.\n");
+        free_type(actual);
+        if (markers[0]) free_mapping(markers[0]);
+        if (markers[1]) free_mapping(markers[1]);
+        type_binop_cache_verified++;
+        type_binop_empty_cache_verified++;
+      } else {
+        memcpy(remap->map, map, sizeof(map));
+        remap->allocated = allocated;
+        remap->markers[0] = markers[0];
+        remap->markers[1] = markers[1];
+      }
+    } else if (type_binop_cache_mode == 2) {
       struct pike_type *actual;
       struct remap_state before;
       struct mapping_data *markers0 = remap && remap->markers[0] ?
@@ -4896,7 +5060,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       if (remap &&
           (memcmp(before.map, remap->map, sizeof(before.map)) ||
            before.allocated != remap->allocated ||
-           before.state != remap->state ||
+           ((acache < 3 && bcache < 3) && before.state != remap->state) ||
            markers0 != (remap->markers[0] ? remap->markers[0]->data : NULL) ||
            markers1 != (remap->markers[1] ? remap->markers[1]->data : NULL)))
         Pike_fatal("Type binop cache remap state changed.\n");
@@ -4906,20 +5070,39 @@ static struct pike_type *low_type_binop(enum pt_binop op,
     return result;
   }
 
+  generation = type_binop_unstable_generation;
   result = uncached_type_binop(op, a, b, remap, aflags, bflags, remap_flags);
-  /* Recursion may have populated this slot since the lookup. */
-  if (e->status != TYPE_BINOP_CACHE_EMPTY) clear_type_binop_cache_entry(e);
-  e->a = a;
-  e->b = b;
-  e->result = result;
+  if (generation != type_binop_unstable_generation) return result;
+  /* Recursion may have populated either slot since the lookup. */
+  if ((external & 3) == 2 &&
+      (remap->allocated || remap->markers[0] || remap->markers[1])) {
+    struct type_binop_cache_entry *state = next_type_binop_cache_entry(e);
+    unsigned int i;
+    /* Fall back for malformed marker numbers outside the usual banks. */
+    for (i = 10; i < 16; i++)
+      if (remap->map[i] || remap->map[i + 16]) return result;
+    clear_type_binop_cache_entry(e);
+    clear_type_binop_cache_entry(state);
+    memcpy(state->u.remap.map, remap->map, 10);
+    memcpy(state->u.remap.map + 10, remap->map + 16, 10);
+    state->u.remap.allocated = remap->allocated;
+    state->u.remap.markers[0] = copy_mapping(remap->markers[0]);
+    state->u.remap.markers[1] = copy_mapping(remap->markers[1]);
+    state->status = TYPE_BINOP_CACHE_CONTINUATION;
+  } else {
+    clear_type_binop_cache_entry(e);
+  }
+  e->u.key.a = a;
+  e->u.key.b = b;
+  e->u.key.result = result;
   if (a) add_ref(a);
   if (b) add_ref(b);
   if (result) add_ref(result);
-  e->op = op;
-  e->aflags = aflags;
-  e->bflags = bflags;
-  e->remap_flags = remap_flags;
-  e->external = !!remap;
+  e->u.key.op = op;
+  e->u.key.aflags = aflags;
+  e->u.key.bflags = bflags;
+  e->u.key.remap_flags = remap_flags;
+  e->external = external;
   e->status = TYPE_BINOP_CACHE_VALID;
   return result;
 }
@@ -4945,6 +5128,8 @@ static struct pike_type *uncached_type_binop(enum pt_binop op,
 
   if (BEGIN_CYCLIC3(a, b, (ptrdiff_t)op)) {
     END_CYCLIC();
+    /* The recursion shortcut depends on the active comparison stack. */
+    type_binop_unstable_generation++;
 
     if (op & PT_BINOP_AND) {
       return remap_markers(a, remap, remap_flags);
@@ -7241,8 +7426,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	return NULL;
       }
       {
-	struct program *ap = id_to_program(CDR_TO_INT(a));
-	struct program *bp = id_to_program(CDR_TO_INT(b));
+        struct program *ap = type_binop_id_to_program(CDR_TO_INT(a));
+        struct program *bp = type_binop_id_to_program(CDR_TO_INT(b));
 
         if (!(((ptrdiff_t)b->car) & 1) && implements(ap, bp)) {
 	  add_ref(a);
@@ -7283,8 +7468,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  return a;
 	}
 	{
-	  struct program *ap = id_to_program(CDR_TO_INT(a));
-	  struct program *bp = id_to_program(CDR_TO_INT(b));
+          struct program *ap = type_binop_id_to_program(CDR_TO_INT(a));
+          struct program *bp = type_binop_id_to_program(CDR_TO_INT(b));
 
           if (!(((ptrdiff_t)b->car) & 1) && implements(ap, bp)) {
 	    return NULL;
@@ -7389,6 +7574,74 @@ struct pike_type *type_binop(enum pt_binop op,
 
   EXIT_REMAP_STATE(remap);
 
+  return ret;
+}
+
+static int type_has_int_bounds(struct pike_type *t, INT32 min, INT32 max)
+{
+  return t && t->type == T_INT &&
+    CAR_TO_INT(t) == min && CDR_TO_INT(t) == max;
+}
+
+/* Compare with A - zero without allocating that type. Return -1 when its
+ * normalization or marker/attribute handling needs the ordinary operation.
+ * VOID_IS_ZERO intentionally does not apply to this extra comparison.
+ */
+static int type_without_zero_equal(struct pike_type *a, struct pike_type *b)
+{
+  if (!a) return !b;
+  if ((a->flags & PT_FLAG_REMAP_INVARIANT) &&
+      !(a->flags & PT_FLAG_NULLABLE)) return a == b;
+  switch (a->type) {
+  case T_ZERO:
+    return !b;
+  case T_MIXED:
+    return b && b->type == T_NOT && b->car == zero_type_string;
+  case T_INT:
+    {
+      INT32 min = CAR_TO_INT(a), max = CDR_TO_INT(a);
+      if (min > 0 || max < 0) return a == b;
+      if (!min) return type_has_int_bounds(b, 1, max);
+      if (!max) return type_has_int_bounds(b, min, -1);
+      return b && b->type == T_OR &&
+        ((type_has_int_bounds(b->car, min, -1) &&
+          type_has_int_bounds(b->cdr, 1, max)) ||
+         (type_has_int_bounds(b->cdr, min, -1) &&
+          type_has_int_bounds(b->car, 1, max)));
+    }
+  case T_OR:
+    if (a->car == zero_type_string)
+      return type_without_zero_equal(a->cdr, b);
+    if (a->cdr == zero_type_string)
+      return type_without_zero_equal(a->car, b);
+    break;
+  }
+  return -1;
+}
+
+struct pike_type *type_binop_with_match(enum pt_binop op,
+  struct pike_type *a, struct pike_type *b,
+  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags,
+  enum pt_remap_flags remap_flags, enum pt_binop_match *match)
+{
+  struct pike_type *ret = type_binop(op, a, b, aflags, bflags, remap_flags);
+  int equal;
+  if (!match) return ret;
+  *match = PT_BINOP_MATCH_UNKNOWN;
+  if (op != PT_BINOP_MINUS) return ret;
+  if (!ret) *match = PT_BINOP_MATCH_ALL;
+  else if (ret == a) *match = PT_BINOP_MATCH_NONE;
+  else if ((equal = type_without_zero_equal(a, ret)) >= 0) {
+    *match = equal ? PT_BINOP_MATCH_ZERO_ONLY : PT_BINOP_MATCH_PARTIAL;
+    if (type_binop_cache_mode == 2) {
+      struct pike_type *without_zero =
+        type_binop(PT_BINOP_MINUS, a, zero_type_string, 0, 0, 0);
+      if (equal != (ret == without_zero))
+        Pike_fatal("Type binop match classification mismatch.\n");
+      free_type(without_zero);
+      type_binop_match_verified++;
+    }
+  }
   return ret;
 }
 
@@ -8302,8 +8555,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
      */
     {
       struct program *ap,*bp;
-      ap = id_to_program(CDR_TO_INT(a));
-      bp = id_to_program(CDR_TO_INT(b));
+      ap = type_binop_id_to_program(CDR_TO_INT(a));
+      bp = type_binop_id_to_program(CDR_TO_INT(b));
 
       if(!ap || !bp) break;
 
@@ -9218,8 +9471,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       return 1;
 
     {
-      struct program *ap = id_to_program(CDR_TO_INT(a));
-      struct program *bp = id_to_program(CDR_TO_INT(b));
+      struct program *ap = type_binop_id_to_program(CDR_TO_INT(a));
+      struct program *bp = type_binop_id_to_program(CDR_TO_INT(b));
 
 #if 0
       fprintf(stderr,
@@ -9510,7 +9763,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 
   case T_OBJECT:
   {
-    p = id_to_program(CDR_TO_INT(t));
+    p = type_binop_id_to_program(CDR_TO_INT(t));
 
   comefrom_int_index:
     if(p && n)
@@ -9760,7 +10013,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   {
   case T_OBJECT:
   {
-    p = id_to_program(CDR_TO_INT(t));
+    p = type_binop_id_to_program(CDR_TO_INT(t));
 
     if(p)
     {
@@ -9990,7 +10243,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
   {
   case T_OBJECT:
   {
-    struct program *p = id_to_program(CDR_TO_INT(t));
+    struct program *p = type_binop_id_to_program(CDR_TO_INT(t));
     if(p && n)
     {
       if(n->token == F_ARROW)
@@ -10172,7 +10425,7 @@ static int low_check_indexing(struct pike_type *type,
 
   case T_OBJECT:
   {
-    struct program *p = id_to_program(CDR_TO_INT(type));
+    struct program *p = type_binop_id_to_program(CDR_TO_INT(type));
     if(p)
     {
       int i = -1;
@@ -10595,7 +10848,7 @@ static int match_type_svalue(struct pike_type *type,
         }
         else
         {
-          struct program *mark = id_to_program( CDR_TO_INT( type ) );
+          struct program *mark = type_binop_id_to_program( CDR_TO_INT( type ) );
           if( mark == o->prog )
             res = 1;
           else if( ((ptrdiff_t)type->car) & 1 )
@@ -12957,7 +13210,7 @@ static void push_apply_bindings_recur(struct pike_type *t,
         if (program_id_to_id) {
           id = program_id_to_id(id);
         }
-        p = low_id_to_program(id, 1);
+        p = type_binop_low_id_to_program(id, 1);
         e = p?p->num_generics:1;
 
         while (e--) {
@@ -13972,6 +14225,9 @@ struct pike_type *get_lax_type_of_svalue( const struct svalue *c )
   return res;
 }
 
+/* Share exact string value types without keeping unused types alive. */
+static struct mapping *string_type_cache;
+
 struct pike_type *get_type_of_svalue(const struct svalue *s)
 {
   struct pike_type *ret;
@@ -14178,20 +14434,36 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     return pop_unfinished_type();
 
   case T_STRING:
-    type_stack_mark();
-    if (s->u.string->len) {
-      INT32 min, max;
-      check_string_range( s->u.string, 0, &min, &max );
-      push_int_type(min, max);
-    } else {
-      push_type(PIKE_T_UNKNOWN);
+    {
+      struct svalue *cached, value;
+      if (!string_type_cache) {
+        string_type_cache = allocate_mapping(128);
+        mapping_set_flags(string_type_cache, MAPPING_WEAK_VALUES);
+      }
+      cached = low_mapping_string_lookup(string_type_cache, s->u.string);
+      if (cached) {
+        copy_pike_type(ret, cached->u.type);
+        return ret;
+      }
+
+      type_stack_mark();
+      if (s->u.string->len) {
+        INT32 min, max;
+        check_string_range(s->u.string, 0, &min, &max);
+        push_int_type(min, max);
+      } else {
+        push_type(PIKE_T_UNKNOWN);
+      }
+      push_int_type(s->u.string->len, s->u.string->len);
+      push_type(T_STRING);
+      if (!s->u.string->len || s->u.string->string_is_utf8) {
+        push_type_attribute(MK_STRING("utf8"));
+      }
+      ret = pop_unfinished_type();
+      SET_SVAL(value, T_TYPE, 0, type, ret);
+      mapping_string_insert(string_type_cache, s->u.string, &value);
+      return ret;
     }
-    push_int_type(s->u.string->len, s->u.string->len);
-    push_type(T_STRING);
-    if (!s->u.string->len || s->u.string->string_is_utf8) {
-      push_type_attribute(MK_STRING("utf8"));
-    }
-    return pop_unfinished_type();
 
   default:
     type_stack_mark();
@@ -14229,7 +14501,7 @@ static struct pike_type *low_object_type_to_program_type(struct pike_type *obj_t
   SET_SVAL_TYPE(sval, T_PROGRAM);
   if ((obj_t->type != T_OBJECT) ||
       (!(id = CDR_TO_INT(obj_t))) ||
-      (!(sval.u.program = id_to_program(id))) ||
+      (!(sval.u.program = type_binop_id_to_program(id))) ||
       (!(sub = get_type_of_svalue(&sval)))) {
     if (res) {
       free_type(res);
@@ -14292,7 +14564,7 @@ int type_may_overload(struct pike_type *type, int lfun)
 
     case T_OBJECT:
     {
-      struct program *p = id_to_program(CDR_TO_INT(type));
+      struct program *p = type_binop_id_to_program(CDR_TO_INT(type));
       if(!p) return 1;
       return FIND_LFUN(p, lfun)!=-1;
     }
@@ -15081,6 +15353,10 @@ void init_types(void)
 void cleanup_pike_types(void)
 {
   clear_type_binop_cache();
+  if (string_type_cache) {
+    free_mapping(string_type_cache);
+    string_type_cache = NULL;
+  }
 
   if (concurrent_future_program) {
     free_program(concurrent_future_program);
@@ -15444,6 +15720,8 @@ static void gc_mark_external_types(struct callback *UNUSED(cb),
                                    void *UNUSED(a), void *UNUSED(b))
 {
   unsigned int e;
+  if (string_type_cache)
+    gc_mark_external(string_type_cache, " as string_type_cache");
   for (e = 0; e < NELEM (a_markers); e++) {
     if (a_markers[e])
       gc_mark_external (a_markers[e], " in a_markers");
