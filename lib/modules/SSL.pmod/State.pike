@@ -17,7 +17,19 @@ protected void create(Connection con)
 {
   session = con->session;
   alert = con->alert;
+  version = con->version;
 }
+
+//! The negotiated protocol version, as of when this state was
+//! created.
+//!
+//! @note
+//!   This is distinct from a @[Packet]'s @expr{protocol_version@},
+//!   which is always clamped to @expr{PROTOCOL_TLS_1_2@} on the wire
+//!   for TLS 1.3 and later (@rfc{8446:5.1@}) -- this field is what
+//!   @[decrypt_packet()]/@[encrypt_packet()] use to decide whether
+//!   to apply TLS 1.3 record-protection rules.
+ProtocolVersion version;
 
 //! Information about the used algorithms.
 Session session;
@@ -56,7 +68,6 @@ Alert|Packet decrypt_packet(Packet packet)
    *       even if we have already detected a failure.
    */
   Alert fail;
-  ProtocolVersion version = packet->protocol_version;
   string data = packet->fragment;
 
   if (!data)
@@ -155,17 +166,23 @@ Alert|Packet decrypt_packet(Packet packet)
 
     case CIPHER_aead:
 
-      // NB: Only valid in TLS 1.2 and later.
       string iv;
-      if (session->cipher_spec->explicit_iv_size) {
-	// The message consists of explicit_iv + crypted-msg + digest.
-	iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
+      if (version >= PROTOCOL_TLS_1_3) {
+        // RFC 8446 5.3: the nonce is the static per-direction write
+        // IV (the whole of it -- see Cipher.pmod's TLS 1.3 iv_size
+        // override, salt is never just a "salt" prefix here) XORed
+        // with the sequence number, left-padded with zeros to the
+        // IV's length. No nonce octets are sent on the wire.
+        iv = salt ^ sprintf("%*c", sizeof(salt), packet->seq_num);
+      } else if (session->cipher_spec->explicit_iv_size) {
+        // The message consists of explicit_iv + crypted-msg + digest.
+        iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
       } else {
-	// ChaCha20-POLY1305 uses an implicit iv, and no salt,
-	// but we've generalized it here to allow for ciphers
-	// using salt and implicit iv.
-	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt),
-		     packet->seq_num);
+        // ChaCha20-POLY1305 uses an implicit iv, and no salt,
+        // but we've generalized it here to allow for ciphers
+        // using salt and implicit iv.
+        iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt),
+                     packet->seq_num);
       }
       SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD IV: %O.\n", iv);
 
@@ -174,15 +191,18 @@ Alert|Packet decrypt_packet(Packet packet)
       crypt->set_iv(iv);
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
-	auth_data = sprintf("%8c%c%2c",
-			    packet->seq_num, packet->content_type,
-			    version);
+        // RFC 8446 5.2: the additional data is exactly the record
+        // header as sent on the wire (opaque_type, legacy_record_
+        // version, length) -- no sequence number (that only enters
+        // via the nonce above).
+        auth_data = sprintf("%c%2c%2c", packet->content_type,
+                            packet->protocol_version, sizeof(msg));
       } else {
-	auth_data = sprintf("%8c%c%2c%2c",
-			    packet->seq_num, packet->content_type, version,
-			    sizeof(msg) -
-			    (session->cipher_spec->explicit_iv_size +
-			     digest_size));
+        auth_data = sprintf("%8c%c%2c%2c",
+                            packet->seq_num, packet->content_type, version,
+                            sizeof(msg) -
+                            (session->cipher_spec->explicit_iv_size +
+                             digest_size));
       }
       SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD Auth data: %O.\n", auth_data);
 
@@ -194,6 +214,21 @@ Alert|Packet decrypt_packet(Packet packet)
         // Bad digest.
         fail = alert(ALERT_fatal, ALERT_bad_record_mac,
                      "Failed AEAD-verification!!\n");
+      } else if (version >= PROTOCOL_TLS_1_3) {
+        // RFC 8446 5.2: TLSInnerPlaintext -- the true content type is
+        // the last non-zero octet, with any zero octets after it
+        // being padding. The outer record's content type stays
+        // application_data on the wire; recover the real type here
+        // for the rest of the stack (got_data()'s dispatch) to see.
+        int i = sizeof(msg);
+        while (i > 0 && !msg[i-1]) i--;
+        if (!i) {
+          fail = alert(ALERT_fatal, ALERT_unexpected_message,
+                       "SSL.State: Empty TLSInnerPlaintext.\n");
+        } else {
+          packet->content_type = msg[i-1];
+          msg = msg[..i-2];
+        }
       }
       break;
     }
@@ -282,7 +317,6 @@ Alert|Packet decrypt_packet(Packet packet)
 //! Encrypts a packet (including deflating and MAC-generation).
 Alert|Packet encrypt_packet(Packet packet, Context ctx)
 {
-  ProtocolVersion version = packet->protocol_version;
   string data = packet->fragment;
   string digest;
   Alert res;
@@ -342,34 +376,51 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
       break;
     case CIPHER_aead:
       // FIXME: Do we need to pay attention to threads here?
+      if (version >= PROTOCOL_TLS_1_3) {
+        // RFC 8446 5.2: TLSInnerPlaintext -- append the true content
+        // type (no padding by default); the outer record is always
+        // presented as application_data on the wire.
+        data += sprintf("%c", packet->content_type);
+        packet->content_type = PACKET_application_data;
+      }
       string explicit_iv = "";
       string iv;
-      if (session->cipher_spec->explicit_iv_size) {
-	// RFC 5288 3:
-	// The nonce_explicit MAY be the 64-bit sequence number.
-	//
-	explicit_iv = sprintf("%*c", session->cipher_spec->explicit_iv_size,
-			      packet->seq_num);
-	iv = salt + explicit_iv;
+      if (version >= PROTOCOL_TLS_1_3) {
+        // RFC 8446 5.3: the nonce is the static per-direction write IV
+        // (the whole of it -- see Cipher.pmod's TLS 1.3 iv_size
+        // override) XORed with the sequence number, left-padded with
+        // zeros to the IV's length. No nonce octets are sent.
+        iv = salt ^ sprintf("%*c", sizeof(salt), packet->seq_num);
+      } else if (session->cipher_spec->explicit_iv_size) {
+        // RFC 5288 3:
+        // The nonce_explicit MAY be the 64-bit sequence number.
+        //
+        explicit_iv = sprintf("%*c", session->cipher_spec->explicit_iv_size,
+                              packet->seq_num);
+        iv = salt + explicit_iv;
       } else {
-	// Draft ChaCha20-Poly1305 5:
-	//   When used in TLS, the "record_iv_length" is zero and the nonce is
-	//   the sequence number for the record, as an 8-byte, big-endian
-	//   number.
-	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt),
-		     packet->seq_num);
+        // Draft ChaCha20-Poly1305 5:
+        //   When used in TLS, the "record_iv_length" is zero and the nonce is
+        //   the sequence number for the record, as an 8-byte, big-endian
+        //   number.
+        iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt),
+                     packet->seq_num);
       }
       SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD IV: %O.\n", iv);
       crypt->set_iv(iv);
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
-	auth_data = sprintf("%8c%c%2c",
-			    packet->seq_num, packet->content_type,
-			    PROTOCOL_TLS_1_0);
+        // RFC 8446 5.2: the additional data is exactly the record
+        // header as sent on the wire (opaque_type, legacy_record_
+        // version, length) -- no sequence number (that only enters
+        // via the nonce above).
+        auth_data = sprintf("%c%2c%2c", packet->content_type,
+                            packet->protocol_version,
+                            sizeof(data) + crypt->digest_size());
       } else {
-	auth_data = sprintf("%8c%c%2c%2c",
-			    packet->seq_num, packet->content_type,
-			    version, sizeof(data));
+        auth_data = sprintf("%8c%c%2c%2c",
+                            packet->seq_num, packet->content_type,
+                            version, sizeof(data));
       }
 
       SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD auth data: %O.\n", auth_data);

@@ -10,6 +10,26 @@ string(8bit) fragment = "";  /* At most 2^14 */
 
 int seq_num = UNDEFINED;
 
+//! TLS 1.3 and later: the @[State] this packet must be encrypted
+//! with, captured when it was queued via @[Connection.send_packet()].
+//!
+//! @note
+//!   TLS 1.3 rekeys at fixed protocol points by directly reassigning
+//!   @expr{current_write_state@} (see @[Connection.new_traffic_state()]),
+//!   rather than via a @[PACKET_change_cipher_spec] marker flowing
+//!   through the output queue as TLS 1.2 and earlier do. Since
+//!   @[Connection.send_packet()] only queues a packet -- the actual
+//!   @expr{encrypt_packet()@} call happens later, whenever
+//!   @[Connection.to_write()] drains the queue -- encrypting with
+//!   @emph{whatever @expr{current_write_state@} is at drain time}
+//!   would be wrong if it's been reassigned since this packet was
+//!   queued. Binding the state at queue time (here) and having
+//!   @[Connection.to_write()] prefer it over the live
+//!   @expr{current_write_state@} when set fixes that, without
+//!   changing TLS 1.2 and earlier's behaviour at all (they never set
+//!   this field).
+object|zero bound_write_state;
+
 constant HEADER_SIZE = 5;
 
 //! The fragment max size is 2^14 (RFC 5246 6.2.1). Compressed

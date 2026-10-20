@@ -198,6 +198,24 @@ enum SignatureAlgorithm {
   SIGNATURE_MASK	= 0x00ff,
 }
 
+//! Maps the RSASSA-PSS @[SignatureAlgorithm]s to their associated
+//! (fixed) hash algorithm.
+//!
+//! Unlike the legacy RSASSA-PKCS1-v1_5/DSA/ECDSA algorithms, where
+//! the hash is a free choice combined with @[HASH_MASK] on the wire,
+//! RSASSA-PSS signature schemes are always sent with @[HASH_intrinsic]
+//! in the hash position (@rfc{8446:4.2.3@}) -- the hash is implied by
+//! @[SIGNATURE_rsa_pss_256]/@tt{_384@}/@tt{_512@} itself.
+constant PSS_SIG_HASH = ([
+  SIGNATURE_rsa_pss_256: Crypto.SHA256,
+#if constant(Crypto.SHA384)
+  SIGNATURE_rsa_pss_384: Crypto.SHA384,
+#endif
+#if constant(Crypto.SHA512)
+  SIGNATURE_rsa_pss_512: Crypto.SHA512,
+#endif
+]);
+
 //! Signature algorithms from TLS 1.3.
 enum SignatureScheme {
   //! RSASSA-PKCS1-v1_5 algorithms.
@@ -266,6 +284,12 @@ enum KeyExchangeType {
 
   // Kerberos
   KE_krb5       = 23,	//! Kerberos 5 (@rfc{2712@}).
+
+  // TLS 1.3 and later negotiate key exchange via the key_share and
+  // pre_shared_key extensions rather than via the cipher suite, so
+  // this placeholder marks suites whose key exchange (and signature
+  // algorithm) is negotiated out of band (@rfc{8446@}).
+  KE_tls13      = 24,   //! Negotiated via extensions (@rfc{8446@}).
 }
 
 constant KE_ecc_mask = (1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa)|
@@ -1354,6 +1378,31 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
 #endif /* Crypto.SHA384 */
 #endif /* Crypto.AES.GCM */
 #endif /* Crypto.ECC.Curve */
+
+   // TLS 1.3 cipher suites (@rfc{8446@} B.4). These only designate the
+   // record-protection AEAD algorithm and the key-schedule/transcript
+   // hash; key exchange and signature algorithm are negotiated
+   // independently via the key_share/pre_shared_key and
+   // signature_algorithms extensions, so KE_tls13 is used here as a
+   // placeholder that carries no suite-level key-exchange or
+   // signature semantics.
+#if constant(Crypto.AES.GCM)
+   TLS_aes_128_gcm_sha256 : ({ KE_tls13, CIPHER_aes, HASH_sha256, MODE_gcm }),
+#if constant(Crypto.SHA384)
+   TLS_aes_256_gcm_sha384 : ({ KE_tls13, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.SHA384 */
+#endif /* Crypto.AES.GCM */
+#if constant(Crypto.ChaCha20.POLY1305)
+   // NB: Unlike the TLS 1.2 chacha20-poly1305 suites above, this is
+   //     not gated behind NOT_BROKEN: the key derivation bug noted
+   //     there is in the TLS 1.0-1.2 PRF-based key block / nonce
+   //     path (Session.pike/State.pike), which TLS 1.3 does not use
+   //     -- its HKDF-based key schedule and RFC 8446 5.3 nonce
+   //     construction are independent of that code path.
+   TLS_chacha20_poly1305_sha256 : ({ KE_tls13, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
+#endif /* Crypto.ChaCha20.POLY1305 */
+   TLS_aes_128_ccm_sha256 : ({ KE_tls13, CIPHER_aes, HASH_sha256, MODE_ccm }),
+   TLS_aes_128_ccm_8_sha256 : ({ KE_tls13, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
 ]);
 
 //! Handshake message types.
@@ -1379,6 +1428,32 @@ enum HandshakeMessageType {
   HANDSHAKE_key_update           = 24,	//! TLS 1.3 draft.
   HANDSHAKE_next_protocol	 = 67,	//! draft-agl-tls-nextprotoneg
   HANDSHAKE_message_hash         = 254, //! TLS 1.3 draft.
+}
+
+//! @rfc{8446:4.1.3@}: @expr{SHA-256("HelloRetryRequest")@}. RFC 8446
+//! gives HelloRetryRequest no wire message type of its own -- it
+//! reuses @[HANDSHAKE_server_hello], and this sentinel value in the
+//! Random field is what distinguishes the two.
+constant TLS13_HRR_RANDOM =
+  "\xcf\x21\xad\x74\xe5\x9a\x61\x11\xbe\x1d\x8c\x02\x1e\x65\xb8\x91"
+  "\xc2\xa2\x11\x16\x7a\xbb\x8c\x5e\x07\x9e\x09\xe2\xc8\xa8\x33\x9c";
+
+//! @rfc{8446:4.2.9@} PSK key exchange modes.
+enum PSKKeyExchangeMode {
+  PSK_KE_psk_ke     = 0, //! PSK-only key establishment.
+  PSK_KE_psk_dhe_ke = 1, //! PSK with (EC)DHE key establishment -- the
+                         //! only mode this implementation offers or
+                         //! accepts (see TLS13_PLAN.md).
+}
+
+//! @rfc{8446:4.6.3@} The @expr{request_update@} field of a
+//! @[HANDSHAKE_key_update] message.
+enum KeyUpdateRequest {
+  KEY_UPDATE_not_requested = 0, //! Just updating; no reply expected.
+  KEY_UPDATE_requested     = 1, //! The peer must reciprocate with its
+                                //! own KeyUpdate (not_requested)
+                                //! before its next application data
+                                //! record.
 }
 
 //! Don't request nor check any certificate.

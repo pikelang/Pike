@@ -37,6 +37,7 @@ private constant State = .State;
 private constant Session = .Session;
 private constant Context = .Context;
 private constant Buffer = .Buffer;
+private constant KeySchedule = .KeySchedule;
 
 Session|zero session;
 Context|zero context;
@@ -68,6 +69,12 @@ string(8bit) server_verify_data = "";
 
 //! The active @[Cipher.KeyExchange] (if any).
 .Cipher.KeyExchange|zero ke;
+
+//! TLS 1.3 and later: the running key schedule for this connection.
+//!
+//! @seealso
+//!   @[KeySchedule], @[new_traffic_state()]
+KeySchedule|zero key_schedule;
 
 ProtocolVersion version;
 ProtocolVersion client_version; /* Used to check for version roll-back attacks. */
@@ -182,26 +189,75 @@ Packet certificate_packet(array(string(8bit)) certificates)
                           Buffer()->add_string_array(certificates, 3, 3));
 }
 
-Packet certificate_verify_packet()
+//! TLS 1.3 and later: @expr{Transcript-Hash(handshake_messages)@}
+//! (@rfc{8446:4.4.1@}), using the negotiated cipher suite's hash.
+//!
+//! @note
+//!   Unrelated to @[hash_messages()], which is the TLS 1.0-1.2
+//!   Finished-message PRF output, not a plain transcript hash.
+string(8bit) transcript_hash()
+{
+  return session->cipher_spec->hash->hash((string(8bit))handshake_messages);
+}
+
+//! @param signature_scheme
+//!   TLS 1.3 and later only (ie whenever @[signature_context] is
+//!   given): the 16-bit @[SignatureScheme] to sign with, chosen by
+//!   the caller from among the certificate's and peer's mutually
+//!   acceptable schemes (RFC 8446 4.2.3) -- @[cipher_spec]'s
+//!   @expr{signature_alg@} is deliberately left at
+//!   @[SIGNATURE_anonymous] for @expr{KE_tls13@} suites (a
+//!   "not suite-tied" marker, not a claim of anonymity), so the
+//!   generic @expr{CipherSpec.sign()@} used below for TLS 1.0-1.2
+//!   can't be reused here.
+Packet certificate_verify_packet(string(8bit)|void signature_context,
+                                 int|void signature_scheme)
 {
   SSL3_DEBUG_MSG("SSL.Connection: CERTIFICATE_VERIFY\n"
 		 "%O: handshake_messages: %d bytes.\n",
 		 this, sizeof(handshake_messages));
   Buffer struct = Buffer();
 
-  session->cipher_spec->sign(session, (string(8bit))handshake_messages, struct);
+  if (signature_context) {
+    // TLS 1.3 and later (RFC 8446 4.4.3): sign the context string
+    // plus the transcript hash, not the raw handshake messages.
+    string(8bit) data = signature_context + transcript_hash();
+    string(8bit) sign =
+      .Cipher.sign_1_3([object(Crypto.Sign.State)]session->private_key,
+                     [int]signature_scheme, data);
+    struct->add_int([int]signature_scheme, 2);
+    struct->add_hstring(sign, 2);
+  } else {
+    session->cipher_spec->sign(session, (string(8bit))handshake_messages, struct);
+  }
 
   return handshake_packet(HANDSHAKE_certificate_verify, struct);
 }
 
-int(-1..0) validate_certificate_verify(Buffer input)
+int(-1..0) validate_certificate_verify(Buffer input,
+                                       string(8bit)|void signature_context)
 {
   int(0..1) verification_ok;
-  string(8bit) signed = (string(8bit))handshake_messages;
 
   mixed err = catch {
-      verification_ok = session->cipher_spec->verify(
-        session, signed, input);
+      if (signature_context) {
+        // TLS 1.3 and later: the scheme travels on the wire (the
+        // signer picks freely among its certificate's and our
+        // mutually acceptable schemes, see
+        // certificate_verify_packet()'s signature_scheme), so unlike
+        // TLS 1.0-1.2 there's no pre-negotiated expectation to check
+        // it against here -- a forged/incompatible scheme still gets
+        // caught below, by the signature simply not verifying.
+        int scheme = input->read_int(2);
+        string(8bit) sign = input->read_hstring(2);
+        string(8bit) signed = signature_context + transcript_hash();
+        verification_ok =
+          .Cipher.verify_1_3([object(Crypto.Sign.State)]session->peer_public_key,
+                           scheme, signed, sign);
+      } else {
+        verification_ok = session->cipher_spec->verify(
+          session, (string(8bit))handshake_messages, input);
+      }
     };
 #ifdef SSL3_DEBUG
   if (err) {
@@ -396,8 +452,72 @@ int(0..1) handle_certificates(Buffer packet)
   return 1;
 }
 
+//! Parse a TLS 1.3 (@rfc{8446:4.4.2@}) @[HANDSHAKE_certificate]
+//! message -- a different wire format from the TLS 1.2 and earlier
+//! @[handle_certificates()]: a certificate_request_context prefix,
+//! and per-certificate extensions.
+int(0..1) handle_certificates_1_3(Buffer packet)
+{
+  packet->read_hstring(1); // certificate_request_context; always
+                            // empty -- we never request
+                            // post-handshake client auth.
+  Stdio.Buffer cert_list = packet->read_hbuffer(3);
+  array(string(8bit)) certs = ({ });
+  while (sizeof(cert_list)) {
+    certs += ({ cert_list->read_hstring(3) });
+    cert_list->read_hbuffer(2); // Per-certificate extensions; ignored.
+  }
+
+  array(Standards.X509.TBSCertificate)|zero decoded =
+    verify_certificate_chain(certs);
+  if (!decoded) {
+    send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+                      "Bad certificate chain.\n"));
+    return 0;
+  }
+  if (!sizeof(certs))
+    return 1;
+
+  session->peer_certificate_chain = certs;
+  session->peer_public_key = decoded[-1]->public_key->pkc;
+  return 1;
+}
+
 //! Generate new pending cipher states.
 void new_cipher_states();
+
+//! TLS 1.3 and later: build a fresh @[State] keyed from a traffic
+//! secret (@rfc{8446:7.3@}), for immediate use as either
+//! @[current_read_state] or @[current_write_state].
+//!
+//! Unlike TLS 1.0-1.2 (@[Session.generate_keys()]/@[new_cipher_states()],
+//! where keys are only taken into use when a @[PACKET_change_cipher_spec]
+//! is seen), TLS 1.3 rekeys at fixed protocol points, so the caller
+//! assigns the result directly rather than queuing it in
+//! @[pending_read_state]/@[pending_write_state].
+//!
+//! @param secret
+//!   A traffic secret from @[key_schedule], eg
+//!   @expr{key_schedule->client_handshake_traffic_secret@}.
+//!
+//! @param for_write
+//!   True to set up an encrypting (write) state, false for a
+//!   decrypting (read) state.
+State new_traffic_state(string(8bit) secret, int(0..1) for_write)
+{
+  State st = State(this);
+  array(string(8bit)) key_iv =
+    key_schedule->traffic_key_iv(secret, session->cipher_spec->key_material,
+                                 session->cipher_spec->iv_size);
+  st->crypt = session->cipher_spec->bulk_cipher_algorithm();
+  if (for_write) {
+    st->crypt->set_encrypt_key(key_iv[0]);
+  } else {
+    st->crypt->set_decrypt_key(key_iv[0]);
+  }
+  st->salt = key_iv[1];
+  return st;
+}
 
 //! Derive the master secret from the premaster_secret
 //! and the random seeds, and configure the keys.
@@ -539,6 +659,19 @@ protected object(Packet)|zero recv_packet()
     if (current_read_state)
       SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): version=0x%x\n",
 		     version);
+    if ((version >= PROTOCOL_TLS_1_3) &&
+        (packet->content_type == PACKET_change_cipher_spec)) {
+      // RFC 8446 Appendix D.4: a dummy ChangeCipherSpec record for
+      // middlebox compatibility -- unlike its TLS <= 1.2 meaning,
+      // it's *always* sent unencrypted (even once real encryption is
+      // in effect), and carries no key-state transition of its own;
+      // simply drop it without attempting to decrypt it (current_read_state
+      // most likely already has a real AEAD cipher active by the time
+      // this arrives, which would otherwise fail to "decrypt" 1
+      // plaintext byte and desync the read sequence number for
+      // everything that follows).
+      return recv_packet();
+    }
     return current_read_state->decrypt_packet(packet);
   case 0:
     SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): current_read_state is zero!\n");
@@ -620,6 +753,58 @@ void send_packet(Packet packet, int|void priority)
 
 }
 
+//! TLS 1.3 and later: queue @[packet] for sending, like
+//! @[send_packet()], but additionally bind it (via
+//! @[Packet.bound_write_state]) to whatever @[current_write_state]
+//! is *right now*.
+//!
+//! This matters because @[send_packet()] only queues a packet --
+//! the actual @expr{encrypt_packet()@} call happens later, whenever
+//! @[to_write()] drains the queue. TLS 1.3 rekeys by directly
+//! reassigning @[current_write_state] at fixed protocol points (see
+//! @[new_traffic_state()]), potentially several times while a flight
+//! of messages for *different* keys is still sitting in the queue
+//! (eg ServerHello in the clear, then EncryptedExtensions.. Finished
+//! under the handshake traffic secret, all queued before anything is
+//! actually drained) -- encrypting everything with whatever
+//! @[current_write_state] happens to be when @[to_write()] is
+//! eventually called would encrypt all of them with only the last
+//! one. Binding the state at queue time fixes that.
+void send_packet_1_3(Packet packet, int|void priority)
+{
+  packet->bound_write_state = current_write_state;
+  send_packet(packet, priority);
+}
+
+//! Build a TLS 1.3 (@rfc{8446:4.6.3@}) @[HANDSHAKE_key_update] @[Packet].
+Packet key_update_packet(int(0..1) request_update)
+{
+  return handshake_packet(HANDSHAKE_key_update, sprintf("%1c", request_update));
+}
+
+//! RFC 8446 7.2/4.6.3: queue a @[HANDSHAKE_key_update] under the
+//! current (pre-update) write state, then roll @[current_write_state]
+//! forward -- per spec, the sender of a KeyUpdate updates its own
+//! sending keys immediately (applying to everything sent after the
+//! KeyUpdate itself, which is why it must be queued first via
+//! @[send_packet_1_3()] rather than @[send_packet()]).
+//!
+//! @param old_secret
+//!   The traffic secret @[current_write_state] is currently keyed
+//!   from (@expr{key_schedule->client_application_traffic_secret@} or
+//!   @expr{server_application_traffic_secret@}, whichever is ours).
+//!
+//! @returns
+//!   The new secret -- the caller must store it back onto whichever
+//!   @[key_schedule] field @[old_secret] came from.
+string(8bit) send_key_update(int(0..1) request_update, string(8bit) old_secret)
+{
+  send_packet_1_3(key_update_packet(request_update));
+  string(8bit) new_secret = key_schedule->update_traffic_secret(old_secret);
+  current_write_state = new_traffic_state(new_secret, 1);
+  return new_secret;
+}
+
 //! Returns the number of packets queued for writing.
 //!
 //! @returns
@@ -669,7 +854,8 @@ int(-1..2) to_write(Stdio.Buffer output)
       state = [int(0..0)|ConnectionState](state | CONNECTION_local_closed);
     }
   }
-  packet = [object]current_write_state->encrypt_packet(packet, context);
+  State write_state = [object(State)](packet->bound_write_state || current_write_state);
+  packet = [object]write_state->encrypt_packet(packet, context);
   if (packet->content_type == PACKET_change_cipher_spec) {
     if (sizeof(pending_write_state)) {
       current_write_state = pending_write_state[0];
@@ -692,6 +878,11 @@ void send_close()
 
 //! Renegotiate the connection.
 void send_renegotiate();
+
+//! TLS 1.3 only: update our own sending keys (@rfc{8446:4.6.3@}), and
+//! optionally ask the peer to reciprocate with its own KeyUpdate.
+//! May be called at any time once the handshake has completed.
+void update_keys(int(0..1) request_peer_update);
 
 //! Send an application data packet. If the data block is too large
 //! then as much as possible of the beginning of it is sent. The size
@@ -1207,17 +1398,28 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
 	  COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
 		     "Zero length Handshake fragments not allowed.\n");
 
-	  // Don't allow renegotiation in unsecure mode, to address
-	  // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
-	  // For details see: http://www.g-sec.lu/practicaltls.pdf and
-	  // RFC 5746.
-	  COND_FATAL(!(state & CONNECTION_handshaking) &&
-		     !secure_renegotiation, ALERT_no_renegotiation,
-		     "Renegotiation not supported in unsecure mode.\n");
+          // Don't allow renegotiation in unsecure mode, to address
+          // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+          // For details see: http://www.g-sec.lu/practicaltls.pdf and
+          // RFC 5746.
+          //
+          // NB: TLS 1.3 has no renegotiation at all (RFC 8446 D.4) -- a
+          // handshake-type packet arriving here once a 1.3 connection is
+          // past its initial handshake is a *post-handshake* message
+          // (NewSessionTicket, KeyUpdate, ...), a different concept these
+          // two checks don't apply to; each such message type is
+          // individually validated by the handshake_state state machine
+          // instead (eg ClientConnection's STATE_handshake_finished case
+          // only accepting HANDSHAKE_new_session_ticket).
+          COND_FATAL(!(state & CONNECTION_handshaking) &&
+                     (version < PROTOCOL_TLS_1_3) &&
+                     !secure_renegotiation, ALERT_no_renegotiation,
+                     "Renegotiation not supported in unsecure mode.\n");
 
-	  COND_FATAL(!(state & CONNECTION_handshaking) &&
-		     !context->enable_renegotiation, ALERT_no_renegotiation,
-		     "Renegotiation disabled by context.\n");
+          COND_FATAL(!(state & CONNECTION_handshaking) &&
+                     (version < PROTOCOL_TLS_1_3) &&
+                     !context->enable_renegotiation, ALERT_no_renegotiation,
+                     "Renegotiation disabled by context.\n");
 
 	  /* No change_cipher message was received */
 	  // FIXME: There's a bug somewhere since expect_change_cipher

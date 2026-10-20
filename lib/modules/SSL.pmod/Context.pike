@@ -48,8 +48,10 @@ protected void create()
 }
 
 //! List of supported versions, in order of preference. Defaults to
-//! @[PROTOCOL_TLS_1_2], @[PROTOCOL_TLS_1_1] and @[PROTOCOL_TLS_1_0].
+//! @[PROTOCOL_TLS_1_3], @[PROTOCOL_TLS_1_2], @[PROTOCOL_TLS_1_1] and
+//! @[PROTOCOL_TLS_1_0].
 array(ProtocolVersion) supported_versions = ({
+  PROTOCOL_TLS_1_3,
   PROTOCOL_TLS_1_2,
   PROTOCOL_TLS_1_1,
   PROTOCOL_TLS_1_0,
@@ -227,6 +229,10 @@ multiset(int) extensions = (<
   EXTENSION_signed_certificate_timestamp,
   EXTENSION_early_data,
   EXTENSION_padding,
+  EXTENSION_supported_versions,
+  EXTENSION_key_share,
+  EXTENSION_psk_key_exchange_modes,
+  EXTENSION_pre_shared_key,
 >);
 
 //
@@ -297,6 +303,10 @@ array(int) signature_algorithms = ({
 #if constant(Crypto.ECC.Curve)
   SIGNATURE_ecdsa_secp521r1_sha512,
 #endif
+  // RFC 8446 4.2.3 mandates RSASSA-PSS (never RSASSA-PKCS1-v1_5) for
+  // TLS 1.3 CertificateVerify; offer it ahead of the legacy PKCS1
+  // variant, which TLS 1.2 and earlier still need.
+  SIGNATURE_rsa_pss_sha512,
   SIGNATURE_rsa_pkcs1_sha512,
 #endif
 #if constant(Crypto.ECC.Curve488)
@@ -306,6 +316,7 @@ array(int) signature_algorithms = ({
 #if constant(Crypto.ECC.Curve)
   SIGNATURE_ecdsa_secp384r1_sha384,
 #endif
+  SIGNATURE_rsa_pss_sha384,
   SIGNATURE_rsa_pkcs1_sha384,
 #endif
 #if constant(Crypto.ECC.Curve25519)
@@ -315,6 +326,7 @@ array(int) signature_algorithms = ({
   SIGNATURE_ecdsa_secp256r1_sha256,
 #endif
   HASH_sha256 | SIGNATURE_dsa,
+  SIGNATURE_rsa_pss_sha256,
   SIGNATURE_rsa_pkcs1_sha256,
 #if constant(Crypto.SHA224)
 #if constant(Crypto.ECC.Curve)
@@ -359,6 +371,11 @@ array(int) get_signature_algorithms(array(int)|void signature_algorithms)
 			SIGNATURE_ed448_intrinsic,
 #endif
 		      >)[scheme]) return 1;
+                  // RSASSA-PSS pairs also carry HASH_intrinsic, but (unlike
+                  // EdDSA) need their hash availability checked -- PSS_SIG_HASH
+                  // already omits unavailable hashes.
+                  if (PSS_SIG_HASH[scheme & SIGNATURE_MASK])
+                    return !!PSS_SIG_HASH[scheme & SIGNATURE_MASK];
 		  if ((<
 #if !constant(Crypto.SHA512)
 			HASH_sha512,
@@ -529,6 +546,16 @@ array(int) get_suites(int(-1..)|void min_keylength,
     KE_ecdhe_rsa, KE_ecdhe_ecdsa,
   >);
 
+  // KE_tls13 is not actually anonymous or static -- TLS 1.3 suites
+  // negotiate key exchange via the key_share/pre_shared_key
+  // extensions instead of via the suite, so it's not gated behind
+  // ke_mode. It's only offered when TLS 1.3 is actually among the
+  // supported versions, so a context that hasn't enabled TLS 1.3
+  // doesn't advertise 1.3-only suite ids it could never select.
+  if (has_value(supported_versions, PROTOCOL_TLS_1_3)) {
+    kes[KE_tls13] = 1;
+  }
+
   if (ke_mode) {
     // Static certificate based key exchange methods.
     kes |= (<
@@ -580,16 +607,23 @@ array(int) get_suites(int(-1..)|void min_keylength,
 		 }, min_keylength);
   }
 
-  if( !blacklisted_ciphers || (max_version >= PROTOCOL_TLS_1_3))
+  if( !blacklisted_ciphers )
   {
     // Block export ciphers and DES by default because they are
     // demonstrably broken.
     //
     // Block RC4 because it probably is (RFC 7465).
     //
-    // TLS 1.3 prohibits RC4.
-    if (!blacklisted_ciphers) blacklisted_ciphers = (<>);
-    blacklisted_ciphers |= (< CIPHER_rc4, CIPHER_des, CIPHER_rc4_40,
+    // NB: TLS 1.3 prohibits RC4 too, but that's already enforced
+    // below (the AEAD-only filter for min(@supported_versions) ==
+    // PROTOCOL_TLS_1_3, since no RC4/DES suite is AEAD) without
+    // needing to override an *explicit* blacklist here -- doing that
+    // unconditionally on max_version alone would silently defeat a
+    // caller's explicit attempt to unlock these ciphers (eg an empty
+    // multiset, as documented above) the moment PROTOCOL_TLS_1_3 is
+    // merely among the supported versions, not necessarily the only
+    // one in use.
+    blacklisted_ciphers = (< CIPHER_rc4, CIPHER_des, CIPHER_rc4_40,
 			      CIPHER_rc2_40, CIPHER_des40 >);
   }
   if( sizeof([multiset]blacklisted_ciphers) )
@@ -1245,6 +1279,62 @@ array(string(8bit)|int)|zero encode_ticket(Session session)
   record_session(session);
   session->identity = orig_id;
   return ({ ticket, 3600 });
+}
+
+//! TLS 1.3 (@rfc{8446:4.6.1@}) analogue of @[encode_ticket()]: issue a
+//! ticket carrying a resumption PSK, rather than TLS 1.0-1.2's
+//! master_secret-based ticket. Reuses the same @[session_cache]
+//! storage and keying (by ticket bytes) as @[encode_ticket()] --
+//! @[decode_ticket()]'s default implementation (a plain
+//! @[lookup_session()]) works unchanged for either kind of ticket;
+//! the two are told apart by whether @expr{Session()->tls13_psk@} is
+//! set.
+//!
+//! @param session
+//!   The just-completed TLS 1.3 connection's session. Its
+//!   @[Session.identity] is temporarily repointed at the new ticket
+//!   for caching purposes, exactly as @[encode_ticket()] does, then
+//!   restored.
+//!
+//! @param psk
+//!   The resumption PSK, derived by the caller from this connection's
+//!   @expr{key_schedule->resumption_master_secret@} and a per-ticket
+//!   nonce (@rfc{8446:4.6.1@}).
+//!
+//! @returns
+//!   @array
+//!     @elem string(8bit) 0
+//!       The opaque ticket, or @expr{0@} (zero) if tickets aren't
+//!       offered.
+//!     @elem int 1
+//!       Ticket lifetime in seconds.
+//!     @elem int 2
+//!       The ticket_age_add obfuscation value (@rfc{8446:4.2.11@}).
+//!   @endarray
+//!
+//! @seealso
+//!   @[encode_ticket()], @[decode_ticket()]
+array(string(8bit)|int)|zero encode_ticket_1_3(Session session,
+                                              string(8bit) psk)
+{
+  if (!use_cache) return 0;
+  string(8bit)|zero ticket;
+  do {
+    ticket = random(32);
+  } while(session_cache[ticket]);
+
+  int ticket_age_add;
+  sscanf(random(4), "%4c", ticket_age_add);
+
+  session->ticket = ticket;
+  session->ticket_expiry_time = time(1) + 3600;
+  session->tls13_psk = psk;
+  session->tls13_ticket_age_add = ticket_age_add;
+  string(8bit)|zero orig_id = session->identity;
+  session->identity = ticket;
+  record_session(session);
+  session->identity = orig_id;
+  return ({ ticket, 3600, ticket_age_add });
 }
 
 //! Signals if the context @b{will@} offer a session ticket via

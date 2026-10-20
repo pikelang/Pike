@@ -32,6 +32,21 @@ string(8bit)|zero ticket;
 //! Expiry time for @[ticket].
 int|zero ticket_expiry_time;
 
+//! TLS 1.3 (@rfc{8446:4.6.1@}): the resumption PSK derived for
+//! @[ticket], if any -- distinct from @[master_secret] (the TLS
+//! 1.0-1.2 concept). Set on the server when a @[ticket] is issued,
+//! and on the client when one is received.
+string(8bit)|zero tls13_psk;
+
+//! TLS 1.3 (@rfc{8446:4.2.11@}): the ticket_age_add obfuscation value
+//! that goes with @[tls13_psk]'s @[ticket].
+int tls13_ticket_age_add;
+
+//! TLS 1.3: wall-clock time (per @expr{time(1)@}) @[tls13_psk]'s
+//! ticket was received, used by the client to compute
+//! obfuscated_ticket_age when later offering it for resumption.
+int tls13_ticket_issue_time;
+
 //! Always COMPRESSION_null.
 int|zero compression_algorithm;
 

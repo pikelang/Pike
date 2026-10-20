@@ -103,17 +103,22 @@ test_tests([[
       int fno = 1;
       int ke = -1;
 
-      [ke, fno] = parse_fields(fields, fno, KE_mapping);
+      if (has_prefix(sym, "TLS_") && !has_value(fields, "with")) {
+        // Bare TLS 1.3 suite name, e.g. "TLS_aes_128_gcm_sha256".
+        ke = KE_tls13;
+      } else {
+        [ke, fno] = parse_fields(fields, fno, KE_mapping);
 
-      if ((sizeof(fields) > fno) &&
-	  !(<"export", "with">)[fields[fno] ]) {
-	// Probably something like "psk".
-	ke = -1;
+        if ((sizeof(fields) > fno) &&
+            !(<"export", "with">)[fields[fno] ]) {
+          // Probably something like "psk".
+          ke = -1;
+        }
+
+        // Skip ahead to the cipher.
+        while ((sizeof(fields) > fno) && (fields[fno++] != "with"))
+          ;
       }
-
-      // Skip ahead to the cipher.
-      while ((sizeof(fields) > fno) && (fields[fno++] != "with"))
-	;
 
       int cipher = -1;
       [cipher, fno] = parse_fields(fields, fno,
@@ -174,10 +179,18 @@ test_tests([[
 	  fno++;
 	  break;
 #endif
-#if constant(Crypto.ChaCha20.POLY1305) && defined(NOT_BROKEN)
+#if constant(Crypto.ChaCha20.POLY1305)
 	case "poly1305":
-	  mode = MODE_poly1305;
-	  fno++;
+          // Only KE_tls13 (bare TLS 1.3 names); legacy with_chacha20
+          // suites stay gated behind NOT_BROKEN (never defined).
+          if ((ke == KE_tls13)
+#ifdef NOT_BROKEN
+              || 1
+#endif
+              ) {
+            mode = MODE_poly1305;
+            fno++;
+          }
 	  break;
 #endif
 	}

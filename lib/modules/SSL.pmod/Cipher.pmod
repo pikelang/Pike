@@ -205,8 +205,13 @@ class CipherSpec {
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
-      string sign =
-        session->private_key->pkcs_sign(data, HASH_lookup[signature_hash]);
+      Crypto.Hash hash = PSS_SIG_HASH[signature_alg] || HASH_lookup[signature_hash];
+      Crypto.Sign.State key = session->private_key;
+      if (PSS_SIG_HASH[signature_alg]) {
+        // RFC 8446 4.2.3: RSASSA-PSS, not RSASSA-PKCS1-v1_5.
+        key = [object(Crypto.Sign.State)]key->PSS;
+      }
+      string sign = key->pkcs_sign(data, hash);
       struct->add_int(signature_hash|signature_alg, 2);
       struct->add_hstring(sign, 2);
       return struct;
@@ -264,9 +269,13 @@ class CipherSpec {
         return 0;
       }
 
-      Crypto.Hash hash = HASH_lookup[hash_id];
+      Crypto.Hash hash = PSS_SIG_HASH[sign_id] || HASH_lookup[hash_id];
       if (!hash) return 0;
 
+      if (PSS_SIG_HASH[sign_id]) {
+        // RFC 8446 4.2.3: RSASSA-PSS, not RSASSA-PKCS1-v1_5.
+        pkc = [object(Crypto.Sign.State)]pkc->PSS;
+      }
       return pkc->pkcs_verify(data, hash, sign);
     }
 
@@ -306,6 +315,16 @@ class CipherSpec {
     // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
     if( signature_alg == SIGNATURE_anonymous || !signature_algorithms )
       return;
+
+    if (PSS_SIG_HASH[signature_alg]) {
+      // RFC 8446 4.2.3: RSASSA-PSS pairs are always sent as
+      // HASH_intrinsic|signature_alg -- the hash is implied by
+      // signature_alg itself, not a free choice to scan for.
+      if (!has_value(signature_algorithms, HASH_intrinsic|signature_alg))
+        error("No acceptable hash algorithm.\n");
+      signature_hash = HASH_intrinsic;
+      return;
+    }
 
     int hash_id = -1;
     SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
@@ -1837,6 +1856,102 @@ class RC2
 }
 #endif /* Crypto.Arctwo */
 
+#if constant(Crypto.ECC.Curve)
+//! RFC 8446 4.2.8: Generate an ephemeral key share for the given
+//! named @[Constants.NamedGroup].
+//!
+//! Unlike the TLS 1.2 and earlier @[KeyExchangeECDHE] (which drives
+//! key agreement through a ServerKeyExchange/ClientKeyExchange
+//! message pair), TLS 1.3 key shares travel in ClientHello/ServerHello
+//! extensions, so this is a plain function pair rather than a
+//! @[KeyExchange] subclass.
+//!
+//! @returns
+//!   @array
+//!     @elem Gmp.mpz|string(8bit) 0
+//!       The ephemeral secret (scalar), to keep and pass to
+//!       @[compute_key_share_secret()] once the peer's share arrives.
+//!     @elem string(8bit) 1
+//!       The encoded public key, suitable for the @expr{key_exchange@}
+//!       field of a @expr{KeyShareEntry@}.
+//!   @endarray
+array(Gmp.mpz|string(8bit)) generate_key_share(object context, int group)
+{
+  Crypto.ECC.Curve curve = ECC_CURVES[group];
+  if (!curve) error("Unsupported group: %s.\n", fmt_constant(group, "GROUP"));
+  string(8bit)|Gmp.mpz secret = curve->new_scalar(context->random);
+  Crypto.ECC.Curve.Point p = curve * secret;
+  return ({ secret, p->encode() });
+}
+
+//! RFC 8446 4.2.8: Compute the ECDHE shared secret from our ephemeral
+//! @[secret] (as returned by @[generate_key_share()]) and the peer's
+//! encoded key share.
+//!
+//! @returns
+//!   The raw shared secret (the X-coordinate of the shared point),
+//!   or @expr{0@} (zero) if @[peer_key] doesn't decode to a valid
+//!   point on @[group]'s curve.
+string(8bit)|zero compute_key_share_secret(int group,
+                                           Gmp.mpz|string(8bit) secret,
+                                           string(8bit) peer_key)
+{
+  Crypto.ECC.Curve curve = ECC_CURVES[group];
+  if (!curve) return 0;
+  Crypto.ECC.Curve.Point point;
+  catch {
+    point = curve->Point(peer_key);
+  };
+  if (!point) return 0;
+  return (point*secret)->get_x_str();
+}
+#endif /* Crypto.ECC.Curve */
+
+//! RFC 8446 4.2.3/4.4.3: sign @[data] under @[key] using the 16-bit
+//! @[SignatureScheme] @[scheme] (eg @[SIGNATURE_ecdsa_secp256r1_sha256]
+//! or @[SIGNATURE_rsa_pss_sha256]).
+//!
+//! Unlike @[CipherSpec.sign()], this isn't tied to a cipher suite's
+//! fixed @expr{signature_alg@} field -- TLS 1.3 negotiates the
+//! signature scheme per-certificate (and the signer picks freely
+//! among the schemes both its certificate and the peer support), not
+//! via the suite, which is why @expr{KE_tls13@} suites leave
+//! @expr{signature_alg@} at @[SIGNATURE_anonymous] (a "not suite-tied"
+//! marker, not a claim of anonymity) instead.
+//!
+//! @note
+//!   Only RSASSA-PSS and ECDSA schemes are supported -- EdDSA
+//!   (Ed25519/Ed448) would need a different @[Crypto.Sign.State]
+//!   calling convention (no hash parameter) and isn't implemented.
+string(8bit) sign_1_3(Crypto.Sign.State key, int scheme, string(8bit) data)
+{
+  int sig_id = scheme & SIGNATURE_MASK;
+  Crypto.Hash hash = PSS_SIG_HASH[sig_id] || HASH_lookup[scheme & HASH_MASK];
+  if (PSS_SIG_HASH[sig_id]) {
+    key = [object(Crypto.Sign.State)]key->PSS;
+    // RFC 8446 4.2.3: the salt length MUST equal the digest's output
+    // length -- Nettle's PSS defaults to a fixed 20-byte (SHA-1 era)
+    // salt regardless of the hash in use, which other TLS 1.3
+    // implementations (correctly) reject.
+    key->set_salt_size(hash->digest_size());
+  }
+  return key->pkcs_sign(data, hash);
+}
+
+//! The verifying counterpart to @[sign_1_3()].
+int(0..1) verify_1_3(Crypto.Sign.State key, int scheme, string(8bit) data,
+                    string(8bit) sign)
+{
+  int sig_id = scheme & SIGNATURE_MASK;
+  Crypto.Hash hash = PSS_SIG_HASH[sig_id] || HASH_lookup[scheme & HASH_MASK];
+  if (!hash) return 0;
+  if (PSS_SIG_HASH[sig_id]) {
+    key = [object(Crypto.Sign.State)]key->PSS;
+    key->set_salt_size(hash->digest_size());
+  }
+  return key->pkcs_verify(data, hash, sign);
+}
+
 //! Lookup the crypto parameters for a cipher suite.
 //!
 //! @param suite
@@ -2134,6 +2249,17 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
     }
   }
 
+  if ((version >= PROTOCOL_TLS_1_3) && (res->cipher_type == CIPHER_aead)) {
+    // RFC 8446 5.3: the entire per-record nonce is derived via the key
+    // schedule (as the traffic secret's write IV) and combined with the
+    // sequence number by XOR -- unlike TLS 1.2, there is no separate
+    // wire-transmitted "explicit" part of the nonce. All AEAD algorithms
+    // used by TLS 1.3 (AES-GCM, AES-CCM, ChaCha20-Poly1305) use 12-byte
+    // nonces.
+    res->iv_size = 12;
+    res->explicit_iv_size = 0;
+  }
+
   switch(ke_method)
   {
   case KE_null:
@@ -2178,6 +2304,13 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
   case KE_rsa_psk:
     res->ke_factory = KeyExchangeRSAPSK;
     break;
+  case KE_tls13:
+    // TLS 1.3 and later negotiate key exchange via the key_share
+    // and pre_shared_key extensions, not via a ClientKeyExchange/
+    // ServerKeyExchange message pair, so there's no KeyExchange
+    // subclass to select here -- the handshake code drives key
+    // agreement directly instead.
+    break;
   default:
     error( "Internal error.\n" );
   }
@@ -2215,6 +2348,15 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
     res->signature_alg = SIGNATURE_ecdsa;
     break;
 #endif
+  case KE_tls13:
+    // Not suite-tied in TLS 1.3 -- negotiated per-handshake from the
+    // peer's signature_algorithms extension against the
+    // certificate's key type. SIGNATURE_anonymous here only means
+    // "don't drive CertificateVerify through CipherSpec.sign()/
+    // verify() for this suite"; it does not mean the handshake is
+    // unauthenticated.
+    res->signature_alg = SIGNATURE_anonymous;
+    break;
   default:
     error( "Internal error.\n" );
   }
@@ -2250,7 +2392,8 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
       return 0;
     }
 #endif
-  } else if (res->cipher_type == CIPHER_aead) {
+  } else if ((res->cipher_type == CIPHER_aead) &&
+             (version < PROTOCOL_TLS_1_2)) {
     // RFC 5822 4:
     // These cipher suites make use of the authenticated encryption
     // with additional data defined in TLS 1.2 [RFC5246]. They MUST

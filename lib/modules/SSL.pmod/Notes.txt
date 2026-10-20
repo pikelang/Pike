@@ -109,8 +109,8 @@ The DTLS 1.2 Protocol is specified in the following RFCs:
 
 The TLS 1.3 Protocol is specified in the following RFCs:
 
- [ ] SSL 3.4/TLS 1.3			RFC 8446
- [ ] Handshake Traces for TLS 1.3	RFC 8448
+ [X] SSL 3.4/TLS 1.3                    RFC 8446
+ [X] Handshake Traces for TLS 1.3       RFC 8448
  [ ] Using Early Data in HTTP		RFC 8470
 
 General:

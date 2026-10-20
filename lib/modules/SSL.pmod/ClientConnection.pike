@@ -14,14 +14,33 @@ inherit Connection;
 array(int)|zero client_cert_types;
 array(string(8bit))|zero client_cert_distinguished_names;
 
+//! TLS 1.3 and later: our ephemeral key share, set up in
+//! @[client_hello()] and consumed once the server's key_share
+//! response arrives in ServerHello.
+protected int client_key_share_group;
+protected Gmp.mpz|string(8bit)|zero client_key_share_secret;
+
+//! TLS 1.3 (@rfc{8446:4.1.4@}): set once we've processed one
+//! HelloRetryRequest, since a client MUST abort on a second one.
+protected int(0..1) got_hello_retry_request;
+
 protected string _sprintf(int t)
 {
   if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
 }
 
 //! Generate a @[HANDSHAKE_client_hello] @[Packet].
+//!
+//! @param retry_group
+//!   Set when (re)sending in response to a HelloRetryRequest
+//!   (@rfc{8446:4.1.2@}): the @[EXTENSION_key_share] extension offers
+//!   only this group, and -- per the RFC 8446 4.1.2 requirement that
+//!   the retried ClientHello be unmodified except for a short list of
+//!   fields -- @[client_random] is *not* regenerated, reusing the
+//!   value from the original ClientHello.
 protected Packet client_hello(string(8bit)|void server_name,
-                              array(Packet)|void early_data)
+                              array(Packet)|void early_data,
+                              int|void retry_group)
 {
   Buffer struct = Buffer();
   /* Build client_hello message */
@@ -30,15 +49,17 @@ protected Packet client_hello(string(8bit)|void server_name,
   // supported versions extension.
   struct->add_int(min(client_version, PROTOCOL_TLS_1_2), 2);
 
-  // The first four bytes of the client_random is specified to be the
-  // timestamp on the client side. This is to guard against bad random
-  // generators, where a client could produce the same random numbers
-  // if the seed is reused. This argument is flawed, since a broken
-  // random generator will make the connection insecure anyways. The
-  // standard explicitly allows these bytes to not be correct, so
-  // sending random data instead is safer and reduces client
-  // fingerprinting.
-  client_random = context->random(32);
+  if (!retry_group) {
+    // The first four bytes of the client_random is specified to be
+    // the timestamp on the client side. This is to guard against bad
+    // random generators, where a client could produce the same
+    // random numbers if the seed is reused. This argument is flawed,
+    // since a broken random generator will make the connection
+    // insecure anyways. The standard explicitly allows these bytes to
+    // not be correct, so sending random data instead is safer and
+    // reduces client fingerprinting.
+    client_random = context->random(32);
+  }
 
   struct->add(client_random);
   struct->add_hstring(session->identity || "", 1);
@@ -50,9 +71,21 @@ protected Packet client_hello(string(8bit)|void server_name,
    // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
 
-    if (client_version < max(@context->supported_versions)) {
+    if (client_version < min(max(@context->supported_versions),
+                             PROTOCOL_TLS_1_2)) {
       // Negotiating a version lower than the max supported version.
       //
+      // NB: client_version (the legacy ClientHello.client_version
+      // field) is always clamped to at most TLS 1.2 -- TLS 1.3 and
+      // later are negotiated via the supported_versions extension
+      // instead, never via this field -- so comparing it directly
+      // against max(@supported_versions) would misidentify *every*
+      // non-retry ClientHello from a TLS-1.3-capable client as a
+      // fallback, since client_version can never reach a TLS 1.3
+      // value in the first place. Capping the comparison at TLS 1.2
+      // restores the original RFC 7507 comparison for contexts whose
+      // max is TLS 1.2 or earlier (unaffected by this change) while
+      // fixing it for TLS 1.3-and-later ones.
       // RFC 7507 4:
       // If a client sends a ClientHello.client_version containing a lower
       // value than the latest (highest-valued) version supported by the
@@ -70,6 +103,23 @@ protected Packet client_hello(string(8bit)|void server_name,
 
   array(int) compression_methods = context->preferred_compressors;
   struct->add_int_array(compression_methods, 1, 1);
+
+  // Only claim TLS 1.3 support (via the extensions below) if we're
+  // actually offering a suite usable with it -- a context configured
+  // for TLS 1.3 among other versions but restricted (via
+  // preferred_suites) to eg TLS-1.2-and-earlier-only PSK suites has
+  // nothing in common with a TLS 1.3 peer, and offering
+  // supported_versions/key_share anyway would make the server (if it
+  // also supports 1.3) select version 1.3 and then find no common
+  // suite, failing a handshake that TLS 1.2 negotiation would have
+  // completed fine.
+  int offering_tls13 =
+    has_value(context->supported_versions, PROTOCOL_TLS_1_3) &&
+    sizeof(filter(cipher_suites,
+                  lambda(int s) {
+                    array(int) info = [array(int)]CIPHER_SUITES[s];
+                    return info && (info[0] == KE_tls13);
+                  }));
 
   Buffer extensions = Buffer();
 
@@ -201,6 +251,59 @@ protected Packet client_hello(string(8bit)|void server_name,
     return Buffer()->add_string_array(context->advertised_protocols, 1, 2);
   };
 
+  ext (EXTENSION_supported_versions, offering_tls13)
+  {
+    // RFC 8446 4.2.1 ClientHello shape: a list of versions, 1-byte
+    // length prefix (unlike ServerHello's single bare version).
+    Buffer versions = Buffer();
+    foreach(context->supported_versions, int v)
+      versions->add_int(v, 2);
+    return Buffer()->add_hstring(versions, 1);
+  };
+
+  ext (EXTENSION_key_share, offering_tls13)
+  {
+    // RFC 8446 4.2.8: offer exactly one key share -- our first choice
+    // of group, normally, or (see the @[retry_group] parameter above)
+    // whichever single group a HelloRetryRequest asked for.
+    client_key_share_group = retry_group || context->ecc_curves[0];
+    array(Gmp.mpz|string(8bit)) share =
+      Cipher.generate_key_share(context, client_key_share_group);
+    client_key_share_secret = share[0];
+    Buffer entry = Buffer();
+    entry->add_int(client_key_share_group, 2);
+    entry->add_hstring([string(8bit)]share[1], 2);
+    return Buffer()->add_hstring(entry, 2);
+  };
+
+  ext (EXTENSION_psk_key_exchange_modes, offering_tls13)
+  {
+    // RFC 8446 4.2.9: we only ever offer psk_dhe_ke -- a PSK is
+    // always combined with a fresh (EC)DHE key_share, never used
+    // alone (see TLS13_PLAN.md).
+    return Buffer()->add_int_array(({ PSK_KE_psk_dhe_ke }), 1, 1);
+  };
+
+  // RFC 8446 4.2.11: a resumable ticket from a prior connection using
+  // this same Session object (see ClientConnection.create()'s
+  // session-reuse parameter).
+  int(0..1) offering_psk =
+    context->extensions[EXTENSION_pre_shared_key] && offering_tls13 &&
+    session->ticket && session->tls13_psk &&
+    (session->ticket_expiry_time > time(1));
+
+  object(Crypto.Hash)|zero psk_hash;
+  if (offering_psk) {
+    array(int)|zero suite_info =
+      [array(int)|zero]CIPHER_SUITES[session->cipher_suite];
+    psk_hash = suite_info && [object(Crypto.Hash)]HASH_lookup[suite_info[2]];
+    // A ticket's PSK can only be used with a suite sharing its hash
+    // (RFC 8446 4.2.11) -- simplify to requiring the exact original
+    // suite still be among what we're offering this time.
+    if (!psk_hash || !has_value(cipher_suites, session->cipher_suite))
+      offering_psk = 0;
+  }
+
   // When the client HELLO packet data is in the range 256-511 bytes
   // f5 SSL terminators will intepret it as SSL2 requiring an
   // additional 8k of data, which will cause the connection to hang.
@@ -238,8 +341,62 @@ protected Packet client_hello(string(8bit)|void server_name,
   //     in the list here.
   //     cf https://bugs.chromium.org/p/chromium/issues/detail?id=363583#c17
 
-  if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
+  if (offering_psk) {
+    // RFC 8446 4.2.11/4.2.11.2: pre_shared_key MUST be the last
+    // extension, and its binder is an HMAC over everything that comes
+    // before it -- including the rest of this very extension, just
+    // not the binder bytes themselves. Built by hand (not via ext()
+    // above, which can't do this two-step dance): first with a
+    // correctly-sized all-zero placeholder binder, so the hash input
+    // can be assembled and measured, then patched with the real
+    // value, all before anything is committed to handshake_messages
+    // (that only happens once, below, in the real handshake_packet()
+    // call).
+    int(0..) binder_len = [int(0..)]psk_hash->digest_size();
+    int obfuscated_age =
+      (((time(1) - session->tls13_ticket_issue_time) * 1000) +
+       session->tls13_ticket_age_add) & 0xffffffff;
+
+    Buffer identities = Buffer();
+    identities->add_hstring([string(8bit)]session->ticket, 2);
+    identities->add_int(obfuscated_age, 4);
+
+    Buffer binders = Buffer();
+    binders->add_hstring("\0" * binder_len, 1);
+
+    Buffer psk_ext = Buffer();
+    psk_ext->add_hstring(identities, 2);
+    psk_ext->add_hstring(binders, 2);
+
+    extensions->add_int(EXTENSION_pre_shared_key, 2);
+    extensions->add_hstring(psk_ext, 2);
     struct->add_hstring(extensions, 2);
+
+    string(8bit) placeholder_wire =
+      sprintf("%1c%3H", HANDSHAKE_client_hello, (string(8bit))struct);
+    // 2-byte binders-list length prefix + 1-byte entry length prefix
+    // + the (placeholder) binder itself.
+    int binders_field_bytes = 3 + binder_len;
+    string(8bit) truncated =
+      placeholder_wire[..sizeof(placeholder_wire)-binders_field_bytes-1];
+    string(8bit) truncated_hash =
+      [string(8bit)]psk_hash->hash((string(8bit))handshake_messages + truncated);
+
+    KeySchedule tmp_ks = KeySchedule([object(Crypto.Hash)]psk_hash);
+    tmp_ks->generate_early_secret([string(8bit)]session->tls13_psk);
+    string(8bit) binder_key =
+      tmp_ks->derive_secret([string(8bit)]tmp_ks->early_secret,
+                            "res binder", [string(8bit)]psk_hash->hash(""));
+    string(8bit) binder = tmp_ks->verify_data(binder_key, truncated_hash);
+
+    // Patch in the real binder (only the raw bytes -- the length
+    // prefixes around it are already correctly sized).
+    string(8bit) patched =
+      ((string(8bit))struct)[..sizeof(struct)-binder_len-1] + binder;
+    struct = Buffer(patched);
+  } else if (sizeof(extensions) && (version >= PROTOCOL_TLS_1_0)) {
+    struct->add_hstring(extensions, 2);
+  }
 
   SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", struct);
   Packet ret = handshake_packet(HANDSHAKE_client_hello, struct);
@@ -524,6 +681,320 @@ protected int(-1..1) got_new_session_ticket(Buffer input)
   return 0;
 }
 
+//! TLS 1.3 (@rfc{8446:4.6.1@}) analogue of @[got_new_session_ticket()]
+//! -- a @[HANDSHAKE_new_session_ticket] received post-handshake
+//! (@expr{handshake_state == STATE_handshake_finished@}), carrying a
+//! resumption PSK rather than TLS 1.0-1.2's master_secret-based
+//! ticket.
+//!
+//! Stores the ticket and derived PSK on @[session], so that a future
+//! @[ClientConnection] created with this same @expr{Session@} object
+//! (see @[create()]'s @expr{session@} parameter) can offer it for
+//! resumption via @[client_hello()].
+protected void got_new_session_ticket_1_3(Buffer input)
+{
+  int lifetime = input->read_int(4);
+  int age_add = input->read_int(4);
+  string(8bit) ticket_nonce = input->read_hstring(1);
+  string(8bit) ticket = input->read_hstring(2);
+  input->read_hstring(2); // Extensions: none defined that we act on.
+
+  string(8bit) psk =
+    key_schedule->expand_label(
+      [string(8bit)]key_schedule->resumption_master_secret,
+      "resumption", ticket_nonce, key_schedule->hash_size);
+
+  session->ticket = ticket;
+  session->ticket_expiry_time = time(1) + lifetime;
+  session->tls13_psk = psk;
+  session->tls13_ticket_age_add = age_add;
+  session->tls13_ticket_issue_time = time(1);
+}
+
+//! TLS 1.3 (@rfc{8446:4.6.3@}): update our own sending keys, and
+//! optionally ask the server to reciprocate with its own KeyUpdate.
+//! May be called at any time once the handshake has completed.
+//!
+//! @seealso
+//!   @[handle_key_update_1_3()]
+void update_keys(int(0..1) request_peer_update)
+{
+  key_schedule->client_application_traffic_secret =
+    send_key_update(request_peer_update,
+                    [string(8bit)]key_schedule->client_application_traffic_secret);
+}
+
+//! TLS 1.3 (@rfc{8446:4.6.3@}) post-handshake KeyUpdate, received
+//! while idle (@expr{STATE_handshake_finished@}).
+protected int(-1..0) handle_key_update_1_3(Buffer input)
+{
+  int request_update = input->read_int(1);
+  COND_FATAL((request_update != KEY_UPDATE_not_requested) &&
+             (request_update != KEY_UPDATE_requested),
+             ALERT_illegal_parameter,
+             "Invalid KeyUpdate request_update value.\n");
+
+  // RFC 8446 7.2/4.6.3: the receiver of a KeyUpdate updates its own
+  // receiving keys immediately, applying to the next record it reads.
+  key_schedule->server_application_traffic_secret =
+    key_schedule->update_traffic_secret(
+      [string(8bit)]key_schedule->server_application_traffic_secret);
+  current_read_state =
+    new_traffic_state([string(8bit)]key_schedule->server_application_traffic_secret, 0);
+
+  if (request_update == KEY_UPDATE_requested) {
+    // update_keys() itself updates our sending keys too, as any
+    // KeyUpdate send does -- not a second, redundant update.
+    update_keys(KEY_UPDATE_not_requested);
+  }
+  return 0;
+}
+
+//! TLS 1.3 (@rfc{8446:4.1.4@}) HelloRetryRequest handling, invoked
+//! from @expr{STATE_wait_for_hello@}'s @[HANDSHAKE_server_hello] case
+//! when the Random field equals @[TLS13_HRR_RANDOM] -- RFC 8446 gives
+//! HelloRetryRequest no wire message type of its own, so that's the
+//! only way to recognize one.
+//!
+//! @param cipher_suite
+//!   Already read off @[input] by the caller (a HelloRetryRequest
+//!   shares @[HANDSHAKE_server_hello]'s wire shape up to and including
+//!   this field) -- needed here only to look up the transcript hash
+//!   algorithm, since the real @expr{session->cipher_spec@} isn't set
+//!   up until the real ServerHello that (hopefully) follows.
+//! @param input
+//!   The rest of the HelloRetryRequest body (just the extensions --
+//!   the caller has already consumed everything up to and including
+//!   legacy_compression_method), not yet parsed.
+//! @param raw
+//!   The raw packet; added to the transcript by this function (after
+//!   the message_hash substitution below) rather than by the caller.
+protected int(-1..0) handle_hello_retry_request_1_3(int cipher_suite,
+                                                   Buffer input,
+                                                   Stdio.Buffer raw)
+{
+  // RFC 8446 4.1.4: "clients MUST abort the handshake with an
+  // "unexpected_message" alert" on a second HelloRetryRequest.
+  COND_FATAL(got_hello_retry_request, ALERT_unexpected_message,
+             "Received a second HelloRetryRequest.\n");
+  got_hello_retry_request = 1;
+
+  // NB: legacy_compression_method has already been read off input by
+  // our caller (the shared prefix of ServerHello/HelloRetryRequest
+  // parsing) -- only the extensions remain.
+
+  array(int)|zero suite_info = [array(int)|zero]CIPHER_SUITES[cipher_suite];
+  object(Crypto.Hash)|zero hash =
+    suite_info && [object(Crypto.Hash)]HASH_lookup[suite_info[2]];
+  COND_FATAL(!hash, ALERT_handshake_failure,
+             "Unsupported cipher suite in HelloRetryRequest.\n");
+
+  int retry_group = -1;
+  if (sizeof(input)) {
+    Stdio.Buffer extensions = input->read_hbuffer(2);
+    while (sizeof(extensions)) {
+      int extension_type = extensions->read_int(2);
+      Buffer extension_data = Buffer(extensions->read_hstring(2));
+      if (extension_type == EXTENSION_key_share) {
+        // RFC 8446 4.2.8: HelloRetryRequest's key_share extension_data
+        // is a bare NamedGroup, not a full KeyShareEntry.
+        retry_group = extension_data->read_int(2);
+      }
+      // NB: supported_versions may also legitimately appear (echoing
+      // 1.3); nothing else is expected or acted on.
+    }
+  }
+
+  COND_FATAL(retry_group == -1 || !has_value(context->ecc_curves, retry_group),
+             ALERT_illegal_parameter,
+             "HelloRetryRequest named a group we didn't offer.\n");
+
+  // RFC 8446 4.4.1: replace ClientHello1 in the transcript with a
+  // synthetic message_hash entry, then hash in the actual
+  // HelloRetryRequest bytes after it (unlike ClientHello1, the HRR
+  // itself *is* hashed normally).
+  string(8bit) ch1_hash = hash->hash((string(8bit))handshake_messages);
+  handshake_messages = Buffer();
+  handshake_messages->add(sprintf("%1c%3H", HANDSHAKE_message_hash, ch1_hash));
+  add_handshake_message(raw);
+
+  // RFC 8446 4.1.2: resend an otherwise-unmodified ClientHello with a
+  // key_share for exactly the requested group.
+  send_packet(client_hello(session->server_name, UNDEFINED, retry_group));
+  return 0;
+}
+
+//! TLS 1.3 (RFC 8446 4) continuation of ClientHello/ServerHello
+//! processing for @expr{version >= PROTOCOL_TLS_1_3@}, replacing the
+//! resumption-id/ServerKeyExchange-oriented code in
+//! @expr{STATE_wait_for_hello@} for TLS 1.2 and earlier.
+//!
+//! @note
+//!   Client certificate authentication is not implemented yet -- see
+//!   @tt{TLS13_PLAN.md@}. A HelloRetryRequest (@rfc{8446:4.1.4@})
+//!   received before this real ServerHello is handled separately, in
+//!   @[handle_hello_retry_request_1_3()].
+protected int(-1..0) got_server_hello_1_3(int server_key_share_group,
+                                        string(8bit) server_key_share_key,
+                                        int(0..1) selected_psk)
+{
+  // The earlier session->set_cipher_suite() call (above, in the TLS
+  // 1.2-and-earlier-shaped code) ran before the supported_versions
+  // extension had updated `version` from the ServerHello legacy
+  // field (always {3,3}) to the real negotiated version, so the
+  // resulting CipherSpec has TLS 1.2-shaped AEAD iv_size/
+  // explicit_iv_size (Cipher.pmod's TLS 1.3 override is gated on
+  // version). Redo it now that `version` is correct.
+  COND_FATAL(!session->set_cipher_suite(session->cipher_suite, version,
+                                        context->signature_algorithms, 512),
+             ALERT_handshake_failure, "Unsupported cipher suite.\n");
+
+  // NB: Not "the group we didn't offer" -- client_key_share_group is
+  // updated by client_hello() on a HelloRetryRequest retry, so by
+  // this point it names whatever group we most recently offered.
+  COND_FATAL(server_key_share_group != client_key_share_group,
+             ALERT_handshake_failure,
+             "Server's final key_share group doesn't match what we "
+             "most recently offered.\n");
+
+  string(8bit)|zero shared_secret =
+    Cipher.compute_key_share_secret(client_key_share_group,
+                                    client_key_share_secret,
+                                    server_key_share_key);
+  COND_FATAL(!shared_secret, ALERT_decode_error, "Bad key_share.\n");
+
+  // NB: Certificate/CertificateVerify simply won't arrive below when
+  // resuming (RFC 8446 4.1.3 has the server omit them entirely), so
+  // no special-casing is needed in handle_handshake_1_3() for that --
+  // this just mirrors the TLS <= 1.2 meaning of reuse (abbreviated
+  // handshake, no fresh certificate exchange).
+  reuse = selected_psk;
+
+  Crypto.Hash hash = [object(Crypto.Hash)]session->cipher_spec->hash;
+  key_schedule = KeySchedule(hash);
+  // RFC 8446 7.1: Early Secret is always derived, either from the
+  // real PSK (if the server echoed our offered identity) or an
+  // all-zero one (if not, or we didn't offer one at all).
+  key_schedule->generate_early_secret(selected_psk &&
+                                      [string(8bit)]session->tls13_psk);
+  key_schedule->generate_handshake_secret([string(8bit)]shared_secret);
+
+  string(8bit) hs_hash = transcript_hash(); // Hash(ClientHello..ServerHello).
+  key_schedule->client_handshake_traffic_secret =
+    key_schedule->derive_secret(key_schedule->handshake_secret,
+                                "c hs traffic", hs_hash);
+  key_schedule->server_handshake_traffic_secret =
+    key_schedule->derive_secret(key_schedule->handshake_secret,
+                                "s hs traffic", hs_hash);
+
+  // Ready to decrypt EncryptedExtensions/Certificate/CertificateVerify/
+  // Finished.
+  current_read_state =
+    new_traffic_state([string(8bit)]key_schedule->server_handshake_traffic_secret, 0);
+
+  handshake_state = STATE_wait_for_peer;
+  return 0;
+}
+
+//! TLS 1.3 (RFC 8446 4) handling of the server's post-ServerHello
+//! flight, called from @expr{STATE_wait_for_peer@} for
+//! @expr{version >= PROTOCOL_TLS_1_3@}.
+int(-1..1) handle_handshake_1_3(int type, Buffer input, Stdio.Buffer raw)
+{
+  switch (type) {
+  default:
+    COND_FATAL(1, ALERT_unexpected_message,
+              sprintf("Unexpected server message: %s.\n",
+                      fmt_constant(type, "HANDSHAKE")));
+    break;
+
+  case HANDSHAKE_encrypted_extensions:
+    // Minimal for now: nothing is negotiated here yet (ALPN/SNI-ack/
+    // other extensions), so there's nothing to act on -- but the
+    // (possibly empty) extensions vector must still be consumed, or
+    // the generic post-dispatch "extraneous data" check in
+    // Connection.pike's handshake loop will reject it.
+    input->read_hstring(2);
+    add_handshake_message(raw);
+    break;
+
+  case HANDSHAKE_certificate_request:
+    COND_FATAL(1, ALERT_handshake_failure,
+              "Client certificate authentication not implemented "
+              "for TLS 1.3.\n");
+    break;
+
+  case HANDSHAKE_certificate:
+    if (!handle_certificates_1_3(input))
+      return -1;
+    add_handshake_message(raw);
+    break;
+
+  case HANDSHAKE_certificate_verify:
+    // NB: Must validate against the transcript hash *before* this
+    // message is added -- CertificateVerify doesn't sign itself.
+    if (validate_certificate_verify(input, SIGN_server_certificate_verify) < 0)
+      return -1;
+    add_handshake_message(raw);
+    break;
+
+  case HANDSHAKE_finished:
+    {
+      string(8bit) expected =
+        key_schedule->verify_data(
+          [string(8bit)]key_schedule->server_handshake_traffic_secret,
+          transcript_hash());
+      string(8bit) digest = input->read(sizeof(expected));
+      COND_FATAL(digest != expected, ALERT_unexpected_message,
+                "Digests differ.\n");
+      server_verify_data = digest;
+      add_handshake_message(raw);
+
+      key_schedule->generate_master_secret();
+      string(8bit) ap_hash = transcript_hash(); // Includes server Finished.
+      key_schedule->client_application_traffic_secret =
+        key_schedule->derive_secret([string(8bit)]key_schedule->master_secret,
+                                    "c ap traffic", ap_hash);
+      key_schedule->server_application_traffic_secret =
+        key_schedule->derive_secret([string(8bit)]key_schedule->master_secret,
+                                    "s ap traffic", ap_hash);
+      key_schedule->exporter_master_secret =
+        key_schedule->derive_secret([string(8bit)]key_schedule->master_secret,
+                                    "exp master", ap_hash);
+
+      // Our Finished is the last message sent under the handshake
+      // traffic secret.
+      current_write_state =
+        new_traffic_state([string(8bit)]key_schedule->client_handshake_traffic_secret, 1);
+
+      string(8bit) verify_data =
+        key_schedule->verify_data(
+          [string(8bit)]key_schedule->client_handshake_traffic_secret,
+          transcript_hash());
+      send_packet_1_3(handshake_packet(HANDSHAKE_finished, verify_data));
+      client_verify_data = verify_data;
+
+      // Nothing more is sent under the handshake traffic secret, and
+      // nothing more is received under it either.
+      current_write_state =
+        new_traffic_state([string(8bit)]key_schedule->client_application_traffic_secret, 1);
+      current_read_state =
+        new_traffic_state([string(8bit)]key_schedule->server_application_traffic_secret, 0);
+
+      // RFC 8446 7.1: resumption_master_secret is derived over the
+      // transcript including our own Finished.
+      key_schedule->resumption_master_secret =
+        key_schedule->derive_secret([string(8bit)]key_schedule->master_secret,
+                                    "res master", transcript_hash());
+
+      handshake_messages = Buffer();
+      handshake_state = STATE_handshake_finished;
+      return 1;
+    }
+  }
+  return 0;
+}
+
 //! Do handshake processing.
 //!
 //! @param type
@@ -570,9 +1041,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
   default:
     error( "Internal error\n" );
   case STATE_wait_for_hello:
-    add_handshake_message(raw);
     switch(type) {
     default:
+      add_handshake_message(raw);
       COND_FATAL(1, ALERT_unexpected_message, "Expected server hello.\n");
       break;
     case HANDSHAKE_server_hello:
@@ -584,7 +1055,29 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       int cipher_suite = input->read_int(2);
       int compression_method = input->read_int(1);
 
-      if( !has_value(context->supported_versions, version) )
+      if (server_random == TLS13_HRR_RANDOM) {
+        // RFC 8446 4.1.4: HelloRetryRequest shares HANDSHAKE_server_hello's
+        // wire type -- only this magic Random value distinguishes it.
+        // handle_hello_retry_request_1_3() does its own transcript
+        // bookkeeping (it must replace ClientHello1 with a synthetic
+        // message_hash entry before hashing in anything else), so --
+        // unlike every other case here -- don't add_handshake_message(raw)
+        // first.
+        if (handle_hello_retry_request_1_3(cipher_suite, input, raw) < 0)
+          return -1;
+        break;
+      }
+
+      add_handshake_message(raw);
+
+      if( !has_value(context->supported_versions, version) &&
+          // RFC 8446 4.1.3: a TLS 1.3 ServerHello's legacy_version is
+          // always {3,3} -- the real version is only known once the
+          // supported_versions extension is parsed below, so don't
+          // reject the legacy field alone when we might be
+          // negotiating 1.3.
+          !((version == PROTOCOL_TLS_1_2) &&
+            has_value(context->supported_versions, PROTOCOL_TLS_1_3)) )
       {
         SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested {%s}).\n",
                        fmt_version(version),
@@ -624,6 +1117,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 		     session_id, cipher_suite, compression_method);
 
       int missing_secure_renegotiation = secure_renegotiation;
+      int server_key_share_group = -1;
+      string(8bit) server_key_share_key = "";
+      int(0..1) selected_psk;
 
       if (sizeof(input)) {
 	Stdio.Buffer extensions = input->read_hbuffer(2);
@@ -759,6 +1255,26 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             }
             break;
 
+          case EXTENSION_key_share:
+            {
+              // RFC 8446 4.2.8: ServerHello KeyShareServerHello -- a
+              // single KeyShareEntry, not a list.
+              server_key_share_group = extension_data->read_int(2);
+              server_key_share_key = extension_data->read_hstring(2);
+            }
+            break;
+
+          case EXTENSION_pre_shared_key:
+            {
+              // RFC 8446 4.2.11: ServerHello's extension_data is just
+              // the 2-byte selected_identity index -- we only ever
+              // offer identity 0, so any non-error response selects
+              // that one.
+              extension_data->read_int(2);
+              selected_psk = 1;
+            }
+            break;
+
 	  case EXTENSION_encrypt_then_mac:
 	    {
 	      if (context->encrypt_then_mac) {
@@ -801,6 +1317,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       COND_FATAL(missing_secure_renegotiation, ALERT_handshake_failure,
                  "Missing secure renegotiation extension.\n");
 
+      if (version >= PROTOCOL_TLS_1_3) {
+        // See SSL.ServerConnection->reply_new_session_1_3(): TLS 1.3's
+        // handshake differs too much from TLS 1.2 and earlier to
+        // share the resumption/ServerKeyExchange/Certificate code
+        // below.
+        return got_server_hello_1_3(server_key_share_group,
+                                   server_key_share_key, selected_psk);
+      }
+
       if ((session_id == session->identity) && sizeof(session_id)) {
 	SSL3_DEBUG_MSG("Resuming session %O.\n", session_id);
 
@@ -837,6 +1362,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     break;
 
   case STATE_wait_for_peer:
+    if (version >= PROTOCOL_TLS_1_3) {
+      // NB: Unlike the TLS 1.2-and-earlier case below, handshake
+      // transcript bookkeeping is done inside handle_handshake_1_3()
+      // itself -- Finished and CertificateVerify must each be
+      // validated against the transcript *before* they're added to
+      // it, so a single unconditional add_handshake_message() here
+      // (ahead of knowing which message this is) would be wrong.
+      return handle_handshake_1_3(type, input, raw);
+    }
     add_handshake_message(raw);
     switch(type)
     {
@@ -947,6 +1481,24 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       handshake_state = STATE_handshake_finished;
 
       return 1;			// We're done shaking hands
+    }
+
+  case STATE_handshake_finished:
+    // TLS 1.3: NewSessionTicket (@rfc{8446:4.6.1@}) and KeyUpdate
+    // (@rfc{8446:4.6.3@}) are post-handshake messages -- they can
+    // legitimately arrive here, after @[handle_handshake_1_3()]
+    // already returned 1. Not hashed into @[handshake_messages]:
+    // nothing checks that transcript again once the 1-RTT handshake
+    // itself is done.
+    switch (type) {
+      case HANDSHAKE_new_session_ticket:
+        got_new_session_ticket_1_3(input);
+        return 0;
+      case HANDSHAKE_key_update:
+        return handle_key_update_1_3(input);
+      default:
+        COND_FATAL(1, ALERT_unexpected_message,
+                   "Unexpected post-handshake message.\n");
     }
   }
 
