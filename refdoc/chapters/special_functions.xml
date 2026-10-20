@@ -106,7 +106,7 @@ might expect. If you want to know the type after evaluation, use
   its argument, which must be an object API-compatible with
   <ref>Concurrent.Future</ref>, it calls
   <ref>Concurrent.Future()->on_await()</ref> in the object with
-  <ref>continue::this_function</ref> as the argumnet and returns
+  <ref>continue::this_function</ref> as the argument and returns
   <tt>UNDEFINED</tt> from the current function. This causes it to
   resume with the success value of the promise or throw the failure
   value.</p>
