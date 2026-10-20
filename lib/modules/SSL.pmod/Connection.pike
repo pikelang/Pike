@@ -76,6 +76,34 @@ string(8bit) server_verify_data = "";
 //!   @[KeySchedule], @[new_traffic_state()]
 KeySchedule|zero key_schedule;
 
+//! TLS 1.3 and later (@rfc{8446:4.2.10@}): true once 0-RTT early data
+//! has been accepted for this connection -- on the client side, set
+//! once the server's EncryptedExtensions acknowledges accepting the
+//! data offered via @[ClientConnection.early_data_sent_1_3] (drives
+//! whether @[HANDSHAKE_end_of_early_data] gets sent, @rfc{8446:4.5@});
+//! on the server side, set directly by the 0-RTT accept/reject
+//! decision in @[ServerConnection.reply_new_session_1_3()] (relaxes
+//! @[got_data()]'s normal "no application data during the handshake"
+//! check for the early-data records that precede it).
+int(0..1) early_data_accepted_1_3;
+
+//! TLS 1.3 and later, server side: set when we've declined to accept
+//! 0-RTT (@rfc{8446:4.2.10@}) for a ClientHello that offered it, so
+//! the client may still have queued early-data records protected
+//! under a client_early_traffic_secret we never installed. While
+//! this is set, @[recv_packet()] skips (rather than fatally errors
+//! on) records that fail to decrypt under @[current_read_state],
+//! per @rfc{8446:2.3@}'s "skip past" guidance, until either the
+//! first successful decrypt (the client's real next flight) or
+//! @[early_data_skip_budget_1_3] is exhausted.
+protected int(0..1) skip_undecryptable_early_data_1_3;
+
+//! TLS 1.3 and later, server side: remaining ciphertext octets we
+//! are willing to discard while @[skip_undecryptable_early_data_1_3]
+//! is set, as a DoS backstop -- initialized from the context's
+//! declared @expr{max_early_data_size@} when 0-RTT is declined.
+protected int early_data_skip_budget_1_3;
+
 ProtocolVersion version;
 ProtocolVersion client_version; /* Used to check for version roll-back attacks. */
 
@@ -503,12 +531,34 @@ void new_cipher_states();
 //! @param for_write
 //!   True to set up an encrypting (write) state, false for a
 //!   decrypting (read) state.
-State new_traffic_state(string(8bit) secret, int(0..1) for_write)
+//!
+//! @param ks
+//!   TLS 1.3 0-RTT only: an explicit @[KeySchedule] to use instead of
+//!   @[key_schedule] -- needed because @[ClientConnection.client_hello()]
+//!   derives @expr{client_early_traffic_secret@} (@rfc{8446:7.1@}) from
+//!   a throwaway, PSK-binder-only key schedule object, before the real
+//!   @[key_schedule] field exists (that isn't built until the
+//!   ServerHello arrives). @expr{traffic_key_iv()@} only depends on
+//!   the key schedule's hash algorithm, which is identical either way
+//!   (see client_hello()'s own reasoning for reusing a throwaway
+//!   object for the PSK binder in the first place), so this is safe.
+State new_traffic_state(string(8bit) secret, int(0..1) for_write,
+                        KeySchedule|void ks)
 {
   State st = State(this);
+  // This function is TLS 1.3-and-later only (see above) -- force 1.3
+  // record-protection semantics on the new State even if the
+  // connection's own `version` field hasn't been bumped to 1.3 yet.
+  // That's only ever true when deriving the client's 0-RTT early-data
+  // write state in ClientConnection.client_hello(), which runs before
+  // any ServerHello (and hence before `version` is updated) has ever
+  // been seen -- every other caller already has version >= 1.3 by the
+  // time it gets here, making this a no-op for them.
+  st->version = PROTOCOL_TLS_1_3;
   array(string(8bit)) key_iv =
-    key_schedule->traffic_key_iv(secret, session->cipher_spec->key_material,
-                                 session->cipher_spec->iv_size);
+    (ks || key_schedule)->traffic_key_iv(
+      secret, session->cipher_spec->key_material,
+      session->cipher_spec->iv_size);
   st->crypt = session->cipher_spec->bulk_cipher_algorithm();
   if (for_write) {
     st->crypt->set_encrypt_key(key_iv[0]);
@@ -670,6 +720,41 @@ protected object(Packet)|zero recv_packet()
       // this arrives, which would otherwise fail to "decrypt" 1
       // plaintext byte and desync the read sequence number for
       // everything that follows).
+      return recv_packet();
+    }
+    if (skip_undecryptable_early_data_1_3 &&
+        (packet->content_type == PACKET_application_data)) {
+      // RFC 8446 2.3/4.2.10: we declined 0-RTT, but the client may
+      // have already queued early-data records under a key we never
+      // installed. Probe a decrypt; a failure here just means "yet
+      // another early-data record we can't read" rather than a real
+      // protocol error, up to our skip budget.
+      int ciphertext_len = sizeof(packet->fragment || "");
+      // decrypt_packet() unconditionally advances current_read_state's
+      // own AEAD sequence number on every attempt, success or failure
+      // -- but a discarded stray early-data record was never actually
+      // part of the handshake read key's real sequence space (it's
+      // protected under a different key current_read_state knows
+      // nothing about). Undo the bump on failure, so the genuine first
+      // record under this key (the client's real next flight) is
+      // still decrypted with the sequence number its sender expects.
+      int saved_seq_num = current_read_state->next_seq_num;
+      object(Alert)|object(Packet) decrypted =
+        current_read_state->decrypt_packet(packet);
+      if (!decrypted->is_alert) {
+        // First successful decrypt: the client's real next flight
+        // (under the handshake read key), protected normally again.
+        skip_undecryptable_early_data_1_3 = 0;
+        return decrypted;
+      }
+      current_read_state->next_seq_num = saved_seq_num;
+      early_data_skip_budget_1_3 -= ciphertext_len;
+      if (early_data_skip_budget_1_3 < 0) {
+        // Budget exhausted -- stop pretending this is early data and
+        // report the failure normally.
+        skip_undecryptable_early_data_1_3 = 0;
+        return decrypted;
+      }
       return recv_packet();
     }
     return current_read_state->decrypt_packet(packet);
@@ -1508,7 +1593,11 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
     case PACKET_application_data:
       SSL3_DEBUG_MSG("SSL.Connection: APPLICATION_DATA\n");
 
-      COND_FATAL(state & CONNECTION_handshaking,
+      // RFC 8446 2.3: accepted 0-RTT early data arrives as ordinary
+      // application_data records before the handshake completes --
+      // allow it through specifically in that case.
+      COND_FATAL((state & CONNECTION_handshaking) &&
+                 !early_data_accepted_1_3,
                  ALERT_unexpected_message,
                  "Handshake not finished yet!\n");
 

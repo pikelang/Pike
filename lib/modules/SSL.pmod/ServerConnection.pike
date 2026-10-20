@@ -350,13 +350,23 @@ protected int(-1..0) send_hello_retry_request_1_3(string(8bit) session_id,
 
 //! Build a TLS 1.3 @[HANDSHAKE_encrypted_extensions] @[Packet].
 //!
+//! @param early_data_accepted
+//!   True to include the empty @[EXTENSION_early_data] accept
+//!   acknowledgement (@rfc{8446:4.2.10@}).
+//!
 //! @note
-//!   Minimal for now: no ALPN/SNI-ack/other extensions are
+//!   Minimal otherwise: no ALPN/SNI-ack/other extensions are
 //!   negotiated here yet.
-protected Packet encrypted_extensions_packet_1_3()
+protected Packet encrypted_extensions_packet_1_3(int(0..1)|void
+                                                early_data_accepted)
 {
+  Buffer extensions = Buffer();
+  if (early_data_accepted) {
+    extensions->add_int(EXTENSION_early_data, 2);
+    extensions->add_hstring("", 2);
+  }
   return handshake_packet(HANDSHAKE_encrypted_extensions,
-                          Buffer()->add_hstring("", 2));
+                          Buffer()->add_hstring(extensions, 2));
 }
 
 //! Build a TLS 1.3 @[HANDSHAKE_certificate] @[Packet]
@@ -395,6 +405,9 @@ protected void send_new_session_ticket_1_3()
       [string(8bit)]key_schedule->resumption_master_secret,
       "resumption", ticket_nonce, key_schedule->hash_size);
 
+  // encode_ticket_1_3()'s own @note: it has no access to
+  // connection-level ALPN state, so set it here first.
+  session->tls13_alpn_protocol = application_protocol;
   array(string(8bit)|int)|zero ticket_info =
     context->encode_ticket_1_3(session, psk);
   if (!ticket_info) return;
@@ -407,7 +420,16 @@ protected void send_new_session_ticket_1_3()
   struct->add_int(age_add, 4);
   struct->add_hstring(ticket_nonce, 1);
   struct->add_hstring(ticket, 2);
-  struct->add_hstring("", 2); // No extensions.
+
+  Buffer extensions = Buffer();
+  if (context->accept_early_data && (context->max_early_data_size > 0)) {
+    // RFC 8446 4.6.1: advertise the ticket's 0-RTT allowance -- kept
+    // in sync with the same condition encode_ticket_1_3() used to set
+    // session->tls13_max_early_data_size (above).
+    extensions->add_int(EXTENSION_early_data, 2);
+    extensions->add_hstring(sprintf("%4c", context->max_early_data_size), 2);
+  }
+  struct->add_hstring(extensions, 2);
   send_packet_1_3(handshake_packet(HANDSHAKE_new_session_ticket, struct));
 }
 
@@ -595,7 +617,9 @@ protected int(-1..0) reply_new_session_1_3(array(int) cipher_suites,
                                           string(8bit) psk_identity,
                                           string(8bit) psk_binder,
                                           int binders_total_bytes,
-                                          array(int) psk_modes)
+                                          array(int) psk_modes,
+                                          int(0..1) client_offered_early_data,
+                                          int obfuscated_ticket_age)
 {
   client_offered_psk_dhe_ke = has_value(psk_modes, PSK_KE_psk_dhe_ke);
 
@@ -714,6 +738,54 @@ protected int(-1..0) reply_new_session_1_3(array(int) cipher_suites,
     Cipher.compute_key_share_secret(group, our_share[0], peer_key);
   COND_FATAL(!shared_secret, ALERT_decode_error, "Bad key_share.\n");
 
+  // RFC 8446 2.3/4.2.10: decide whether to accept 0-RTT, before
+  // server_hello_packet_1_3() (below) starts appending to the
+  // transcript -- client_early_traffic_secret is derived from the
+  // ClientHello-only transcript hash. Only ever possible on top of
+  // PSK resumption, and never after a HelloRetryRequest (the client
+  // MUST NOT re-offer early_data on a retry, and by construction
+  // doesn't -- but reject defensively if it does anyway).
+  int(0..1) accept_0rtt = 0;
+  string(8bit) ch_hash = transcript_hash();
+  if (psk_session && client_offered_early_data && !sent_hello_retry_request &&
+      context->accept_early_data && (context->max_early_data_size > 0) &&
+      ([int]psk_session->tls13_max_early_data_size > 0) &&
+      (!psk_session->tls13_alpn_protocol ||
+       ([string(8bit)]psk_session->tls13_alpn_protocol == application_protocol))) {
+    // RFC 8446 4.2.10: demote to ordinary (non-0-RTT) resumption,
+    // rather than failing the handshake, if the ticket's claimed age
+    // doesn't match how old we think it actually is, within our
+    // tolerance.
+    int ticket_age_ms =
+      (obfuscated_ticket_age - [int]psk_session->tls13_ticket_age_add) &
+      0xffffffff;
+    int actual_age_ms =
+      (time(1) - [int]psk_session->tls13_ticket_issue_time) * 1000;
+    accept_0rtt = (abs(ticket_age_ms - actual_age_ms) <=
+                   context->early_data_ticket_age_tolerance * 1000);
+  }
+
+  if (accept_0rtt) {
+    string(8bit) client_early_traffic_secret =
+      key_schedule->derive_secret([string(8bit)]key_schedule->early_secret,
+                                  "c e traffic", ch_hash);
+    current_read_state = new_traffic_state(client_early_traffic_secret, 0);
+    early_data_accepted_1_3 = 1;
+    // Single-use ticket (RFC 8446 8.1): only purge now, after the
+    // binder has already validated (try_resume_psk_1_3(), above) --
+    // never before, since the ticket identity travels in cleartext
+    // and a pre-validation purge would let an attacker burn a real
+    // client's ticket with a forged ClientHello.
+    context->purge_session(psk_session);
+  } else if (client_offered_early_data) {
+    // RFC 8446 2.3: we're declining 0-RTT, but the client may already
+    // have queued early-data records optimistically -- tolerate (by
+    // skipping, not fatally erroring on) ones that fail to decrypt,
+    // up to our declared budget, until its real next flight arrives.
+    skip_undecryptable_early_data_1_3 = 1;
+    early_data_skip_budget_1_3 = context->max_early_data_size;
+  }
+
   send_packet_1_3(server_hello_packet_1_3(session_id, group,
                                         [string(8bit)]our_share[1],
                                         !!psk_session));
@@ -738,7 +810,7 @@ protected int(-1..0) reply_new_session_1_3(array(int) cipher_suites,
   current_write_state =
     new_traffic_state([string(8bit)]key_schedule->server_handshake_traffic_secret, 1);
 
-  send_packet_1_3(encrypted_extensions_packet_1_3());
+  send_packet_1_3(encrypted_extensions_packet_1_3(accept_0rtt));
   if (!psk_session) {
     // RFC 8446 4.1.3: Certificate/CertificateVerify MUST be omitted
     // entirely when resuming via PSK.
@@ -755,9 +827,15 @@ protected int(-1..0) reply_new_session_1_3(array(int) cipher_suites,
   send_packet_1_3(handshake_packet(HANDSHAKE_finished, verify_data));
   server_verify_data = verify_data;
 
-  // Ready to receive the client's (encrypted) Finished.
-  current_read_state =
-    new_traffic_state([string(8bit)]key_schedule->client_handshake_traffic_secret, 0);
+  if (!accept_0rtt) {
+    // Ready to receive the client's (encrypted) Finished. If 0-RTT
+    // was accepted instead, current_read_state is already set to
+    // client_early_traffic_secret (above), and stays that way until
+    // the client's HANDSHAKE_end_of_early_data switches it over (see
+    // STATE_wait_for_finish).
+    current_read_state =
+      new_traffic_state([string(8bit)]key_schedule->client_handshake_traffic_secret, 0);
+  }
 
   key_schedule->generate_master_secret();
   string(8bit) ap_hash = transcript_hash(); // Includes server Finished.
@@ -930,8 +1008,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      session_id, fmt_cipher_suites(cipher_suites),
                      compression_methods);
 
-      // NB: Collected but unused until the TLS 1.3 0-RTT phase lands.
-      Stdio.Buffer early_data = Stdio.Buffer();
       int missing_secure_renegotiation = secure_renegotiation;
       mapping(int:string(8bit)) client_key_shares = ([]);
       // TLS 1.3 (RFC 8446 4.2.11) PSK resumption offer, if any -- see
@@ -942,7 +1018,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       string(8bit) psk_identity = "";
       string(8bit) psk_binder = "";
       int binders_total_bytes;
+      // RFC 8446 4.2.11.1: the first offered identity's obfuscated
+      // ticket age, reversed in reply_new_session_1_3()'s 0-RTT
+      // freshness check.
+      int obfuscated_ticket_age;
       array(int) psk_modes = ({});
+      // RFC 8446 4.2.10: true if the client offered a bare (empty)
+      // early_data extension -- independent of whether we go on to
+      // accept 0-RTT.
+      int(0..1) client_offered_early_data;
       if (sizeof(input))
       {
 	Stdio.Buffer extensions = input->read_hbuffer(2);
@@ -1243,7 +1327,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             break;
 
           case EXTENSION_early_data:
-            early_data->add(extension_data);
+            // RFC 8446 4.2.10: the ClientHello's early_data extension
+            // carries no data of its own -- it's a bare flag.
+            COND_FATAL(size, ALERT_illegal_parameter,
+                       "early_data: Invalid extension.\n");
+            client_offered_early_data = 1;
             break;
 
           case EXTENSION_padding:
@@ -1300,9 +1388,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
               // resumption PSK per ClientHello -- see TLS13_PLAN.md).
               Stdio.Buffer identities = extension_data->read_hbuffer(2);
               array(string(8bit)) offered_identities = ({});
+              array(int) offered_ticket_ages = ({});
               while (sizeof(identities)) {
                 offered_identities += ({ identities->read_hstring(2) });
-                identities->read_int(4); // obfuscated_ticket_age: unused.
+                offered_ticket_ages += ({ identities->read_int(4) });
               }
               int binders_list_len = extension_data->read_int(2);
               string(8bit) binders_raw = extension_data->read(binders_list_len);
@@ -1315,6 +1404,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
               if (sizeof(offered_identities) && sizeof(offered_binders)) {
                 psk_identity = offered_identities[0];
                 psk_binder = offered_binders[0];
+                obfuscated_ticket_age = offered_ticket_ages[0];
               }
             }
             break;
@@ -1359,7 +1449,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
         return reply_new_session_1_3(cipher_suites, session_id,
                                     client_key_shares, psk_identity,
                                     psk_binder, binders_total_bytes,
-                                    psk_modes);
+                                    psk_modes, client_offered_early_data,
+                                    obfuscated_ticket_age);
       }
 
       // RFC 5746 3.7: (secure_renegotiation)
@@ -1564,6 +1655,23 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
    break;
   case STATE_wait_for_finish:
     {
+      if ((version >= PROTOCOL_TLS_1_3) &&
+          (type == HANDSHAKE_end_of_early_data)) {
+        // RFC 8446 4.5: only legal when we accepted 0-RTT -- signals
+        // the client is done sending early data and has switched to
+        // its handshake traffic key for what follows (its real
+        // Finished, still awaited in this same state).
+        COND_FATAL(!early_data_accepted_1_3, ALERT_unexpected_message,
+                   "Unexpected end_of_early_data.\n");
+        COND_FATAL(sizeof(input), ALERT_decode_error,
+                   "end_of_early_data: Invalid extension.\n");
+        add_handshake_message(raw);
+        current_read_state =
+          new_traffic_state(
+            [string(8bit)]key_schedule->client_handshake_traffic_secret, 0);
+        return 0;
+      }
+
       if (type != HANDSHAKE_finished)
         COND_FATAL(1, ALERT_unexpected_message, "Expected finished.\n");
 

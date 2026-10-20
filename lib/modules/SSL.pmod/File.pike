@@ -411,6 +411,15 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //! @param session
 //!   Session to resume (if any).
 //!
+//! @param early_data
+//!   TLS 1.3 (@rfc{8446:2.3@}) 0-RTT application data to send
+//!   immediately, opportunistically -- see
+//!   @[ClientConnection.client_hello()]'s parameter doc for exactly
+//!   when this is (and isn't) actually sent as 0-RTT. Whether it was
+//!   sent/accepted is reachable via
+//!   @expr{query_connection()->early_data_sent_1_3@}/
+//!   @expr{early_data_accepted_1_3@} -- no dedicated accessor here.
+//!
 //! @returns
 //!   Returns @expr{0@} on handshaking failure in blocking mode,
 //!   and otherwise the @[Session] object for the connection.
@@ -421,13 +430,14 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //! @seealso
 //!   @[accept()]
 object(SSL.Session)|zero connect(string|void dest_addr,
-                                 SSL.Session|void session)
+                                 SSL.Session|void session,
+                                 string(8bit)|void early_data)
 {
   if (conn) error("A connection is already configured!\n");
 
   ENTER (0) {
 
-    conn = .ClientConnection(context, dest_addr, session);
+    conn = .ClientConnection(context, dest_addr, session, early_data);
 
     session = conn->session;
 

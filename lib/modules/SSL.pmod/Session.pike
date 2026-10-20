@@ -43,9 +43,26 @@ string(8bit)|zero tls13_psk;
 int tls13_ticket_age_add;
 
 //! TLS 1.3: wall-clock time (per @expr{time(1)@}) @[tls13_psk]'s
-//! ticket was received, used by the client to compute
-//! obfuscated_ticket_age when later offering it for resumption.
+//! ticket was issued/received -- set by the client (when the ticket
+//! is received) to compute obfuscated_ticket_age when later offering
+//! it for resumption, and by the server (when the ticket is issued)
+//! to validate that same age for 0-RTT acceptance (@rfc{8446:4.2.10@}).
 int tls13_ticket_issue_time;
+
+//! TLS 1.3 (@rfc{8446:4.6.1@}): maximum 0-RTT application data (in
+//! bytes) the issuer of @[tls13_psk]'s ticket will accept, @expr{0@}
+//! if the ticket doesn't support 0-RTT at all. Set on the server when
+//! issuing (from @expr{context->max_early_data_size@}) and on the
+//! client when parsing a received @[HANDSHAKE_new_session_ticket]'s
+//! @[EXTENSION_early_data].
+int tls13_max_early_data_size;
+
+//! TLS 1.3 (@rfc{8446:4.2.10@}): the ALPN protocol negotiated on the
+//! connection that issued @[tls13_psk]'s ticket, if any. RFC 8446
+//! requires checking this matches the *current* connection's
+//! negotiated ALPN protocol before accepting 0-RTT specifically (not
+//! required for plain PSK resumption). Server-side only.
+string(8bit)|zero tls13_alpn_protocol;
 
 //! Always COMPRESSION_null.
 int|zero compression_algorithm;

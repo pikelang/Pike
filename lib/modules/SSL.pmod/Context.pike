@@ -1181,6 +1181,32 @@ int session_lifetime = 600;
 //! Maximum number of sessions to keep in the cache.
 int max_sessions = 1000;
 
+//! TLS 1.3 (@rfc{8446:4.2.10@}/@rfc{8446:8@}): non-zero to accept
+//! 0-RTT early data -- both on tickets we issue (advertised via
+//! @expr{max_early_data_size@} below) and at handshake time when a
+//! client offers it. Off by default: accepting 0-RTT is a real
+//! anti-replay responsibility (this implementation mitigates it via
+//! single-use tickets, see @[ServerConnection.reply_new_session_1_3()])
+//! that shouldn't be silently opted into.
+//!
+//! @seealso
+//!   @[max_early_data_size]
+int(0..1) accept_early_data = 0;
+
+//! TLS 1.3 (@rfc{8446:4.6.1@}): maximum amount of 0-RTT application
+//! data this context is willing to accept per connection. @expr{0@}
+//! disables 0-RTT entirely regardless of @[accept_early_data] (no
+//! ticket we issue ever advertises @expr{max_early_data_size@}, and
+//! any @expr{early_data@} a client offers anyway is rejected).
+int max_early_data_size = 0;
+
+//! TLS 1.3 (@rfc{8446:4.2.10@}): tolerance, in seconds, for the
+//! ticket-age freshness check gating 0-RTT acceptance specifically
+//! (ordinary, non-0-RTT PSK resumption is unaffected by this). The
+//! RFC deliberately leaves the exact tolerance unspecified ("a small
+//! tolerance, say, 10 seconds").
+int early_data_ticket_age_tolerance = 10;
+
 mapping(string:Session) session_cache = ([]);
 
 // Remove sessions older than @[session_lifetime] from the session cache.
@@ -1301,6 +1327,14 @@ array(string(8bit)|int)|zero encode_ticket(Session session)
 //!   @expr{key_schedule->resumption_master_secret@} and a per-ticket
 //!   nonce (@rfc{8446:4.6.1@}).
 //!
+//! @note
+//!   The caller is responsible for setting @expr{session->
+//!   tls13_alpn_protocol@} (from the connection's negotiated
+//!   @expr{application_protocol@}, if any) before calling this --
+//!   that's connection-level state this @[Context] method has no
+//!   access to. @[max_early_data_size] (below) is policy this
+//!   @[Context] does own, so it's applied here directly.
+//!
 //! @returns
 //!   @array
 //!     @elem string(8bit) 0
@@ -1330,6 +1364,9 @@ array(string(8bit)|int)|zero encode_ticket_1_3(Session session,
   session->ticket_expiry_time = time(1) + 3600;
   session->tls13_psk = psk;
   session->tls13_ticket_age_add = ticket_age_add;
+  session->tls13_ticket_issue_time = time(1);
+  session->tls13_max_early_data_size =
+    (accept_early_data && (max_early_data_size > 0)) ? max_early_data_size : 0;
   string(8bit)|zero orig_id = session->identity;
   session->identity = ticket;
   record_session(session);

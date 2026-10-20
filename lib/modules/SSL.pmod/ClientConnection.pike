@@ -24,12 +24,44 @@ protected Gmp.mpz|string(8bit)|zero client_key_share_secret;
 //! HelloRetryRequest, since a client MUST abort on a second one.
 protected int(0..1) got_hello_retry_request;
 
+//! TLS 1.3 (@rfc{8446:2.3@}/@rfc{8446:4.2.10@}): true once
+//! @[client_hello()] has queued 0-RTT early-data records for this
+//! connection (independent of whether the server ends up accepting
+//! them -- see @[early_data_accepted_1_3]).
+//!
+//! @seealso
+//!   @[early_data_write_state_1_3]
+int(0..1) early_data_sent_1_3;
+
+//! TLS 1.3: the @[State] (keyed from client_early_traffic_secret)
+//! built in @[client_hello()] to send 0-RTT early-data records, kept
+//! around until either reused once more to send
+//! @[HANDSHAKE_end_of_early_data] (if the server accepted -- see
+//! @rfc{8446:4.5@}) or simply discarded (if not). Reusing the exact
+//! same object (rather than building a fresh one from the same
+//! secret) matters: a fresh @[State] would restart its AEAD sequence
+//! number at 0, reusing a nonce already used by an earlier early-data
+//! chunk and desyncing the server's own (single, continuously
+//! incrementing) read-state counter for this key.
+protected object(State)|zero early_data_write_state_1_3;
+
 protected string _sprintf(int t)
 {
   if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
 }
 
 //! Generate a @[HANDSHAKE_client_hello] @[Packet].
+//!
+//! @param early_data
+//!   TLS 1.3 (@rfc{8446:2.3@}) 0-RTT application data to send
+//!   immediately after this ClientHello, if @[session] has a usable
+//!   resumption ticket that supports it (see @[offering_psk] and
+//!   @expr{session->tls13_max_early_data_size@} below) -- opportunistic:
+//!   silently not sent as 0-RTT if the session can't support it (eg no
+//!   ticket, or @[retry_group] is set -- @rfc{8446:4.1.2@} forbids
+//!   re-offering @expr{early_data@} on a HelloRetryRequest retry). Never
+//!   automatically resent as ordinary data if that happens; see
+//!   @[early_data_sent_1_3].
 //!
 //! @param retry_group
 //!   Set when (re)sending in response to a HelloRetryRequest
@@ -39,7 +71,7 @@ protected string _sprintf(int t)
 //!   fields -- @[client_random] is *not* regenerated, reusing the
 //!   value from the original ClientHello.
 protected Packet client_hello(string(8bit)|void server_name,
-                              array(Packet)|void early_data,
+                              string(8bit)|void early_data,
                               int|void retry_group)
 {
   Buffer struct = Buffer();
@@ -293,6 +325,11 @@ protected Packet client_hello(string(8bit)|void server_name,
     (session->ticket_expiry_time > time(1));
 
   object(Crypto.Hash)|zero psk_hash;
+  // Hoisted out of the "if (offering_psk)" block below (which builds
+  // the pre_shared_key extension itself) so it can also be reused,
+  // once that block is done, for the client_early_traffic_secret
+  // derivation further down -- see offering_early_data.
+  object(KeySchedule)|zero psk_key_schedule_1_3;
   if (offering_psk) {
     array(int)|zero suite_info =
       [array(int)|zero]CIPHER_SUITES[session->cipher_suite];
@@ -303,6 +340,15 @@ protected Packet client_hello(string(8bit)|void server_name,
     if (!psk_hash || !has_value(cipher_suites, session->cipher_suite))
       offering_psk = 0;
   }
+
+  // RFC 8446 2.3/4.2.10: only offer 0-RTT alongside a PSK that
+  // supports it (no PSK, no early_secret to derive
+  // client_early_traffic_secret from), never on a HelloRetryRequest
+  // retry (4.1.2 forbids re-offering early_data there), and never
+  // more than the ticket's own advertised max_early_data_size allows.
+  int(0..1) offering_early_data =
+    offering_psk && early_data && sizeof([string(8bit)]early_data) &&
+    !retry_group && (session->tls13_max_early_data_size > 0);
 
   // When the client HELLO packet data is in the range 256-511 bytes
   // f5 SSL terminators will intepret it as SSL2 requiring an
@@ -319,21 +365,14 @@ protected Packet client_hello(string(8bit)|void server_name,
     return Buffer()->add("\0"*padding);
   };
 
-  // NB: Unused until the TLS 1.3 0-RTT phase lands (neither call site below
-  // passes early_data yet). Per RFC 8446 4.2.10 this extension's body is
-  // empty in ClientHello; the early-data records themselves travel as
-  // separate application_data records sent right after this ClientHello,
-  // encrypted under the client's early traffic secret -- the "serialize the
-  // packets into the extension body" shape below will need reworking to
-  // match that once 0-RTT is implemented.
-  ext(EXTENSION_early_data, early_data && sizeof([array]early_data)) {
-    SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d packets of early data.\n",
-		   sizeof([array]early_data));
-    Buffer buf = Buffer();
-    foreach([array] early_data, Packet p) {
-      p->send(buf);
-    }
-    return buf;
+  // RFC 8446 4.2.10: this extension's body is empty in ClientHello --
+  // the early-data records themselves travel as separate
+  // application_data records sent right after this ClientHello (see
+  // offering_early_data's use below, after the ClientHello itself is
+  // built and sent), encrypted under the client's early traffic
+  // secret, not stuffed into the extension body.
+  ext(EXTENSION_early_data, offering_early_data) {
+    return Buffer();
   };
 
   // NB: WebSphere Application Server 7.0 doesn't like having an
@@ -382,12 +421,18 @@ protected Packet client_hello(string(8bit)|void server_name,
     string(8bit) truncated_hash =
       [string(8bit)]psk_hash->hash((string(8bit))handshake_messages + truncated);
 
-    KeySchedule tmp_ks = KeySchedule([object(Crypto.Hash)]psk_hash);
-    tmp_ks->generate_early_secret([string(8bit)]session->tls13_psk);
+    // Assigned (not declared) here: hoisted to function scope so it
+    // can be reused below, once the ClientHello itself has been sent,
+    // for the client_early_traffic_secret derivation (same early_secret,
+    // same hash -- see offering_early_data's doc comment above).
+    psk_key_schedule_1_3 = KeySchedule([object(Crypto.Hash)]psk_hash);
+    psk_key_schedule_1_3->generate_early_secret([string(8bit)]session->tls13_psk);
     string(8bit) binder_key =
-      tmp_ks->derive_secret([string(8bit)]tmp_ks->early_secret,
-                            "res binder", [string(8bit)]psk_hash->hash(""));
-    string(8bit) binder = tmp_ks->verify_data(binder_key, truncated_hash);
+      psk_key_schedule_1_3->derive_secret(
+        [string(8bit)]psk_key_schedule_1_3->early_secret,
+        "res binder", [string(8bit)]psk_hash->hash(""));
+    string(8bit) binder =
+      psk_key_schedule_1_3->verify_data(binder_key, truncated_hash);
 
     // Patch in the real binder (only the raw bytes -- the length
     // prefixes around it are already correctly sized).
@@ -400,6 +445,41 @@ protected Packet client_hello(string(8bit)|void server_name,
 
   SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", struct);
   Packet ret = handshake_packet(HANDSHAKE_client_hello, struct);
+
+  if (offering_early_data) {
+    // RFC 8446 7.1: client_early_traffic_secret = Derive-Secret(
+    // early_secret, "c e traffic", Hash(ClientHello1)) -- computed
+    // only now, after handshake_packet() above has committed the
+    // final (binder-patched) ClientHello bytes to handshake_messages.
+    string(8bit) ch_hash =
+      [string(8bit)]psk_hash->hash((string(8bit))handshake_messages);
+    string(8bit) client_early_traffic_secret =
+      psk_key_schedule_1_3->derive_secret(
+        [string(8bit)]psk_key_schedule_1_3->early_secret,
+        "c e traffic", ch_hash);
+
+    // One State for every early-data record: rebuilding per chunk
+    // would reset the AEAD nonce counter and reuse a nonce, a real
+    // crypto bug.
+    State early_write_state =
+      new_traffic_state(client_early_traffic_secret, 1, psk_key_schedule_1_3);
+
+    string(8bit) remaining = [string(8bit)]early_data;
+    if (session->tls13_max_early_data_size &&
+        (sizeof(remaining) > session->tls13_max_early_data_size))
+      remaining = remaining[..session->tls13_max_early_data_size-1];
+    while (sizeof(remaining)) {
+      string(8bit) chunk = remaining[..session->max_packet_size-1];
+      remaining = remaining[sizeof(chunk)..];
+      Packet p = Packet(version, PACKET_application_data, chunk);
+      p->bound_write_state = early_write_state;
+      send_packet(p, PRI_application);
+    }
+
+    early_data_sent_1_3 = 1;
+    early_data_write_state_1_3 = early_write_state;
+  }
+
   if (version > PROTOCOL_TLS_1_0) {
     // For maximum interoperability, it seems having
     // version TLS 1.0 at the packet level is best.
@@ -470,8 +550,14 @@ protected object(Packet)|zero client_key_exchange_packet()
 //!
 //! @param session
 //!   Optional @[Session] to resume.
+//!
+//! @param early_data
+//!   TLS 1.3 (@rfc{8446:2.3@}) 0-RTT application data to send
+//!   immediately, opportunistically -- see @[client_hello()]'s own
+//!   parameter doc for exactly when this is (and isn't) actually sent
+//!   as 0-RTT.
 protected void create(Context ctx, string(8bit)|void server_name,
-		      Session|void session)
+                      Session|void session, string(8bit)|void early_data)
 {
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;
@@ -487,7 +573,7 @@ protected void create(Context ctx, string(8bit)|void server_name,
 
   // Pre-TLS 1.3.
   SSL3_DEBUG_MSG("CLIENT: TLS <= 1.2 handshake.\n");
-  send_packet(client_hello(server_name));
+  send_packet(client_hello(server_name, early_data));
 }
 
 //! Renegotiate the connection (client initiated).
@@ -697,7 +783,18 @@ protected void got_new_session_ticket_1_3(Buffer input)
   int age_add = input->read_int(4);
   string(8bit) ticket_nonce = input->read_hstring(1);
   string(8bit) ticket = input->read_hstring(2);
-  input->read_hstring(2); // Extensions: none defined that we act on.
+  Buffer extensions = Buffer(input->read_hstring(2));
+
+  int max_early_data_size;
+  while (sizeof(extensions)) {
+    int extension_type = extensions->read_int(2);
+    Buffer extension_data = Buffer(extensions->read_hstring(2));
+    if (extension_type == EXTENSION_early_data) {
+      // RFC 8446 4.6.1: max_early_data_size, a bare uint32.
+      max_early_data_size = extension_data->read_int(4);
+    }
+    // Other NewSessionTicket extensions: none else defined by RFC 8446.
+  }
 
   string(8bit) psk =
     key_schedule->expand_label(
@@ -709,6 +806,7 @@ protected void got_new_session_ticket_1_3(Buffer input)
   session->tls13_psk = psk;
   session->tls13_ticket_age_add = age_add;
   session->tls13_ticket_issue_time = time(1);
+  session->tls13_max_early_data_size = max_early_data_size;
 }
 
 //! TLS 1.3 (@rfc{8446:4.6.3@}): update our own sending keys, and
@@ -909,13 +1007,32 @@ int(-1..1) handle_handshake_1_3(int type, Buffer input, Stdio.Buffer raw)
     break;
 
   case HANDSHAKE_encrypted_extensions:
-    // Minimal for now: nothing is negotiated here yet (ALPN/SNI-ack/
-    // other extensions), so there's nothing to act on -- but the
-    // (possibly empty) extensions vector must still be consumed, or
-    // the generic post-dispatch "extraneous data" check in
-    // Connection.pike's handshake loop will reject it.
-    input->read_hstring(2);
-    add_handshake_message(raw);
+    {
+      // Minimal for now: nothing except early_data is acted on here
+      // (ALPN/SNI-ack/other extensions aren't yet) -- but the
+      // (possibly empty) extensions vector must still be fully
+      // consumed, or the generic post-dispatch "extraneous data"
+      // check in Connection.pike's handshake loop will reject it.
+      Buffer extensions = Buffer(input->read_hstring(2));
+      while (sizeof(extensions)) {
+        int extension_type = extensions->read_int(2);
+        Buffer extension_data = Buffer(extensions->read_hstring(2));
+        if (extension_type == EXTENSION_early_data) {
+          // RFC 8446 4.2.10: this ack's extension_data is empty; its
+          // mere presence is what matters. RFC 8446 4.5: whether we
+          // send EndOfEarlyData is driven *solely* by this ack, so
+          // only honor it if we actually offered early_data in the
+          // first place (a server acking data we never sent would be
+          // a protocol violation we simply ignore rather than act on).
+          COND_FATAL(sizeof(extension_data), ALERT_illegal_parameter,
+                    "early_data acknowledgement must be empty.\n");
+          early_data_accepted_1_3 = early_data_sent_1_3;
+        }
+        // Other EncryptedExtensions contents (ALPN-ack etc.) unhandled,
+        // as before.
+      }
+      add_handshake_message(raw);
+    }
     break;
 
   case HANDSHAKE_certificate_request:
@@ -961,6 +1078,25 @@ int(-1..1) handle_handshake_1_3(int type, Buffer input, Stdio.Buffer raw)
       key_schedule->exporter_master_secret =
         key_schedule->derive_secret([string(8bit)]key_schedule->master_secret,
                                     "exp master", ap_hash);
+
+      if (early_data_accepted_1_3) {
+        // RFC 8446 4.5: EndOfEarlyData is sent (and hashed into the
+        // transcript, via handshake_packet()'s usual side effect)
+        // *before* the client's own Finished -- and, unlike Finished,
+        // it's still encrypted under client_early_traffic_secret, not
+        // client_handshake_traffic_secret (that switch happens right
+        // after this, below) -- hence send_packet() with an
+        // explicitly-bound write state here, not send_packet_1_3()
+        // (which would bind to whatever current_write_state is right
+        // now, the wrong key). Reuses the *same* State object the
+        // early-data records themselves were sent under (see
+        // early_data_write_state_1_3's doc comment) rather than
+        // building a fresh one from the same secret, so its AEAD
+        // sequence number continues rather than restarting at 0.
+        Packet eoed = handshake_packet(HANDSHAKE_end_of_early_data, "");
+        eoed->bound_write_state = early_data_write_state_1_3;
+        send_packet(eoed, PRI_urgent);
+      }
 
       // Our Finished is the last message sent under the handshake
       // traffic secret.
