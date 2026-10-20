@@ -182,34 +182,22 @@ Packet certificate_packet(array(string(8bit)) certificates)
                           Buffer()->add_string_array(certificates, 3, 3));
 }
 
-Packet certificate_verify_packet(string(8bit)|void signature_context)
+Packet certificate_verify_packet()
 {
   SSL3_DEBUG_MSG("SSL.Connection: CERTIFICATE_VERIFY\n"
 		 "%O: handshake_messages: %d bytes.\n",
 		 this, sizeof(handshake_messages));
   Buffer struct = Buffer();
 
-  if (signature_context) {
-    // TLS 1.3 and later.
-    session->cipher_spec->sign(session,
-			       signature_context +
-			       session->cipher_spec->hash
-                               ->hash(handshake_messages),
-			       struct);
-  } else {
-    session->cipher_spec->sign(session, (string(8bit))handshake_messages, struct);
-  }
+  session->cipher_spec->sign(session, (string(8bit))handshake_messages, struct);
 
   return handshake_packet(HANDSHAKE_certificate_verify, struct);
 }
 
-int(-1..0) validate_certificate_verify(Buffer input,
-				       string(8bit) signature_context)
+int(-1..0) validate_certificate_verify(Buffer input)
 {
   int(0..1) verification_ok;
   string(8bit) signed = (string(8bit))handshake_messages;
-  if (version >= PROTOCOL_TLS_1_3)
-    signed = signature_context + session->cipher_spec->hash->hash(signed);
 
   mixed err = catch {
       verification_ok = session->cipher_spec->verify(
@@ -1191,9 +1179,6 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
         COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
                    "Zero length ChangeCipherSpec fragments not allowed.\n");
 
-        COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-                   "ChangeCipherSpec not allowed in TLS 1.3 and later.\n");
-
         foreach(packet->fragment;; int c)
         {
           int(-1..0) err = handle_change_cipher(c);
@@ -1244,8 +1229,8 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
 	  // not safe to assume that, since there might be routes past
 	  // this, maybe through the use of a version 2 hello message
 	  // below.
-	  COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
-		     ALERT_unexpected_message, "Expected change cipher.\n");
+          COND_FATAL(expect_change_cipher,
+                     ALERT_unexpected_message, "Expected change cipher.\n");
 
 	  int(-1..1) err;
 	  handshake_buffer->add( packet->fragment );
@@ -1294,7 +1279,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
 	      return err;
 	    if (err > 0) {
 	      state &= ~CONNECTION_handshaking;
-	      if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
+              if (expect_change_cipher) {
 		// NB: Renegotiation is available in TLS 1.2 and earlier.
 		COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
 			   "Extraneous handshake packets.\n");

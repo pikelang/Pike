@@ -68,13 +68,7 @@ protected Packet client_hello(string(8bit)|void server_name,
                  fmt_cipher_suites(cipher_suites));
   struct->add_int_array(cipher_suites, 2, 2);
 
-  array(int) compression_methods = ({});
-  if (client_version >= PROTOCOL_TLS_1_3) {
-    // TLS 1.3 (draft 3) does not allow any compression.
-    compression_methods = ({ COMPRESSION_null });
-  } else {
-    compression_methods = context->preferred_compressors;
-  }
+  array(int) compression_methods = context->preferred_compressors;
   struct->add_int_array(compression_methods, 1, 1);
 
   Buffer extensions = Buffer();
@@ -86,13 +80,6 @@ protected Packet client_hello(string(8bit)|void server_name,
       extensions->add_int(id, 2);
       extensions->add_hstring(code(), 2);
     }
-  };
-
-  ext (EXTENSION_supported_versions, client_version >= PROTOCOL_TLS_1_3) {
-    Buffer versions = Buffer();
-    foreach(context->supported_versions;; ProtocolVersion v)
-      v->add_int(v, 2);
-    return versions;
   };
 
   ext (EXTENSION_renegotiation_info, secure_renegotiation) {
@@ -229,6 +216,13 @@ protected Packet client_hello(string(8bit)|void server_name,
     return Buffer()->add("\0"*padding);
   };
 
+  // NB: Unused until the TLS 1.3 0-RTT phase lands (neither call site below
+  // passes early_data yet). Per RFC 8446 4.2.10 this extension's body is
+  // empty in ClientHello; the early-data records themselves travel as
+  // separate application_data records sent right after this ClientHello,
+  // encrypted under the client's early traffic secret -- the "serialize the
+  // packets into the extension body" shape below will need reworking to
+  // match that once 0-RTT is implemented.
   ext(EXTENSION_early_data, early_data && sizeof([array]early_data)) {
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d packets of early data.\n",
 		   sizeof([array]early_data));
@@ -619,11 +613,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                  ALERT_handshake_failure,
                  "Unsupported or obsolete cipher suite.\n");
 
-      COND_FATAL(version >= PROTOCOL_TLS_1_3 &&
-                 compression_method!=COMPRESSION_null,
-                 ALERT_insufficient_security,
-                 "Compression not supported in TLS 1.3 and later.\n");
-
       session->set_compression_method(compression_method);
 
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
@@ -747,10 +736,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	    }
 	    break;
 
-	  case EXTENSION_extended_master_secret:
+          case EXTENSION_extended_master_secret:
 	    {
-	      COND_FATAL(sizeof(extension_data) ||
-                         (min(@context->supported_versions) >= PROTOCOL_TLS_1_3),
+              COND_FATAL(sizeof(extension_data),
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 
@@ -857,7 +845,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 		 sprintf("Unexpected server message: %s.\n",
 			 fmt_constant(type, "HANDSHAKE")));
       break;
-      /* FIXME: HANDSHAKE_encrypted_extensions */
     case HANDSHAKE_certificate:
       {
 	SSL3_DEBUG_MSG("SSL.ClientConnection: Certificate received\n");
@@ -875,10 +862,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
     case HANDSHAKE_server_key_exchange:
       {
-	COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-		   sprintf("Unexpected server message: %s.\n",
-			   fmt_constant(type, "HANDSHAKE")));
-
 	if (ke) error("KE!\n");
 	ke = session->cipher_spec->ke_factory(context, session, this,
 					      client_version);
@@ -896,10 +879,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     case HANDSHAKE_server_hello_done:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
 
-      COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-		 sprintf("Unexpected server message: %s.\n",
-			 fmt_constant(type, "HANDSHAKE")));
-
       if (send_certs()) return -1;
 
       if (tickets_enabled) {
@@ -909,41 +888,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       } else {
 	handshake_state = STATE_wait_for_finish;
       }
-      break;
-    }
-    break;
-
-  case STATE_wait_for_verify:
-    if (version < PROTOCOL_TLS_1_3) {
-      error("Waiting for verify in %s.\n",
-	    fmt_version(version));
-    }
-    switch(type) {
-    default:
-      COND_FATAL(1, ALERT_unexpected_message,
-		 sprintf("Unexpected server message: %s.\n",
-			 fmt_constant(type, "HANDSHAKE")));
-      break;
-    case HANDSHAKE_certificate_request:
-      add_handshake_message(raw);
-      return got_certificate_request(input);
-    case HANDSHAKE_certificate_verify:
-      SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n");
-
-      COND_FATAL(version < PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-		 sprintf("Unexpected server message: %s.\n",
-			 fmt_constant(type, "HANDSHAKE")));
-
-      SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
-		     sizeof(handshake_messages));
-      if (validate_certificate_verify(input,
-				      SIGN_server_certificate_verify) < 0) {
-	return -1;
-      }
-
-      add_handshake_message(raw);
-
-      handshake_state = STATE_wait_for_finish;
       break;
     }
     break;
@@ -982,13 +926,13 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       COND_FATAL(my_digest != server_verify_data,
                  ALERT_unexpected_message, "Digests differ.\n");
 
-      if (reuse || (version >= PROTOCOL_TLS_1_3)) {
+      if (reuse) {
 	add_handshake_message(raw);
         /* Second hash includes this message, the first doesn't */
 
 	if(version == PROTOCOL_SSL_3_0)
 	  send_packet(finished_packet("CLNT"));
-	else if(version <= PROTOCOL_TLS_1_2)
+        else
 	  send_packet(finished_packet("client finished"));
         if (context->heartbleed_probe &&
 	    session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {

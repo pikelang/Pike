@@ -362,6 +362,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      session_id, fmt_cipher_suites(cipher_suites),
                      compression_methods);
 
+      // NB: Collected but unused until the TLS 1.3 0-RTT phase lands.
       Stdio.Buffer early_data = Stdio.Buffer();
       int missing_secure_renegotiation = secure_renegotiation;
       if (sizeof(input))
@@ -940,26 +941,25 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       if (!reuse)
       {
-	if (version < PROTOCOL_TLS_1_3) {
-	  if (tickets_enabled) {
-	    array(string(8bit)|int)|zero ticket_info =
-	      context->encode_ticket(session);
-	    if (ticket_info) {
-	      SSL3_DEBUG_MSG("SSL.ServerConnection: Sending ticket %O.\n",
-			     ticket_info);
-	      session->ticket = [string(8bit)](ticket_info[0]);
-	      session->ticket_expiry_time = [int](ticket_info[1] + time(1));
-	      send_packet(new_session_ticket_packet([int](ticket_info[1]),
-						    [string(8bit)](ticket_info[0])));
-	    }
-	  }
-	  send_packet(change_cipher_packet());
-	  // We've already received the CCS from the peer.
-	  expect_change_cipher--;
-	}
+        if (tickets_enabled) {
+          array(string(8bit)|int)|zero ticket_info =
+            context->encode_ticket(session);
+          if (ticket_info) {
+            SSL3_DEBUG_MSG("SSL.ServerConnection: Sending ticket %O.\n",
+                           ticket_info);
+            session->ticket = [string(8bit)](ticket_info[0]);
+            session->ticket_expiry_time = [int](ticket_info[1] + time(1));
+            send_packet(new_session_ticket_packet([int](ticket_info[1]),
+                                                  [string(8bit)](ticket_info[0])));
+          }
+        }
+        send_packet(change_cipher_packet());
+        // We've already received the CCS from the peer.
+        expect_change_cipher--;
+
         if(version == PROTOCOL_SSL_3_0)
           send_packet(finished_packet("SRVR"));
-        else if(version < PROTOCOL_TLS_1_3)
+        else
           send_packet(finished_packet("server finished"));
 
         if (context->heartbleed_probe &&
@@ -991,8 +991,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_KEY_EXCHANGE\n");
 
       // Certificate must be sent before key exchange message
-      COND_FATAL((certificate_state == CERT_requested) ||
-                 (version >= PROTOCOL_TLS_1_3),
+      COND_FATAL((certificate_state == CERT_requested),
                  ALERT_unexpected_message, "Expected client cert.\n");
 
       if (!server_derive_master_secret(input))
@@ -1045,8 +1044,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
 		     sizeof(handshake_messages));
-      if (validate_certificate_verify(input,
-				      SIGN_client_certificate_verify) < 0) {
+      if (validate_certificate_verify(input) < 0) {
 	return -1;
       }
 
@@ -1055,8 +1053,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       // We expect a CCS next.
       expect_change_cipher++;
-
-      // NB TLS 1.3: From this point on we can send application data.
     }
     break;
   }

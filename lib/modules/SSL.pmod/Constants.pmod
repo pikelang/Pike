@@ -1564,7 +1564,6 @@ enum Extension {
   EXTENSION_TLMSP_delegate                      = 38,   //! ETSI TS 103 523-2
   EXTENSION_supported_skt_ciphers               = 39,   //! @rfc{8446@}
   // 40 reserved tls-reg-review
-  // EXTENSION_key_share		        = 40,	//! TLS 1.3 draft.
   EXTENSION_pre_shared_key                      = 41,   //! @rfc{8446@}
   EXTENSION_early_data				= 42,	//! @rfc{8446@}
   EXTENSION_supported_versions                  = 43,   //! @rfc{8446@}
@@ -1608,7 +1607,6 @@ enum Extension {
   EXTENSION_grease_fafa                         = 0xfafa, //! @rfc{8701@}
   EXTENSION_encrypted_client_hello              = 0xfe0d,//! draft-ietf-tls-esni-18
   EXTENSION_renegotiation_info			= 0xff01,//! @rfc{5746@}
-  EXTENSION_draft_version			= 0xff02,//! @url{https://github.com/tlswg/tls13-spec/wiki/Implementations@}
 };
 
 //! Lookup from @[NamedGroup] to Pike module implementing @[Crypto.ECC.Curve].

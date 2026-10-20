@@ -375,29 +375,6 @@ class KeyExchange(object context, object session, object connection,
     return 1;
   }
 
-  //! TLS 1.3 and later.
-  //!
-  //! Generate a key share offer for the configured named group
-  //! (currently only implemented in @[KeyShareECDHE] and @[KeyShareDHE]).
-  optional void make_key_share_offer(Stdio.Buffer offer);
-
-  //! TLS 1.3 and later.
-  //!
-  //! Receive a key share offer key exchange for the configured group
-  //! (currently only implemented in @[KeyShareECDHE] and @[KeyShareDHE]).
-  //!
-  //! @note
-  //!   Clears the secret state.
-  //!
-  //! @returns
-  //!   Returns the shared pre-master key.
-  optional string(8bit) receive_key_share_offer(string(8bit) offer);
-
-  //! TLS 1.3 and later.
-  //!
-  //! Set the group or curve to be used.
-  optional void set_group(int group);
-
   //! The default implementation calls @[server_key_params()] to generate
   //! the base payload.
   //!
@@ -1120,39 +1097,6 @@ class KeyExchangeDH
   }
 }
 
-//! Diffie-Hellman Ephemeral key-exchange.
-class KeyShareDHE
-{
-  inherit KeyExchangeDHE;
-
-  int group;
-
-  void make_key_share_offer(Stdio.Buffer offer)
-  {
-    offer->add_int(group, 2);
-    offer->add_hint(our, 2);
-  }
-
-  string(8bit) receive_key_share_offer(string(8bit) offer)
-  {
-    set_other(Gmp.smpz(offer, 256));
-
-    string(8bit) premaster_secret = get_shared()->digits(256);
-
-    parameters = UNDEFINED;
-
-    return premaster_secret;
-  }
-
-  void set_group(int g)
-  {
-    group = g;
-    parameters = FFDHE_GROUPS[g] || context->private_ffdhe_groups[g];
-    if (!parameters) error("Unsupported FF-DHE group.\n");
-    new_secret();
-  }
-}
-
 #if constant(Crypto.ECC.Curve)
 //! KeyExchange for @[KE_ecdhe_rsa], @[KE_ecdhe_ecdsa] and @[KE_ecdh_anon].
 //!
@@ -1460,56 +1404,6 @@ class KeyExchangeECDH
     // contains all the necessary keying information required by the client
     // to arrive at the premaster secret).
     error("Invalid message.\n");
-  }
-}
-
-//! Elliptic Curve Diffie-Hellman Ephemeral key-exchange.
-class KeyShareECDHE
-{
-  inherit KeyExchangeECDHE;
-
-  int group;
-  Crypto.ECC.Curve curve;
-
-  void make_key_share_offer(Stdio.Buffer offer)
-  {
-    Crypto.ECC.Curve.Point p = curve * secret;
-
-    SSL3_DEBUG_MSG("secret: %O\n", secret);
-    SSL3_DEBUG_MSG("x: %O\n", p->get_x());
-    SSL3_DEBUG_MSG("y: %O\n", p->get_y());
-
-    offer->add_int(group, 2);
-    offer->add_hstring(p->encode(), 2);
-  }
-
-  string(8bit)|zero receive_key_share_offer(string(8bit) offer)
-  {
-    catch {
-      point = curve->Point(Stdio.Buffer(offer));
-    };
-    if (!point)
-      return 0;
-
-    // RFC 4492 5.10:
-    // Note that this octet string (Z in IEEE 1363 terminology) as
-    // output by FE2OSP, the Field Element to Octet String
-    // Conversion Primitive, has constant length for any given
-    // field; leading zeros found in this octet string MUST NOT be
-    // truncated.
-    string premaster_secret =
-      sprintf("%*c", (curve->size() + 7)>>3, (point*secret)->get_x());
-    secret = 0;
-
-    return premaster_secret;
-  }
-
-  void set_group(int c)
-  {
-    group = c;
-    curve = ECC_CURVES[c];
-    if (!curve) error("Unsupported curve.\n");
-    secret = curve->new_scalar(context->random);
   }
 }
 
@@ -2240,75 +2134,52 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
     }
   }
 
-  if (version >= PROTOCOL_TLS_1_3) {
-    // NB: Only DHE and ECDHE are supported in TLS 1.3 and later.
-    switch(ke_method) {
-    case KE_dh_anon:
-    case KE_dhe_rsa:
-    case KE_dhe_dss:
-      res->ke_factory = KeyShareDHE;
-      break;
+  switch(ke_method)
+  {
+  case KE_null:
+    res->ke_factory = KeyExchangeNULL;
+    break;
+  case KE_rsa:
+  case KE_rsa_fips:
+    res->ke_factory = KeyExchangeRSA;
+    break;
+  case KE_rsa_export:
+    res->ke_factory = KeyExchangeExportRSA;
+    break;
+  case KE_dh_dss:
+  case KE_dh_rsa:
+    res->ke_factory = KeyExchangeDH;
+    break;
+  case KE_dh_anon:
+  case KE_dhe_rsa:
+  case KE_dhe_dss:
+    res->ke_factory = KeyExchangeDHE;
+    break;
 #if constant(Crypto.ECC.Curve)
-    case KE_ecdhe_rsa:
-    case KE_ecdhe_ecdsa:
-    case KE_ecdh_anon:
-      res->ke_factory = KeyShareECDHE;
-      break;
+  case KE_ecdhe_rsa:
+  case KE_ecdhe_ecdsa:
+  case KE_ecdh_anon:
+    res->ke_factory = KeyExchangeECDHE;
+    break;
+  case KE_ecdh_rsa:
+  case KE_ecdh_ecdsa:
+    res->ke_factory = KeyExchangeECDH;
+    break;
+  case KE_ecdhe_psk:
+    res->ke_factory = KeyExchangeECDHEPSK;
+    break;
 #endif
-    default:
-      werror( "%s: Unsupported KE: %s\n",
-	      fmt_version(version),
-	      fmt_constant(ke_method, "KE") );
-      return 0;
-    }
-  } else {
-    switch(ke_method)
-    {
-    case KE_null:
-      res->ke_factory = KeyExchangeNULL;
-      break;
-    case KE_rsa:
-    case KE_rsa_fips:
-      res->ke_factory = KeyExchangeRSA;
-      break;
-    case KE_rsa_export:
-      res->ke_factory = KeyExchangeExportRSA;
-      break;
-    case KE_dh_dss:
-    case KE_dh_rsa:
-      res->ke_factory = KeyExchangeDH;
-      break;
-    case KE_dh_anon:
-    case KE_dhe_rsa:
-    case KE_dhe_dss:
-      res->ke_factory = KeyExchangeDHE;
-      break;
-#if constant(Crypto.ECC.Curve)
-    case KE_ecdhe_rsa:
-    case KE_ecdhe_ecdsa:
-    case KE_ecdh_anon:
-      res->ke_factory = KeyExchangeECDHE;
-      break;
-    case KE_ecdh_rsa:
-    case KE_ecdh_ecdsa:
-      res->ke_factory = KeyExchangeECDH;
-      break;
-    case KE_ecdhe_psk:
-      res->ke_factory = KeyExchangeECDHEPSK;
-      break;
-#endif
-    case KE_psk:
-      res->ke_factory = KeyExchangePSK;
-      break;
-    case KE_dhe_psk:
-      res->ke_factory = KeyExchangeDHEPSK;
-      break;
-    case KE_rsa_psk:
-      res->ke_factory = KeyExchangeRSAPSK;
-      break;
-    default:
-      error( "Internal error.\n" );
-    }
+  case KE_psk:
+    res->ke_factory = KeyExchangePSK;
+    break;
+  case KE_dhe_psk:
+    res->ke_factory = KeyExchangeDHEPSK;
+    break;
+  case KE_rsa_psk:
+    res->ke_factory = KeyExchangeRSAPSK;
+    break;
+  default:
+    error( "Internal error.\n" );
   }
 
   switch(ke_method)
@@ -2362,14 +2233,7 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
     return 0;
   }
 
-  if (version >= PROTOCOL_TLS_1_3) {
-    if (res->cipher_type != CIPHER_aead) {
-      // TLS1.3 6.1 RecordProtAlgorithm
-      SSL3_DEBUG_MSG("Suite not supported in TLS 1.3 and later.\n");
-      return 0;
-    }
-  }
-  else if (version == PROTOCOL_TLS_1_2) {
+  if (version == PROTOCOL_TLS_1_2) {
     if (res->bulk_cipher_algorithm == DES) {
       // RFC 5246 1.2:
       // Removed IDEA and DES cipher suites.  They are now deprecated and
