@@ -28,7 +28,8 @@
     program or by letting the environment variable
     <b>PIKE_MODULE_PATH</b> contain a colon-separated list of
     directories to be searched for modules before looking at the
-    default location. 
+    default location. Note that overlapping directory modules
+    are merged.
   </p>
 
   <section title="Writing Modules in Pike">
@@ -54,59 +55,490 @@
     </p>
 
     <p>
-      Note that Pike modules must not use try to load files relative to
-      __FILE__, since such code will break in Microsoft Windows.
-      <fixme>Explain why.</fixme>
+      To refer to another module or program beside the current source
+      file, prefix its name with a dot. The compiler resolves this name
+      relative to the source file's directory, rather than the process's
+      working directory or the global module search path. For example,
+      with <tt>Helpers.pmod</tt> and <tt>Base.pike</tt> beside the source:
+    </p>
+
+<example>
+import .Helpers;
+inherit .Base;
+
+int answer()
+{
+  return .Helpers.add(base_value(), 22);
+}
+</example>
+
+    <p>
+      Here <tt>Helpers.pmod</tt> supplies <expr>add()</expr> and
+      <tt>Base.pike</tt> supplies <expr>base_value()</expr>.
+      <expr>import .Helpers</expr> makes the helper module's members
+      available without qualification; <expr>.Helpers.add()</expr>
+      explicitly selects a member from that source-relative module.
+      Prefer this lookup syntax for module and program dependencies
+      instead of constructing filenames from <expr>__FILE__</expr>.
+      It uses the master's module resolution and supports symbolic
+      module paths in relocatable installations. For data files, use
+      the file operations described below.
+    </p>
+
+    <p>
+      Relocatable dumped modules are enabled only when Pike's source
+      is configured with <tt>--with-relocatable-dumped-modules</tt>,
+      which enables <tt>PIKE_MODULE_RELOC</tt>. In such installations,
+      <expr>__FILE__</expr> and
+      <expr>__DIR__</expr> can contain a symbolic module path beginning
+      with <tt>/${PIKE_MODULE_PATH}/</tt>, rather than a native filesystem
+      path. This allows precompiled modules to be moved between
+      installation directories. This configuration option is used
+      by several binary packages of Pike.
+    </p>
+
+    <p>
+      Use the master's file operations when reading resources relative
+      to a module, since they resolve symbolic paths through the module
+      search path. For example:
+    </p>
+
+<example>
+string|zero data = master()-&gt;master_read_file(
+  combine_path(__DIR__, "data.txt"));
+</example>
+
+    <p>
+      Direct filesystem operations and external programs do not perform
+      this translation. Before passing a module-relative path to them,
+      resolve it with <tt>master()-&gt;relocate_module()</tt> when that
+      function is available. Changing <expr>__FILE__</expr> to
+      <expr>__DIR__</expr> alone does not resolve the symbolic prefix.
     </p>
  
  </section>
   
   <section title="Writing Modules in C">
-    <p><fixme>To be written.</fixme></p>
+    <p>
+      A C module exposes native functions, constants and classes as members
+      of a Pike module. Use it when an existing C library needs a Pike
+      interface, or when work cannot conveniently be done in Pike. The
+      interface should still use Pike values and exceptions, so callers
+      need not know how it is implemented.
+    </p>
+
+    <p>
+      There are two ways to write the interface. In a plain <tt>.c</tt> file,
+      register the members and handle arguments and return values yourself.
+      In a <tt>.cmod</tt> file, the Pike precompiler generates much of this
+      code from declarations such as <tt>PIKEFUN</tt> and <tt>PIKECLASS</tt>.
+      Both approaches use the same interpreter API. The examples below
+      implement a module called <tt>Example</tt>; they are alternative
+      implementations, not files to link together.
+    </p>
+
+    <subsection title="A minimal C module">
+      <p>
+        Include <tt>global.h</tt> first, before system or library headers.
+        It supplies Pike's platform definitions. The other headers below
+        declare module registration, the value stack, type descriptions,
+        and argument decoding. Save this example as <tt>example.c</tt>.
+      </p>
+
+<example>
+#include "global.h"
+#include "module.h"
+#include "interpret.h"
+#include "pike_types.h"
+#include "module_support.h"
+
+static void f_is_positive(INT32 args)
+{
+  INT_TYPE value;
+
+  if (args != 1)
+    Pike_error("Example.is_positive(): Expected one argument.\n");
+
+  get_all_args("Example.is_positive", args, "%i", &amp;value);
+  pop_n_elems(args);
+  push_int(value &gt; 0);
+}
+
+PIKE_MODULE_INIT
+{
+  ADD_FUNCTION("is_positive", f_is_positive, tFunc(tInt, tInt), 0);
+  ADD_INT_CONSTANT("API_VERSION", 1, 0);
+}
+
+PIKE_MODULE_EXIT
+{
+  /* No module-wide resources to release. */
+}
+</example>
+
+      <p>
+        <tt>PIKE_MODULE_INIT</tt> defines the entry point invoked when the
+        module is initialized. The loader has already started the module's
+        program, so register its members here without calling
+        <tt>start_new_program()</tt> for the module itself.
+        <tt>ADD_FUNCTION</tt> takes the Pike name, C implementation, type
+        description and identifier flags. Here <tt>tFunc(tInt, tInt)</tt>
+        describes a function taking one integer and returning an integer.
+        Use the type macros rather than constructing encoded type strings
+        by hand. <tt>PIKE_MODULE_EXIT</tt> releases resources retained by
+        the module when it is shut down; it is not an object destructor.
+      </p>
+
+      <p>
+        Once installed as <tt>Example</tt>, the members are used like those
+        of a Pike-written module:
+      </p>
+
+<p><code>
+Example.is_positive(7);   // Returns 1.
+Example.is_positive(-2);  // Returns 0.
+Example.API_VERSION;      // Equals 1.
+</code></p>
+    </subsection>
+
+    <subsection title="Arguments and the value stack">
+      <p>
+        A plain C implementation has the signature
+        <tt>void function(INT32 args)</tt>. The arguments are on the Pike
+        value stack, and <tt>Pike_sp</tt> points just beyond its top.
+        The first argument is <tt>Pike_sp[-args]</tt> and the last is
+        <tt>Pike_sp[-1]</tt>. Check the argument count before indexing the
+        stack. Check <tt>TYPEOF(value)</tt> before reading a union member
+        such as <tt>value.u.integer</tt> or <tt>value.u.string</tt>.
+      </p>
+
+      <p>
+        <tt>get_all_args()</tt> decodes arguments and reports missing or
+        incorrectly typed values as Pike exceptions. Its <tt>%i</tt>
+        conversion stores a native integer in an <tt>INT_TYPE</tt>.
+        It does not reject surplus arguments, which is why the example
+        checks <tt>args</tt> separately. The registered function type is
+        useful to the compiler, but does not replace runtime validation.
+      </p>
+
+      <p>
+        On a normal return from the example, the arguments have been
+        removed with <tt>pop_n_elems(args)</tt> and the result has been
+        pushed with <tt>push_int()</tt>. Other result helpers include
+        <tt>push_float()</tt>, <tt>push_string()</tt>, <tt>push_array()</tt>
+        and <tt>push_mapping()</tt>. Returning from the C function does not
+        by itself push a Pike result. Do not pop the arguments a second
+        time, or leave temporary stack values above the result.
+      </p>
+
+      <p>
+        Pike integers can be larger than <tt>INT_TYPE</tt>. The minimal
+        example deliberately accepts only native integers. An interface
+        that promises arbitrary-size integers must also handle bignums;
+        do not truncate them to a C integer. Likewise, a Pike string has
+        an explicit length and may contain NUL characters or wide
+        characters. Do not treat every <tt>struct pike_string *</tt> as a
+        NUL-terminated byte string. Check its <tt>size_shift</tt> and use
+        its <tt>len</tt> when passing data to a byte-oriented C API.
+      </p>
+    </subsection>
+
+    <subsection title="Using the cmod precompiler">
+      <p>
+        The following <tt>example.cmod</tt> implements the same function.
+        The precompiler reads the Pike-style declaration, generates
+        argument checks and local C variables, and registers the function.
+        The body is C code. <tt>RETURN</tt> evaluates the result, removes
+        the arguments and pushes the result with the appropriate type.
+      </p>
+
+<example>
+#include "global.h"
+#include "module.h"
+#include "interpret.h"
+#include "pike_types.h"
+#include "module_support.h"
+
+DECLARATIONS
+
+/*! @module Example */
+
+/*! @decl int is_positive(int value)
+ *! Returns 1 if the native integer value is positive, otherwise 0.
+ */
+PIKEFUN int is_positive(int value)
+{
+  RETURN value &gt; 0;
+}
+
+/*! @endmodule */
+
+PIKE_MODULE_INIT
+{
+  INIT
+  ADD_INT_CONSTANT("API_VERSION", 1, 0);
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT
+}
+</example>
+
+      <p>
+        <tt>DECLARATIONS</tt> is the insertion point for generated
+        declarations. At module scope, <tt>INIT</tt> and <tt>EXIT</tt>
+        insert generated registration and cleanup code into the entry
+        points. They are precompiler constructs, not C functions.
+        Do not edit the generated <tt>.c</tt> file; change the
+        <tt>.cmod</tt> source and regenerate it instead.
+      </p>
+
+      <p>
+        Simple argument types are checked by generated code. For a union
+        of different runtime types, such as <tt>int|string</tt>, the
+        precompiler supplies an <tt>svalue</tt> and the body must inspect
+        its type. Optional and variable-length arguments also need the
+        appropriate declarations and handling. Consult
+        <tt>bin/precompile.pike --help</tt> and existing modules for these
+        cases. Automatic decoding does not remove the need to validate
+        ranges and other constraints of the underlying C library.
+      </p>
+    </subsection>
+
+    <subsection title="Reference ownership and error handling">
+      <p>
+        Strings, arrays, mappings, multisets, objects and programs are
+        reference-counted. Pointers obtained from arguments are borrowed:
+        they remain valid while the corresponding stack values retain
+        them. Removing the arguments can free those values. Acquire an
+        additional reference with <tt>add_ref()</tt> before retaining a
+        value beyond that lifetime, and release it with the matching
+        <tt>free_string()</tt>, <tt>free_array()</tt> or other type-specific
+        function when it is no longer needed.
+      </p>
+
+      <p>
+        <tt>push_string()</tt>, <tt>push_array()</tt> and similar helpers
+        transfer an existing reference to the stack; they do not add a
+        reference. Use <tt>ref_push_string()</tt>, <tt>ref_push_array()</tt>
+        and their counterparts when the stack needs its own reference to
+        a value still owned elsewhere. In a <tt>.cmod</tt> function,
+        <tt>RETURN</tt> also transfers a reference for reference-counted
+        results, while <tt>REF_RETURN</tt> acquires a reference before
+        removing the arguments. This matters when returning an argument.
+        Do not copy an <tt>svalue</tt> containing a reference-counted value
+        with a plain C assignment; use the appropriate
+        <tt>assign_svalue()</tt> helper and initialize its destination.
+      </p>
+
+      <p>
+        Report failures with <tt>Pike_error()</tt>, or use helpers such as
+        <tt>SIMPLE_ARG_TYPE_ERROR</tt> for argument errors. Pike exceptions
+        unwind C calls rather than returning through their normal cleanup
+        paths. Protect temporary native resources with an <tt>ONERROR</tt>
+        handler registered by <tt>SET_ONERROR</tt> before calling code
+        that can throw. Remove the handler with <tt>UNSET_ONERROR</tt>
+        after normal cleanup or after transferring ownership. Pike stack
+        unwinding releases stack-owned values, but does not close a native
+        handle or free a C buffer that only your code knows about.
+      </p>
+    </subsection>
+
+    <subsection title="Classes and per-object storage">
+      <p>
+        Use <tt>PIKECLASS</tt> to define a class in a <tt>.cmod</tt> file,
+        <tt>CVAR</tt> for C storage belonging to each object, and
+        <tt>THIS</tt> to access the current object's storage. For example,
+        this class can be added inside the <tt>Example</tt> module in the
+        preceding <tt>.cmod</tt> source:
+      </p>
+
+<example>
+/*! @class Flag */
+PIKECLASS Flag
+{
+  CVAR int enabled;
+
+  INIT
+  {
+    THIS-&gt;enabled = 0;
+  }
+
+  /*! @decl int set(int enabled)
+   *! Sets the flag and returns its new value, either 0 or 1.
+   */
+  PIKEFUN int set(int enabled)
+  {
+    THIS-&gt;enabled = enabled != 0;
+    RETURN THIS-&gt;enabled;
+  }
+
+  /*! @decl int get()
+   *! Returns the current value of the flag.
+   */
+  PIKEFUN int get()
+  {
+    RETURN THIS-&gt;enabled;
+  }
+}
+/*! @endclass */
+</example>
+
+      <p>
+        <expr>Example.Flag()</expr> creates an object with its own
+        <tt>enabled</tt> field. Class-level <tt>INIT</tt> runs for each
+        object, unlike the module-level registration step. Use class-level
+        <tt>EXIT</tt> to release per-object native resources. Initialize
+        handles and pointers to a state that cleanup can safely handle
+        even if later initialization throws.
+      </p>
+
+      <p>
+        A <tt>CVAR</tt> containing a pointer to a Pike value is not
+        automatically visible to the garbage collector. Supply the
+        appropriate <tt>GC_CHECK</tt> and <tt>GC_RECURSE</tt> handlers for
+        owned references, as well as releasing them in <tt>EXIT</tt>.
+        Where possible, use <tt>PIKEVAR</tt> for Pike-valued fields instead
+        of manually storing references in C storage. The Flag example
+        stores only a C integer and therefore needs no such handlers.
+      </p>
+
+      <p>
+        The plain C equivalents are <tt>start_new_program()</tt>,
+        <tt>ADD_STORAGE</tt>, registration of methods and callbacks,
+        <tt>end_program()</tt> and <tt>add_program_constant()</tt>.
+        Callbacks include <tt>set_init_callback()</tt>,
+        <tt>set_exit_callback()</tt>, <tt>set_gc_check_callback()</tt> and
+        <tt>set_gc_recurse_callback()</tt>. Keep the returned program's
+        reference only if your module needs it, otherwise release it
+        after adding the program constant. See the Math module for
+        examples of several classes registered from one C module.
+      </p>
+    </subsection>
+
+    <subsection title="Blocking operations and threads">
+      <p>
+        Native code normally runs with the interpreter lock held. Around
+        a blocking library call, use <tt>THREADS_ALLOW()</tt> and
+        <tt>THREADS_DISALLOW()</tt>, declared in <tt>pike_threadlib.h</tt>,
+        so other Pike threads can run. Prepare the native arguments before
+        releasing the lock and convert the result or throw a Pike
+        exception only after reacquiring it.
+      </p>
+
+      <p>
+        While the lock is released, do not access the Pike stack, allocate
+        Pike values, change shared Pike values or their reference counts,
+        or call back into Pike. Keep required data alive and protect native
+        state against concurrent use. Read the rules in
+        <tt>src/pike_threadlib.h</tt> before adding an unlocked region;
+        the macros release the interpreter lock, not your library's own
+        locks.
+      </p>
+    </subsection>
 
     <subsection title="Practical details">
-      <p>First of all your module needs a Makefile.in file. It need not be
-         more complicated than the following example:
-<pre>
-# &#36;Id&#36;
-@make_variables@
-VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=
-MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+      <p>
+        For an in-tree module, place the source in
+        <tt>src/modules/Example/</tt>. Use a neighboring module as a build
+        template. A small <tt>Makefile.in</tt> for <tt>example.cmod</tt>
+        can look like this:
+      </p>
 
+<example>
+@make_variables@
+VPATH=@srcdir@
+OBJS=example.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+example.o: $(SRCDIR)/example.c
+
 @dependencies@
-</pre></p>
+</example>
 
-      <p>A few customizations must however be done. The <tt>OBJS</tt> variable should
-         contain all the object files produced in your module. You should
-         add to the <tt>MODULE_LDFLAGS</tt> variable all the needed <tt>-L&lt;libdir&gt; -R&lt;libdir&gt;</tt>
-         options followed by all the needed <tt>-l&lt;lib&gt;</tt> options. If you want your
-         module to always be linked statically, change <tt>@dynamic_module_makefile@</tt>
-         to <tt>@static_module_makefile@</tt>. Normally you do not need to manually add
-         any dependencies to Makefile.in.</p>
+      <p>
+        The common module rules run the precompiler for <tt>.cmod</tt>
+        sources. If using <tt>example.c</tt> directly, omit the explicit
+        generated-source dependency. Add all object files to <tt>OBJS</tt>
+        and library link options to <tt>MODULE_LDFLAGS</tt>. Use
+        <tt>@static_module_makefile@</tt> for a module that must be linked
+        into the interpreter instead of loaded dynamically. Native
+        modules must be built with headers and configuration matching
+        the interpreter that will load them.
+      </p>
 
-     <p>There must be a testsuite.in file in the modules directory, even if it
-        only is an empty file.</p>
+      <p>
+        The corresponding <tt>configure.in</tt> must call
+        <tt>AC_MODULE_INIT()</tt> and check the headers, libraries and
+        functions the module actually needs. For this example, no external
+        library is required:
+      </p>
 
-     <p>You should have a configure.in file for your module and it should test
-        for all features that you need. Do not trust the global configure tests
-        to do thing for you. Further, your configure.in should contain the line
-        <tt>sinclude(../module_configuration.in)</tt>.</p>
+<example>
+AC_INIT(example.cmod)
+AC_CONFIG_HEADER(config.h)
+AC_MODULE_INIT()
+AC_OUTPUT(Makefile)
+</example>
 
-     <p>All C/C++ files should include <tt>"global.h"</tt> as the first included file. It
-        is also good if they contain <tt>RCSID(&#36;Id&#36;)</tt>.</p>
+      <p>
+        Generate configuration scripts using Pike's
+        <tt>src/run_autoconfig</tt> wrapper, rather than invoking an
+        arbitrary autoconf version directly. After adding a new module,
+        run <tt>make force_autoconfig</tt>, <tt>make force_configure</tt>
+        and <tt>make</tt> from the source tree's top directory.
+        Configuration and compilation take place in the selected build
+        directory. See <tt>README-GIT</tt> for build options.
+      </p>
+    </subsection>
 
-     <p>When building your module for the first time you need to:
-        <ol>
-        <li>run autoconf</li>
-        <li>do "make depend" from your build dir</li>
-        <li>re-run configure from your build dir</li>
-        <li>run make in your build dir</li>
-        </ol></p>
+    <subsection title="Documentation and tests">
+      <p>
+        Document the public Pike interface in AutoDoc comments beside its
+        implementation. Use <tt>@module</tt>, <tt>@class</tt> and
+        <tt>@decl</tt> to describe the Pike namespace and signatures, not
+        the C implementation names. Describe accepted values, return
+        values, exceptions and ownership of resources exposed to callers.
+        Document platform or library requirements when a feature is
+        conditional. Keep a Pike wrapper in <tt>module.pmod.in</tt> when
+        part of the interface is better expressed in Pike; existing modules
+        show how to combine a wrapper with native code.
+      </p>
 
+      <p>
+        Add a <tt>testsuite.in</tt> file to the module directory. A first
+        test suite for either implementation above is:
+      </p>
+
+<example>
+START_MARKER
+
+cond_resolv(Example, [[
+  test_eq(Example.API_VERSION, 1)
+  test_eq(Example.is_positive(7), 1)
+  test_eq(Example.is_positive(0), 0)
+  test_eq(Example.is_positive(-2), 0)
+  test_eval_error([[function f = Example.is_positive; f(1, 2);]])
+  test_eval_error([[function f = Example.is_positive; f();]])
+  test_eval_error([[function f = Example.is_positive; f("not an integer");]])
+]])
+
+END_MARKER
+</example>
+
+      <p>
+        Run <tt>make verify</tt> from the top directory to build a test
+        installation and execute the test suites. Also test extra
+        arguments, integer limits, repeated calls and cleanup after errors.
+        For classes, test that separate objects have independent state and
+        that destruction releases native resources. Optional modules should
+        guard tests with <tt>cond_resolv</tt> so the suite also runs on
+        systems where the module cannot be built.
+      </p>
     </subsection>
   </section>
   
