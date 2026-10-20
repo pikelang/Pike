@@ -2371,7 +2371,7 @@ static int do_docode2(node *n, int flags)
 
 
     /* Switch:
-     * So far all switches are implemented with a binsearch lookup.
+     * Switches use mapping lookup when possible, otherwise binary search.
      * It stores the case values in the programs area for constants.
      * It also has a jump-table in the program itself, for every index in
      * the array of cases, there are 2 indices in the jumptable, and one extra.
@@ -2390,6 +2390,8 @@ static int do_docode2(node *n, int flags)
     INT32 e,cases,*order;
     INT32 *jumptable;
     INT32 got_range = 0;
+    int expand_ranges;
+    unsigned INT_TYPE range_budget;
     struct switch_data prev_switch = current_switch;
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
@@ -2407,6 +2409,10 @@ static int do_docode2(node *n, int flags)
     current_label->break_label=alloc_label();
 
     cases=count_cases(CDR(n));
+    /* Binary search is cheaper for a small number of range endpoints. */
+    expand_ranges = cases >= 16;
+    /* Limit the mapping to 16 times the number of case endpoints. */
+    range_budget = cases > MAX_INT32 / 16 ? MAX_INT32 - cases : cases * 15;
 
     tmp1=emit1(F_SWITCH,0);
     modify_stack_depth(-1);
@@ -2479,35 +2485,61 @@ static int do_docode2(node *n, int flags)
       current_switch.default_label = ins_label(-1);
 
     for(e=1;e<cases*2+2;e++) {
-      if(current_switch.jumptable[e]==-1)
-	current_switch.jumptable[e]=current_switch.default_label;
-      else if (e & 1) {
-        /* NB Differentiate short integer ranges (max 16). See below. */
-         if ((e > 1) && ((e>>1) < cases) &&
-            (TYPEOF(ITEM(Pike_sp[-1].u.array)[e>>1]) == PIKE_T_INT) &&
-            (TYPEOF(ITEM(Pike_sp[-1].u.array)[(e - 2)>>1]) == PIKE_T_INT) &&
-            ((ITEM(Pike_sp[-1].u.array)[e>>1].u.integer -
-              ITEM(Pike_sp[-1].u.array)[(e - 2)>>1].u.integer) < 16)) {
-          /* Found short integer range. This may be expanded. */
-          got_range |= 2;
+      if ((current_switch.jumptable[e] != -1) && (e & 1)) {
+        struct svalue *values = ITEM(Pike_sp[-1].u.array);
+        got_range = 1;
+        if ((e > 1) && ((e >> 1) < cases) &&
+            (TYPEOF(values[e >> 1]) == PIKE_T_INT) &&
+            (TYPEOF(values[(e - 2) >> 1]) == PIKE_T_INT) &&
+            (values[e >> 1].u.integer >
+             values[(e - 2) >> 1].u.integer)) {
+          /* Subtract unsigned endpoints to avoid signed overflow, even
+           * for a range spanning the entire native integer domain.
+           */
+          unsigned INT_TYPE extra =
+            (unsigned INT_TYPE)values[e >> 1].u.integer -
+            (unsigned INT_TYPE)values[(e - 2) >> 1].u.integer - 1;
+          if (extra > range_budget) expand_ranges = 0;
+          else range_budget -= extra;
         } else {
-          got_range = 1;
+          /* Open-ended and noninteger ranges need binary search. */
+          expand_ranges = 0;
         }
       }
     }
-
-    for(e=1; e<cases*2+2; e++)
-      update_arg(jumptable[e], current_switch.jumptable[e]);
 
     if (!got_range) {
       /* Optimize to common case where ranges are not in use. */
       push_svalue(Pike_sp-1);
       f_indices(1);
       f_mkmapping(2);
-    } else {
-      /* FIXME: Consider expanding short integer ranges (max 16?).
-       *        Cf #10126.
-       */
+    } else if (expand_ranges && !Pike_compiler->num_parse_error) {
+      struct array *values = Pike_sp[-1].u.array;
+      /* Keep the endpoints on the stack while building the mapping. */
+      push_svalue(Pike_sp-1);
+      push_svalue(Pike_sp-1);
+      f_indices(1);
+      f_mkmapping(2);
+      for (e = 1; e < cases; e++) {
+        if (current_switch.jumptable[e * 2 + 1] != -1) {
+          struct svalue key, index;
+          INT_TYPE upper = ITEM(values)[e].u.integer;
+          SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer,
+                   ITEM(values)[e - 1].u.integer);
+          SET_SVAL(index, PIKE_T_INT, NUMBER_NUMBER, integer, e - 1);
+          /* Interior values reuse the lower endpoint's jump target. */
+          while (++key.u.integer < upper)
+            mapping_insert(Pike_sp[-1].u.mapping, &key, &index);
+        }
+      }
+      stack_swap();
+      pop_stack();
+    }
+
+    for(e=1; e<cases*2+2; e++) {
+      if (current_switch.jumptable[e] == -1)
+        current_switch.jumptable[e] = current_switch.default_label;
+      update_arg(jumptable[e], current_switch.jumptable[e]);
     }
 
     update_arg((INT32)tmp1, store_constant(Pike_sp-1,1,0));
