@@ -993,6 +993,10 @@ o Compiler and runtime performance
   unnecessary temporary types and mappings. Also reduced function call
   frame allocation overhead and recursion during local variable binding.
 
+  Switch statements with small integer case ranges now use mapping lookup
+  when there are at least 16 case endpoints and expanding the ranges would
+  grow the lookup table by at most 16 times.
+
 o Runtime support for C11-threads
 
   - The runtime will now use C11 threads on non NT if pthreads
