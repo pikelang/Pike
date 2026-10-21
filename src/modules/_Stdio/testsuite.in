@@ -352,6 +352,12 @@ run_sub_test(({"SRCDIR/sendfiletest.pike"}))
 run_sub_test(({"-DTEST_NORMAL", "SRCDIR/connecttest.pike"}))
 run_sub_test(({"SRCDIR/connecttest.pike"}))
 
+cond_begin([[ _Stdio["__HAVE_BLOCKING_SOCKET_WORKAROUND__"] ]])
+cond_resolv(Thread.Thread, [[
+  run_sub_test(({"SRCDIR/blockingtest.pike"}))
+]])
+cond_end
+
 dnl Stdio.Stat
 
 test_any([[

@@ -581,6 +581,9 @@
 #undef USE_FCNTL_FNDELAY
 #undef USE_FCNTL_O_NONBLOCK
 
+/* Emulate blocking connect() and accept() to avoid missed wakeups. */
+#undef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+
 /* How well is OOB TCP working?
  * -1 = unknown
  *  0 = doesn't seem to be working at all

@@ -1256,6 +1256,11 @@ MY_AC_ARG_WITH(mc-stack-frames, MY_DESCR([--with-mc-stack-frames],
 	       [AC_DEFINE(MACHINE_CODE_STACK_FRAMES)])
 MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 	       [PROFIL=-pg])
+AC_ARG_ENABLE(socket-wakeup-workaround,
+ MY_DESCR([--enable-socket-wakeup-workaround],
+          [emulate blocking socket operations (default: OpenBSD)]),
+ [], [enable_socket_wakeup_workaround=auto])
+
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
   # Neither --with-poll nor --without-poll was specified.
   # Default to --with-poll (ie use it if it exists), except for various BSDs.
@@ -7351,6 +7356,33 @@ fi
 rm -f core
 
 ##########################################################################
+# Blocking socket operations can miss connection wakeups on some kernels.
+case "$enable_socket_wakeup_workaround" in
+  auto)
+    case "x$pike_cv_sys_os" in
+      xOpenBSD*) enable_socket_wakeup_workaround=yes ;;
+      *) enable_socket_wakeup_workaround=no ;;
+    esac
+    ;;
+  yes|no) ;;
+  *)
+    AC_MSG_ERROR([--enable-socket-wakeup-workaround expects yes, no or auto])
+    ;;
+esac
+AC_MSG_CHECKING([whether to emulate blocking connect and accept])
+AC_MSG_RESULT([$enable_socket_wakeup_workaround])
+if test "x$enable_socket_wakeup_workaround" = "xyes"; then
+  if test "x$enable_binary" != "xno" && {
+    test "x$ac_cv_func_poll" != "xyes" || {
+      test "x$ac_cv_header_poll_h" != "xyes" &&
+      test "x$ac_cv_header_sys_poll_h" != "xyes"
+    }
+  }; then
+    AC_MSG_ERROR([nonblocking connect/accept emulation requires poll()])
+  fi
+  AC_DEFINE(USE_NONBLOCKING_CONNECT_AND_ACCEPT)
+fi
+
 AC_MSG_CHECKING(how well OOB handling works)
 AC_CACHE_VAL(pike_cv_system_oob_working,[
   if test "x$enable_binary" = "xno"; then
@@ -7364,6 +7396,9 @@ AC_CACHE_VAL(pike_cv_system_oob_working,[
 #include <sys/socket.h>
 #include <errno.h>
 #include <fcntl.h>
+#if defined(USE_NONBLOCKING_CONNECT_AND_ACCEPT) && defined(HAVE_POLL_H)
+#include <poll.h>
+#endif
 #include <signal.h>
 #include <sys/stat.h>
 #ifdef HAVE_NETINET_IN_H
@@ -7495,13 +7530,28 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   }
 
 
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  /* A blocking loopback connect can miss its completion wakeup. */
+  if (set_nonblocking(sv[1], 1) < 0) {
+    int err = errno;
+    close(sv[1]);
+    sv[1] = -1;
+    errno = err;
+    return -1;
+  }
+#endif
+
 retry_connect:
   retries++;
   if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
   {
     SP_DEBUG((stderr, "my_socketpair:connect() failed, errno:%d (%d)\n",
 	      errno, EWOULDBLOCK));
-    if(errno != EWOULDBLOCK)
+    if (errno != EWOULDBLOCK
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+        && errno != EINPROGRESS
+#endif
+        )
     {
       int tmp2;
 #ifdef ETIMEDOUT
@@ -7550,12 +7600,41 @@ retry_connect:
 
     len3=sizeof(addr);
   retry_accept:
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+    {
+      struct pollfd fds;
+      fds.fd = socketpair_fd;
+      fds.events = POLLIN;
+      fds.revents = 0;
+      retries++;
+      poll(&fds, 1, 100);
+    }
+#endif
     sv[0]=accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+      int err = errno;
+      int socket_error = 0;
+      ACCEPT_SIZE_T size = sizeof(socket_error);
+      if (getsockopt(sv[1], SOL_SOCKET, SO_ERROR,
+                       (void *)&socket_error, &size) < 0)
+        socket_error = errno;
+      if (socket_error) {
+        close(sv[1]);
+        sv[1] = -1;
+        errno = socket_error;
+        return -1;
+      }
+      errno = err;
+#endif
       SP_DEBUG((stderr, "my_socketpair:accept() failed, errno:%d (2)\n",
 		errno));
       if(errno==EINTR) goto retry_accept;
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+      if ((errno == EWOULDBLOCK || errno == EAGAIN) && retries <= 20)
+        goto retry_accept;
+#endif
       close(sv[1]);
       return -1;
     }
@@ -7578,6 +7657,17 @@ retry_connect:
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
 
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  if (set_nonblocking(sv[1], 0) < 0) {
+    int err = errno;
+    close(sv[0]);
+    close(sv[1]);
+    sv[0] = sv[1] = -1;
+    errno = err;
+    return -1;
+  }
+#endif
+
   SP_DEBUG((stderr, "my_socketpair: succeeded\n",
 	    errno));
 
@@ -7595,7 +7685,11 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 
     switch(errno)
     {
-      case EAGAIN: break;
+      case EAGAIN:
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+        if (retries++ > 10) return ret;
+#endif
+        break;
 
       case EADDRINUSE:
 	if(retries++ > 10) return ret;

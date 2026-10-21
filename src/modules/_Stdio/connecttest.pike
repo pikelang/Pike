@@ -22,8 +22,8 @@ void fail()
 void ok()
 {
    if (f->write("hej")==-1)
-     log_msg(PRE "succeeded to connect to closed socket"
-	     " (port %d)\n",z);
+     log_msg(PRE "write callback for closed port %d, but write failed: "
+             "%s (%d)\n", z, strerror(f->errno()), f->errno());
    else
      log_msg(PRE "socket still open (??)"
 	     " (port %d)\n",z);
