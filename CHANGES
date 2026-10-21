@@ -452,6 +452,11 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o Concurrent.Future
+
+  delay() now preserves an explicitly assigned backend throughout its
+  internal callback chain, avoiding a dependency on the default backend.
+
 o predef::backtrace()
 
   Improved handling of frames whose arguments are not fully initialized.

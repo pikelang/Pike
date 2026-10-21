@@ -848,9 +848,10 @@ class Future(<ValueType>)
   //! result of this @[Future], but not until at least @[seconds] have passed.
   this_program(<ValueType>) delay(int|float seconds)
   {
-    return results(
-     ({ this_program::this, setup_call_out(seconds) })
-    )->map(`[], 0);
+    Future(<ValueType>) aggregate = results(
+      ({ this_program::this, setup_call_out(seconds) }));
+    if (backend) aggregate->set_backend(backend);
+    return aggregate->map(`[], 0);
   }
 
   //! Return a @[Future] that will either be fulfilled with the fulfilled
