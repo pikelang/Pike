@@ -45,6 +45,13 @@ function(string(8bit):string(8bit)) compress;
 //! 64-bit sequence number.
 int next_seq_num = 0;    /* Bignum, values 0, .. 2^64-1 are valid */
 
+//! TLS 1.3 and later (@rfc{9846:5.5@}): edge-triggered latches for
+//! @[check_aead_usage_limit()], so each outcome fires at most once
+//! per @[State] object (a fresh one is always built on rekey, so
+//! these never need resetting).
+protected int(0..1) aead_limit_rekey_signaled;
+protected int(0..1) aead_limit_close_signaled;
+
 //! TLS IV prefix length.
 int tls_iv;
 
@@ -446,4 +453,48 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
   }
 
   return packet;
+}
+
+//! TLS 1.3 and later (@rfc{9846:5.5@}): check whether this State's
+//! AEAD key is approaching, or has reached, its safe usage limit (a
+//! MUST since RFC 9846, previously only a SHOULD in @rfc{8446@}) --
+//! call periodically from both @[Connection.to_write()] (this
+//! State's own usage) and @[Connection.recv_packet()] (the peer's).
+//!
+//! @returns
+//!   @[AEAD_LIMIT_rekey] the first time @[next_seq_num] crosses a
+//!   conservative threshold below the real limit (giving a key
+//!   update time to complete before the hard limit is ever reached);
+//!   @[AEAD_LIMIT_close] the first time it reaches the hard limit
+//!   itself (meaning no rekey happened in time); @[AEAD_LIMIT_none]
+//!   otherwise. Each of the first two fires at most once per object.
+//!
+//! @note
+//!   RFC 9846 5.5 gives an explicit limit only for AES-GCM
+//!   (~2^24.5 records); ChaCha20-Poly1305 has no limit of this kind
+//!   short of the 64-bit sequence number itself (unreachable in
+//!   practice). AES-CCM is given no limit of its own either -- this
+//!   conservatively applies the same AES-GCM figure to it too,
+//!   rather than assume an unbounded one.
+int(0..2) check_aead_usage_limit()
+{
+  if (!crypt || (session->cipher_spec->cipher_type != CIPHER_aead) ||
+      (session->cipher_spec->bulk_cipher_algorithm ==
+       Crypto.ChaCha20.POLY1305.State)) {
+    return AEAD_LIMIT_none;
+  }
+
+  // ~2^24.5 full-size records, per RFC 9846 5.5's AES-GCM figure.
+  constant hard_limit = 23726566;
+  constant soft_limit = 16000000;
+
+  if (!aead_limit_close_signaled && (next_seq_num >= hard_limit)) {
+    aead_limit_close_signaled = 1;
+    return AEAD_LIMIT_close;
+  }
+  if (!aead_limit_rekey_signaled && (next_seq_num >= soft_limit)) {
+    aead_limit_rekey_signaled = 1;
+    return AEAD_LIMIT_rekey;
+  }
+  return AEAD_LIMIT_none;
 }

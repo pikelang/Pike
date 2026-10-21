@@ -757,7 +757,28 @@ protected object(Packet)|zero recv_packet()
       }
       return recv_packet();
     }
-    return current_read_state->decrypt_packet(packet);
+    {
+      object(Alert)|object(Packet) decrypted =
+        current_read_state->decrypt_packet(packet);
+      // RFC 9846 5.5: same MUST as the write side (see to_write()),
+      // but we can't rekey our own read state unilaterally -- the
+      // best we can do is ask the peer to (update_keys() also rolls
+      // our own write state forward regardless, as any KeyUpdate
+      // send does). If the peer never honors that in time, close.
+      if (!decrypted->is_alert && (version >= PROTOCOL_TLS_1_3)) {
+        switch (current_read_state->check_aead_usage_limit()) {
+        case AEAD_LIMIT_rekey:
+          update_keys(KEY_UPDATE_requested);
+          break;
+        case AEAD_LIMIT_close:
+          send_packet(alert(ALERT_fatal, ALERT_internal_error,
+                            "Peer's AEAD usage limit reached without "
+                            "a key update.\n"));
+          break;
+        }
+      }
+      return decrypted;
+    }
   case 0:
     SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): current_read_state is zero!\n");
     return 0;
@@ -867,6 +888,16 @@ Packet key_update_packet(int(0..1) request_update)
   return handshake_packet(HANDSHAKE_key_update, sprintf("%1c", request_update));
 }
 
+//! TLS 1.3 and later (@rfc{9846:4.7.3@}): the number of KeyUpdates we
+//! have sent on this connection -- a sending implementation MUST NOT
+//! let this exceed 2^48-1. @[send_key_update()] enforces this as a
+//! hard backstop (for call paths, such as an explicit caller-driven
+//! @expr{update_keys()@}, with no "just don't" option); the graceful
+//! path -- not reciprocating a peer's @expr{update_requested@} if
+//! doing so would exceed the cap -- is instead in each side's
+//! @expr{handle_key_update_1_3()@}.
+int(0..) key_update_count;
+
 //! RFC 8446 7.2/4.6.3: queue a @[HANDSHAKE_key_update] under the
 //! current (pre-update) write state, then roll @[current_write_state]
 //! forward -- per spec, the sender of a KeyUpdate updates its own
@@ -884,6 +915,14 @@ Packet key_update_packet(int(0..1) request_update)
 //!   @[key_schedule] field @[old_secret] came from.
 string(8bit) send_key_update(int(0..1) request_update, string(8bit) old_secret)
 {
+  // RFC 9846 4.7.3: a sending implementation MUST NOT let the number
+  // of KeyUpdates sent exceed 2^48-1 -- a hard backstop for call
+  // paths with no "just don't send one" option (see
+  // key_update_count's doc comment).
+  if (key_update_count >= (1<<48)-1) {
+    error("TLS 1.3: KeyUpdate count limit (2^48-1) reached.\n");
+  }
+  key_update_count++;
   send_packet_1_3(key_update_packet(request_update));
   string(8bit) new_secret = key_schedule->update_traffic_secret(old_secret);
   current_write_state = new_traffic_state(new_secret, 1);
@@ -947,6 +986,24 @@ int(-1..2) to_write(Stdio.Buffer output)
       pending_write_state = pending_write_state[1..];
     } else {
       error("Invalid Change Cipher Spec.\n");
+    }
+  }
+
+  // RFC 9846 5.5: a MUST (previously only a SHOULD) to rekey or close
+  // before exceeding the AEAD key's safe usage limit. Checked against
+  // current_write_state (what new data is actively encrypted under),
+  // not the possibly-older write_state this particular packet
+  // happened to be bound to.
+  if ((version >= PROTOCOL_TLS_1_3) && current_write_state) {
+    switch (current_write_state->check_aead_usage_limit()) {
+    case AEAD_LIMIT_rekey:
+      update_keys(KEY_UPDATE_not_requested);
+      break;
+    case AEAD_LIMIT_close:
+      send_packet(alert(ALERT_fatal, ALERT_internal_error,
+                        "AEAD usage limit reached without a successful "
+                        "key update.\n"));
+      break;
     }
   }
 

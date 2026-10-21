@@ -378,6 +378,13 @@ test_do([[
   server_ctx->add_cert(rsa, ({ cert_md5 }));
 
   // Make sure that all cipher suites are available server side.
+  // get_suites()'s version-dependent filtering (removing suites
+  // obsoleted at various versions) is keyed on min(@supported_versions)
+  // at call time, independent of whatever min_version/max_version
+  // individual tests later narrow this same server_ctx to -- so compute
+  // this exhaustive list with the minimum pinned at SSL 3.0 explicitly,
+  // rather than relying on whatever Context's own default happens to be.
+  server_ctx->min_version = SSL.Constants.PROTOCOL_SSL_3_0;
   server_ctx->preferred_suites = server_ctx->get_suites(-1, 2, (<>));
 ]])
 

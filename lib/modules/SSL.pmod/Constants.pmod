@@ -1456,6 +1456,16 @@ enum KeyUpdateRequest {
                                 //! record.
 }
 
+//! @rfc{9846:5.5@} AEAD key usage limit: result of a @[State]'s
+//! periodic @expr{check_aead_usage_limit()@} check.
+enum AEADLimitAction {
+  AEAD_LIMIT_none  = 0, //! Nothing to do yet.
+  AEAD_LIMIT_rekey = 1, //! Approaching the limit -- initiate (or
+                        //! request) a @[HANDSHAKE_key_update].
+  AEAD_LIMIT_close = 2, //! At the limit with no successful rekey in
+                        //! time -- terminate the connection.
+}
+
 //! Don't request nor check any certificate.
 constant AUTHLEVEL_none		= 0;
 

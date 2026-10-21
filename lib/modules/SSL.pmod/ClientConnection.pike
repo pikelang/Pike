@@ -779,6 +779,18 @@ protected int(-1..1) got_new_session_ticket(Buffer input)
 //! resumption via @[client_hello()].
 protected void got_new_session_ticket_1_3(Buffer input)
 {
+  // RFC 9846 4.6.1: a client that doesn't support resumption (ie
+  // never offers pre_shared_key) MUST ignore a NewSessionTicket. We
+  // always advertise psk_dhe_ke whenever offering TLS 1.3 at all, so
+  // this is unreachable in practice -- a defensive gate only, in case
+  // a caller ever disables that extension on an otherwise-1.3 context.
+  // Still fully drain input: the generic post-handshake dispatch
+  // treats any leftover bytes as a protocol error, "ignore" or not.
+  if (!context->extensions[EXTENSION_pre_shared_key]) {
+    input->read(sizeof(input));
+    return;
+  }
+
   int lifetime = input->read_int(4);
   int age_add = input->read_int(4);
   string(8bit) ticket_nonce = input->read_hstring(1);
@@ -792,6 +804,14 @@ protected void got_new_session_ticket_1_3(Buffer input)
     if (extension_type == EXTENSION_early_data) {
       // RFC 8446 4.6.1: max_early_data_size, a bare uint32.
       max_early_data_size = extension_data->read_int(4);
+      // RFC 9846 4.3: extension structure must consume all its data.
+      // COND_FATAL doesn't fit here (this function returns void, not
+      // an Alert-compatible int) -- inlined by hand instead.
+      if (sizeof(extension_data)) {
+        send_packet(alert(ALERT_fatal, ALERT_decode_error,
+                          "Extraneous data in extension.\n"));
+        return;
+      }
     }
     // Other NewSessionTicket extensions: none else defined by RFC 8446.
   }
@@ -840,7 +860,12 @@ protected int(-1..0) handle_key_update_1_3(Buffer input)
   current_read_state =
     new_traffic_state([string(8bit)]key_schedule->server_application_traffic_secret, 0);
 
-  if (request_update == KEY_UPDATE_requested) {
+  // RFC 9846 4.7.3: if reciprocating would push our own KeyUpdate
+  // count past the 2^48-1 cap, ignore update_requested rather than
+  // violate it (the graceful path -- send_key_update()'s own check
+  // is the hard backstop for paths with no "just don't" option).
+  if ((request_update == KEY_UPDATE_requested) &&
+      (key_update_count < (1<<48)-1)) {
     // update_keys() itself updates our sending keys too, as any
     // KeyUpdate send does -- not a second, redundant update.
     update_keys(KEY_UPDATE_not_requested);
@@ -897,9 +922,13 @@ protected int(-1..0) handle_hello_retry_request_1_3(int cipher_suite,
         // RFC 8446 4.2.8: HelloRetryRequest's key_share extension_data
         // is a bare NamedGroup, not a full KeyShareEntry.
         retry_group = extension_data->read_int(2);
+        // RFC 9846 4.3: extension structure must consume all its data.
+        COND_FATAL(sizeof(extension_data), ALERT_decode_error,
+                  "Extraneous data in extension.\n");
       }
       // NB: supported_versions may also legitimately appear (echoing
-      // 1.3); nothing else is expected or acted on.
+      // 1.3); nothing else is expected or acted on -- its own content
+      // isn't parsed here at all, so there's nothing to validate.
     }
   }
 
@@ -1443,6 +1472,12 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             COND_FATAL(1, ALERT_unsupported_extension,
                        "Unrequested extension.\n");
 	  }
+
+          // RFC 9846 4.3: a recognized extension's own structure MUST
+          // consume all of extension_data; anything left over is a
+          // decode error, not silently ignored trailing bytes.
+          COND_FATAL(sizeof(extension_data), ALERT_decode_error,
+                     "Extraneous data in extension.\n");
 	}
       }
 

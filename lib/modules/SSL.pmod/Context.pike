@@ -48,13 +48,17 @@ protected void create()
 }
 
 //! List of supported versions, in order of preference. Defaults to
-//! @[PROTOCOL_TLS_1_3], @[PROTOCOL_TLS_1_2], @[PROTOCOL_TLS_1_1] and
-//! @[PROTOCOL_TLS_1_0].
+//! @[PROTOCOL_TLS_1_3] and @[PROTOCOL_TLS_1_2].
+//!
+//! @note
+//!   TLS 1.0 and TLS 1.1 are deprecated (@rfc{8996@}) and excluded
+//!   from this default per @rfc{9846@}'s Appendix E -- they are not
+//!   removed from the implementation, and a caller may still opt
+//!   back into them explicitly (eg via @[configure_suite_b()] or by
+//!   setting this field directly) for legacy interop.
 array(ProtocolVersion) supported_versions = ({
   PROTOCOL_TLS_1_3,
   PROTOCOL_TLS_1_2,
-  PROTOCOL_TLS_1_1,
-  PROTOCOL_TLS_1_0,
 });
 
 //! Returns a list of possible versions to use, given the version in

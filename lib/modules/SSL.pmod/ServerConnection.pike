@@ -474,7 +474,12 @@ protected int(-1..0) handle_key_update_1_3(Buffer input)
   current_read_state =
     new_traffic_state([string(8bit)]key_schedule->client_application_traffic_secret, 0);
 
-  if (request_update == KEY_UPDATE_requested) {
+  // RFC 9846 4.7.3: if reciprocating would push our own KeyUpdate
+  // count past the 2^48-1 cap, ignore update_requested rather than
+  // violate it (the graceful path -- send_key_update()'s own check
+  // is the hard backstop for paths with no "just don't" option).
+  if ((request_update == KEY_UPDATE_requested) &&
+      (key_update_count < (1<<48)-1)) {
     // update_keys() itself updates our sending keys too, as any
     // KeyUpdate send does -- not a second, redundant update.
     update_keys(KEY_UPDATE_not_requested);
@@ -1227,7 +1232,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	    SSL3_DEBUG_MSG("SSL.ServerConnection: Got session ticket.\n");
             if (!context->offers_tickets()) {
               SSL3_DEBUG_MSG("SSL.ServerConnection: ...but !context->offers_tickets(), thus ignoring.\n");
-              break;
+              // Not consuming extension_data at all here -- continue,
+              // not break, so the RFC 9846 4.3 "must consume all
+              // data" check below doesn't misfire on an (unread)
+              // non-empty ticket.
+              continue;
             }
 	    tickets_enabled = 1;
 	    // NB: RFC 4507 and 5077 differ in encoding here.
@@ -1245,7 +1254,12 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             {
               application_protocol = 0;
               if( !context->advertised_protocols )
-                break;
+                // Not consuming extension_data at all here (we don't
+                // care about ALPN) -- continue, not break, so the
+                // RFC 9846 4.3 "must consume all data" check below
+                // doesn't misfire on bytes we deliberately never
+                // looked at.
+                continue;
               multiset(string) protocols = (<>);
               COND_FATAL(extension_data->read_int(2) != sizeof(extension_data),
                          ALERT_handshake_failure,
@@ -1335,11 +1349,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             break;
 
           case EXTENSION_padding:
+            // RFC 7685: the padding bytes themselves are deliberately
+            // never consumed (they're filler, not meaningful data) --
+            // the RFC 9846 4.3 "must consume all extension_data" rule
+            // below doesn't apply here, so skip it via continue.
             COND_FATAL(size &&
                        !equal(String.range((string)extension_data),({0,0})),
                        ALERT_illegal_parameter,
                        "Possible covert side channel in padding.\n");
-            break;
+            continue;
 
           case EXTENSION_supported_versions:
             {
@@ -1411,8 +1429,14 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           default:
             SSL3_DEBUG_MSG("Unhandled extension %O.\n", extension_type);
-            break;
+            continue;
           }
+
+          // RFC 9846 4.3: a recognized extension's own structure MUST
+          // consume all of extension_data; anything left over is a
+          // decode error, not silently ignored trailing bytes.
+          COND_FATAL(sizeof(extension_data), ALERT_decode_error,
+                     "Extraneous data in extension.\n");
         }
 
         if (maybe_safari_10_8) {
