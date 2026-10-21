@@ -5,6 +5,13 @@
 */
 
 #include "global.h"
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#else
+#include <sys/poll.h>
+#endif
+#endif
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -5111,7 +5118,16 @@ int my_socketpair(int family, int type, int UNUSED(protocol), int sv[2])
     my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
   }
 
-/*  set_nonblocking(sv[1],1); */
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  /* A blocking loopback connect can miss its completion wakeup. */
+  if (set_nonblocking(sv[1], 1) < 0) {
+    int err = errno;
+    fd_close(sv[1]);
+    sv[1] = -1;
+    errno = err;
+    return -1;
+  }
+#endif
 
 retry_connect:
   retries++;
@@ -5120,7 +5136,11 @@ retry_connect:
 /*    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK); */
     SP_DEBUG((stderr, "my_socketpair:fd_connect() failed, errno:%d (%d)\n",
 	      errno, EWOULDBLOCK));
-    if (errno != EWOULDBLOCK)
+    if (errno != EWOULDBLOCK
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+        && errno != EINPROGRESS
+#endif
+        )
     {
       int tmp2;
       for(tmp2=0;tmp2<20;tmp2++)
@@ -5166,9 +5186,13 @@ retry_connect:
   retry_accept:
     retries++;
     {
-#ifdef HAVE_AND_USE_POLL
+#if defined(HAVE_AND_USE_POLL) || defined(USE_NONBLOCKING_CONNECT_AND_ACCEPT)
       struct pollfd fds;
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+      int timeout = 100;
+#else
       int timeout = 1;
+#endif
 
       fds.fd = socketpair_fd;
       fds.events = POLLIN;
@@ -5192,6 +5216,21 @@ retry_connect:
     sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+      int err = errno;
+      int socket_error = 0;
+      ACCEPT_SIZE_T size = sizeof(socket_error);
+      if (fd_getsockopt(sv[1], SOL_SOCKET, SO_ERROR,
+                       (void *)&socket_error, &size) < 0)
+        socket_error = errno;
+      if (socket_error) {
+        fd_close(sv[1]);
+        sv[1] = -1;
+        errno = socket_error;
+        return -1;
+      }
+      errno = err;
+#endif
       SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d (2)\n",
 		errno));
       if(retries <= 20) goto retry_accept;
@@ -5218,7 +5257,16 @@ retry_connect:
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
 
-/*  set_nonblocking(sv[1],0); */
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  if (set_nonblocking(sv[1], 0) < 0) {
+    int err = errno;
+    fd_close(sv[0]);
+    fd_close(sv[1]);
+    sv[0] = sv[1] = -1;
+    errno = err;
+    return -1;
+  }
+#endif
 
   SP_DEBUG((stderr, "my_socketpair: succeeded\n",
 	    errno));
@@ -5237,7 +5285,11 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 
     switch(errno)
     {
-      case EAGAIN: break;
+      case EAGAIN:
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+        if (retries++ > 10) return ret;
+#endif
+        break;
 
       case EADDRINUSE:
 	if(retries++ > 10) return ret;
@@ -5865,6 +5917,73 @@ static void file_connect_unix( INT32 args )
 }
 #endif /* HAVE_SYS_UN_H */
 
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+/* Avoid indefinite kernel waits while retaining blocking semantics.
+ * The TCP stack still determines connection timeouts.
+ */
+struct blocking_connect_state
+{
+  struct my_file *file;
+  int fd;
+};
+
+static void finish_blocking_connect(void *data)
+{
+  struct blocking_connect_state *state = data;
+  if (state->file->box.fd == state->fd)
+    set_nonblocking(state->fd,
+                    !!(state->file->open_mode & FILE_NONBLOCKING));
+}
+
+static int blocking_file_connect(struct my_file *file,
+                                 struct sockaddr *addr, int len)
+{
+  struct blocking_connect_state state = {file, file->box.fd};
+  struct pollfd fds;
+  ONERROR cleanup;
+  int result, err, ready;
+
+  if (set_nonblocking(state.fd, 1) < 0) return -1;
+  SET_ONERROR(cleanup, finish_blocking_connect, &state);
+  THREADS_ALLOW();
+  result = fd_connect(state.fd, addr, len);
+  err = errno;
+  THREADS_DISALLOW();
+  if (file->box.fd != state.fd) {
+    result = -1;
+    err = EBADF;
+  } else if (result < 0 && err == EINPROGRESS) {
+    fds.fd = state.fd;
+    fds.events = POLLOUT;
+    while (1) {
+      ACCEPT_SIZE_T size = sizeof(err);
+      fds.revents = 0;
+      THREADS_ALLOW();
+      ready = poll(&fds, 1, 100);
+      if (ready < 0) err = errno;
+      THREADS_DISALLOW();
+      if (file->box.fd != state.fd) {
+        err = EBADF;
+        break;
+      }
+      if (ready) {
+        if (ready > 0) {
+          if (fd_getsockopt(state.fd, SOL_SOCKET, SO_ERROR,
+                            (void *)&err, &size) < 0)
+            err = errno;
+          else if (!err) result = 0;
+        }
+        break;
+      }
+      check_threads_etc();
+    }
+  }
+  CALL_AND_UNSET_ONERROR(cleanup);
+  errno = err;
+  return result;
+}
+#endif /* USE_NONBLOCKING_CONNECT_AND_ACCEPT */
+
 /*! @decl int(-1..1) connect(string(8bit) dest_addr, int dest_port)
  *! @decl int(-1..1) connect(string(8bit) dest_addr, int dest_port, @
  *!                          string(8bit) src_addr, int src_port)
@@ -5986,19 +6105,30 @@ static void file_connect(INT32 args)
   }
 
   fd = FD;
-  THREADS_ALLOW();
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  if (!(THIS->open_mode & FILE_NONBLOCKING)
 #ifdef MSG_FASTOPEN
-  if( data )
-  {
-    tmp = fd_sendto(fd, data->str, data->len, MSG_FASTOPEN,
-                    (struct sockaddr *)&addr, addr_len );
-  }
+      && !data
+#endif
+      )
+    tmp = blocking_file_connect(THIS, (struct sockaddr *)&addr, addr_len);
   else
 #endif
   {
-    tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
+    THREADS_ALLOW();
+#ifdef MSG_FASTOPEN
+    if( data )
+    {
+      tmp = fd_sendto(fd, data->str, data->len, MSG_FASTOPEN,
+                      (struct sockaddr *)&addr, addr_len );
+    }
+    else
+#endif
+    {
+      tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
+    }
+    THREADS_DISALLOW();
   }
-  THREADS_DISALLOW();
 
   e = errno;
 
@@ -7308,6 +7438,10 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_PIKE_SEND_FD
   add_integer_constant("__HAVE_SEND_FD__", 1, 0);
+#endif
+
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  add_integer_constant("__HAVE_BLOCKING_SOCKET_WORKAROUND__", 1, 0);
 #endif
 #if defined(_REENTRANT)
 #ifdef __NT__

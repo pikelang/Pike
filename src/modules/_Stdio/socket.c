@@ -27,6 +27,13 @@
 #include <sys/param.h>
 #endif
 #include <errno.h>
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#else
+#include <sys/poll.h>
+#endif
+#endif
 #include <fcntl.h>
 #include <signal.h>
 #ifdef HAVE_SYS_WAIT_H
@@ -68,6 +75,10 @@ struct port
   struct fd_callback_box box;	/* Must be first. */
   int my_errno;
   unsigned int immediate_cnt;
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  unsigned int blocking_accepts;
+  unsigned int accept_generation;
+#endif
   struct svalue accept_callback; /* Mapped. */
   struct svalue id;		/* Mapped. */
 };
@@ -99,7 +110,10 @@ static int got_port_event (struct fd_callback_box *box, int DEBUGUSED(event))
      */
     if (p->box.backend)
       set_fd_callback_events (&p->box, 0, 0);
-    set_nonblocking(p->box.fd,0);
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+    if (!p->blocking_accepts)
+#endif
+      set_nonblocking(p->box.fd,0);
   } else {
     push_svalue (&p->id);
     safe_apply_svalue(& p->accept_callback, 1, 1);
@@ -114,7 +128,10 @@ static void assign_accept_cb (struct port *p, struct svalue *cb)
   if (UNSAFE_IS_ZERO (cb)) {
     if (p->box.backend)
       set_fd_callback_events (&p->box, 0, 0);
-    set_nonblocking(p->box.fd,0);
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+    if (!p->blocking_accepts)
+#endif
+      set_nonblocking(p->box.fd,0);
   }
   else {
     if (!p->box.backend)
@@ -128,6 +145,10 @@ static void assign_accept_cb (struct port *p, struct svalue *cb)
 
 static void do_close(struct port *p)
 {
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  p->accept_generation++;
+  p->blocking_accepts = 0;
+#endif
   retry:
   if(p->box.fd >= 0)
   {
@@ -613,6 +634,82 @@ static void port_fd_factory(INT32 args)
   push_object(clone_object(file_program, 0));
 }
 
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+/* Avoid indefinite kernel accept waits by keeping the kernel listener
+ * nonblocking while any blocking accept is
+ * emulated. All changes to this state are made with the interpreter lock.
+ */
+struct blocking_accept_state
+{
+  struct port *port;
+  unsigned int generation;
+  int listener;
+  int accepted;
+};
+
+static void finish_blocking_accept(void *data)
+{
+  struct blocking_accept_state *state = data;
+  struct port *p = state->port;
+  if (state->generation == p->accept_generation &&
+      !--p->blocking_accepts && UNSAFE_IS_ZERO(&p->accept_callback))
+    set_nonblocking(state->listener, 0);
+  if (state->accepted >= 0) fd_close(state->accepted);
+}
+
+static int blocking_port_accept(struct port *p, struct sockaddr *addr,
+                                ACCEPT_SIZE_T *len)
+{
+  struct blocking_accept_state state = {p, p->accept_generation,
+                                        p->box.fd, -1};
+  ACCEPT_SIZE_T size = *len;
+  ONERROR cleanup;
+  int err = 0, result;
+  struct pollfd fds;
+
+  if (!p->blocking_accepts && set_nonblocking(state.listener, 1) < 0)
+    return -1;
+  p->blocking_accepts++;
+  SET_ONERROR(cleanup, finish_blocking_accept, &state);
+  fds.fd = state.listener;
+  fds.events = POLLIN;
+  while (1) {
+    *len = size;
+    THREADS_ALLOW();
+    state.accepted = fd_accept(state.listener, addr, len);
+    err = errno;
+    if (state.accepted < 0 && (err == EWOULDBLOCK || err == EAGAIN)) {
+      fds.revents = 0;
+      /* A finite poll also recovers from a missed readiness wakeup. */
+      if (poll(&fds, 1, 100) < 0) err = errno;
+    }
+    THREADS_DISALLOW();
+    if (state.generation != p->accept_generation) {
+      err = EBADF;
+      break;
+    }
+    if (state.accepted >= 0 ||
+        (err != EINTR && err != EWOULDBLOCK && err != EAGAIN))
+      break;
+    check_threads_etc();
+  }
+  result = state.accepted;
+  if (state.generation != p->accept_generation) result = -1;
+  if (result >= 0) {
+    /* accept() can inherit the listener's nonblocking mode. */
+    if (set_nonblocking(result, 0) < 0) {
+      err = errno;
+      result = -1;
+    } else {
+      state.accepted = -1;
+    }
+  }
+  CALL_AND_UNSET_ONERROR(cleanup);
+  errno = err;
+  return result;
+}
+#endif /* USE_NONBLOCKING_CONNECT_AND_ACCEPT */
+
 /*! @decl Stdio.File accept()
  *!
  *! Get the first connection request waiting for this port and return
@@ -643,13 +740,22 @@ static void port_accept(INT32 args)
   /* FIXME: Race. */
   THIS->box.revents = 0;
 
-  THREADS_ALLOW();
   len=sizeof(addr);
-  do {
-    fd=fd_accept(this->box.fd, (struct sockaddr *)&addr, &len);
+#ifdef USE_NONBLOCKING_CONNECT_AND_ACCEPT
+  if (UNSAFE_IS_ZERO(&this->accept_callback) &&
+      (this->blocking_accepts || !query_nonblocking(this->box.fd))) {
+    fd = blocking_port_accept(this, (struct sockaddr *)&addr, &len);
     err = errno;
-  } while (fd < 0 && err == EINTR);
-  THREADS_DISALLOW();
+  } else
+#endif
+  {
+    THREADS_ALLOW();
+    do {
+      fd=fd_accept(this->box.fd, (struct sockaddr *)&addr, &len);
+      err = errno;
+    } while (fd < 0 && err == EINTR);
+    THREADS_DISALLOW();
+  }
   INVALIDATE_CURRENT_TIME();
 
   if(fd < 0)

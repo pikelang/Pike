@@ -575,6 +575,10 @@ o GTK2
 
 o Pike.Backend
 
+  The kqueue backend now reports failed nonblocking connections as
+  errors even when the kernel returns only a write event. Previously
+  these could invoke the success callback on OpenBSD.
+
   Backend callbacks throwing errors could cause backends to
   enter a state where they got stuck throwing "Backend already
   running - cannot reenter.". This was typically triggered via
@@ -638,6 +642,16 @@ o Standards.PEM, Standards.PKCS and Standards.X509
 o Standards.URI
 
   URIs containing CR, LF or NUL are now rejected.
+
+o Stdio.File, Stdio.Port
+
+  Work around OpenBSD hangs in blocking TCP connect() and accept(),
+  including the TCP socketpair fallback. The C implementation now uses
+  nonblocking system calls internally while preserving blocking behavior
+  for Pike callers.
+
+  This defaults to OpenBSD. Use --enable-socket-wakeup-workaround or
+  --disable-socket-wakeup-workaround to override it.
 
 o Stdio.File: Support concurrent close() during read() and write().
 

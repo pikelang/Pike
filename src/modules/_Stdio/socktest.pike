@@ -528,6 +528,22 @@ array(object) stdtest(program Socket)
   return ({sock,sock2});
 }
 
+// Do not wait in accept() unless the corresponding connect() succeeded.
+// Repeated loopback connections can encounter temporary address collisions.
+void connect_pair(Stdio.File sock)
+{
+  for (int attempt = 0; ; attempt++) {
+    if (sock->connect(LOOPBACK, portno2)) return;
+    int err = sock->errno();
+    if (err != System.EADDRINUSE || attempt >= 10) {
+      log_msg("Pair connect failed: (%d, %O)\n", err, strerror(err));
+      exit_test(1);
+    }
+    log_msg("Pair connect: Address in use. Retrying.\n");
+    sleep(0.1);
+  }
+}
+
 array(object) spair(int type)
 {
   object sock1,sock2;
@@ -559,10 +575,10 @@ array(object) spair(int type)
       }
       sock1->set_blocking();
     } else {
-      sock1->connect(LOOPBACK, portno2);
+      connect_pair(sock1);
     }
 #else
-    sock1->connect(LOOPBACK, portno2);
+    connect_pair(sock1);
 #endif
     sock2=port2::accept();
     if(!sock2)
@@ -650,7 +666,7 @@ void finish(program Socket)
             }
             sleep(0.1);
           } while(1);
-          DEBUG_WERR("Socket %d fd=%O: local: %s, remote: %s\n",
+          DEBUG_WERR("Socket %d fd=%O: local: %O, remote: %O\n",
                      sock1->num,
                      sock1->o->query_fd?sock1->o->query_fd():sock1->o,
                      sock1->o->query_address(1), sock1->o->query_address());
@@ -759,7 +775,9 @@ void finish(program Socket)
         }
         tests=51-_tests;
 #endif
-	log_status("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets"));
+        log_status("Copying " + ((tests/2)*(2<<(tests/2))*11) +
+                   " bytes of data on " + (tests&~1) + " " +
+                   (tests&1?"sockets":"pipes"));
 	for(int e=0;e<tests/2;e++)
 	{
 	  string data1 = random_string(6 * (2<<(tests/2)));

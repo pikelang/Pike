@@ -80,6 +80,7 @@
 /* For kqueue. */
 #ifdef HAVE_SYS_EVENT_H
 #include <sys/event.h>
+#include <sys/ioctl.h>
 #endif /* HAVE_SYS_EVENT_H */
 
 /* for kqueue + CFRunLoop */
@@ -4205,6 +4206,32 @@ PIKECLASS PollDeviceBackend
 #ifdef PIKE_DEBUG
 	  int handled = 0;
 #endif /* PIKE_DEBUG */
+#ifdef BACKEND_USES_KQUEUE
+          if ((PDB_CHECK_EVENT(poll_fds[i], MY_POLLIN) ||
+               PDB_CHECK_EVENT(poll_fds[i], MY_POLLOUT)) &&
+              PDB_CHECK_ERROR_EVENT(poll_fds[i], EV_EOF) &&
+              poll_fds[i].fflags) {
+            int bytes = 0;
+            int ret;
+            /* Observed on OpenBSD 7.9:
+             *
+             * Socket errors accompany EOF in fflags. A refused connect
+             * can return just EVFILT_WRITE, so do not report success
+             * while waiting for EVFILT_READ to arrive.
+             *
+             * Drain buffered input before reporting an error, which
+             * disables further callbacks and consumes SO_ERROR.
+             */
+            do {
+              ret = fd_ioctl(fd, FIONREAD, &bytes);
+            } while (ret < 0 && errno == EINTR);
+            if ((box->events & PIKE_BIT_FD_READ) && !ret && bytes > 0)
+              box->revents = PIKE_BIT_FD_READ;
+            else
+              box->revents = PIKE_BIT_FD_ERROR;
+            goto next_fd;
+          }
+#endif /* BACKEND_USES_KQUEUE */
 	  if (PDB_CHECK_ERROR_EVENT(poll_fds[i], MY_POLLERR)) {
 	    /* Errors are signalled on the first available callback. */
             PDWERR("[%d]BACKEND[%d]: POLLERR on %d\n", THR_NO, me->id, fd);
