@@ -119,6 +119,8 @@ string dirlist( string dir, string rel_dir )
     return res+"</table></body></html>\n";
 }
 
+#if constant(Parser.Markdown)
+
 constant md_style = #"
   body { margin:0 auto; padding:1em 2em; max-width:50em; line-height:1.6;
          font-family:system-ui, sans-serif; color:#24292f; background:#fff; }
@@ -179,6 +181,8 @@ string markdown( string rfile )
     "<style>" + md_style + "</style>\n"
     "</head><body>\n" + body + "</body></html>\n";
 }
+
+#endif
 
 string file_not_found(string fname)
 {
@@ -241,11 +245,13 @@ void handle_request(Protocols.HTTP.Server.Request request)
         request->response_and_finish( ([ "data":dirlist(file, rel_file),
                                          "extra_heads" : headers,
                                          "type":"text/html" ]) );
+#if constant(Parser.Markdown)
     else if( has_index(request->variables, "format") )
         request->response_and_finish(
           ([ "data":markdown(file),
              "extra_heads" : headers,
              "type":"text/html; charset=utf-8" ]) );
+#endif
     else
       request->response_and_finish( ([ "file":Stdio.File(file),
                                        "extra_heads" : headers,
