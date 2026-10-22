@@ -43,9 +43,16 @@ void run_tests()
   foreach (waiters, Thread.Thread waiter) {
     Stdio.File accepted = waiter->wait();
     require(!!accepted, "concurrent accept returned no connection");
-    Stdio.File client = clients[0];
-    if (client->query_address(1) != accepted->query_address())
-      client = clients[1];
+    Stdio.File client;
+    string address = accepted->query_address();
+    foreach (clients, Stdio.File candidate) {
+      if (candidate->query_address(1) == address) {
+        client = candidate;
+        break;
+      }
+    }
+    require(!!client, "accepted connection has no matching client");
+    clients -= ({client});
     check_blocking(accepted, client);
     check_blocking(client, accepted);
     accepted->close();
