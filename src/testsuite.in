@@ -8163,6 +8163,39 @@ test_any([[
   return !weak[0];
 ]], 1)
 
+// Cached types must eventually be released even if the cache stays idle.
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  mixed held = _typeof(n);
+  mixed other = held | _typeof(n+1);
+  mixed result = held & other;
+  array weak = set_weak_flag(({held, other, result}), 1);
+  // Let the cache settle while the types still have ordinary references.
+  for (int i = 0; i < 128; i++) gc();
+  if (!weak[0] || !weak[1] || result != held) return 0;
+  // Drop those references without adding another cache entry.
+  held = other = result = 0;
+  for (int i = 0; i < 128 && (weak[0] || weak[1] || weak[2]); i++) gc();
+  return !weak[0] && !weak[1] && !weak[2];
+]], 1)
+
+// Freeing a program requests a cache scan even after a long idle period.
+test_any([[
+  int n = 0x60000000 + random(0x10000000);
+  program|zero p = compile_string(sprintf(
+    "int(%d..%d) f() { return %d; }", n, n, n));
+  mixed held = _typeof(p()->f);
+  mixed other = held | _typeof(0);
+  mixed result = held & other;
+  array weak = set_weak_flag(({other}), 1);
+  for (int i = 0; i < 128; i++) gc();
+  if (!weak[0] || result != held) return 0;
+  held = other = result = 0;
+  p = 0;
+  gc();
+  return !weak[0];
+]], 1)
+
 // Type references in weak containers are weak even without complex values.
 test_any([[
   int n = 0x60000000 + random(0x10000000);

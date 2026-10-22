@@ -4786,6 +4786,17 @@ static struct type_binop_cacheability_entry {
  * every hit and checks that neither the result nor remap state changed.
  */
 static int type_binop_cache_mode;
+
+/* Idle caches remain strong between scans. All weak-reference passes in a
+ * collection must use the same decision. A periodic scan also notices refs
+ * released by ordinary reference counting outside the collector.
+ */
+#define TYPE_BINOP_CACHE_GC_MAX_INTERVAL 64
+static int type_binop_cache_dirty = 1;
+static int type_binop_cache_gc_scan = 1;
+static unsigned int type_binop_cache_gc_age;
+static unsigned int type_binop_cache_gc_interval = 1;
+static int type_binop_cache_gc_retry;
 static unsigned long type_binop_cache_verified;
 static unsigned long type_binop_empty_cache_verified;
 static unsigned long type_binop_match_verified;
@@ -4804,6 +4815,7 @@ static void clear_type_binop_cache_entry(struct type_binop_cache_entry *e)
 {
   struct type_binop_cache_entry *state = NULL;
   if (e->status == TYPE_BINOP_CACHE_EMPTY) return;
+  type_binop_cache_dirty = 1;
   if (e->status == TYPE_BINOP_CACHE_CONTINUATION) {
     /* A collision with the second slot evicts its owner as well. */
     e = &type_binop_cache[(e - type_binop_cache + TYPE_BINOP_CACHE_SIZE - 1) &
@@ -4830,6 +4842,7 @@ static void clear_type_binop_cache(void)
   for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
     if (type_binop_cache[i].status != TYPE_BINOP_CACHE_EMPTY)
       clear_type_binop_cache_entry(&type_binop_cache[i]);
+    if (type_binop_cacheability[i].type) type_binop_cache_dirty = 1;
     free_type(type_binop_cacheability[i].type);
     type_binop_cacheability[i].type = NULL;
   }
@@ -4890,15 +4903,56 @@ static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
     cacheable = 2;
   free_type(e->type);
   e->type = t;
+  type_binop_cache_dirty = 1;
   add_ref(t);
   e->cacheable = cacheable;
   return cacheable;
+}
+
+void gc_type_binop_cache_program_freed(void)
+{
+  /* A program can release types through ordinary reference counting too.
+   * Request the next scan without changing this collection's decision.
+   */
+  type_binop_cache_gc_retry = 1;
+}
+
+void gc_type_binop_cache_done(int freed)
+{
+  if (type_binop_cache_mode <= 0) return;
+  if (type_binop_cache_gc_scan) {
+    /* Removals can expose more weak-only types. Otherwise back off after
+     * an unproductive scan, while retaining a periodic RC backstop.
+     */
+    if (type_binop_cache_dirty)
+      type_binop_cache_gc_interval = 1;
+    else if (type_binop_cache_gc_interval < TYPE_BINOP_CACHE_GC_MAX_INTERVAL)
+      type_binop_cache_gc_interval *= 2;
+  }
+  if (freed) type_binop_cache_gc_retry = 1;
 }
 
 void gc_check_type_binop_cache(void)
 {
   unsigned int i;
   if (type_binop_cache_mode <= 0) return;
+  /* Reference-location diagnostics must always visit the whole cache and
+   * must not change the decision for an ongoing collection.
+   */
+  if (Pike_in_gc == GC_PASS_CHECK) {
+    if (type_binop_cache_dirty) type_binop_cache_gc_interval = 1;
+    type_binop_cache_gc_scan = type_binop_cache_dirty ||
+      type_binop_cache_gc_retry ||
+      type_binop_cache_gc_age >= type_binop_cache_gc_interval - 1 ||
+      gc_destruct_everything;
+    if (!type_binop_cache_gc_scan) {
+      type_binop_cache_gc_age++;
+      return;
+    }
+    type_binop_cache_dirty = 0;
+    type_binop_cache_gc_retry = 0;
+    type_binop_cache_gc_age = 0;
+  }
   for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
     struct type_binop_cache_entry *e = &type_binop_cache[i];
     if (e->status == TYPE_BINOP_CACHE_VALID ||
@@ -4928,7 +4982,7 @@ void gc_mark_type_binop_cache(void)
   unsigned int i, j;
   struct pike_type **refs[3];
   union anything u;
-  if (type_binop_cache_mode <= 0) return;
+  if (type_binop_cache_mode <= 0 || !type_binop_cache_gc_scan) return;
   for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++) {
     struct type_binop_cache_entry *e = &type_binop_cache[i];
     if (e->status == TYPE_BINOP_CACHE_VALID ||
@@ -4954,7 +5008,8 @@ void gc_mark_type_binop_cache(void)
     }
     if (type_binop_cacheability[i].type) {
       u.type = type_binop_cacheability[i].type;
-      gc_mark_weak_short_svalue(&u, PIKE_T_TYPE);
+      if (gc_mark_weak_short_svalue(&u, PIKE_T_TYPE))
+        type_binop_cache_dirty = 1;
       type_binop_cacheability[i].type = u.type;
     }
   }
@@ -4967,7 +5022,7 @@ void gc_free_type_binop_cache(void)
    * references. Process them through mark/zap before releasing them in
    * the free pass, when cascading frees are allowed again.
    */
-  if (type_binop_cache_mode <= 0) return;
+  if (type_binop_cache_mode <= 0 || !type_binop_cache_gc_scan) return;
   for (i = 0; i < TYPE_BINOP_CACHE_SIZE; i++)
     if (type_binop_cache[i].status == TYPE_BINOP_CACHE_EVICT)
       clear_type_binop_cache_entry(&type_binop_cache[i]);
@@ -5107,6 +5162,7 @@ static struct pike_type *low_type_binop(enum pt_binop op,
   e->u.key.remap_flags = remap_flags;
   e->external = external;
   e->status = TYPE_BINOP_CACHE_VALID;
+  type_binop_cache_dirty = 1;
   return result;
 }
 

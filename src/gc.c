@@ -4086,6 +4086,10 @@ size_t do_gc(int explicit_call)
   if(fatal_after_gc) Pike_fatal("%s", fatal_after_gc);
 #endif
 
+  /* Releasing garbage can make cached types eligible at the next scan. */
+  gc_type_binop_cache_done(unreferenced || start_num_objs > num_objects ||
+                           pre_kill_objs > num_objects);
+
   /* Calculate the next alloc_threshold. */
   {
     double multiplier, new_threshold;

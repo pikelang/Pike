@@ -57,6 +57,7 @@ void really_free_program(struct program * p) {
     exit_program_struct(p);
     (void)dmalloc_unregister(p, 0);
     ba_free(&program_allocator, p);
+    gc_type_binop_cache_program_freed();
 }
 
 void count_memory_in_programs(size_t *num, size_t *_size) {
