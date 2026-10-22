@@ -3582,14 +3582,15 @@ static void warn_bad_cycles(void)
 size_t do_gc(int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
-  size_t start_num_objs, unreferenced;
+  size_t unreferenced;
+  int start_num_objs, pre_kill_objs;
   cpu_time_t gc_start_time, gc_start_real_time;
-  ptrdiff_t objs, pre_kill_objs;
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
   unsigned destruct_count;
 #endif
 #ifdef PIKE_DEBUG
   unsigned obj_count;
+  int num_obj_count;
   ONERROR uwp;
 #endif
 
@@ -3648,8 +3649,6 @@ size_t do_gc(int explicit_call)
     remove_callback(gc_evaluator_callback);
     gc_evaluator_callback=0;
   }
-
-  objs=num_objects;
 
   if(GC_VERBOSE_DO(1 ||) gc_trace) {
     if (gc_destruct_everything)
@@ -3895,7 +3894,7 @@ size_t do_gc(int explicit_call)
   Pike_in_gc=GC_PASS_FREE;
 #ifdef PIKE_DEBUG
   weak_freed = 0;
-  obj_count = num_objects;
+  num_obj_count = num_objects;
 #endif
 
   GC_POP_CALL_FRAME();	/* We can now free the frame. */
@@ -3943,7 +3942,7 @@ size_t do_gc(int explicit_call)
 
   GC_VERBOSE_DO(fprintf(stderr, "| free: %"PRINTSIZET"u unreferenced, "
 			"%d really freed, %u left with live references\n",
-			unreferenced, obj_count - num_objects, live_ref));
+                        unreferenced, num_obj_count - num_objects, live_ref));
 
 #ifdef PIKE_DEBUG
   gc_internal_array = (struct array *) (ptrdiff_t) -1;
@@ -3960,11 +3959,8 @@ size_t do_gc(int explicit_call)
   /* Destruct the live objects in cycles, but first warn about any bad
    * cycles. */
   pre_kill_objs = num_objects;
-  if (Pike_interpreter.evaluator_stack && !gc_destruct_everything) {
-    objs -= num_objects;
+  if (Pike_interpreter.evaluator_stack && !gc_destruct_everything)
     warn_bad_cycles();
-    objs += num_objects;
-  }
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
   destruct_count = 0;
 #endif
@@ -4065,15 +4061,15 @@ size_t do_gc(int explicit_call)
 #endif
 
   GC_VERBOSE_DO(fprintf(stderr, "| kill: %u objects killed, "
-			"%"PRINTSIZET"u things really freed\n",
+                        "%d things really freed\n",
 			destruct_count, pre_kill_objs - num_objects));
 
   Pike_in_gc=GC_PASS_DESTRUCT;
   /* Destruct objects on the destruct queue. */
-  GC_VERBOSE_DO(obj_count = num_objects);
+  GC_VERBOSE_DO(num_obj_count = num_objects);
   destruct_objects_to_destruct();
   GC_VERBOSE_DO(fprintf(stderr, "| destruct: %d things really freed\n",
-			obj_count - num_objects));
+                        num_obj_count - num_objects));
 
 #ifdef PIKE_DEBUG
   if (gc_extra_refs) {
@@ -4191,7 +4187,7 @@ size_t do_gc(int explicit_call)
 	(gc_garbage_ratio_low * start_num_objs) / (objects_freed+1.0);
       last_garbage_strategy = GARBAGE_RATIO_LOW;
 #ifdef GC_INTERVAL_DEBUG
-      fprintf (stderr, "     strategy: low ratio %g, objs %"PRINTSIZET"u, "
+      fprintf (stderr, "     strategy: low ratio %g, objs %d, "
 	       "new threshold -> %.12g\n",
 	       gc_garbage_ratio_low, start_num_objs, new_threshold);
 #endif
@@ -4201,7 +4197,7 @@ size_t do_gc(int explicit_call)
 	(gc_garbage_ratio_high * start_num_objs) / (objects_freed+1.0);
       last_garbage_strategy = GARBAGE_RATIO_HIGH;
 #ifdef GC_INTERVAL_DEBUG
-      fprintf (stderr, "     strategy: high ratio %g, objs %"PRINTSIZET"u, "
+      fprintf (stderr, "     strategy: high ratio %g, objs %d, "
 	       "new threshold -> %.12g\n",
 	       gc_garbage_ratio_high, start_num_objs, new_threshold);
 #endif
@@ -4279,7 +4275,7 @@ size_t do_gc(int explicit_call)
 		destruct_count, destruct_count == 1 ? "was" : "were", timestr);
       else
 #endif
-	fprintf(stderr, "done (%"PRINTSIZET"u of %"PRINTSIZET"u "
+        fprintf(stderr, "done (%"PRINTSIZET"u of %d "
 		"%s unreferenced)%s\n",
 		unreferenced, start_num_objs,
 		unreferenced == 1 ? "was" : "were",
