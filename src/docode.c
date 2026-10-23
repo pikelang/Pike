@@ -346,8 +346,12 @@ int do_docode(node *n, int flags)
   INT_TYPE save_current_line = c->lex.current_line;
   struct pike_string *save_current_file = c->lex.current_file;
   if(!n) return 0;
-  c->lex.current_line=n->line_number;
-  c->lex.current_file = n->current_file;
+  /* Locals in this frame share their node with the declaration.  The
+   * enclosing expression has the location of the actual use. */
+  if ((n->token != F_LOCAL) || (n->u.integer.b > 0)) {
+    c->lex.current_line = n->line_number;
+    c->lex.current_file = n->current_file;
+  }
 #ifdef PIKE_DEBUG
   if (current_stack_depth == -4711) Pike_fatal("do_docode() used outside docode().\n");
 #endif
