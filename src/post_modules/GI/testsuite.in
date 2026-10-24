@@ -1,1 +1,43 @@
+START_MARKER
+cond_begin([[ master()->resolv("GI")->get_default_repository ]])
+cond_begin([[ has_value(cpp("__NT__"), "__NT__") ]])
 
+dnl GLib timers and idle sources have no ready descriptor of their own.
+dnl Exercise Pike's backend without manually iterating the GLib context.
+test_any([[
+  GI.get_default_repository()->require("GLib", "2.0");
+  mixed glib = GI.repository.GLib;
+  int fired;
+  int source = glib->timeout_add(0, 20, lambda() {
+    fired++;
+    return 0;
+  });
+  // Retain the source so cleanup is valid even if its callback removed it.
+  object event_source =
+    glib->main_context_default()->find_source_by_id(source)->ref();
+  for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
+  event_source->destroy();
+  event_source->unref();
+  return !!fired;
+]], 1)
+
+test_any([[
+  GI.get_default_repository()->require("GLib", "2.0");
+  mixed glib = GI.repository.GLib;
+  int fired;
+  int source = glib->idle_add(0, lambda() {
+    fired++;
+    return 0;
+  });
+  // Retain the source so cleanup is valid even if its callback removed it.
+  object event_source =
+    glib->main_context_default()->find_source_by_id(source)->ref();
+  for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
+  event_source->destroy();
+  event_source->unref();
+  return !!fired;
+]], 1)
+
+cond_end
+cond_end
+END_MARKER
