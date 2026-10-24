@@ -29,7 +29,7 @@ enum ProtocolVersion {
 }
 
 //! Max supported TLS version.
-constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_2;
+constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_3;
 
 //! Packet types.
 enum PacketType {
