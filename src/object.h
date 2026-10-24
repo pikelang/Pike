@@ -50,14 +50,13 @@ struct object
 static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE
 accumulate_type_field(const struct svalue *s, TYPE_FIELD acc)
 {
-  TYPE_FIELD bit;
-  acc |= (bit = (TYPE_FIELD)(1 << TYPEOF(*s)));
-  if (!(acc & BIT_INT) && (bit & BIT_OBJECT) &&
+  TYPE_FIELD bit = (TYPE_FIELD)(1 << TYPEOF(*s));
+  if (bit == BIT_OBJECT && !(acc & BIT_INT) &&
       is_bignum_object(s->u.object)) {
-    /* Lie, and claim that is is an integer too. */
-    acc |= BIT_INT;
+    /* Lie, and claim that it is an integer too. */
+    bit |= BIT_INT;
   }
-  return acc;
+  return acc | bit;
 }
 
 PMOD_EXPORT extern struct object *first_object;

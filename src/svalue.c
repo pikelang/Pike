@@ -274,9 +274,14 @@ PMOD_EXPORT TYPE_FIELD assign_svalues_no_free(struct svalue *to,
 
   type_hint = 0;
   while(num--) {
-    type_hint |= 1 << TYPEOF(*from);
+    type_hint |= BITOF(*from);
     if (REFCOUNTED_TYPE(TYPEOF(*from))) {
       add_ref(from->u.dummy);
+      if ((TYPEOF(*from) == PIKE_T_OBJECT) &&
+          (from->u.object->prog == bignum_program)) {
+        /* Lie, and claim that the array contains integers too. */
+        type_hint |= BIT_INT;
+      }
     }
     from++;
   }
