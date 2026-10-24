@@ -592,14 +592,20 @@ protected int select_signature_scheme_1_3(CertificatePair cp,
     return -1;
   }
 
-  // ECDSA (and, if it's ever implemented, EdDSA): cp->sign_algs
-  // already names the exact scheme(s) the key/curve combination can
-  // use, unlike RSA's PKCS1-vs-PSS wrinkle above.
-  foreach([array(int)]cp->sign_algs, int scheme) {
-    if (!has_value(peer_schemes, scheme)) continue;
-    if ((scheme & SIGNATURE_MASK) == SIGNATURE_ecdsa) return scheme;
-  }
-  return -1;
+  // ECDSA: RFC 8446 4.2.3 ties each ECDSA SignatureScheme to a
+  // specific curve (secp256r1/384r1/521r1) -- the live CertificateVerify
+  // signature must use the curve of the certificate's own key
+  // (cp->key), not cp->sign_algs, which names the *issuer's* signing
+  // algorithm and can legitimately use a different curve (eg Let's
+  // Encrypt's ECDSA intermediates are secp384r1 while commonly
+  // issuing secp256r1 leaf certificates).
+  object curve = [object]cp->key->get_curve();
+  int scheme;
+  if (curve == Crypto.ECC.SECP_256R1) scheme = SIGNATURE_ecdsa_secp256r1_sha256;
+  else if (curve == Crypto.ECC.SECP_384R1) scheme = SIGNATURE_ecdsa_secp384r1_sha384;
+  else if (curve == Crypto.ECC.SECP_521R1) scheme = SIGNATURE_ecdsa_secp521r1_sha512;
+  else return -1; // Unsupported curve for a live TLS 1.3 signature.
+  return has_value(peer_schemes, scheme) ? scheme : -1;
 }
 
 //! TLS 1.3 (RFC 8446 4) full 1-RTT server handshake flow, replacing
