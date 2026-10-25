@@ -705,6 +705,12 @@ o The new stricter type checker may expose old bugs that the
 
 o Iterator API changed. See "Simplified the Iterator API" above.
 
+o Concurrent
+
+  Pike 8.0 compatibility mode provides AggregateState as an extension point
+  for aggregation diagnostics. It uses the Pike 9.0 AggregatedPromise
+  implementation and supports subclasses that customize diagnostic output.
+
 o Fuse
 
   run() now returns a status instead of terminating the process.
