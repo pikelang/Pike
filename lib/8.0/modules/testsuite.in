@@ -1,5 +1,123 @@
 START_MARKER(8.0)
 
+// Concurrent.AggregateState remains an aggregation diagnostics extension point.
+test_do([[
+  class TracedConcurrent {
+    inherit Concurrent;
+    int aggregates;
+    class AggregateState {
+      inherit ::this_program;
+      protected void create() {
+        aggregates++;
+        ::create();
+      }
+      protected string _sprintf(int flag) {
+        return flag == 'O' && "traced aggregate";
+      }
+    }
+  };
+  add_constant("TracedConcurrent", TracedConcurrent);
+]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  object a = c->Promise(), b = c->Promise();
+  object f = c->results(({ a->future(), b->future() }));
+  b->success(2);
+  a->success(1);
+  return ({ f->get(), c->aggregates, sprintf("%O", f) });
+]], [[({ ({ 1, 2 }), 1, "traced aggregate" })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  object a = c->Promise(), b = c->Promise();
+  object f = c->first_completed(a->future(), b->future());
+  b->success(2);
+  a->success(1);
+  return ({ f->get(), c->aggregates });
+]], [[({ 2, 1 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  object a = c->Promise(), b = c->Promise();
+  object f = c->race(({ a->future(), b->future() }));
+  b->failure("rejected");
+  a->success(1);
+  mixed err = catch { f->get(); };
+  return ({ err, c->aggregates });
+]], [[({ "rejected", 1 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  mixed values = c->all(c->resolve(1), c->resolve(2))->get();
+  return ({ values, c->aggregates });
+]], [[({ ({ 1, 2 }), 1 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  mixed values = c->traverse(({ c->resolve(1), c->resolve(2) }),
+                            lambda(int value) { return 2 * value; })->get();
+  return ({ values, c->aggregates });
+]], [[({ ({ 2, 4 }), 1 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  mixed values = c->serialize(({ c->resolve(1), c->resolve(2) }),
+                             lambda(int value) { return 2 * value; })->get();
+  return ({ values, c->aggregates });
+]], [[({ ({ 2, 4 }), 1 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  mixed value = c->fold(({ c->resolve(1), c->resolve(2) }), 10,
+                        lambda(int a, int b) { return a + b; })->get();
+  return ({ value, c->aggregates });
+]], [[({ 13, 1 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  object a = c->Promise(), b = c->Promise();
+  object f = c->results(a->future(), b->future());
+  a->failure("rejected");
+  b->success(2);
+  mixed err = catch { f->get(); };
+  return ({ err, c->aggregates });
+]], [[({ "rejected", 1 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  mixed values = c->results(({}))->get();
+  return ({ values, c->aggregates });
+]], [[({ ({}), 0 })]])
+
+test_any_equal([[
+  object c = TracedConcurrent();
+  c->use_backend(0);
+  object backend = Pike.Backend();
+  object p = c->Promise();
+  object f = c->results(({ p->future() }));
+  f->set_backend(backend);
+  int called;
+  f->on_success(lambda(mixed value) { called++; });
+  p->success(42);
+  int before = called;
+  backend(0.0);
+  return ({ before, called, f->get(), c->aggregates });
+]], [[({ 0, 1, ({ 42 }), 1 })]])
+
+test_false(9.0::Concurrent["AggregateState"])
+test_do([[ add_constant("TracedConcurrent"); ]])
+
+
 test_any([[
   ADT.Heap h = ADT.Heap();
   h->push(4);

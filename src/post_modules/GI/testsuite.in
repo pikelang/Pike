@@ -14,7 +14,7 @@ test_any([[
   });
   // Retain the source so cleanup is valid even if its callback removed it.
   object event_source =
-    glib->main_context_default()->find_source_by_id(source)->ref();
+    glib->MainContext()->default()->find_source_by_id(source)->ref();
   for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
   event_source->destroy();
   event_source->unref();
@@ -31,7 +31,7 @@ test_any([[
   });
   // Retain the source so cleanup is valid even if its callback removed it.
   object event_source =
-    glib->main_context_default()->find_source_by_id(source)->ref();
+    glib->MainContext()->default()->find_source_by_id(source)->ref();
   for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
   event_source->destroy();
   event_source->unref();

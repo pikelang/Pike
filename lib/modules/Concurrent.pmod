@@ -1531,6 +1531,12 @@ class AggregatedPromise(<ValueType>)
   }
 }
 
+// Separate construction so compatibility modules can retain diagnostic hooks.
+protected AggregatedPromise aggregate_promise_factory()
+{
+  return AggregatedPromise();
+}
+
 //! @returns
 //! A @[Future] that represents the first
 //! of the @expr{futures@} that completes.
@@ -1543,7 +1549,8 @@ class AggregatedPromise(<ValueType>)
 //!   @[race()], @[AggregatedPromise.first_completed()]
 variant Future first_completed(array(Future) futures)
 {
-  return AggregatedPromise()->depend(futures)->first_completed()->future();
+  return aggregate_promise_factory()->depend(futures)->
+    first_completed()->future();
 }
 variant inline Future first_completed(Future ... futures)
 {
@@ -1582,7 +1589,7 @@ variant Future results(array(Future) futures)
   if(!sizeof(futures))
     return resolve(({}));
 
-  return AggregatedPromise()->depend(futures)->future();
+  return aggregate_promise_factory()->depend(futures)->future();
 }
 inline variant Future results(Future ... futures)
 {
@@ -1739,5 +1746,6 @@ Future fold(array(Future) futures,
 	    function(mixed, mixed, __unknown__ ... : mixed) fun,
 	    mixed ... extra)
 {
-  return AggregatedPromise()->depend(futures)->fold(initial, fun, extra)->future();
+  return aggregate_promise_factory()->depend(futures)->
+    fold(initial, fun, extra)->future();
 }

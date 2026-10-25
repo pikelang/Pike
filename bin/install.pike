@@ -37,7 +37,8 @@
 // while updating the progress labels.
 void flush_gtk()
 {
-  object context = GI.repository.GLib.main_context_default();
+  // Older typelibs only expose this as a function on MainContext.
+  object context = GI.repository.GLib.MainContext()->default();
   while (context->pending()) context->iteration(0);
 }
 
