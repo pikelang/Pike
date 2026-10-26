@@ -452,6 +452,16 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o GI
+
+  The installer processes GTK events through Pike's default backend when
+  HAVE_BACKEND_INTEGRATION is available, avoiding context accessor
+  functions missing from older GLib typelibs.
+
+  Added get_default_main_context() to obtain a context wrapper directly
+  through GLib's C API even when its accessor functions are absent from
+  the typelib.
+
 o Concurrent.Future
 
   delay() now preserves an explicitly assigned backend throughout its
