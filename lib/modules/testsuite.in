@@ -457,6 +457,37 @@ test_do([[ add_constant("p212"); ]])
 test_do([[ sleep(0.1); ]])
 exit_promise(1, ({11, 12, 13, 13, 11, 212, 14, 15}))
 
+dnl - Future.delay() retains an explicit backend throughout the chain.
+test_any([[
+  Concurrent.use_backend(1);
+  for (int mode = 0; mode < 3; mode++) {
+    Pike.Backend backend = Pike.Backend();
+    Concurrent.Promise p = Concurrent.Promise();
+    p->set_backend(backend);
+    Concurrent.Future f = p->future()->delay(
+      mode == 0 ? 0.0 : mode == 1 ? 0.01 : 3600.0);
+    if (f->get_backend() != backend) return 0;
+
+    int state;
+    mixed value;
+    f->on_success(lambda(mixed v) { state = 1; value = v; });
+    f->on_failure(lambda(mixed v) { state = -1; value = v; });
+    if (!mode) {
+      // Let the timer finish before the source promise is fulfilled.
+      while (sizeof(backend->call_out_info())) backend(0.0);
+      if (state) return 0;
+    }
+    if (mode == 2) p->failure("delay failure");
+    else p->success(42);
+
+    int deadline = gethrtime() + 2000000;
+    while (!state && gethrtime() < deadline) backend(0.001);
+    if (state != (mode == 2 ? -1 : 1) ||
+        value != (mode == 2 ? "delay failure" : 42)) return 0;
+  }
+  return 1;
+]], 1)
+
 dnl - Promise.fold() - true
 init_promise()
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
