@@ -242,7 +242,7 @@ protected mapping(string(7bit):array(string(8bit)))
 	  "\e%F": "T.101 AUDIO",// ISO-IR 161
 	  "\e%G": "UTF-8",	// ISO-IR 196
 	  "\e%H": "T.107 VEMMI",// ISO-IR 188
-	])[data];
+        ])[data] || "ISO-2022";
 	if (charset) {
 	  res->charset = (res->charset || ({})) + ({ charset });
 	}
@@ -284,6 +284,11 @@ protected mapping(string(7bit):array(string(8bit)))
 //!
 //! @returns
 //!   Returns a mapping containing any found IPTC IIM data.
+//!
+//! @note
+//!   Values declared as UTF-8 that contain malformed UTF-8 are interpreted
+//!   individually as ISO-8859-1 instead. Other ISO-2022 declarations are
+//!   applied to each value independently.
 mapping(string(7bit):array(string)) get_information(Stdio.InputStream fd)
 {
   string(8bit)|zero marker = fd->read(2);
@@ -411,10 +416,33 @@ mapping(string(7bit):array(string)) get_information(Stdio.InputStream fd)
     //werror("Charset: %O\n", charset);
     res->charset = ({ charset });
     Charset.Decoder decoder = Charset.decoder(charset);
+    string(8bit) prefix = "";
+    if (decoder->charset == "iso2022" && res["coded character set"]) {
+      // Replay the initial designation/invocation state after each reset.
+      // ESC % @ selects ISO-2022 itself, but is not handled by the decoder.
+      prefix = [string(8bit)]replace(res["coded character set"][0], "\e%@", "");
+    }
     foreach(res; string(7bit) key; array(string) vals) {
+      // Keep the declared charset name and raw control functions intact.
+      if (key == "charset" || key == "coded character set") continue;
       res[key] = map([array(string(8bit))]vals,
                      lambda(string(8bit) val, Charset.Decoder decoder) {
-		       return decoder->feed(val)->drain();
+                       if (decoder->charset == "utf8") {
+                         // Validate the complete value, including any trailing
+                         // incomplete sequence. Some images mix Latin-1 values
+                         // into otherwise valid UTF-8 metadata.
+                         string decoded = "";
+                         // The input is untrusted, so it cannot carry
+                         // the utf8_string type attribute yet.
+                         mixed decode_utf8 = utf8_to_string;
+                         if (catch { decoded = [string]decode_utf8(val); })
+                           // Pike byte strings already represent ISO-8859-1.
+                           return val;
+                         return decoded;
+                       }
+                       // Each value is a separate stream; do not carry partial
+                       // characters or decoder state into the next one.
+                       return decoder->clear()->feed(prefix)->feed(val)->drain();
 		     }, decoder);
     }
   }
