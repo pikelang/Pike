@@ -239,7 +239,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 	  "\e%F": "T.101 AUDIO",// ISO-IR 161
 	  "\e%G": "UTF-8",	// ISO-IR 196
 	  "\e%H": "T.107 VEMMI",// ISO-IR 188
-	])[data];
+        ])[data] || "ISO-2022";
 	if (charset) {
 	  res->charset = (res->charset || ({})) + ({ charset });
 	}
@@ -280,6 +280,9 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 //!
 //! @returns
 //!   Returns a mapping containing any found IPTC IIM data.
+//!   Values declared as UTF-8 that contain malformed UTF-8 are interpreted
+//!   individually as ISO-8859-1 instead. Other ISO-2022 declarations are
+//!   applied to each value independently.
 mapping get_information(Stdio.File fd)
 {
   string marker = fd->read(2);
@@ -416,10 +419,30 @@ mapping get_information(Stdio.File fd)
     //werror("Charset: %O\n", charset);
     res->charset = ({ charset });
     object decoder = Charset.decoder(charset);
+    string prefix = "";
+    if (decoder->charset == "iso2022" && res["coded character set"]) {
+      // Replay the initial designation/invocation state after each reset.
+      // ESC % @ selects ISO-2022 itself, but is not handled by the decoder.
+      prefix = replace(res["coded character set"][0], "\e%@", "");
+    }
     foreach(res; string key; array(string) vals) {
+      // Keep the declared charset name and raw control functions intact.
+      if (key == "charset" || key == "coded character set") continue;
       res[key] = map(vals,
 		     lambda(string val, object decoder) {
-		       return decoder->feed(val)->drain();
+                       if (decoder->charset == "utf8") {
+                         // Validate the complete value, including any trailing
+                         // incomplete sequence. Some images mix Latin-1 values
+                         // into otherwise valid UTF-8 metadata.
+                         string decoded;
+                         if (catch { decoded = utf8_to_string(val); })
+                           // Pike byte strings already represent ISO-8859-1.
+                           return val;
+                         return decoded;
+                       }
+                       // Each value is a separate stream; do not carry partial
+                       // characters or decoder state into the next one.
+                       return decoder->clear()->feed(prefix)->feed(val)->drain();
 		     }, decoder);
     }
   }

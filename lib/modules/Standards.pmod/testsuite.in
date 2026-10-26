@@ -1,5 +1,124 @@
 START_MARKER
 
+// - Standards.IIM
+// Construct a minimal JPEG carrying real Photoshop/IPTC records.
+test_do([[
+  add_constant("decode_test_iim", lambda(array(array(mixed)) datasets,
+                                       void|string charset) {
+    if (zero_type(charset)) charset = "\e%G";
+    string iim = "";
+    if (sizeof(charset))
+      iim = sprintf("\x1c\1\x5a%2c%s", sizeof(charset), charset);
+    foreach (datasets, array(mixed) dataset) {
+      string value = dataset[1];
+      iim += sprintf("\x1c\2%c%2c%s", dataset[0], sizeof(value), value);
+    }
+    string photoshop = "Photoshop 3.0\0" + "8BIM\4\4\0\0" +
+      sprintf("%4c", sizeof(iim)) + iim;
+    string jpeg = "\xff\xd8\xff\xed" +
+      sprintf("%2c", sizeof(photoshop) + 2) + photoshop + "\xff\xd9";
+    Stdio.File input = Stdio.File();
+    Stdio.File output = input->pipe();
+    output->write(jpeg);
+    output->close();
+    mapping data = Standards.IIM.get_information(input);
+    input->close();
+    return data;
+  });
+]])
+
+// A Latin-1 copyright value must not discard the valid UTF-8 fields.
+test_any_equal([[
+  mapping data = decode_test_iim(({
+    ({ 116, "G\xf6ran Berglund" }),
+    ({ 80, "G\xc3\xb6ran Berglund" }),
+    ({ 105, "Alster\xc3\xa5ns kraftverksf\xc3\xb6rening" }),
+    ({ 120, "Text med \xc3\xa5, \xc3\xa4 och \xc3\xb6." }),
+    ({ 90, "Lenhovda" })
+  }));
+  return ({ data["copyright notice"], data["by-line"], data["headline"],
+            data["caption/abstract"], data["city"] });
+]], [[({ ({ "G\xf6ran Berglund" }), ({ "G\xf6ran Berglund" }),
+         ({ "Alster\xe5ns kraftverksf\xf6rening" }),
+         ({ "Text med \xe5, \xe4 och \xf6." }), ({ "Lenhovda" }) })]])
+
+// Repeated values are independent, including empty and truncated values.
+test_equal([[decode_test_iim(({
+  ({ 25, "" }), ({ 25, "\xc3" }), ({ 25, "\xb6rebro" }),
+  ({ 25, "\xc3\xb6vrigt" }), ({ 25, "f\xf6rsta" }), ({ 25, "sista" })
+}))["keywords"]]],
+[[({ "", "\xc3", "\xb6rebro", "\xf6vrigt", "f\xf6rsta", "sista" })]])
+
+// Complete values must be validated, including a trailing partial sequence.
+test_equal([[decode_test_iim(({ ({ 105, "Rubrik\xe2\x82" }) }))["headline"]]],
+[[({ "Rubrik\xe2\x82" })]])
+
+// Fall back for the whole malformed value, leaving other values as UTF-8.
+test_equal([[decode_test_iim(({
+  ({ 25, "f\xc3\xb6re\xff" }), ({ 25, "\xc3\xb6vrigt" })
+}))["keywords"]]], [[({ "f\xc3\xb6re\xff", "\xf6vrigt" })]])
+
+// Reject overlong encodings, surrogates and code points above U+10FFFF.
+test_equal([[decode_test_iim(({
+  ({ 25, "\xc0\xaf" }), ({ 25, "\xed\xa0\x80" }),
+  ({ 25, "\xf4\x90\x80\x80" }), ({ 25, "valid" })
+}))["keywords"]]],
+[[({ "\xc0\xaf", "\xed\xa0\x80", "\xf4\x90\x80\x80", "valid" })]])
+
+test_equal([[decode_test_iim(({ ({ 80, "G\xc3\xb6ran" }) }))["by-line"]]],
+[[({ "G\xf6ran" })]])
+
+// Preserve declared Latin-1 and the historical default for unlabeled files.
+test_equal([[decode_test_iim(({ ({ 80, "G\xf6ran" }) }), "\e%5")["by-line"]]],
+[[({ "G\xf6ran" })]])
+test_equal([[decode_test_iim(({ ({ 80, "G\x9aran" }) }), "")["by-line"]]],
+[[({ "G\xf6ran" })]])
+
+// Declarations absent from the Unicode table use the ISO-2022 decoder.
+test_equal([[decode_test_iim(({ ({ 80, "\xa1" }) }), "\e-B")["by-line"]]],
+[[({ "\u0104" })]])
+test_equal([[decode_test_iim(({ ({ 80, "\xe1" }) }), "\e-F")["by-line"]]],
+[[({ "\u03b1" })]])
+
+// A value can change its coding state, but the next value starts afresh.
+test_equal([[decode_test_iim(({
+  ({ 25, "\xe1" }), ({ 25, "\e-A\xf6" }), ({ 25, "\xe1" })
+}), "\e-F")["keywords"]]], [[({ "\u03b1", "\xf6", "\u03b1" })]])
+
+// Multiple designation/invocation functions form a single declaration.
+test_equal([[decode_test_iim(({ ({ 80, "\xa1" }) }), "\e.B\e}")["by-line"]]],
+[[({ "\u0104" })]])
+
+// Replay G0 designations too, including multibyte graphic sets.
+test_equal([[decode_test_iim(({
+  ({ 25, "\x24\x22" }), ({ 25, "\e(BASCII" }), ({ 25, "\x24\x22" })
+}), "\e$B")["keywords"]]], [[({ "\u3042", "ASCII", "\u3042" })]])
+
+// ESC % @ selects ISO-2022 itself; the decoder need not interpret it.
+test_equal([[decode_test_iim(({ ({ 80, "G\xf6ran" }) }), "\e%@")["by-line"]]],
+[[({ "G\xf6ran" })]])
+test_equal([[decode_test_iim(({ ({ 80, "\xa1" }) }), "\e%@\e-B")["by-line"]]],
+[[({ "\u0104" })]])
+
+// Preserve declarations and charset names without decoding or case-folding them.
+test_any_equal([[
+  mapping data = decode_test_iim(({ ({ 80, "\xa1" }) }), "\e(B\e-B");
+  return ({ data->charset, data["coded character set"], data["by-line"] });
+]], [[({ ({ "iso-2022" }), ({ "\e(B\e-B" }), ({ "\u0104" }) })]])
+
+// Explicit Unicode mappings still take precedence over ISO-2022 handling.
+test_any_equal([[
+  mapping data = decode_test_iim(({ ({ 80, "\0G\0\xf6\0r\0a\0n" }) }), "\e%/J");
+  return ({ data->charset, data["coded character set"], data["by-line"] });
+]], [[({ ({ "utf-16" }), ({ "\e%/J" }), ({ "G\xf6ran" }) })]])
+test_equal([[decode_test_iim(({ ({ 80, "\0\0\0A" }) }), "\e%/A")["by-line"]]],
+[[({ "A" })]])
+test_equal([[decode_test_iim(({ ({ 80, "G\xc3\xb6ran" }) }), "\e%/G")["by-line"]]],
+[[({ "G\xf6ran" })]])
+
+test_do([[ add_constant("decode_test_iim"); ]])
+
+
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
 test_equal(Standards.ISO639_2.get_language("xxx"),0)
