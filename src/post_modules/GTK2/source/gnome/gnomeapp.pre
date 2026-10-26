@@ -158,7 +158,7 @@ void question(string question,
 {
   struct signal_data * d  = ALLOC_STRUCT( signal_data );
   gchar *message;
-  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question");
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question.\n");
   message=PGTK_GETSTR(Pike_sp-args);
   d->cb = Pike_sp[1-args];
   d->args = Pike_sp[2-args];
@@ -176,7 +176,7 @@ void question_modal(string question,
 {
   struct signal_data * d  = ALLOC_STRUCT( signal_data );
   gchar *message;
-  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal.\n");
   message=PGTK_GETSTR(Pike_sp-args);
   d->cb = Pike_sp[1-args];
   d->args = Pike_sp[2-args];
@@ -194,7 +194,7 @@ void ok_cancel(string question,
 {
   struct signal_data * d  = ALLOC_STRUCT( signal_data );
   gchar *message;
-  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal.\n");
   message=PGTK_GETSTR(Pike_sp-args);
   d->cb = Pike_sp[1-args];
   d->args = Pike_sp[2-args];

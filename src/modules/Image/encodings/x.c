@@ -730,7 +730,7 @@ void image_x_encode_pseudocolor(INT32 args)
    char *translate=NULL;
 
    if (args<5)
-      Pike_error("Image.X.encode_pseudocolor: too few arguments");
+      Pike_error("Image.X.encode_pseudocolor: too few arguments.\n");
    if (TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Image.X.encode_pseudocolor: illegal argument 2 (expected integer)\n");
    if (TYPEOF(sp[2-args]) != T_INT)

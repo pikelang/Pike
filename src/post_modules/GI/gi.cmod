@@ -927,7 +927,7 @@ PIKECLASS GObject
 
     g_signal_query(sigid, &sigquery);
     if (!sigquery.signal_id)
-      Pike_error("Failed to query signal");
+      Pike_error("Failed to query signal.\n");
     if ((iinfo = g_irepository_find_by_gtype(NULL, sigquery.itype))) {
       if (GI_IS_OBJECT_INFO (iinfo))
         siginfo = g_object_info_find_signal(iinfo, sigquery.signal_name);

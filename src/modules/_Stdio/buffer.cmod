@@ -238,7 +238,7 @@ PIKECLASS Buffer
     {
         growth = bytes;
         if( io->allocated + growth < io->allocated )
-            Pike_error("Buffer too large, can not have more than %"PRINTSIZET"u bytes.",
+            Pike_error("Buffer too large, can not have more than %"PRINTSIZET"u bytes.\n",
                        (size_t)-1);
     }
 
@@ -288,7 +288,7 @@ PIKECLASS Buffer
           Buffer *cp = io, *lc;
           while (UNLIKELY((lc = cp->child) != NULL)) {
             if (UNLIKELY(lc == io))
-              Pike_error("Readonly buffer cannot be extended.");
+              Pike_error("Readonly buffer cannot be extended.\n");
             cp = lc;
           }
         }

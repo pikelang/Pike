@@ -364,7 +364,7 @@ PIKECLASS TM
             f_TM_unix_time(0);
             break;
         default:
-          Pike_error("Can not format as '%c'", (int)flag );
+          Pike_error("Can not format as '%c'.\n", (int)flag );
         }
         if( post_sum )
         {
@@ -7439,7 +7439,7 @@ PIKECLASS List
         n = -(n+1);
       }
 
-      if (n >= THIS->num_elems) Pike_error("out of bounds");
+      if (n >= THIS->num_elems) Pike_error("out of bounds.\n");
 
       if (n >= THIS->num_elems >> 1) {
         /* Use shorter direction. */

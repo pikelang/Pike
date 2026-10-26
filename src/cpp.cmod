@@ -3094,7 +3094,7 @@ static struct define_struct *add_define(struct CPP_struct *this,
     def->parts = Pike_sp[-1].u.array;
     Pike_sp--;
   } else {
-    Pike_error("Expected zero, string or function value for predefine %pq.",
+    Pike_error("Expected zero, string or function value for predefine %pq.\n",
 	       name);
   }
 
@@ -6804,7 +6804,7 @@ PIKEFUN string macro___has_embed(string arg)
 
 #define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
    && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
-       "got type %s for " name ".", get_name_of_type(PIKE_T_##type), get_name_of_type(TYPEOF(*tmp))), 0)))
+       "got type %s for " name ".\n", get_name_of_type(PIKE_T_##type), get_name_of_type(TYPEOF(*tmp))), 0)))
 
 	if (GET_TYPE(STRING, "current_file")) current_file = tmp->u.string;
 	if ((tmp = simple_mapping_string_lookup(m, "charset"))) {
@@ -6812,7 +6812,7 @@ PIKEFUN string macro___has_embed(string arg)
 	      (TYPEOF(*tmp) == PIKE_T_INT)) {
 	    charset_sv = tmp;
 	  } else {
-	    Pike_error("Expected type string|int, got type %s for charset.",
+            Pike_error("Expected type string|int, got type %s for charset.\n",
 		       get_name_of_type(TYPEOF(*tmp)));
 	  }
 	}

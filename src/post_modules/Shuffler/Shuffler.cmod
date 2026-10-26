@@ -828,7 +828,7 @@ PIKECLASS Shuffle
       }
       dupedfd = fd_dup(Pike_sp[-1].u.integer);
       if (dupedfd < 0)
-        Pike_error("Out of filedescriptors.");
+        Pike_error("Out of filedescriptors.\n");
       change_fd_for_box(&THIS->box, dupedfd);
     }
 
