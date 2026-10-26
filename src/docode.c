@@ -963,7 +963,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   if (!vars) {
     /* No more lvalues. */
     if (valp && *valp) {
-      yyerror("Too many arguments for multi-assignment.\n");
+      yyerror("Too many arguments for multi-assignment.");
     }
     return;
   }
@@ -1016,7 +1016,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 
   /* Push the value. */
   if (!valp || !*valp) {
-    yyerror("Too few arguments to multi-assignment.\n");
+    yyerror("Too few arguments to multi-assignment.");
     emit0(F_UNDEFINED);
   } else {
     code_expression(*valp, 0, "RHS");
@@ -1414,7 +1414,7 @@ static int do_docode2(node *n, int flags)
      * We only want to evaluate car(n) once.
      */
     if( CAR(n)->token == F_AUTO_MAP_MARKER )
-      yyerror("[*] is not yet supported here\n");
+      yyerror("[*] is not yet supported here.");
     return emit_ltosval_call_and_assign( CAR(n), CAADR(n), CDADR(n) );
 
   case F_ATOMIC_GET_SET:
@@ -3234,7 +3234,7 @@ static int do_docode2(node *n, int flags)
     }
     else
     {
-        yyerror("[*] not supported here.\n");
+        yyerror("[*] not supported here.");
         emit0(F_CONST0);
     }
     return 1;
@@ -3291,7 +3291,7 @@ static int do_docode2(node *n, int flags)
       emit0(F_GET_SET_LVALUE);
       return 2;
     }
-    yyerror("Invalid r-value.\n");
+    yyerror("Invalid r-value.");
     return 0;
 
   default:
@@ -3494,7 +3494,7 @@ INT32 do_code_block(node *n, int identifier_flags)
       struct svalue *sval =
 	simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
       if (!sval) {
-	yyerror("predef::aggregate() is missing.\n");
+        yyerror("predef::aggregate() is missing.");
 	Pike_fatal("No aggregate!\n");
         UNREACHABLE();
       }
@@ -3545,11 +3545,11 @@ INT32 do_code_block(node *n, int identifier_flags)
     for (e = 0; e < Pike_compiler->compiler_frame->generator_index; e++) {
       INT32 jmp = Pike_compiler->compiler_frame->generator_jumptable[e];
       if (jmp < 0) {
-	yywarning("Lost track of continue return #%d.\n", e - 2);
+        yywarning("Lost track of continue return #%d.", e - 2);
 	jmp = Pike_compiler->compiler_frame->generator_jumptable[0];
       }
       if (!generator_jumptable[e]) {
-	my_yyerror("Lost address for switch pointer #%d.\n", e);
+        my_yyerror("Lost address for switch pointer #%d.", e);
       } else {
 	update_arg(generator_jumptable[e], jmp);
       }

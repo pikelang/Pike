@@ -3982,13 +3982,13 @@ PIKE_MODULE_INIT
   switch(open_nt_dll()) {
   case 0: break;
   case -1:
-    yywarning("Failed to load JVM.\n");
+    yywarning("Failed to load JVM.");
     return;
   case -2:
-    yywarning("Failed to create JVM.\n");
+    yywarning("Failed to create JVM.");
     return;
   default:
-    yywarning("Failed to initialize the JVM library.\n");
+    yywarning("Failed to initialize the JVM library.");
     return;
   }
 #endif /* __NT__ */

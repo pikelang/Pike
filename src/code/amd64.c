@@ -3509,7 +3509,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
     if(!b) return;
     if( b < 0 )
-      yyerror("<< with negative constant\n");
+      yyerror("<< with negative constant.");
     break;
   case F_RSH_INT:
     if( b > 0 && b <= 63 )
@@ -3535,7 +3535,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
     if(!b) return;
     if( b < 0 )
-      yyerror(">> with negative constant\n");
+      yyerror(">> with negative constant.");
     break;
 
   case F_SUBTRACT_INT:

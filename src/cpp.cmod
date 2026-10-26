@@ -1927,7 +1927,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 
         if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
             (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
-          cpp_error(this, "Invalid encoding for embedded file.\n");
+          cpp_error(this, "Invalid encoding for embedded file.");
           push_empty_string();
           return;
         }
@@ -4906,7 +4906,7 @@ static void low_parse_embed_param(struct CPP_struct *this,
     safe_apply_current(parser_id, 2);
 
     if (IS_UNDEFINED(Pike_sp-1)) {
-      cpp_error_sprintf(this, "Invalid argument to %pS().\n",
+      cpp_error_sprintf(this, "Invalid argument to %pS().",
                         Pike_sp[-2].u.string);
       pop_n_elems(2);
       /* NB: Not advancing posp indicates error. */

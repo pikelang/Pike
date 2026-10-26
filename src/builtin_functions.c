@@ -9945,7 +9945,7 @@ static node *fix_map_node_info(node *n)
   }
 
   if (!cb_) {
-    yyerror("Too few arguments to map() or filter()!\n");
+    yyerror("Too few arguments to map() or filter()!");
   }
 
   n->node_info |= node_info;

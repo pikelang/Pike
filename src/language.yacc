@@ -5230,7 +5230,7 @@ static void compiler_add_generic(struct pike_string *name,
     tmp = and_pike_types(default_type, type);
 
     if (!tmp) {
-      my_yyerror("Invalid default type for generic %pS.\n", name);
+      my_yyerror("Invalid default type for generic %pS.", name);
     } else {
       default_type = tmp;
     }
