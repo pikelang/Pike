@@ -271,7 +271,7 @@ static inline void free_input(struct input *i)
     munmap(i->u.mmap,i->len);
     mmapped -= i->len;
 #else
-    Pike_error("I_MMAP input when MMAP is diabled!");
+    Pike_error("I_MMAP input when MMAP is diabled!\n");
 #endif
     break;
 

@@ -13538,7 +13538,7 @@ struct mapping *mkbindings(struct program *p, struct array *b,
         s = NULL;
         t = and_pike_types(t, ITEM(bindings[1])[i].u.type);
         if (!t) {
-          my_yyerror("Bad type for generic %d.\n", i + 1);
+          my_yyerror("Bad type for generic %d.", i + 1);
 
           s = ITEM(bindings[1]) + i;
           t = s->u.type;

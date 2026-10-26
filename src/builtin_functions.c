@@ -1953,12 +1953,12 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	     * 0xffff: Illegal character.
 	     */
 	    Pike_error("Illegal character 0x%04x (index %ld) "
-                       "is not a Unicode character.",
+                       "is not a Unicode character.\n",
                        str2[i], (long)i);
 	  }
 	  if (str2[i] > 0x10ffff) {
 	    Pike_error("Character 0x%08x (index %ld) "
-                       "is out of range (0x00000000..0x0010ffff).",
+                       "is out of range (0x00000000..0x0010ffff).\n",
                        str2[i], (long)i);
 	  }
 	  /* Extra wide characters take two UTF16 characters in space.
@@ -10050,7 +10050,7 @@ static node *fix_map_node_info(node *n)
   }
 
   if (!cb_) {
-    yyerror("Too few arguments to map() or filter()!\n");
+    yyerror("Too few arguments to map() or filter()!");
   }
 
   n->node_info |= node_info;

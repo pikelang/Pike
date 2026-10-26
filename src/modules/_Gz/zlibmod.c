@@ -180,7 +180,7 @@ static void gz_deflate_create(INT32 args)
 #define GET_TYPE(type, name)						\
   ((tmp = simple_mapping_string_lookup(m, name))			\
    && (TYPEOF(*(tmp)) == PIKE_T_##type ||				\
-       (Pike_error("Expected type %s, got type %s for " name ".",	\
+       (Pike_error("Expected type %s, got type %s for " name ".\n",	\
                    get_name_of_type(PIKE_T_##type),			\
                    get_name_of_type(TYPEOF(*tmp))), 0)))
 

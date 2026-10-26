@@ -1,6 +1,39 @@
 START_MARKER
 cond_begin([[ master()->resolv("GI")->get_default_repository ]])
-cond_begin([[ has_value(cpp("__NT__"), "__NT__") ]])
+
+dnl Obtain and iterate the context without its introspected accessor functions.
+test_any_equal([[
+  object context = GI.get_default_main_context();
+  mixed glib = GI.repository.GLib;
+  int fired;
+  int source;
+  source = glib->idle_add(0, lambda() {
+    glib->source_remove(source);
+    fired++;
+    return 0;
+  });
+  int pending = context->pending();
+  context->iteration(0);
+  if (!fired) glib->source_remove(source);
+  return ({ !!pending, !!fired });
+]], [[({ 1, 1 })]])
+
+cond_begin([[ GI.HAVE_BACKEND_INTEGRATION ]])
+
+dnl A nonblocking backend pass must also dispatch GLib idle work.
+test_any([[
+  mixed glib = GI.repository.GLib;
+  int fired;
+  int source;
+  source = glib->idle_add(0, lambda() {
+    glib->source_remove(source);
+    fired++;
+    return 0;
+  });
+  Pike.DefaultBackend(0.0);
+  if (!fired) glib->source_remove(source);
+  return !!fired;
+]], 1)
 
 dnl GLib timers and idle sources have no ready descriptor of their own.
 dnl Exercise Pike's backend without manually iterating the GLib context.
@@ -8,16 +41,16 @@ test_any([[
   GI.get_default_repository()->require("GLib", "2.0");
   mixed glib = GI.repository.GLib;
   int fired;
-  int source = glib->timeout_add(0, 20, lambda() {
+  int source;
+  source = glib->timeout_add(0, 20, lambda() {
+    glib->source_remove(source);
     fired++;
     return 0;
   });
-  // Retain the source so cleanup is valid even if its callback removed it.
-  object event_source =
-    glib->MainContext()->default()->find_source_by_id(source)->ref();
+  // The callback removes its source; cancel it here only on timeout.
+  // This does not require MainContext.find_source_by_id().
   for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
-  event_source->destroy();
-  event_source->unref();
+  if (!fired) glib->source_remove(source);
   return !!fired;
 ]], 1)
 
@@ -25,16 +58,16 @@ test_any([[
   GI.get_default_repository()->require("GLib", "2.0");
   mixed glib = GI.repository.GLib;
   int fired;
-  int source = glib->idle_add(0, lambda() {
+  int source;
+  source = glib->idle_add(0, lambda() {
+    glib->source_remove(source);
     fired++;
     return 0;
   });
-  // Retain the source so cleanup is valid even if its callback removed it.
-  object event_source =
-    glib->MainContext()->default()->find_source_by_id(source)->ref();
+  // The callback removes its source; cancel it here only on timeout.
+  // This does not require MainContext.find_source_by_id().
   for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
-  event_source->destroy();
-  event_source->unref();
+  if (!fired) glib->source_remove(source);
   return !!fired;
 ]], 1)
 

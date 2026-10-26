@@ -445,7 +445,7 @@ PIKEFUN string(0..255) encode( object(Image.Image) i,
     WebPPreset preset;
     if( !iptr || !width || !height )
     {
-        Pike_error("Image argument is not a valid image.");
+        Pike_error("Image argument is not a valid image.\n");
     }
 
     if( options )

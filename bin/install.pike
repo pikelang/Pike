@@ -37,9 +37,12 @@
 // while updating the progress labels.
 void flush_gtk()
 {
-  // Older typelibs only expose this as a function on MainContext.
-  object context = GI.repository.GLib.MainContext()->default();
+#if constant(GI.HAVE_BACKEND_INTEGRATION)
+  Pike.DefaultBackend(0.0);
+#else
+  object context = GI.get_default_main_context();
   while (context->pending()) context->iteration(0);
+#endif
 }
 
 #if constant(GTK.__GI_API_VERSION_3_0__)

@@ -419,7 +419,7 @@ F_CAST(-,*):
 // void can't be casted to anything else.
 F_CAST(0 = +[$$->type == void_type_string], *):
 {
-  yywarning("Casting a void expression\n");
+  yywarning("Casting a void expression.");
   $$ = $0;
 }
 ;

@@ -140,7 +140,7 @@ void create(string|mapping options)
 	  
 	  a=sv->u.array;
 	  if (a->size<1)
-	    Pike_error("Invalid xpm data");
+            Pike_error("Invalid xpm data.\n");
 	  data=g_malloc(sizeof(gchar *)*a->size);
 	  if (data==NULL)
 	    SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(gchar *)*a->size);
@@ -208,7 +208,7 @@ void create(string|mapping options)
     }
   }
   if (gp==NULL)
-    Pike_error("Unable to create pixbuf");
+    Pike_error("Unable to create pixbuf.\n");
   THIS->obj=G_OBJECT(gp);
   pgtk2__init_this_object();
 }

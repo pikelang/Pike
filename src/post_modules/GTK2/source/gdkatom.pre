@@ -14,7 +14,7 @@ void create(string atom_name,int|void only_if_exists)
   pgtk2_verify_not_inited();
   atom_name=PGTK_GETSTR(Pike_sp-args);
   if (!atom_name)
-    Pike_error("Illegal argument 1 to _Atom");
+    Pike_error("Illegal argument 1 to _Atom.\n");
   only_if_exists=PGTK_GETINT(Pike_sp-args+1);
   THIS->obj=(void *)gdk_atom_intern(atom_name,only_if_exists);
   PGTK_FREESTR(atom_name);

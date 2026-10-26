@@ -25,7 +25,7 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
 
       get_all_args(NULL,args,"%t%O%A.%O",&title,&o1,&a,&o2);
       if (a==NULL)
-	Pike_error("Invalid number of buttons");
+        Pike_error("Invalid number of buttons.\n");
       ref_push_string(title);
       f_string_to_utf8(1);
       if (o2)

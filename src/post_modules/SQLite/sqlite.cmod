@@ -546,7 +546,7 @@ PIKECLASS Result
 	  break;
 
 	case SQLITE_MISUSE:
-	  Pike_error("Sql.SQLite: Library misuse.");
+          Pike_error("Sql.SQLite: Library misuse.\n");
 
 	default:
 	  Pike_error("Sql.SQLite: (%d) %s\n", sr, sqlite3_errmsg(THIS->db));
@@ -629,7 +629,7 @@ PIKECLASS Result
 	  break;
 
 	case SQLITE_MISUSE:
-	  Pike_error("Sql.SQLite: Library misuse.");
+          Pike_error("Sql.SQLite: Library misuse.\n");
 
 	default:
 	  Pike_error("Sql.SQLite: (%d) %s\n", sr, sqlite3_errmsg(THIS->db));

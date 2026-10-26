@@ -927,7 +927,7 @@ PIKECLASS GObject
 
     g_signal_query(sigid, &sigquery);
     if (!sigquery.signal_id)
-      Pike_error("Failed to query signal");
+      Pike_error("Failed to query signal.\n");
     if ((iinfo = g_irepository_find_by_gtype(NULL, sigquery.itype))) {
       if (GI_IS_OBJECT_INFO (iinfo))
         siginfo = g_object_info_find_signal(iinfo, sigquery.signal_name);
@@ -4580,6 +4580,42 @@ PIKEFUN Repository get_default_repository()
   ref_push_object(default_repository);
 }
 
+/*! @decl object get_default_main_context()
+ *!
+ *! Return a @tt{GLib.MainContext@} wrapper for the global-default
+ *! main context.
+ *!
+ *! This is similar to @tt{GLib.main_context_default()@}, but works
+ *! also with older typelibs that describe MainContext but omit
+ *! @tt{main_context_default()@} and @tt{MainContext.default()@}.
+ *!
+ *! @seealso
+ *!   @[HAVE_BACKEND_INTEGRATION], @[Pike.DefaultBackend]
+ */
+PIKEFUN object get_default_main_context()
+{
+  GIRepository *repo = g_irepository_get_default();
+  GIBaseInfo *info;
+  GError *error = NULL;
+  ONERROR onerror;
+
+  if (!g_irepository_require(repo, "GLib", "2.0", 0, &error)) {
+    push_text(error ? error->message : "Unknown error");
+    if (error) g_error_free(error);
+    Pike_error("Failed to load GLib typelib: %s.\n",
+               Pike_sp[-1].u.string->str);
+  }
+
+  info = g_irepository_find_by_name(repo, "GLib", "MainContext");
+  if (!info) {
+    Pike_error("GLib typelib contains no MainContext.\n");
+  }
+
+  SET_ONERROR(onerror, g_base_info_unref, info);
+  push_wrapped_boxed(g_main_context_default(), info, G_TYPE_NONE);
+  CALL_AND_UNSET_ONERROR(onerror);
+}
+
 /*! @decl array(utf8_string) get_search_path()
  */
 PIKEFUN array(utf8_string) get_search_path()
@@ -4602,6 +4638,15 @@ PIKEFUN array(utf8_string) get_search_path()
 
   f_aggregate(Pike_sp - save_sp);
 }
+
+#ifndef __NT__
+/*! @decl constant int HAVE_BACKEND_INTEGRATION = 1
+ *!
+ *! Present when GLib's default main context is integrated with
+ *! @[Pike.DefaultBackend]. A backend pass dispatches GLib events,
+ *! including timeout and idle sources, as well as Pike callbacks.
+ */
+#endif
 
 /*! @endmodule
  */
@@ -4806,6 +4851,7 @@ PIKE_MODULE_INIT
   g_main_context_set_poll_func(gi_main_context, gpoll_interceptor);
   g_main_context_iteration(gi_main_context, FALSE);
   gi_backend_callback = add_backend_callback(gi_backend_dispatch, NULL, NULL);
+  add_integer_constant("HAVE_BACKEND_INTEGRATION", 1, 0);
 #endif
 #endif
   INIT;

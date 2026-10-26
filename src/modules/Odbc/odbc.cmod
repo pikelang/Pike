@@ -963,7 +963,7 @@ PIKE_MODULE_EXIT
     odbc_henv = SQL_NULL_HENV;
 
     if ((err != SQL_SUCCESS) && (err != SQL_SUCCESS_WITH_INFO)) {
-      my_yyerror("Odbc: SQLFreeEnv() failed with code %08x\n", err);
+      my_yyerror("Odbc: SQLFreeEnv() failed with code %08x.", err);
     }
   }
 #endif /* HAVE_ODBC */
