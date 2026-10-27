@@ -444,7 +444,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
   {
     sha256_update(&THIS->sha_ctx, 32, THIS->key);
     sha256_update(&THIS->sha_ctx, data->len, (const uint8_t *)data->str);
-    sha256_digest(&THIS->sha_ctx, 32, THIS->key);
+    sha256_digest(&THIS->sha_ctx, PIKE_NETTLE_DIGEST_LENGTH(32) THIS->key);
 #ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes256_set_encrypt_key(&THIS->aes256_ctx, THIS->key);
 #else

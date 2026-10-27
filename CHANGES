@@ -452,6 +452,13 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o Nettle
+
+  Added support for Nettle 4.0, including its changed digest and HMAC
+  interfaces, SHA3 initialization, and removal of generic AES contexts.
+  Pike's truncated digest and authentication-tag APIs remain supported.
+  Also corrected CMAC state creation and update chaining.
+
 o GI
 
   The installer processes GTK events through Pike's default backend when

@@ -305,9 +305,10 @@ PIKECLASS MAC
 	  length = arg->u.integer;
 	}
 
-      digest = begin_shared_string(length);
-      meta->digest(THIS->ctx, length, (uint8_t *)digest->str);
-      push_string(end_shared_string(digest));
+      digest = begin_shared_string(meta->digest_size);
+      meta->digest(THIS->ctx, PIKE_NETTLE_DIGEST_LENGTH(meta->digest_size)
+                   (uint8_t *)digest->str);
+      push_string(end_and_resize_shared_string(digest, length));
     }
 
     /*! @decl string(8bit) `()(string(8bit) data)
@@ -332,7 +333,8 @@ PIKECLASS MAC
       meta->update(THIS->ctx, data->len, STR0(data));
 
       digest = begin_shared_string(meta->digest_size);
-      meta->digest(THIS->ctx, meta->digest_size, STR0(digest));
+      meta->digest(THIS->ctx, PIKE_NETTLE_DIGEST_LENGTH(meta->digest_size)
+                   STR0(digest));
 
       push_string(end_shared_string(digest));
     }

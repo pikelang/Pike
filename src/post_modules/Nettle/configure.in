@@ -147,7 +147,8 @@ else
     #   sm4.h
     # Nettle 3.10 and later:
     #   drbg-ctr.h
-    AC_CHECK_HEADERS(nettle/camellia.h \
+    AC_CHECK_HEADERS(nettle/sha1.h nettle/sha2.h \
+                     nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
 		     nettle/sha3.h nettle/gosthash94.h \
@@ -170,7 +171,8 @@ else
     AC_CHECK_FUNCS(nettle_camellia128_crypt \
 		   nettle_gcm_encrypt \
 		   nettle_ripemd160_init \
-		   nettle_sha3_256_init nettle_gosthash94_init \
+                   nettle_sha3_256_init nettle_sha3_init \
+                   nettle_gosthash94_init \
 		   nettle_chacha_crypt nettle_chacha_poly1305_encrypt \
 		   nettle_poly1305_digest nettle_eax_encrypt \
 		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
@@ -181,7 +183,30 @@ else
                    nettle_sm3_init \
                    nettle_balloon nettle_ocb_encrypt nettle_sm4_crypt \
                    nettle_drbg_ctr_aes256_init nettle_sha3_128_shake \
+                   nettle_hmac_set_key \
 		   )
+
+    # Nettle 4.0 always writes the full digest and omits the length
+    # argument. Probe the declaration rather than the version number.
+    AC_CACHE_CHECK([whether Nettle digest functions omit the length],
+      [pike_cv_nettle_digest_without_length], [
+      AC_TRY_COMPILE([
+#ifdef HAVE_NETTLE_SHA2_H
+#include <nettle/sha2.h>
+#else
+#include <nettle/sha.h>
+#endif
+      ], [
+        struct sha256_ctx ctx;
+        unsigned char digest[SHA256_DIGEST_SIZE];
+        sha256_digest(&ctx, digest);
+      ], [pike_cv_nettle_digest_without_length=yes],
+         [pike_cv_nettle_digest_without_length=no])
+    ])
+    if test "x$pike_cv_nettle_digest_without_length" = "xyes"; then
+      AC_DEFINE(HAVE_NETTLE_DIGEST_WITHOUT_LENGTH, 1,
+        [Define if Nettle digest functions omit the length argument.])
+    fi
 
     AC_MSG_CHECKING([for idea.c])
     # Have the patent-encumbered idea files been purged?
@@ -232,24 +257,6 @@ else
       AC_DEFINE(HAVE_NETTLE_CRYPT_FUNC_IS_POINTER)
     fi
 
-    # struct aes_ctx was changed in Nettle 3.5...
-    AC_MSG_CHECKING([whether struct aes_ctx has the field key_size])
-    AC_CACHE_VAL(pike_cv_nettle_struct_aes_ctx_field_key_size, [
-      pike_cv_nettle_struct_aes_ctx_field_key_size=no
-      AC_TRY_COMPILE([
-#include <nettle/aes.h>
-      ], [
-  struct aes_ctx ctx;
-  ctx.key_size = 0;
-  return (int)ctx.key_size;
-      ], [
-        pike_cv_nettle_struct_aes_ctx_field_key_size=yes
-      ])
-    ])
-    AC_MSG_RESULT($pike_cv_nettle_struct_aes_ctx_field_key_size);
-    if test "x$pike_cv_nettle_struct_aes_ctx_field_key_size" = "xyes"; then
-      AC_DEFINE(HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE)
-    fi
   else
     AC_ERROR([Cannot compile --with-nettle without the Nettle library.
 It is highly recommended that you install a working Nettle, 1.13 or

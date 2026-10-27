@@ -30,7 +30,7 @@
 #endif
 
 /* SHA3 */
-#ifndef HAVE_NETTLE_SHA3_256_INIT
+#if !defined(HAVE_NETTLE_SHA3_256_INIT) && !defined(HAVE_NETTLE_SHA3_INIT)
 #undef HAVE_NETTLE_SHA3_H
 #endif
 

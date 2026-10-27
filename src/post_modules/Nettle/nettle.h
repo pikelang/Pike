@@ -18,6 +18,16 @@ werror(const char *format, ...)
 
 #include <nettle/nettle-meta.h>
 
+/* Nettle 4.0 digest functions always write a full digest. Callers using
+ * this macro must allocate that much space even when returning a prefix.
+ * OCB instead writes the tag length selected when setting its nonce.
+ */
+#ifdef HAVE_NETTLE_DIGEST_WITHOUT_LENGTH
+#define PIKE_NETTLE_DIGEST_LENGTH(length)
+#else
+#define PIKE_NETTLE_DIGEST_LENGTH(length) length,
+#endif
+
 struct program;
 extern struct program *nettle_hash_program;
 extern struct program *hash_instance_program;
