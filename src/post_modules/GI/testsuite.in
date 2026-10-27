@@ -26,6 +26,22 @@ test_any_equal([[
   return ({ !!pending, !!fired });
 ]], [[({ 1, 1 })]])
 
+dnl Returning false from a GI callback must remove the GLib source.
+test_any([[
+  object context = GI.get_default_main_context();
+  mixed glib = GI.repository.GLib;
+  int fired;
+  int source = glib->idle_add(0, lambda() { fired++; return 0; });
+  context->iteration(0);
+  context->iteration(0);
+  if (fired != 1) {
+    Tools.Testsuite.log_msg("GI callback return: source=%d fired=%d\n",
+                            source, fired);
+    if (source > 0) glib->source_remove(source);
+  }
+  return fired == 1 && source > 0;
+]], 1)
+
 cond_resolv(GI.HAVE_BACKEND_INTEGRATION, [[
 
 dnl A nonblocking backend pass must also dispatch GLib idle work.
@@ -62,8 +78,10 @@ test_any([[
   // The callback removes its source; cancel it here only on timeout.
   // This does not require MainContext.find_source_by_id().
   int start = gethrtime();
+  int deadline = start + 1000000;
   int passes = 0;
-  for (; passes < 10 && !fired; passes++) Pike.DefaultBackend(0.1);
+  for (; !fired && gethrtime() < deadline; passes++)
+    Pike.DefaultBackend(0.1);
   int backend_fired = !!fired;
   if (!backend_fired || source <= 0) {
     int elapsed_us = gethrtime() - start;
