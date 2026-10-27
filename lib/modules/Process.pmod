@@ -332,12 +332,15 @@ class Process
 
   protected void got_close(mixed ignored)
   {
-    do_close();
-    if (__status == -1) {
-      // Early close.
+    int notify = __status != 2;
+    if (notify) {
+      // The channel closed without an EXIT packet. This can also happen
+      // after PID or STOP, so every nonterminal state must be completed.
       __result = 255;
       __status = 2;
     }
+    do_close();
+    if (notify && __callback) __callback(this);
   }
 
   protected void do_poll(float t)
@@ -360,7 +363,7 @@ class Process
     process_poll = UNDEFINED;
     if (!process_backend) return;
     do_poll(0.0);
-    process_poll = call_out(do_poll_loop, 0.1);
+    if (process_backend) process_poll = call_out(do_poll_loop, 0.1);
   }
 
   int last_signal()
@@ -377,6 +380,9 @@ class Process
 
   int wait()
   {
+    // Forkd may have closed before sending PID, leaving no native process
+    // for the inherited wait() to use. Keep completed results available.
+    if (__status == 2) return __result;
     if (process_backend) {
       float t = 0.0;
       do {
