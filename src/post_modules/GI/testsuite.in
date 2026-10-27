@@ -1,5 +1,7 @@
 START_MARKER
 cond_begin([[ master()->resolv("GI")->get_default_repository ]])
+dnl pkgsrc can install GI without the separate GLib introspection typelibs.
+cond_begin([[ GI.get_default_repository()->enumerate_versions("GLib") ]])
 
 dnl Obtain and iterate the context without its introspected accessor functions.
 test_any_equal([[
@@ -98,5 +100,6 @@ test_any([[
 ]], 1)
 
 ]])
+cond_end
 cond_end
 END_MARKER
