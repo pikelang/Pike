@@ -4451,7 +4451,19 @@ static void push_expand_transitive_remap(struct pike_type *cont,
 {
   struct pike_type *tmp;
   TYPE_STACK_DEBUG("expand_transitive_remap");
-  switch(cont->type & PIKE_T_MASK) {
+  switch(cont?(cont->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
+  case PIKE_T_UNKNOWN:
+    if (!trans) {
+      push_type(PIKE_T_UNKNOWN);
+    } else {
+      /* An unknown continuation is short-hand for trans. */
+      push_expand_transitive_remap(trans, trans, remap, flags, num_args);
+    }
+    break;
+  case PIKE_T_ATTRIBUTE:
+    push_expand_transitive_remap(cont->cdr, trans, remap, flags, num_args);
+    push_type_attribute((struct pike_string *)cont->car);
+    break;
   case T_OR: case T_AND:
     push_expand_transitive_remap(cont->cdr, trans, remap, flags, num_args);
     push_expand_transitive_remap(cont->car, trans, remap, flags, num_args);
@@ -7675,6 +7687,10 @@ static void push_expand_transitive_type(struct pike_type *cont,
   struct pike_type *tmp;
   TYPE_STACK_DEBUG("expand_transitive");
   switch(cont?(cont->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
+  case PIKE_T_ATTRIBUTE:
+    push_expand_transitive_type(cont->cdr, trans, markers, num_args);
+    push_type_attribute((struct pike_string *)cont->car);
+    break;
   case PIKE_T_UNKNOWN:
     if (!trans) {
       push_type(PIKE_T_UNKNOWN);

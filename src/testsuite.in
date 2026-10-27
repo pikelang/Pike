@@ -1749,6 +1749,37 @@ test_compile_error([[ int b=17; float c=42.0; b-=c; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
 
+// Transitive operator types must handle attributes on continuations.
+// Regression for https://github.com/pikelang/Pike/issues/71.
+test_compile_error_any([[
+  class Item {}
+  __factory__ Item make() { return Item(); }
+  mixed divide(string s) { return s / make(); }
+]])
+
+test_any_equal([[
+  class Factory {
+    class Item {
+      protected string ``/(string s) { return s + "!"; }
+    }
+    __factory__ Item make() { return Item(); }
+  };
+  Factory f = Factory();
+  return ({ "a" / f->make(), `/ ("b", f->make(), f->make()) });
+]], ({ "a!", "b!!" }))
+
+test_any_equal([[
+  class Factory {
+    class Item {
+      protected array(string) ``/(string s) { return s / " "; }
+    }
+    __factory__ Item make() { return Item(); }
+  };
+  Factory f = Factory();
+  function(string, Factory.Item:array(string)) divide = `/;
+  return divide("a b", f->make());
+]], ({ "a", "b" }))
+
 test_compile_error([[class F {inherit master()->dirnode;};]]);
 
 test_any([[

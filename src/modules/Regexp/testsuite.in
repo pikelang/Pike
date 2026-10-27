@@ -1,5 +1,12 @@
 START_MARKER
 
+// Regression for https://github.com/pikelang/Pike/issues/71.
+test_compile_error([[
+  string pattern = "[ \t]+";
+  string line = "a b";
+  array(string) parts = line / Regexp(pattern);
+]])
+
 dnl Regexp->match
 test_eq(Regexp("")->match(""),1)
 test_eq(Regexp(".*hej")->match("hej"),1)

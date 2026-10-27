@@ -498,6 +498,10 @@ o Cpp
 
 o Compiler
 
+  - Invalid operator arguments involving factory functions, e.g.
+    "text" / Regexp(pattern), now produce compilation errors instead of
+    aborting the compiler.
+
   - Constant integers outside the 32-bit signed range no longer
     get their types mapped to int(-0x80000000) or int(0x7fffffff),
     (depending on sign) but instead keep the generic int type.
@@ -1643,7 +1647,7 @@ o The testsuite supports multiple and nested conditional requirements
 Issues fixed
 ------------
 
-Github pikelang/pike: #16, #25, #40, #49, #70
+Github pikelang/pike: #16, #25, #40, #49, #70, #71
 
 Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3658, #3681, #4312,
   #4934, #5466, #7363, #7831, #8042, #10003, #10004, #10006, #10012,
