@@ -140,7 +140,7 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
     DOCEND()
     PIKECLASS State
     {
-      CVAR struct HMAC_CTX(struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx)) ctx;
+      CVAR struct PIKE_HMAC_CTX(struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx)) ctx;
       CVAR const struct nettle_hash *meta;
 
       static int cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) = -1;
@@ -177,7 +177,9 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
 	  Pike_error("Block sizes other than %d are not supported.\n",
 		     meta->block_size);
 	}
-        HMAC_SET_KEY(&THIS->ctx, meta, passwd->len, (const uint8_t *)passwd->str);
+        pike_hmac_set_key(&THIS->ctx.outer, &THIS->ctx.inner,
+                          &THIS->ctx.state, meta, passwd->len,
+                          (const uint8_t *)passwd->str);
 	if (cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME, _create_fun_num) != -1) {
 	  /* Pass along the password to the inherited pike-level code. */
 	  apply_current(cmod_CONCAT_EVAL(f_Hash__HMAC_, NETTLE_NAME,
@@ -195,7 +197,7 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
 
         memcpy(&state, &THIS->ctx.inner, THIS->meta->context_size);
         THIS->meta->update(&state, text->len, (const uint8_t *)text->str);
-        hmac_digest(&THIS->ctx.outer, &THIS->ctx.inner, &state,
+        pike_hmac_digest(&THIS->ctx.outer, &THIS->ctx.inner, &state,
                     THIS->meta, THIS->meta->digest_size, (uint8_t *)dst->str);
         push_string(end_shared_string(dst));
       }
@@ -230,7 +232,7 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
           bytes = MINIMUM(bytes, length->u.integer);
         dst = begin_shared_string(bytes);
 
-        hmac_digest(&THIS->ctx.outer, &THIS->ctx.inner, &THIS->ctx.state,
+        pike_hmac_digest(&THIS->ctx.outer, &THIS->ctx.inner, &THIS->ctx.state,
                     THIS->meta, bytes, (uint8_t *)dst->str);
 
         push_string(end_shared_string(dst));

@@ -58,7 +58,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
   md5_update(&ctx, pl, (uint8_t *) pw);
   md5_update(&ctx, sl, (uint8_t *) salt);
   md5_update(&ctx, pl, (uint8_t *) pw);
-  md5_digest(&ctx, MD5_DIGEST_SIZE, final);
+  md5_digest(&ctx, PIKE_NETTLE_DIGEST_LENGTH(MD5_DIGEST_SIZE) final);
 
   /* Generate second hash */
   /* ctx is now reset by md5_digest */
@@ -79,7 +79,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
     else
       md5_update(&ctx, 1, (const uint8_t *) pw);
 
-  md5_digest(&ctx, MD5_DIGEST_SIZE, final);
+  md5_digest(&ctx, PIKE_NETTLE_DIGEST_LENGTH(MD5_DIGEST_SIZE) final);
 
   /* Obfuscate the MD5 hash further by doing 1000 silly passes
      of MD5 over and over. */
@@ -99,7 +99,7 @@ char *pike_crypt_md5(int pl, const char *const pw,
     else
       md5_update(&ctx, pl, (const uint8_t *) pw);
 
-    md5_digest(&ctx, MD5_DIGEST_SIZE, final);
+    md5_digest(&ctx, PIKE_NETTLE_DIGEST_LENGTH(MD5_DIGEST_SIZE) final);
   }
 
   p = passwd;

@@ -18,6 +18,22 @@ define(test_hash, [[
       test_eq(Nettle.$1()->hash(""),H(#"$2"))
       test_eq(Nettle.$1()->hash((string)enumerate(256)*2),H(#"$3"))
       test_eq(Nettle.$1()->hash("abc"),H(#"$4"))
+      dnl Full-size digest storage must also cover zero and short results.
+      test_any([[
+        object hash = Nettle.$1();
+        object state = hash->State();
+        string abc = H(#"$4");
+        foreach (({ 0, 1, sizeof(abc)-1, sizeof(abc) }), int bytes) {
+          string expected = bytes ? abc[..bytes-1] : "";
+          string got = state->update("abc")->digest(bytes);
+          if (got != expected)
+            error("$1 digest(%d): got %O, expected %O.\n",
+                  bytes, got, expected);
+          if (state->digest() != H(#"$2"))
+            error("$1 digest(%d) did not reset the state.\n", bytes);
+        }
+        return 1;
+      ]], 1)
   ]])
 ]])
 
@@ -289,6 +305,19 @@ define(test_mac, [[
 	state->update(H(#"$4"));
 	return state->digest($6);
       ]], H(#"$5"))
+      test_any([[
+        string full = H(#"$5");
+        foreach (({ 0, 1, sizeof(full)-1, sizeof(full) }), int bytes) {
+          object state = $1.State(H(#"$2"));
+          if (sizeof(H(#"$3"))) state->set_iv(H(#"$3"));
+          string got = state->update(H(#"$4"))->digest(bytes);
+          string expected = bytes ? full[..bytes-1] : "";
+          if (got != expected)
+            error("$1 digest(%d): got %O, expected %O.\n",
+                  bytes, got, expected);
+        }
+        return 1;
+      ]], 1)
   ]])
 ]])
 
@@ -573,6 +602,81 @@ cond_resolv(Crypto.AES.UMAC32, [[
     s2->update(msg);
     string r2 = s2->digest();
     return r1 == r2;
+  ]], 1)
+]])
+
+// Long-key HMAC-SHA3 vectors, cross-checked with Python's hmac module.
+// Exercise the generic fallback needed after Nettle 4.0 removed its helpers.
+cond_resolv(Crypto.SHA3_224.HMAC, [[
+  test_any_equal([[
+    object state = Crypto.SHA3_224.HMAC("x"*200);
+    string expected = H("ceba21afbec590c4e1ec861c3d42906b37dac129214e0474"
+                        "a73491c2");
+    if (state("abc") != expected) error("HMAC call changed state.\n");
+    if (state("abc") != expected) error("HMAC call was not repeatable.\n");
+    foreach (({ 0, 1, sizeof(expected)-1, sizeof(expected) }), int bytes) {
+      string wanted = bytes ? expected[..bytes-1] : "";
+      if (state->update("a")->update("bc")->digest(bytes) != wanted)
+        error("HMAC-SHA3-224 digest(%d) mismatch.\n", bytes);
+      if (state->update("abc")->digest() != expected)
+        error("HMAC-SHA3-224 state did not reset.\n");
+    }
+    return 1;
+  ]], 1)
+]])
+
+cond_resolv(Crypto.SHA3_256.HMAC, [[
+  test_any_equal([[
+    object state = Crypto.SHA3_256.HMAC("x"*200);
+    string expected = H("b0b5ceb2cc5c7fbd77d1db03ae34ed05f22aa4c35f4f40b2"
+                        "33babad1d0938a0c");
+    if (state("abc") != expected) error("HMAC call changed state.\n");
+    if (state("abc") != expected) error("HMAC call was not repeatable.\n");
+    foreach (({ 0, 1, sizeof(expected)-1, sizeof(expected) }), int bytes) {
+      string wanted = bytes ? expected[..bytes-1] : "";
+      if (state->update("a")->update("bc")->digest(bytes) != wanted)
+        error("HMAC-SHA3-256 digest(%d) mismatch.\n", bytes);
+      if (state->update("abc")->digest() != expected)
+        error("HMAC-SHA3-256 state did not reset.\n");
+    }
+    return 1;
+  ]], 1)
+]])
+
+cond_resolv(Crypto.SHA3_384.HMAC, [[
+  test_any_equal([[
+    object state = Crypto.SHA3_384.HMAC("x"*200);
+    string expected = H("7b3530ca3bd37f04ec5f45b2b5ba04fded97f36357951a91"
+                        "ea1cf757071b96c27c0b23f16c6014b8f22269552104cf2e");
+    if (state("abc") != expected) error("HMAC call changed state.\n");
+    if (state("abc") != expected) error("HMAC call was not repeatable.\n");
+    foreach (({ 0, 1, sizeof(expected)-1, sizeof(expected) }), int bytes) {
+      string wanted = bytes ? expected[..bytes-1] : "";
+      if (state->update("a")->update("bc")->digest(bytes) != wanted)
+        error("HMAC-SHA3-384 digest(%d) mismatch.\n", bytes);
+      if (state->update("abc")->digest() != expected)
+        error("HMAC-SHA3-384 state did not reset.\n");
+    }
+    return 1;
+  ]], 1)
+]])
+
+cond_resolv(Crypto.SHA3_512.HMAC, [[
+  test_any_equal([[
+    object state = Crypto.SHA3_512.HMAC("x"*200);
+    string expected = H("4973f3db001153cb3ff07fa4ea051bf4a665050c6cd3d789"
+                        "2e81696b3046fa11d47a8486daa38585928e13d4cb691d4d"
+                        "9f541017badc58bd7e5a71660dc4718d");
+    if (state("abc") != expected) error("HMAC call changed state.\n");
+    if (state("abc") != expected) error("HMAC call was not repeatable.\n");
+    foreach (({ 0, 1, sizeof(expected)-1, sizeof(expected) }), int bytes) {
+      string wanted = bytes ? expected[..bytes-1] : "";
+      if (state->update("a")->update("bc")->digest(bytes) != wanted)
+        error("HMAC-SHA3-512 digest(%d) mismatch.\n", bytes);
+      if (state->update("abc")->digest() != expected)
+        error("HMAC-SHA3-512 state did not reset.\n");
+    }
+    return 1;
   ]], 1)
 ]])
 
@@ -1455,6 +1559,25 @@ test_ae(Crypto.AES.KW,
 	"CBCCB35CFB87F8263F5786E2D80ED326CBC7F0E71A99F43BFB988B9B7A02DD21",
 	"28C9F404C4B810F4")
 
+// RFC 4493 CMAC vector, including truncated tags.
+cond_resolv(Crypto.AES.CMAC, [[
+  test_any([[
+    string expected = H("bb1d6929e95937287fa37d129b756746");
+    foreach (({ 1, 7, 16 }), int bytes) {
+      object state = Crypto.AES.CMAC.State(
+        H("2b7e151628aed2a6abf7158809cf4f3c"));
+      if (state->digest(bytes) != expected[..bytes-1])
+        error("CMAC digest(%d) mismatch.\n", bytes);
+      state->init();
+      string block = H("6bc1bee22e409f96e93d7e117393172a");
+      string tag = H("070a16b46b4d4144f79bdd9dd04a287c");
+      if (state->update(block)->digest(bytes) != tag[..bytes-1])
+        error("CMAC update/digest(%d) mismatch.\n", bytes);
+    }
+    return 1;
+  ]], 1)
+]])
+
 // AEAD
 
 test_do(add_constant("test_adata", test_data[..116]);)
@@ -1503,6 +1626,51 @@ define(test_aead, [[
       "|"+S(o->digest($8));
     ]], lower_case($5-" "-"\n"+"|"+$7-" "-"\n"))
   ]])
+]])
+
+// OCB's shorter tags are selected by set_iv(), not by truncation.
+cond_resolv(Crypto.AES.OCB, [[
+  test_any_equal([[
+    object state = Crypto.AES.OCB()->set_encrypt_key(
+      H("000102030405060708090a0b0c0d0e0f"));
+    state->set_iv(H("bbaa99887766554433221100"), 16);
+    state->crypt("");
+    return state->digest();
+  ]], H("785407bfffc8ad9edcc5520ac9111ee6"))
+  test_any_equal([[
+    object state = Crypto.AES.OCB()->set_encrypt_key(
+      H("0f0e0d0c0b0a09080706050403020100"));
+    state->set_iv(H("bbaa9988776655443322110d"), 12);
+    string data = (string)enumerate(40);
+    state->update(data);
+    string ciphertext = state->crypt(data);
+    return ciphertext + state->digest();
+  ]], H("1792a4e31e0755fb03e31b22116e6c2ddf9efd6e33d536f1"
+        "a0124b0a55bae884ed93481529c76b6a"
+        "d0c515f4d1cdd4fdac4f02aa"))
+]])
+
+// EAX tags are truncated prefixes; OCB tags above are nonce-size dependent.
+test_aead(Crypto.AES.EAX,
+  "233952DEE4D5ED5F9B9C6D6FF80FF478",
+  "62EC67F9C3A4A407FCB2A8C49031A8B3",
+  "6BFB914FD07EAE6B", "", "", "E037830E", 4)
+
+cond_resolv(Crypto.ChaCha20.POLY1305, [[
+  test_any([[
+    string tag;
+    foreach (({ 16, 0, 1, 15 }), int bytes) {
+      object state = Crypto.ChaCha20.POLY1305()->set_encrypt_key("k"*32);
+      state->set_iv("n"*12);
+      state->update("authenticated data");
+      state->crypt("plaintext");
+      string got = state->digest(bytes);
+      if (bytes == 16) tag = got;
+      else if (got != (bytes ? tag[..bytes-1] : ""))
+        error("ChaCha20/Poly1305 digest(%d) mismatch.\n", bytes);
+    }
+    return 1;
+  ]], 1)
 ]])
 
 // AES-CCM8 Testvectors from RFC 3610.
@@ -2235,6 +2403,16 @@ cond_resolv( Nettle.Yarrow, [[
 	  H("49a090656a6d93782e169994f41005a3616d3cd7bc8af11449745936f0024189"),
 	  H("b859cc92c600a1064527baba8f6415681cb77319")})]])
 ]])
+
+// Repeated seeding uses SHA256 as well as AES256.
+test_any_equal([[
+  object f = Nettle.Fortuna();
+  f->reseed("Pike Nettle compatibility");
+  string first = f->random_string(32);
+  f->reseed("second seed");
+  return ({ first, f->random_string(17) });
+]], ({ H("15598e22c49dbea9cabdd4e91e23fb8facd301e6050880ae8f57a39097bfdda6"),
+       H("c577ab421c849d3f4a3d507134ce415fa6") }))
 
 test_do( add_constant("F",Nettle.Fortuna()); )
 dnl After reseed("\0"*32): key=SHA256("\0"*64), counter=1.

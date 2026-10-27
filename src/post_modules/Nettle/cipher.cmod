@@ -4954,7 +4954,7 @@ PIKECLASS BlockCipher16
 	  bytes = EAX_DIGEST_SIZE;
 	}
 
-	res = begin_shared_string(bytes);
+        res = begin_shared_string(EAX_DIGEST_SIZE);
 
 	if (THIS->crypt_state && THIS->crypt_state->crypt) {
 	  func = THIS->crypt_state->crypt;
@@ -4963,9 +4963,9 @@ PIKECLASS BlockCipher16
 
 	eax_digest(&THIS->eax_ctx, &THIS->eax_key,
                    ctx, (pike_nettle_cipher_func)func,
-                   bytes, STR0(res));
+                   PIKE_NETTLE_DIGEST_LENGTH(EAX_DIGEST_SIZE) STR0(res));
 
-	push_string(end_shared_string(res));
+        push_string(end_and_resize_shared_string(res, bytes));
       }
     }
     /*! @endclass State
@@ -5459,7 +5459,7 @@ PIKECLASS BlockCipher16
 
         gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key,
                    ctx, (pike_nettle_cipher_func)func,
-		   GCM_BLOCK_SIZE, STR0(result));
+                   PIKE_NETTLE_DIGEST_LENGTH(GCM_BLOCK_SIZE) STR0(result));
 
 	THIS->dmode |= NO_ADATA | NO_CDATA;
 
@@ -5586,6 +5586,7 @@ PIKECLASS BlockCipher16
         cmac128_update(&THIS->cmac_ctx, crypt_ctx,
                        (pike_nettle_cipher_func)crypt_func,
 		       data->len, STR0(data));
+        push_object(this_object());
       }
 
       PIKEFUN string(8bit) digest(int(1..16)|void length)
@@ -5602,7 +5603,7 @@ PIKECLASS BlockCipher16
 	  }
 	}
 
-	digest = begin_shared_string(len);
+        digest = begin_shared_string(CMAC128_DIGEST_SIZE);
 
 	if (THIS->crypt_state && THIS->crypt_state->crypt) {
 	  crypt_func = THIS->crypt_state->crypt;
@@ -5611,9 +5612,10 @@ PIKECLASS BlockCipher16
 
         cmac128_digest(&THIS->cmac_ctx, &THIS->cmac_key,
                        crypt_ctx, (pike_nettle_cipher_func)crypt_func,
-		       len, STR0(digest));
+                       PIKE_NETTLE_DIGEST_LENGTH(CMAC128_DIGEST_SIZE)
+                       STR0(digest));
 
-	push_string(end_shared_string(digest));
+        push_string(end_and_resize_shared_string(digest, len));
       }
 
       /*! @decl Cipher::State substate_factory()
@@ -5630,7 +5632,7 @@ PIKECLASS BlockCipher16
 	apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
       }
 
-      /*! @decl void create()
+      /*! @decl void create(string key)
        */
       PIKEFUN void create(string key)
 	flags ID_PROTECTED;
@@ -5641,7 +5643,7 @@ PIKECLASS BlockCipher16
 	int f;
 
 	apply_current(f_Nettle_BlockCipher16_cq__CMAC_State_substate_factory_fun_num,
-		      args);
+                      0);
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
 	  Pike_error("Unsupported return value from Cipher::State().\n");
 	}
@@ -5661,6 +5663,7 @@ PIKECLASS BlockCipher16
 	  Pike_error("block_size() didn't return an int.\n");
 
 	block_size = Pike_sp[-1].u.integer;
+        pop_stack();
 
 	if (block_size != CMAC128_DIGEST_SIZE)
 	  Pike_error("Bad block size for CMAC: %d.\n", block_size);
@@ -5668,8 +5671,9 @@ PIKECLASS BlockCipher16
 	if (THIS->object) free_object(THIS->object);
 	add_ref(THIS->object = o);
 
-	apply(o, "set_encrypt_key", args);
-	pop_stack();
+        ref_push_string(key);
+        apply(o, "set_encrypt_key", 1);
+        pop_stack();
 
 	inh = INHERIT_FROM_INT(o->prog, f);
 	if (inh->prog == Nettle_Cipher_State_program) {
@@ -5681,7 +5685,8 @@ PIKECLASS BlockCipher16
 	  THIS->crypt_state = NULL;
 	}
 
-	apply_current(f_Nettle_BlockCipher16_cq__CMAC_State_init_fun_num, 0);
+        pop_n_elems(args + 1);
+        apply_current(f_Nettle_BlockCipher16_cq__CMAC_State_init_fun_num, 0);
       }
     }
     /*! @endclass State
@@ -6172,7 +6177,7 @@ PIKECLASS BlockCipher16
 
         ocb_digest(&THIS->ocb_ctx, &THIS->ocb_key,
                    ctx, (pike_nettle_cipher_func)func,
-                   THIS->tag_length, STR0(res));
+                   PIKE_NETTLE_DIGEST_LENGTH(THIS->tag_length) STR0(res));
 
         push_string(end_shared_string(res));
       }
@@ -6259,27 +6264,45 @@ PIKECLASS BlockCipher16
 #define AES256_KEY_SIZE	32
 #endif
 
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+/* Nettle 4.0 removed the variable-key-size AES context. Keep our own
+ * dispatcher over the fixed-key-size interfaces available since 3.0.
+ */
+struct pike_aes_ctx {
+  unsigned key_size;
+  union {
+    struct aes128_ctx ctx128;
+    struct aes192_ctx ctx192;
+    struct aes256_ctx ctx256;
+  } u;
+};
+#define aes_ctx pike_aes_ctx
+#ifndef AES_KEY_SIZE
+#define AES_KEY_SIZE AES256_KEY_SIZE
+#endif
+#endif
+
 static void
 pike_aes_set_encrypt_key(void *ctx,
 			 ptrdiff_t length, const char *key,
 			 int UNUSED(force))
 {
   if (length == AES128_KEY_SIZE) {
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes128_set_encrypt_key(&((struct aes_ctx*)ctx)->u.ctx128,
 			   (const uint8_t *)key);
 #else
     aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES192_KEY_SIZE) {
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes192_set_encrypt_key(&((struct aes_ctx*)ctx)->u.ctx192,
 			   (const uint8_t *)key);
 #else
     aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES256_KEY_SIZE) {
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes256_set_encrypt_key(&((struct aes_ctx*)ctx)->u.ctx256,
 			   (const uint8_t *)key);
 #else
@@ -6287,7 +6310,7 @@ pike_aes_set_encrypt_key(void *ctx,
 #endif
   } else
     Pike_error("AES: Bad keysize for AES.\n");
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
   ((struct aes_ctx*)ctx)->key_size = length;
 #endif
 }
@@ -6298,21 +6321,21 @@ pike_aes_set_decrypt_key(void *ctx,
 			 int UNUSED(force))
 {
   if (length == AES128_KEY_SIZE) {
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes128_set_decrypt_key(&((struct aes_ctx*)ctx)->u.ctx128,
 			   (const uint8_t *)key);
 #else
     aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES192_KEY_SIZE) {
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes192_set_decrypt_key(&((struct aes_ctx*)ctx)->u.ctx192,
 			   (const uint8_t *)key);
 #else
     aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
 #endif
   } else if (length == AES256_KEY_SIZE) {
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
     aes256_set_decrypt_key(&((struct aes_ctx*)ctx)->u.ctx256,
 			   (const uint8_t *)key);
 #else
@@ -6320,13 +6343,13 @@ pike_aes_set_decrypt_key(void *ctx,
 #endif
   } else
     Pike_error("AES: Bad keysize for AES.\n");
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
   ((struct aes_ctx*)ctx)->key_size = length;
 #endif
 }
 
-#ifdef HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE
-/* Reimplementation of the deprecated API to avoid warnings. */
+#ifdef HAVE_NETTLE_AES128_ENCRYPT
+/* Dispatch the generic AES interface without the deprecated API. */
 static void pike_aes_encrypt(const struct aes_ctx *ctx, size_t length,
 			     uint8_t *dst, const uint8_t *src)
 {
@@ -6357,8 +6380,10 @@ static void pike_aes_decrypt(const struct aes_ctx *ctx, size_t length,
     break;
   }
 }
-#define nettle_aes_encrypt	pike_aes_encrypt
-#define nettle_aes_decrypt	pike_aes_decrypt
+#undef aes_encrypt
+#undef aes_decrypt
+#define aes_encrypt pike_aes_encrypt
+#define aes_decrypt pike_aes_decrypt
 #endif
 
 static void
@@ -7382,6 +7407,10 @@ PIKECLASS DES3
 
 #ifdef HAVE_NETTLE_SALSA20_CRYPT
 
+#ifndef SALSA20_NONCE_SIZE
+#define SALSA20_NONCE_SIZE SALSA20_IV_SIZE
+#endif
+
 static void
 pike_salsa20_set_key(void *ctx,
                      ptrdiff_t length, const char *key,
@@ -7464,10 +7493,14 @@ PIKECLASS SALSA20
       rawtype tFunc(tStr8, tObjImpl_NETTLE_CIPHER_STATE);
     {
       NO_WIDE_STRING(iv);
-      if (iv->len != SALSA20_IV_SIZE)
-        Pike_error("SALSA20 IV needs to be %d bytes.\n", SALSA20_IV_SIZE);
+      if (iv->len != SALSA20_NONCE_SIZE)
+        Pike_error("SALSA20 IV needs to be %d bytes.\n", SALSA20_NONCE_SIZE);
       iv->flags |= STRING_CLEAR_ON_EXIT;
+#ifdef salsa20_set_nonce
+      salsa20_set_nonce(&THIS->salsa20, STR0(iv));
+#else
       salsa20_set_iv(&THIS->salsa20, STR0(iv));
+#endif
       push_object(this_object());
     }
 

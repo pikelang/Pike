@@ -21,7 +21,12 @@ DECLARATIONS
 #include <nettle/md5.h>
 #include <nettle/md4.h>
 #include <nettle/md2.h>
+#ifdef HAVE_NETTLE_SHA2_H
+#include <nettle/sha1.h>
+#include <nettle/sha2.h>
+#else
 #include <nettle/sha.h>
+#endif
 #ifdef HAVE_NETTLE_SHA3_H
 #include <nettle/sha3.h>
 #endif
@@ -39,6 +44,60 @@ DECLARATIONS
 #endif
 
 #include "fdlib.h"
+
+/* Keep a generic HMAC state for hashes without a specific HMAC interface.
+ * Nettle 4.0 removed its generic HMAC helpers, including HMAC_CTX.
+ */
+#define PIKE_HMAC_CTX(type) { type outer; type inner; type state; }
+
+#ifdef HAVE_NETTLE_HMAC_H
+#ifdef HAVE_NETTLE_HMAC_SET_KEY
+#define pike_hmac_set_key hmac_set_key
+#define pike_hmac_digest hmac_digest
+#else
+static void pike_hmac_set_key(void *outer, void *inner, void *state,
+                              const struct nettle_hash *hash,
+                              pike_nettle_size_t length,
+                              const uint8_t *key)
+{
+  uint8_t *pad = alloca(hash->block_size);
+  unsigned i;
+
+  if (length > hash->block_size) {
+    hash->init(state);
+    hash->update(state, length, key);
+    hash->digest(state, PIKE_NETTLE_DIGEST_LENGTH(hash->digest_size) pad);
+    length = hash->digest_size;
+  } else {
+    memcpy(pad, key, length);
+  }
+  memset(pad + length, 0, hash->block_size - length);
+  for (i = 0; i < hash->block_size; i++) pad[i] ^= 0x36;
+  hash->init(inner);
+  hash->update(inner, hash->block_size, pad);
+  for (i = 0; i < hash->block_size; i++) pad[i] ^= 0x36 ^ 0x5c;
+  hash->init(outer);
+  hash->update(outer, hash->block_size, pad);
+  memcpy(state, inner, hash->context_size);
+}
+
+static void pike_hmac_digest(const void *outer, const void *inner, void *state,
+                             const struct nettle_hash *hash,
+                             pike_nettle_size_t length, uint8_t *digest)
+{
+  uint8_t *full_digest = alloca(hash->digest_size);
+
+  hash->digest(state,
+               PIKE_NETTLE_DIGEST_LENGTH(hash->digest_size) full_digest);
+  memcpy(state, outer, hash->context_size);
+  hash->update(state, hash->digest_size, full_digest);
+  hash->digest(state,
+               PIKE_NETTLE_DIGEST_LENGTH(hash->digest_size) full_digest);
+  memcpy(digest, full_digest, length);
+  memcpy(state, inner, hash->context_size);
+}
+#endif
+#endif
 
 /*! @module Nettle */
 
@@ -133,7 +192,8 @@ PIKECLASS Hash
 
     digest_length = meta->digest_size;
     out = begin_shared_string(digest_length);
-    meta->digest(ctx, digest_length, (uint8_t *)out->str);
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(digest_length)
+                 (uint8_t *)out->str);
 
     pop_n_elems(args);
     push_string(end_shared_string(out));
@@ -229,7 +289,8 @@ PIKECLASS Hash
     THREADS_DISALLOW();
   ret_meta:
     out = begin_shared_string(meta->digest_size);
-    meta->digest(ctx, meta->digest_size, (uint8_t *)out->str);
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(meta->digest_size)
+                 (uint8_t *)out->str);
 
     pop_n_elems(args);
     push_string(end_shared_string(out));
@@ -357,7 +418,7 @@ PIKECLASS Hash
     meta->update(ctx, plen, p);					/* 5 */
     meta->update(ctx, slen, s);					/* 6 */
     meta->update(ctx, plen, p);					/* 7 */
-    meta->digest(ctx, dsz, abcbuf);				/* 8 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) abcbuf); /* 8 */
 
     /* 1 */
     meta->update(ctx, plen, p);					/* 2 */
@@ -377,13 +438,13 @@ PIKECLASS Hash
       }
     }
 
-    meta->digest(ctx, dsz, abcbuf);				/* 12 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) abcbuf); /* 12 */
 
     /* 13 */
     for (i = 0; i < plen; i++) {				/* 14 */
       meta->update(ctx, plen, p);
     }
-    meta->digest(ctx, dsz, dpbuf);				/* 15 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) dpbuf); /* 15 */
 
     /* Sequence P is implicit. */				/* 16 */
 
@@ -391,7 +452,7 @@ PIKECLASS Hash
     for(i = 0; i < 16 + abcbuf[0]; i++) {			/* 18 */
       meta->update(ctx, slen, s);
     }
-    meta->digest(ctx, dsz, dsbuf);				/* 19 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) dsbuf); /* 19 */
 
     /* Sequence S is implicit. */				/* 20 */
 
@@ -421,7 +482,7 @@ PIKECLASS Hash
 	}
 	meta->update(ctx, plen - i, dpbuf);
       }
-      meta->digest(ctx, dsz, abcbuf);				/* h */
+      meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) abcbuf); /* h */
     }
     THREADS_DISALLOW();
 
@@ -567,7 +628,7 @@ PIKECLASS Hash
     meta->update(ctx, plen, p);					/* 5 */
     meta->update(ctx, slen, s);					/* 6 */
     meta->update(ctx, plen, p);					/* 7 */
-    meta->digest(ctx, dsz, abcbuf);				/* 8 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) abcbuf); /* 8 */
 
     meta->init(ctx);						/* 1 */
     meta->update(ctx, plen, p);					/* 2 */
@@ -587,13 +648,13 @@ PIKECLASS Hash
       }
     }
 
-    meta->digest(ctx, dsz, abcbuf);				/* 12 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) abcbuf); /* 12 */
 
     meta->init(ctx);						/* 13 */
     for (i = 0; i < plen; i++) {				/* 14 */
       meta->update(ctx, plen, p);
     }
-    meta->digest(ctx, dsz, dpbuf);				/* 15 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) dpbuf); /* 15 */
 
     /* Sequence P is implicit. */				/* 16 */
 
@@ -601,7 +662,7 @@ PIKECLASS Hash
     for(i = 0; i < 16 + abcbuf[0]; i++) {			/* 18 */
       meta->update(ctx, slen, s);
     }
-    meta->digest(ctx, dsz, dsbuf);				/* 19 */
+    meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) dsbuf); /* 19 */
 
     /* Sequence S is implicit. */				/* 20 */
 
@@ -635,7 +696,7 @@ PIKECLASS Hash
         }
         meta->update(ctx, plen - i, dpbuf);
       }
-      meta->digest(ctx, dsz, abcbuf);				/* h */
+      meta->digest(ctx, PIKE_NETTLE_DIGEST_LENGTH(dsz) abcbuf); /* h */
     }
     THREADS_DISALLOW();
 
@@ -859,9 +920,10 @@ PIKECLASS Hash
 	  length = arg->u.integer;
 	}
 
-      digest = begin_shared_string(length);
-      meta->digest(THIS->ctx, length, (uint8_t *)digest->str);
-      push_string(end_shared_string(digest));
+      digest = begin_shared_string(meta->digest_size);
+      meta->digest(THIS->ctx, PIKE_NETTLE_DIGEST_LENGTH(meta->digest_size)
+                   (uint8_t *)digest->str);
+      push_string(end_and_resize_shared_string(digest, length));
     }
 
 #ifdef PIKE_NULL_IS_SPECIAL
