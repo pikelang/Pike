@@ -7,18 +7,24 @@ test_any_equal([[
   mixed glib = GI.repository.GLib;
   int fired;
   int source;
+  int callback_source = -1;
   source = glib->idle_add(0, lambda() {
-    glib->source_remove(source);
+    callback_source = source;
+    if (source > 0) glib->source_remove(source);
     fired++;
     return 0;
   });
   int pending = context->pending();
-  context->iteration(0);
-  if (!fired) glib->source_remove(source);
+  int iterated = context->iteration(0);
+  if (!fired && source > 0) glib->source_remove(source);
+  if (!pending || !fired || source <= 0)
+    Tools.Testsuite.log_msg("GI idle: source=%d callback_source=%d "
+                            "pending=%d iteration=%d fired=%d\n",
+                            source, callback_source, pending, iterated, fired);
   return ({ !!pending, !!fired });
 ]], [[({ 1, 1 })]])
 
-cond_begin([[ GI.HAVE_BACKEND_INTEGRATION ]])
+cond_resolv(GI.HAVE_BACKEND_INTEGRATION, [[
 
 dnl A nonblocking backend pass must also dispatch GLib idle work.
 test_any([[
@@ -26,12 +32,15 @@ test_any([[
   int fired;
   int source;
   source = glib->idle_add(0, lambda() {
-    glib->source_remove(source);
+    if (source > 0) glib->source_remove(source);
     fired++;
     return 0;
   });
   Pike.DefaultBackend(0.0);
-  if (!fired) glib->source_remove(source);
+  if (!fired && source > 0) glib->source_remove(source);
+  if (!fired || source <= 0)
+    Tools.Testsuite.log_msg("GI backend idle: source=%d fired=%d\n",
+                            source, fired);
   return !!fired;
 ]], 1)
 
@@ -39,19 +48,33 @@ dnl GLib timers and idle sources have no ready descriptor of their own.
 dnl Exercise Pike's backend without manually iterating the GLib context.
 test_any([[
   GI.get_default_repository()->require("GLib", "2.0");
+  object context = GI.get_default_main_context();
   mixed glib = GI.repository.GLib;
   int fired;
   int source;
   source = glib->timeout_add(0, 20, lambda() {
-    glib->source_remove(source);
+    if (source > 0) glib->source_remove(source);
     fired++;
     return 0;
   });
   // The callback removes its source; cancel it here only on timeout.
   // This does not require MainContext.find_source_by_id().
-  for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
-  if (!fired) glib->source_remove(source);
-  return !!fired;
+  int start = gethrtime();
+  int passes = 0;
+  for (; passes < 10 && !fired; passes++) Pike.DefaultBackend(0.1);
+  int backend_fired = !!fired;
+  if (!backend_fired || source <= 0) {
+    int elapsed_us = gethrtime() - start;
+    int pending = context->pending();
+    int iterated = backend_fired ? -1 : context->iteration(0);
+    Tools.Testsuite.log_msg("GI timeout: source=%d backend_fired=%d "
+                            "passes=%d elapsed_us=%d pending=%d "
+                            "manual_iteration=%d manual_fired=%d\n",
+                            source, backend_fired, passes, elapsed_us,
+                            pending, iterated, fired);
+  }
+  if (!fired && source > 0) glib->source_remove(source);
+  return backend_fired;
 ]], 1)
 
 test_any([[
@@ -60,17 +83,20 @@ test_any([[
   int fired;
   int source;
   source = glib->idle_add(0, lambda() {
-    glib->source_remove(source);
+    if (source > 0) glib->source_remove(source);
     fired++;
     return 0;
   });
   // The callback removes its source; cancel it here only on timeout.
   // This does not require MainContext.find_source_by_id().
   for (int n = 0; n < 10 && !fired; n++) Pike.DefaultBackend(0.1);
-  if (!fired) glib->source_remove(source);
+  if (!fired && source > 0) glib->source_remove(source);
+  if (!fired || source <= 0)
+    Tools.Testsuite.log_msg("GI backend idle retry: source=%d fired=%d\n",
+                            source, fired);
   return !!fired;
 ]], 1)
 
-cond_end
+]])
 cond_end
 END_MARKER

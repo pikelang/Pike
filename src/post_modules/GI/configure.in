@@ -12,17 +12,20 @@ AC_SUBST(GI_LIBS)
 
 if test x$with_gi = xyes ; then
   PIKE_FEATURE_NODEP(GI)
+  gi_version=unknown
 
   MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
   if ${ac_tool_prefix}pkg-config girepository-2.0 2>/dev/null && \
      echo "GI-2.0 not supported yet. Trying GI-1.0..." && false; then
     GI_CFLAGS="`${ac_tool_prefix}pkg-config girepository-2.0 --cflags`"
     GI_LIBS="`${ac_tool_prefix}pkg-config girepository-2.0 --libs`"
+    gi_version="`${ac_tool_prefix}pkg-config girepository-2.0 --modversion`"
     gi_lib="2.0"
   else
     if ${ac_tool_prefix}pkg-config gobject-introspection-1.0 2>/dev/null ; then
       GI_CFLAGS="`${ac_tool_prefix}pkg-config gobject-introspection-1.0 --cflags`"
       GI_LIBS="`${ac_tool_prefix}pkg-config gobject-introspection-1.0 --libs`"
+      gi_version="`${ac_tool_prefix}pkg-config gobject-introspection-1.0 --modversion`"
       gi_lib="1.0"
 
       if test "x$pike_cv_sys_os" = "xNetBSD"; then
@@ -73,7 +76,7 @@ if test x$with_gi = xyes ; then
         AC_CHECK_DECLS([GI_TYPE_TAG_UNICHAR],
                        [], [], [[#include <girepository/girepository.h>]])
         AC_DEFINE(HAVE_GI, 2, [Define to major version of GI if available and to be built])
-        PIKE_FEATURE_OK(GI, 2.0)
+        PIKE_FEATURE_OK(GI, 2.0 (GObject Introspection $gi_version))
       else
         GI_CFLAGS=""
         GI_LIBS=""
@@ -99,7 +102,7 @@ if test x$with_gi = xyes ; then
         AC_CHECK_DECLS([GI_TYPE_TAG_UNICHAR],
                        [], [], [[#include <girepository.h>]])
         AC_DEFINE(HAVE_GI, 1, [Define to major version of GI if available and to be built])
-        PIKE_FEATURE_OK(GI, 1.0)
+        PIKE_FEATURE_OK(GI, 1.0 (GObject Introspection $gi_version))
       else
           GI_CFLAGS=""
           GI_LIBS=""
