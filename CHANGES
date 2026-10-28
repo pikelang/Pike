@@ -505,6 +505,11 @@ o Cpp
 
 o Compiler
 
+  - Getter return types are now inferred correctly when the getter has
+    optional parameters. Argument-type filtering handles named and
+    attributed types consistently, and internal helpers retain generic
+    operator-overload information and count required arguments correctly.
+
   - Invalid operator arguments involving factory functions, e.g.
     "text" / Regexp(pattern), now produce compilation errors instead of
     aborting the compiler.

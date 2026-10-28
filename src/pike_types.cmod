@@ -10535,8 +10535,8 @@ static int low_minimum_arguments(struct pike_type *q)
   {
     case T_OR:
     case T_AND:
-      return MAXIMUM(low_count_arguments(q->car),
-		     low_count_arguments(q->cdr));
+      return MAXIMUM(low_minimum_arguments(q->car),
+                     low_minimum_arguments(q->cdr));
 
     default: return 0;
 
@@ -10544,6 +10544,7 @@ static int low_minimum_arguments(struct pike_type *q)
     case PIKE_T_ATTRIBUTE:
     case T_ASSIGN:
     case T_SCOPE:
+    case PIKE_T_BIND:
       return low_minimum_arguments(q->cdr);
 
     case T_FUNCTION:
@@ -10559,7 +10560,7 @@ static int low_minimum_arguments(struct pike_type *q)
 	num++;
 	q = q->cdr;
       }
-      return num;
+      return num + low_minimum_arguments(q);
     case T_MANY:
       return 0;
   }
@@ -10626,8 +10627,8 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
     return tmp;
 
   case T_FUNCTION:
-    if (arg_no > 0) {
-      arg_no--;
+    if (arg_no != 0) {
+      if (arg_no > 0) arg_no--;
       fun = fun->cdr;
       goto loop;
     }
@@ -12237,6 +12238,20 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
     case T_ASSIGN:
       arg_type = arg_type->cdr;
       goto loop;
+
+    case PIKE_T_NAME:
+    case PIKE_T_ATTRIBUTE:
+      tmp = low_get_first_arg_type(arg_type->cdr, flags);
+      if (!tmp) return NULL;
+      type_stack_mark();
+      push_finished_type(tmp);
+      free_type(tmp);
+      if (arg_type->type == PIKE_T_NAME) {
+        push_type_name((struct pike_string *)arg_type->car);
+      } else {
+        push_type_attribute((struct pike_string *)arg_type->car);
+      }
+      return pop_unfinished_type();
 
     case T_NOT:
       /* Recognize some common workarounds for the old function
@@ -14442,6 +14457,8 @@ int type_may_overload(struct pike_type *type, int lfun)
 {
   switch(type->type)
   {
+    case PIKE_T_BIND:
+    case PIKE_T_SCOPE:
     case T_ASSIGN:
       return type_may_overload(type->cdr, lfun);
 
