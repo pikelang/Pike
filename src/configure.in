@@ -3391,6 +3391,22 @@ AC_CHECK_FUNCS(sigsetjmp _setjmp siglongjmp _longjmp)
 if test "x$with_devpoll" = "xno"; then :; else
   AC_CHECK_HEADERS(sys/port.h sys/devpoll.h sys/event.h sys/epoll.h)
   AC_CHECK_FUNCS(port_create kqueue)
+  if test "x$ac_cv_func_kqueue" = "xyes"; then
+    AC_MSG_CHECKING(for a separate kqueue out-of-band filter)
+    AC_CACHE_VAL(pike_cv_kqueue_oob_filter, [
+      AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/event.h>
+      ], [
+        struct kevent ev;
+        EV_SET(&ev, 0, EVFILT_EXCEPT, EV_ADD, NOTE_OOB, 0, 0);
+      ], pike_cv_kqueue_oob_filter=yes, pike_cv_kqueue_oob_filter=no)
+    ])
+    AC_MSG_RESULT($pike_cv_kqueue_oob_filter)
+    if test "x$pike_cv_kqueue_oob_filter" = "xyes"; then
+      AC_DEFINE(HAVE_KQUEUE_OOB_FILTER)
+    fi
+  fi
   AC_CHECK_FRAMEWORK(CoreServices, CFRunLoopRunInMode)
   AC_CHECK_FUNCS(CFRunLoopRunInMode)
   AC_MSG_CHECKING(for poll device)

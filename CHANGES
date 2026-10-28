@@ -601,9 +601,13 @@ o GTK2
 
 o Pike.Backend
 
+  Use a separate kqueue exception filter for out-of-band reads when
+  available (eg on OpenBSD). Urgent-data callbacks now work while
+  ordinary data is queued, and are restored correctly after fork().
+
   The kqueue backend now reports failed nonblocking connections as
   errors even when the kernel returns only a write event. Previously
-  these could invoke the success callback on OpenBSD.
+  these could invoke the success callback on eg OpenBSD.
 
   Backend callbacks throwing errors could cause backends to
   enter a state where they got stuck throwing "Backend already

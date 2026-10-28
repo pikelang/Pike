@@ -3217,8 +3217,6 @@ static void pb_copy_selectors(struct pb_selectors *to,
 /*
  * Backend using kqueue-style poll device.
  *
- * FIXME: Not fully implemented yet! Out of band data handling is missing.
- *
  * Used on
  *   FreeBSD 4.1 and above.
  *   MacOS X/Darwin 7.x and above.
@@ -3266,9 +3264,14 @@ static void pb_copy_selectors(struct pb_selectors *to,
 #define EV_OOBAND	0
 #endif /* __APPLE__ */
 
-/* FIXME: The kqueue API has no documented support for out of band data. */
-#define MY_POLLEXCEPT	EVFILT_READ
-#define MY_POLLRDBAND	EVFILT_READ
+#ifdef HAVE_KQUEUE_OOB_FILTER
+#define MY_POLLEXCEPT   EVFILT_EXCEPT
+#define MY_POLLRDBAND   EVFILT_EXCEPT
+#else
+/* Older kqueue variants share ordinary read and OOB notifications. */
+#define MY_POLLEXCEPT   EVFILT_READ
+#define MY_POLLRDBAND   EVFILT_READ
+#endif
 #define MY_POLLWREXCEPT	EVFILT_WRITE
 #define MY_POLLWRBAND	EVFILT_WRITE
 
@@ -3509,8 +3512,18 @@ PIKECLASS PollDeviceBackend
     POLL_DEVICE_SET_EVENTS(me->backend, me->set, fd, events);
 #elif defined(BACKEND_USES_KQUEUE)
     /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
-    struct kevent ev[3];
+    struct kevent ev[4];
     int nev = 0;
+#ifdef HAVE_KQUEUE_OOB_FILTER
+    if (wanted_events & PIKE_BIT_FD_READ) {
+      EV_SET(ev + nev, fd, MY_POLLIN, EV_ADD, 0, 0, 0);
+      nev++;
+    }
+    if (wanted_events & PIKE_BIT_FD_READ_OOB) {
+      EV_SET(ev + nev, fd, MY_POLLRDBAND, EV_ADD, NOTE_OOB, 0, 0);
+      nev++;
+    }
+#else
     if (wanted_events & (PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB)) {
       if (wanted_events & PIKE_BIT_FD_READ_OOB) {
 	/* We want OOB notifications.
@@ -3526,6 +3539,7 @@ PIKECLASS PollDeviceBackend
       }
       nev++;
     }
+#endif /* HAVE_KQUEUE_OOB_FILTER */
     if (wanted_events & PIKE_BIT_FD_WRITE ||
 	wanted_events & PIKE_BIT_FD_WRITE_OOB) {
       PDWERR("BACKEND: EV_SET fd:%d, WRITE, ADD\n", fd);
@@ -3778,6 +3792,20 @@ PIKECLASS PollDeviceBackend
       pdb_UPDATE_BLACK_BOX(pdb, fd, new_events);
 
 #elif defined(BACKEND_USES_KQUEUE)
+#ifdef HAVE_KQUEUE_OOB_FILTER
+      if (changed_events & PIKE_BIT_FD_READ) {
+        if (new_events & PIKE_BIT_FD_READ)
+          pdb_MY_FD_SET(&pdb->set, fd, MY_POLLIN);
+        else
+          pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLIN);
+      }
+      if (changed_events & PIKE_BIT_FD_READ_OOB) {
+        if (new_events & PIKE_BIT_FD_READ_OOB)
+          pdb_MY_FD_SET2(&pdb->set, fd, MY_POLLRDBAND, NOTE_OOB);
+        else
+          pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLRDBAND);
+      }
+#else
       struct kevent ev[2];
 
       if (changed_events & (PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB)) {
@@ -3799,6 +3827,7 @@ PIKECLASS PollDeviceBackend
 	}
       }
 
+#endif /* HAVE_KQUEUE_OOB_FILTER */
       if (changed_events & (PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB)) {
 	if (new_events & (PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB)) {
           PDWERR("[%d]BACKEND[%d]: fd:%d WRITE, ADD\n", THR_NO, me->id, fd);
@@ -3922,8 +3951,8 @@ PIKECLASS PollDeviceBackend
    * data_out	write	POLLOUT		EVFILT_WRITE		WRITE
    *			POLLWRNORM
    *
-   * oob_in	except	POLLPRI		EVFILT_READ[EV_OOBAND]	READ_OOB
-   *			POLLRDBAND
+   * oob_in	except	POLLPRI		EVFILT_EXCEPT[NOTE_OOB]	READ_OOB
+   *			POLLRDBAND	or EVFILT_READ[EV_OOBAND]
    *
    * oob_out	write	POLLWRBAND	(EVFILT_WRITE)		WRITE_OOB
    *
@@ -3958,6 +3987,11 @@ PIKECLASS PollDeviceBackend
       fprintf(stderr, "  EVFILT_READ");
     } else if (PDB_CHECK_EVENT(event, MY_POLLOUT)) {
       fprintf(stderr, "  EVFILT_WRITE");
+#ifdef HAVE_KQUEUE_OOB_FILTER
+    } else if (PDB_CHECK_EVENT(event, MY_POLLRDBAND)) {
+      fprintf(stderr, "  EVFILT_EXCEPT");
+      if (event.fflags & NOTE_OOB) fprintf(stderr, "[OOBAND]");
+#endif
     } else if (PDB_CHECK_EVENT(event, MY_POLLFSEVENT)) {
       fprintf(stderr, "  POLLFSEVENT");
     } else {
@@ -4260,6 +4294,9 @@ PIKECLASS PollDeviceBackend
 	  }
 	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLRDBAND)
 #ifdef BACKEND_USES_KQUEUE
+#ifdef HAVE_KQUEUE_OOB_FILTER
+              && (poll_fds[i].fflags & NOTE_OOB)
+#else
 	      && (!EV_OOBAND || PDB_CHECK_ERROR_EVENT(poll_fds[i], EV_OOBAND))
               /* NOTE: FreeBSD 15.1 sends spurious OOB notifications
                *       even when there is no OOB data. It also has a
@@ -4268,7 +4305,8 @@ PIKECLASS PollDeviceBackend
                *       inband data, so only check for OOB when zero.
                */
               && !poll_fds[i].data
-#endif
+#endif /* HAVE_KQUEUE_OOB_FILTER */
+#endif /* BACKEND_USES_KQUEUE */
 	      ) {
             PDWERR("[%d]BACKEND[%d]: POLLRDBAND on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
@@ -4622,6 +4660,12 @@ PIKEFUN int enable_external_runloop(int enable)
 
 #ifdef BACKEND_USES_KQUEUE
     add_integer_constant("HAVE_KQUEUE", 1, 0);
+#ifdef HAVE_KQUEUE_OOB_FILTER
+    /*! @decl constant int HAVE_OOB_FILTER = 1
+     *! A separate kqueue filter is used for out-of-band read notifications.
+     */
+    add_integer_constant("HAVE_OOB_FILTER", 1, 0);
+#endif
 #endif /* BACKEND_USES_KQUEUE */
 
   }
