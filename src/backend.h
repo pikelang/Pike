@@ -45,18 +45,12 @@
 /*
  * Backend using kqueue-style poll device.
  *
- * FIXME: Not fully implemented yet! Out of band data handling is missing.
- *
  * Used on
  *   FreeBSD 4.1 and above.
  *   MacOS X/Darwin 7.x and above.
  *   Various other BSDs.
  */
 #define BACKEND_USES_KQUEUE
-/* Currently kqueue doesn't differentiate between in-band and out-of-band
- * data.
- */
-#define BACKEND_OOB_IS_SIMULATED
 
 #ifdef HAVE_CFRUNLOOPRUNINMODE
 /* Have kqueue+CFRunLoop variant (Mac OSX, iOS) */

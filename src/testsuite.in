@@ -5391,6 +5391,62 @@ test_any([[
 ]], 1)
 
 // Testing getter/setters
+// Getter return types must be extracted past optional arguments.
+test_any([[
+  class Getter {
+    int `value(int|void ignored) { return 42; }
+  };
+  int value = Getter()->value;
+  return value;
+]], 42)
+
+test_any_equal([[
+  class Getter {
+    array(int) `->value(int|void first, string|void second) {
+      return ({ 17, 42 });
+    }
+  };
+  array(int) value = Getter()->value;
+  return value;
+]], ({ 17, 42 }))
+
+test_any([[
+  class Box(<ValueType>)(ValueType stored) {
+    ValueType `value(int|void ignored) { return stored; }
+  };
+  Box(<int>) box = Box(<int>)(42);
+  int value = box->value;
+  return value;
+]], 42)
+
+// First-argument diagnostics must filter void through type wrappers.
+test_any_equal([[
+  class Errors {
+    array(string) errors = ({});
+    void compile_error(string file, int line, string message) {
+      errors += ({ message });
+    }
+    void compile_warning(string file, int line, string message) {}
+  };
+  array(string) expected = ({});
+  foreach (({
+    "void f(__attribute__(\"test\", int|void) x) {}\n",
+    "typedef int|void OptionalInt;\nvoid f(OptionalInt x) {}\n"
+  }), string declaration) {
+    Errors errors = Errors();
+    mixed err = catch {
+      compile_string(declaration + "void g() { f(\"x\"); }\n",
+                     "optional_argument", errors);
+    };
+    if (!err) error("Expected a compilation error.\n");
+    foreach (errors->errors, string message) {
+      if (has_prefix(message, "Expected: ")) expected += ({ message });
+    }
+  }
+  return expected;
+]], ({ "Expected: __attribute__(\"test\", int).",
+       "Expected: { OptionalInt = int }." }))
+
 test_any([[
   // Trivial case.
   class X {

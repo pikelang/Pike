@@ -1901,7 +1901,7 @@ static void push_ffi_argument(void *arg, GIArgInfo *ai)
   push_ffi_argument_type(arg, &ti);
 }
 
-static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
+static void cb_closure_handler(ffi_cif *UNUSED(cif), void *result,
                                void **args, void *data)
 {
   struct gi_callback_context *cbc = (struct gi_callback_context *)data;
@@ -1909,6 +1909,7 @@ static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
   JMP_BUF recovery;
   gint arg_num, num_args;
   void **argp;
+  GITypeInfo *return_info;
   if (SETJMP(recovery)) {
     pop_n_elems(Pike_sp-osp);
     UNSETJMP(recovery);
@@ -1932,6 +1933,11 @@ static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
     Pike_sp += cbc->extra_args->size;
   }
   apply_svalue(&cbc->func, Pike_sp-osp);
+  return_info = g_callable_info_get_return_type(cbc->callable);
+  if (result && g_type_info_get_tag(return_info) == GI_TYPE_TAG_BOOLEAN)
+    /* libffi stores narrow integer returns in an ffi_arg-sized slot. */
+    *(ffi_arg *)result = UNSAFE_IS_ZERO(Pike_sp-1) ? FALSE : TRUE;
+  g_base_info_unref(return_info);
   pop_stack();
   UNSETJMP(recovery);
   if (cbc->scope == GI_SCOPE_TYPE_ASYNC)
@@ -1959,6 +1965,67 @@ static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
  *  Returns the first OUT or IN/OUT parameter of the function (if any)
  *  or otherwise the return value of the function on the Pike stack.
  */
+#if defined(HAVE_GI_LEGACY_FFI_RETURNS) && PIKE_BYTEORDER == 4321 && \
+    SIZEOF_LONG == 8
+/* GI before 1.31.22 passes GIArgument directly to ffi_call(). On 64-bit
+ * big-endian machines libffi writes narrow integer returns as a long, so
+ * reading a narrow union member sees the empty high half instead.
+ */
+static void fix_legacy_ffi_return(GIArgument *retval, GITypeInfo *info)
+{
+  GITypeTag tag = g_type_info_get_tag(info);
+  guint64 value;
+
+  switch (tag) {
+  case GI_TYPE_TAG_BOOLEAN:
+  case GI_TYPE_TAG_INT8:
+  case GI_TYPE_TAG_UINT8:
+  case GI_TYPE_TAG_INT16:
+  case GI_TYPE_TAG_UINT16:
+  case GI_TYPE_TAG_INT32:
+  case GI_TYPE_TAG_UINT32:
+#if HAVE_DECL_GI_TYPE_TAG_UNICHAR
+  case GI_TYPE_TAG_UNICHAR:
+#endif
+    value = retval->v_uint64;
+    break;
+  default:
+    return;
+  }
+
+  switch (tag) {
+  case GI_TYPE_TAG_BOOLEAN:
+    retval->v_boolean = (gboolean)value;
+    break;
+  case GI_TYPE_TAG_INT8:
+    retval->v_int8 = (gint8)value;
+    break;
+  case GI_TYPE_TAG_UINT8:
+    retval->v_uint8 = (guint8)value;
+    break;
+  case GI_TYPE_TAG_INT16:
+    retval->v_int16 = (gint16)value;
+    break;
+  case GI_TYPE_TAG_UINT16:
+    retval->v_uint16 = (guint16)value;
+    break;
+  case GI_TYPE_TAG_INT32:
+    retval->v_int32 = (gint32)value;
+    break;
+  case GI_TYPE_TAG_UINT32:
+    retval->v_uint32 = (guint32)value;
+    break;
+#if HAVE_DECL_GI_TYPE_TAG_UNICHAR
+  case GI_TYPE_TAG_UNICHAR:
+    retval->v_uint32 = (guint32)value;
+    break;
+#endif
+  default:
+    break;
+  }
+}
+#endif
+
 static void low_invoke(GIBaseInfo *callable,
                        struct object *self,
                        INT32 args)
@@ -2216,6 +2283,10 @@ static void low_invoke(GIBaseInfo *callable,
   ti = g_callable_info_get_return_type(callable);
 
   SET_ONERROR(onerror, g_base_info_unref, ti);
+#if defined(HAVE_GI_LEGACY_FFI_RETURNS) && PIKE_BYTEORDER == 4321 && \
+    SIZEOF_LONG == 8
+  fix_legacy_ffi_return(&retval, ti);
+#endif
   if(num_out_args > 0 && g_type_info_get_tag(ti) == GI_TYPE_TAG_VOID) {
     GIArgInfo *ai;
     GITypeInfo ati;

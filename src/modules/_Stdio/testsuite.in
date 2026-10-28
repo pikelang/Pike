@@ -400,6 +400,11 @@ cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEU
   run_sub_test(({"SRCDIR/kqueuetest.pike"}))
 cond_end
 
+cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_OOB_FILTER"] ]])
+  run_sub_test(({"SRCDIR/kqueue_oobtest.pike", "0"}))
+  run_sub_test(({"SRCDIR/kqueue_oobtest.pike", "1"}))
+cond_end
+
 dnl Buffer
 
 test_equal([[Stdio.Buffer("hej")->read(1)]], "h")

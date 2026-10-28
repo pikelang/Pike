@@ -101,6 +101,12 @@ if test x$with_gi = xyes ; then
                        g_property_info_get_getter)
         AC_CHECK_DECLS([GI_TYPE_TAG_UNICHAR],
                        [], [], [[#include <girepository.h>]])
+        if test "$gi_version" != unknown && \
+           ! ${ac_tool_prefix}pkg-config --atleast-version=1.31.22 \
+             gobject-introspection-1.0; then
+          AC_DEFINE(HAVE_GI_LEGACY_FFI_RETURNS, 1,
+                    [Define if GI leaves narrow ffi returns in register-sized storage])
+        fi
         AC_DEFINE(HAVE_GI, 1, [Define to major version of GI if available and to be built])
         PIKE_FEATURE_OK(GI, 1.0 (GObject Introspection $gi_version))
       else

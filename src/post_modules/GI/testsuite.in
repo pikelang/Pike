@@ -1,5 +1,7 @@
 START_MARKER
 cond_begin([[ master()->resolv("GI")->get_default_repository ]])
+dnl pkgsrc can install GI without the separate GLib introspection typelibs.
+cond_begin([[ GI.get_default_repository()->enumerate_versions("GLib") ]])
 
 dnl Obtain and iterate the context without its introspected accessor functions.
 test_any_equal([[
@@ -23,6 +25,22 @@ test_any_equal([[
                             source, callback_source, pending, iterated, fired);
   return ({ !!pending, !!fired });
 ]], [[({ 1, 1 })]])
+
+dnl Returning false from a GI callback must remove the GLib source.
+test_any([[
+  object context = GI.get_default_main_context();
+  mixed glib = GI.repository.GLib;
+  int fired;
+  int source = glib->idle_add(0, lambda() { fired++; return 0; });
+  context->iteration(0);
+  context->iteration(0);
+  if (fired != 1) {
+    Tools.Testsuite.log_msg("GI callback return: source=%d fired=%d\n",
+                            source, fired);
+    if (source > 0) glib->source_remove(source);
+  }
+  return fired == 1 && source > 0;
+]], 1)
 
 cond_resolv(GI.HAVE_BACKEND_INTEGRATION, [[
 
@@ -60,8 +78,10 @@ test_any([[
   // The callback removes its source; cancel it here only on timeout.
   // This does not require MainContext.find_source_by_id().
   int start = gethrtime();
+  int deadline = start + 1000000;
   int passes = 0;
-  for (; passes < 10 && !fired; passes++) Pike.DefaultBackend(0.1);
+  for (; !fired && gethrtime() < deadline; passes++)
+    Pike.DefaultBackend(0.1);
   int backend_fired = !!fired;
   if (!backend_fired || source <= 0) {
     int elapsed_us = gethrtime() - start;
@@ -98,5 +118,6 @@ test_any([[
 ]], 1)
 
 ]])
+cond_end
 cond_end
 END_MARKER

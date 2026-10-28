@@ -467,6 +467,9 @@
 /* Use poll() instead of select() ? */
 #undef HAVE_AND_USE_POLL
 
+/* Define if kqueue supports EVFILT_EXCEPT with NOTE_OOB. */
+#undef HAVE_KQUEUE_OOB_FILTER
+
 /* Enable use of /dev/epoll on Linux. */
 #undef WITH_EPOLL
 
