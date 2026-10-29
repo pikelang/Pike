@@ -1,0 +1,130 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+// Regression tests for forkd channel closure (issues 6092 and 6153).
+
+#if constant(Process.ForkdDecoder)
+class RemoteProcess
+{
+  inherit Process.Process;
+
+  Stdio.File peer;
+  int polls;
+  int notifications;
+  array(int) callback_results = ({});
+
+  protected void create()
+  {
+    process_fd = Stdio.File();
+    peer = process_fd->pipe(Stdio.PROP_BIDIRECTIONAL);
+    process_backend = Pike.SmallBackend();
+    process_backend->add_file(process_fd);
+    process_fd->set_nonblocking(got_data, UNDEFINED, got_close);
+    __callback = lambda(object process) {
+      notifications++;
+      // A callback must be able to retrieve the completed result.
+      if (process->status() == 2) callback_results += ({ process->wait() });
+    };
+  }
+
+  protected void do_poll(float t)
+  {
+    // Bound regressions that would otherwise spin forever after EOF.
+    if (++polls > 30) error("Process.wait() did not terminate after EOF.\n");
+    ::do_poll(min(t, 0.01));
+  }
+
+  void packet(string tag, mixed value)
+  {
+    string data = encode_value(({ tag, value }));
+    string frame = sprintf("%4c%s", sizeof(data), data);
+    if (peer->write(frame) != sizeof(frame)) error("Failed to send packet.\n");
+  }
+
+  void close_peer()
+  {
+    peer->close();
+  }
+
+  void await_state(int wanted)
+  {
+    while (__status != wanted) do_poll(0.01);
+  }
+
+  void await_close()
+  {
+    while (process_backend) do_poll(0.01);
+  }
+
+  void repeat_close()
+  {
+    got_close(0);
+  }
+
+  int poll_loop_once()
+  {
+    do_poll_loop();
+    return !!process_poll;
+  }
+}
+
+int main()
+{
+  int checks;
+  foreach (({ 0, 1, -1 }), int state) {
+    foreach (({ 0, 1 }), int close_before_wait) {
+      object process = RemoteProcess();
+      if (state >= 0) {
+        process->packet("PID", getpid());
+        process->await_state(0);
+      }
+      if (state == 1) {
+        process->packet("STOP", 0);
+        process->await_state(1);
+      }
+      int notifications = process->notifications;
+      process->close_peer();
+      if (close_before_wait) process->await_close();
+      if (process->wait() != 255 || process->status() != 2)
+        error("Incorrect result after EOF in state %d.\n", state);
+      if (process->wait() != 255)
+        error("Repeated wait lost the result in state %d.\n", state);
+      if (process->notifications != notifications + 1 ||
+          !equal(process->callback_results, ({ 255 })))
+        error("Missing terminal callback in state %d.\n", state);
+      process->repeat_close();
+      if (process->notifications != notifications + 1)
+        error("Repeated EOF sent another callback.\n");
+      checks++;
+      destruct(process);
+    }
+  }
+
+  object process = RemoteProcess();
+  process->packet("PID", getpid());
+  process->packet("EXIT", 37);
+  process->close_peer();
+  if (process->wait() != 37 || process->wait() != 37 ||
+      !equal(process->callback_results, ({ 37 })))
+    error("Normal EXIT result was not preserved.\n");
+  int notifications = process->notifications;
+  process->repeat_close();
+  if (process->wait() != 37 || process->notifications != notifications)
+    error("EOF overwrote the EXIT result or repeated its callback.\n");
+  destruct(process);
+
+  process = RemoteProcess();
+  process->packet("PID", getpid());
+  process->await_state(0);
+  process->close_peer();
+  if (process->poll_loop_once() || process->wait() != 255)
+    error("Polling rescheduled itself after EOF.\n");
+  destruct(process);
+  write("%d forkd channel-closure scenarios passed.\n", checks + 2);
+  return 0;
+}
+#else
+int main()
+{
+  write("Skipping forkd tests: descriptor passing is unavailable.\n");
+  return 0;
+}
+#endif
