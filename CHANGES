@@ -619,6 +619,14 @@ o Pike.Backend
   running - cannot reenter.". This was typically triggered via
   the Stdio.sendfile() result callback.
 
+o Process.Process
+
+  Unexpected closure of the forkd connection now completes unfinished
+  processes with status 255 and notifies the callback once. wait() returns
+  the completed result, and polling stops after closure. A previously
+  received exit status is preserved. Closure during a callback is deferred
+  until buffered forkd packets have been processed.
+
 o Protocols.HTTP.Server
 
   The server module will now read payloads for HTTP PUT requests, just
