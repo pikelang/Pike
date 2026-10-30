@@ -56,8 +56,9 @@
   } while(0);
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
-  PIKE_MAP_VARIABLE(#NAME2, \
+  PIKE_MAP_VARIABLE_SIZED(#NAME2, \
                     current_offset + (((char *)&(foo.NAME2))-((char *)&foo)),\
+                    sizeof(foo.NAME2), \
                     CTYPE, RUNTYPE, 0);
 
 #define ERR_CONST(TYPE, NAME, VALUE) \

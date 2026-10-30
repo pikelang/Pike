@@ -624,9 +624,11 @@ void init_stdio_sendfile(void)
 #ifdef _REENTRANT
   START_NEW_PROGRAM_ID (STDIO_SENDFILE);
   ADD_STORAGE(struct pike_sendfile);
-  PIKE_MAP_VARIABLE("_args", OFFSETOF(pike_sendfile, args),
+  PIKE_MAP_VARIABLE_SIZED("_args", OFFSETOF(pike_sendfile, args),
+                    PIKE_SIZEOF_MEMBER(pike_sendfile, args),
                     tArray, T_ARRAY, 0);
-  PIKE_MAP_VARIABLE("_callback", OFFSETOF(pike_sendfile, callback),
+  PIKE_MAP_VARIABLE_SIZED("_callback", OFFSETOF(pike_sendfile, callback),
+                    PIKE_SIZEOF_MEMBER(pike_sendfile, callback),
                     tFuncV(tInt,tMix,tVoid), T_MIXED, 0);
 
   /* function(array(string),object,int,int,array(string),object,function(int,mixed...:void),mixed...:void) */

@@ -30,6 +30,37 @@ test_any([[
   return sql == sql->master_sql;
 ]], 1)
 
+test_do([[
+  add_constant("tds_binding_test", class {
+    inherit Sql.tds;
+    protected void create() {} // No server is needed to test query preparation.
+    string normalize(mixed query, array(mixed) args) {
+      return (string)normalize_query(query, args);
+    }
+  }());
+]])
+
+test_any([[
+  return functionp(tds_binding_test->query);
+]], 1)
+
+test_any([[
+  return tds_binding_test->normalize("VALUES (:arg0)",
+                                     ({ ([ ":arg0":"O'Reilly" ]) }));
+]], "VALUES ('O''Reilly')")
+
+test_any([[
+  return tds_binding_test->normalize("VALUES (%s)", ({ "O'Reilly" }));
+]], "VALUES ('O''Reilly')")
+
+test_any([[
+  object query = tds_binding_test->compile_query("VALUES (:name)");
+  return tds_binding_test->normalize(query,
+                                     ({ ([ ":name":"O'Reilly" ]) }));
+]], "VALUES ('O''Reilly')")
+
+test_do( add_constant("tds_binding_test") )
+
 ifefun(db,[[
   test_equal( db->query("select 1"), ({ ([ "1":"1" ]) }) )
   test_eq( db->big_query("select 1")->num_rows(), 1 )

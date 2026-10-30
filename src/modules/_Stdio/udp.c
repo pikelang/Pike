@@ -1710,10 +1710,14 @@ void init_stdio_udp(void)
 
   ADD_STORAGE(struct udp_storage);
 
-  PIKE_MAP_VARIABLE("_read_callback", OFFSETOF(udp_storage, read_callback),
+  PIKE_MAP_VARIABLE_SIZED("_read_callback",
+      OFFSETOF(udp_storage, read_callback),
+      PIKE_SIZEOF_MEMBER(udp_storage, read_callback),
 		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
 
-  PIKE_MAP_VARIABLE("_write_callback", OFFSETOF(udp_storage, write_callback),
+  PIKE_MAP_VARIABLE_SIZED("_write_callback",
+      OFFSETOF(udp_storage, write_callback),
+      PIKE_SIZEOF_MEMBER(udp_storage, write_callback),
 		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
 
   udp_fd_factory_fun_num =

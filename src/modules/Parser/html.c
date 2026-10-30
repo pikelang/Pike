@@ -5367,31 +5367,49 @@ void init_parser_html(void)
 
    offset = ADD_STORAGE(struct parser_html_storage);
 
-   PIKE_MAP_VARIABLE(" maptag", offset + OFFSETOF(parser_html_storage, maptag),
+   PIKE_MAP_VARIABLE_SIZED(" maptag",
+       offset + OFFSETOF(parser_html_storage, maptag),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, maptag),
 		tMap(tStr,tTodo(tTagargs)),
 		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" mapcont", offset + OFFSETOF(parser_html_storage, mapcont),
+   PIKE_MAP_VARIABLE_SIZED(" mapcont",
+       offset + OFFSETOF(parser_html_storage, mapcont),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, mapcont),
 		tMap(tStr,tTodo(tTagargs tStr)),
 		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" mapentity", offset + OFFSETOF(parser_html_storage, mapentity),
+   PIKE_MAP_VARIABLE_SIZED(" mapentity",
+       offset + OFFSETOF(parser_html_storage, mapentity),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, mapentity),
 		tMap(tStr,tTodo(tNone)),
 		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" mapqtag", offset + OFFSETOF(parser_html_storage, mapqtag),
+   PIKE_MAP_VARIABLE_SIZED(" mapqtag",
+       offset + OFFSETOF(parser_html_storage, mapqtag),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, mapqtag),
 		tMap(tStr,tTodo(tStr)),
 		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" callback__tag", offset + OFFSETOF(parser_html_storage, callback__tag),
+   PIKE_MAP_VARIABLE_SIZED(" callback__tag",
+       offset + OFFSETOF(parser_html_storage, callback__tag),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, callback__tag),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
 		T_MIXED, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" callback__data", offset + OFFSETOF(parser_html_storage, callback__data),
+   PIKE_MAP_VARIABLE_SIZED(" callback__data",
+       offset + OFFSETOF(parser_html_storage, callback__data),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, callback__data),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
 		T_MIXED, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" callback__entity", offset + OFFSETOF(parser_html_storage, callback__entity),
+   PIKE_MAP_VARIABLE_SIZED(" callback__entity",
+       offset + OFFSETOF(parser_html_storage, callback__entity),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, callback__entity),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
 		T_MIXED, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" splice_arg", offset + OFFSETOF(parser_html_storage, splice_arg),
+   PIKE_MAP_VARIABLE_SIZED(" splice_arg",
+       offset + OFFSETOF(parser_html_storage, splice_arg),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, splice_arg),
 		tString,
 		T_STRING, ID_PROTECTED|ID_PRIVATE);
-   PIKE_MAP_VARIABLE(" extra_args", offset + OFFSETOF(parser_html_storage, extra_args),
+   PIKE_MAP_VARIABLE_SIZED(" extra_args",
+       offset + OFFSETOF(parser_html_storage, extra_args),
+       PIKE_SIZEOF_MEMBER(parser_html_storage, extra_args),
 		tArray,
 		T_ARRAY, ID_PROTECTED|ID_PRIVATE);
 

@@ -278,15 +278,31 @@ class Process
   }
 
   protected string recv_buf = "";
+  protected int in_got_data;
+  protected int pending_close;
   protected void got_data(mixed ignored, string data)
+  {
+    in_got_data++;
+    mixed err = catch { process_data(data); };
+    in_got_data--;
+    mixed close_err;
+    if (!in_got_data && pending_close) {
+      pending_close = 0;
+      close_err = catch { got_close(0); };
+    }
+    if (err) throw(err);
+    if (close_err) throw(close_err);
+  }
+
+  protected void process_data(string data)
   {
     recv_buf += data;
     while (sizeof(recv_buf) > 3) {
       while (has_prefix(recv_buf, "\0\0\0\0")) recv_buf = recv_buf[4..];
-      if (sizeof(recv_buf) < 5) return;
+      if (sizeof(recv_buf) < 5) break;
       int len = 0;
       sscanf(recv_buf, "%04c", len);
-      if (sizeof(recv_buf) < len + 4) return;
+      if (sizeof(recv_buf) < len + 4) break;
       data = recv_buf[4..len+3];
       recv_buf = recv_buf[len+4..];
       [string tag, mixed packet] = decode_value(data);
@@ -332,6 +348,10 @@ class Process
 
   protected void got_close(mixed ignored)
   {
+    if (in_got_data) {
+      pending_close = 1;
+      return;
+    }
     int notify = __status != 2;
     if (notify) {
       // The channel closed without an EXIT packet. This can also happen

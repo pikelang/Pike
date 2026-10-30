@@ -5482,9 +5482,11 @@ PIKECLASS single_string_replace
 
   EXTRA
   {
-    PIKE_MAP_VARIABLE ("o",
+    PIKE_MAP_VARIABLE_SIZED ("o",
                        single_string_replace_storage_offset +
                        OFFSETOF (single_string_replace_struct, mojt.container),
+                       PIKE_SIZEOF_MEMBER(single_string_replace_struct,
+                                          mojt.container),
                        tObj, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   }
 

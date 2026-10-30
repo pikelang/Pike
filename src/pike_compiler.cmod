@@ -3526,25 +3526,38 @@ static void compile_compiler(void)
   end_class("CompilerState", 0);
 
   /* Map some of our variables so that the gc can find them. */
-  PIKE_MAP_VARIABLE("prog", OFFSETOF(compilation, prog),
+  PIKE_MAP_VARIABLE_SIZED("prog", OFFSETOF(compilation, prog),
+                    PIKE_SIZEOF_MEMBER(compilation, prog),
 		    tStr, PIKE_T_STRING, ID_HIDDEN);
 #ifdef SUPPORT_COMPILER_HANDLERS
-  PIKE_MAP_VARIABLE("handler", OFFSETOF(compilation, handler),
+  PIKE_MAP_VARIABLE_SIZED("handler", OFFSETOF(compilation, handler),
+                    PIKE_SIZEOF_MEMBER(compilation, handler),
 		    tObj, PIKE_T_OBJECT, 0);
-  PIKE_MAP_VARIABLE("compat_handler", OFFSETOF(compilation, compat_handler),
+  PIKE_MAP_VARIABLE_SIZED("compat_handler",
+      OFFSETOF(compilation, compat_handler),
+      PIKE_SIZEOF_MEMBER(compilation, compat_handler),
 		    tObj, PIKE_T_OBJECT, 0);
 #endif /* SUPPORT_COMPILER_HANDLERS */
-  PIKE_MAP_VARIABLE("target", OFFSETOF(compilation, target),
+  PIKE_MAP_VARIABLE_SIZED("target", OFFSETOF(compilation, target),
+                    PIKE_SIZEOF_MEMBER(compilation, target),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
-  PIKE_MAP_VARIABLE("placeholder", OFFSETOF(compilation, placeholder),
+  PIKE_MAP_VARIABLE_SIZED("placeholder", OFFSETOF(compilation, placeholder),
+                    PIKE_SIZEOF_MEMBER(compilation, placeholder),
 		    tObj, PIKE_T_OBJECT, ID_HIDDEN);
-  PIKE_MAP_VARIABLE("p", OFFSETOF(compilation, p),
+  PIKE_MAP_VARIABLE_SIZED("p", OFFSETOF(compilation, p),
+                    PIKE_SIZEOF_MEMBER(compilation, p),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
-  PIKE_MAP_VARIABLE("current_file", OFFSETOF(compilation, lex.current_file),
+  PIKE_MAP_VARIABLE_SIZED("current_file",
+      OFFSETOF(compilation, lex.current_file),
+      PIKE_SIZEOF_MEMBER(compilation, lex.current_file),
 		    tStr, PIKE_T_STRING, 0);
-  PIKE_MAP_VARIABLE("current_line", OFFSETOF(compilation, lex.current_line),
+  PIKE_MAP_VARIABLE_SIZED("current_line",
+      OFFSETOF(compilation, lex.current_line),
+      PIKE_SIZEOF_MEMBER(compilation, lex.current_line),
 		    tInt, PIKE_T_INT, 0);
-  PIKE_MAP_VARIABLE("default_module", OFFSETOF(compilation, default_module),
+  PIKE_MAP_VARIABLE_SIZED("default_module",
+      OFFSETOF(compilation, default_module),
+      PIKE_SIZEOF_MEMBER(compilation, default_module),
 		    tOr(tMap(tStr,tMix),tObj), PIKE_T_MIXED, 0);
 
   /* end_class()/end_program() adds the parent_info storage once more.

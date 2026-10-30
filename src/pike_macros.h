@@ -29,6 +29,8 @@
 #  define OFFSETOF(T, X) PTR_TO_INT(& (((struct T *)NULL)->X))
 #endif
 
+#define PIKE_SIZEOF_MEMBER(T, X) sizeof(((struct T *)0)->X)
+
 #if defined(alignof) || defined(__alignof_is_defined)
 #  define ALIGNOF(X) alignof(X)
 #elif  __GNUC__ >= 4

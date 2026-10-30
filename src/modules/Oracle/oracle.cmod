@@ -1006,9 +1006,17 @@ OCIError *get_global_error_handle(void)
 
     EXTRA
     {
-      PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(Oracle_oracle_compile_query_struct,query_type),tInt,T_INT,0);
-      PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(Oracle_oracle_compile_query_struct, cols),tInt,T_INT,0);
-      PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(Oracle_oracle_compile_query_struct, field_info),
+      PIKE_MAP_VARIABLE_SIZED("_type",
+          offset+OFFSETOF(Oracle_oracle_compile_query_struct,query_type),
+          PIKE_SIZEOF_MEMBER(Oracle_oracle_compile_query_struct, query_type),
+          tInt,T_INT,0);
+      PIKE_MAP_VARIABLE_SIZED("_cols",
+          offset+OFFSETOF(Oracle_oracle_compile_query_struct, cols),
+          PIKE_SIZEOF_MEMBER(Oracle_oracle_compile_query_struct, cols),
+          tInt,T_INT,0);
+      PIKE_MAP_VARIABLE_SIZED("_field_info",
+          offset+OFFSETOF(Oracle_oracle_compile_query_struct, field_info),
+          PIKE_SIZEOF_MEMBER(Oracle_oracle_compile_query_struct, field_info),
                         tArr(tObj), T_ARRAY, 0);
 
 /*      ADD_FUNCTION("query_type",f_query_type,tFunc(tNone,tInt),0); */
@@ -1056,7 +1064,12 @@ OCIError *get_global_error_handle(void)
 
       EXTRA
       {
-        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, real_type),tInt,T_INT,0);
+        PIKE_MAP_VARIABLE_SIZED("_type",
+            offset + OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct,
+                               real_type),
+            PIKE_SIZEOF_MEMBER(Oracle_oracle_compile_query_dbresultinfo_struct,
+                               real_type),
+            tInt,T_INT,0);
 
 	ADD_FUNCTION("`->=",protect_dbresultinfo,
                      tFunc(tStr tMix,tVoid), ID_PROTECTED);

@@ -947,11 +947,14 @@ void init_stdio_port(void)
   ptrdiff_t offset;
   START_NEW_PROGRAM_ID (STDIO_PORT);
   offset = ADD_STORAGE(struct port);
-  PIKE_MAP_VARIABLE("_accept_callback",
+  PIKE_MAP_VARIABLE_SIZED("_accept_callback",
                     offset + OFFSETOF(port, accept_callback),
+                    PIKE_SIZEOF_MEMBER(port, accept_callback),
                     tMix, PIKE_T_MIXED, 0);
-  PIKE_MAP_VARIABLE("_id",
-		    offset + OFFSETOF(port, id), tMix, PIKE_T_NO_REF_MIXED, 0);
+  PIKE_MAP_VARIABLE_SIZED("_id",
+                    offset + OFFSETOF(port, id),
+                    PIKE_SIZEOF_MEMBER(port, id),
+                    tMix, PIKE_T_NO_REF_MIXED, 0);
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind", port_bind,
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr) tOr(tVoid,tInt),tInt), 0);
