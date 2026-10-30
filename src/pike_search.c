@@ -187,8 +187,9 @@ void init_pike_searching(void)
 {
   start_new_program();
   pike_search_struct_offset=ADD_STORAGE(struct pike_mem_searcher);
-  PIKE_MAP_VARIABLE("__s",
+  PIKE_MAP_VARIABLE_SIZED("__s",
                     pike_search_struct_offset + OFFSETOF(pike_mem_searcher,s),
+                    PIKE_SIZEOF_MEMBER(pike_mem_searcher, s),
                     tStr, PIKE_T_STRING, 0);
   pike_search_program=end_program();
   add_program_constant("Search",pike_search_program,ID_PROTECTED);

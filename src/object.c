@@ -4063,7 +4063,8 @@ void init_object(void)
   /* ::`->() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+  PIKE_MAP_VARIABLE_SIZED("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    PIKE_SIZEOF_MEMBER(magic_index_struct, o),
                     tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_index, tF_MAGIC_INDEX, ID_PROTECTED);
   magic_index_program=end_program();
@@ -4071,7 +4072,8 @@ void init_object(void)
   /* ::`->=() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+  PIKE_MAP_VARIABLE_SIZED("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    PIKE_SIZEOF_MEMBER(magic_index_struct, o),
                     tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_set_index, tF_MAGIC_SET_INDEX, ID_PROTECTED);
   magic_set_index_program=end_program();
@@ -4079,7 +4081,8 @@ void init_object(void)
   /* ::_indices() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+  PIKE_MAP_VARIABLE_SIZED("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    PIKE_SIZEOF_MEMBER(magic_index_struct, o),
                     tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_indices, tF_MAGIC_INDICES, ID_PROTECTED);
   magic_indices_program=end_program();
@@ -4087,7 +4090,8 @@ void init_object(void)
   /* ::_values() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+  PIKE_MAP_VARIABLE_SIZED("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    PIKE_SIZEOF_MEMBER(magic_index_struct, o),
                     tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_values, tF_MAGIC_VALUES, ID_PROTECTED);
   magic_values_program=end_program();
@@ -4095,7 +4099,8 @@ void init_object(void)
   /* ::_types() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+  PIKE_MAP_VARIABLE_SIZED("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    PIKE_SIZEOF_MEMBER(magic_index_struct, o),
                     tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_types, tF_MAGIC_TYPES, ID_PROTECTED);
   magic_types_program=end_program();
@@ -4103,7 +4108,8 @@ void init_object(void)
   /* ::_annotations() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+  PIKE_MAP_VARIABLE_SIZED("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    PIKE_SIZEOF_MEMBER(magic_index_struct, o),
                     tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_annotations, tF_MAGIC_ANNOTATIONS, ID_PROTECTED);
   magic_annotations_program=end_program();

@@ -94,7 +94,8 @@ PIKECLASS Buffer
   {
     /* The __output variable is merely for the benefit of the GC so that
        it can detect cycles */
-    PIKE_MAP_VARIABLE("__output", OFFSETOF(Buffer_struct, b.output),
+    PIKE_MAP_VARIABLE_SIZED("__output", OFFSETOF(Buffer_struct, b.output),
+                      PIKE_SIZEOF_MEMBER(Buffer_struct, b.output),
 		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
   }
 

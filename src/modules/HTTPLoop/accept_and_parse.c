@@ -829,15 +829,33 @@ PIKE_MODULE_INIT
   start_new_program();
 #define OFFSET(X) (offset + OFFSETOF(log_object,X))
   offset=ADD_STORAGE(struct log_object);
-  PIKE_MAP_VARIABLE("time", OFFSET(time), tInt, T_INT, 0);
-  PIKE_MAP_VARIABLE("sent_bytes", OFFSET(sent_bytes), tInt, T_INT, 0);
-  PIKE_MAP_VARIABLE("reply", OFFSET(reply), tInt, T_INT, 0);
-  PIKE_MAP_VARIABLE("received_bytes", OFFSET(received_bytes), tInt, T_INT, 0);
-  PIKE_MAP_VARIABLE("raw", OFFSET(raw), tStr, T_STRING, 0);
-  PIKE_MAP_VARIABLE("url", OFFSET(url), tStr, T_STRING, 0);
-  PIKE_MAP_VARIABLE("method", OFFSET(method), tStr, T_STRING, 0);
-  PIKE_MAP_VARIABLE("protocol", OFFSET(protocol), tStr, T_STRING, 0);
-  PIKE_MAP_VARIABLE("from", OFFSET(from), tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE_SIZED("time", OFFSET(time),
+      PIKE_SIZEOF_MEMBER(log_object, time),
+      tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE_SIZED("sent_bytes", OFFSET(sent_bytes),
+      PIKE_SIZEOF_MEMBER(log_object, sent_bytes),
+      tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE_SIZED("reply", OFFSET(reply),
+      PIKE_SIZEOF_MEMBER(log_object, reply),
+      tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE_SIZED("received_bytes", OFFSET(received_bytes),
+      PIKE_SIZEOF_MEMBER(log_object, received_bytes),
+      tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE_SIZED("raw", OFFSET(raw),
+      PIKE_SIZEOF_MEMBER(log_object, raw),
+      tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE_SIZED("url", OFFSET(url),
+      PIKE_SIZEOF_MEMBER(log_object, url),
+      tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE_SIZED("method", OFFSET(method),
+      PIKE_SIZEOF_MEMBER(log_object, method),
+      tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE_SIZED("protocol", OFFSET(protocol),
+      PIKE_SIZEOF_MEMBER(log_object, protocol),
+      tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE_SIZED("from", OFFSET(from),
+      PIKE_SIZEOF_MEMBER(log_object, from),
+      tStr, T_STRING, 0);
   add_program_constant("LogEntry", (aap_log_object_program=end_program()), 0);
 
 

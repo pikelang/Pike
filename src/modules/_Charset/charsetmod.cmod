@@ -2794,7 +2794,8 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit(&prog, 0, NULL, NULL);
   euc_stor_offs = ADD_STORAGE(struct euc_stor);
-  PIKE_MAP_VARIABLE ("charset", euc_stor_offs + OFFSETOF (euc_stor, name),
+  PIKE_MAP_VARIABLE_SIZED ("charset", euc_stor_offs + OFFSETOF (euc_stor, name),
+                     PIKE_SIZEOF_MEMBER(euc_stor, name),
 		     tStr, T_STRING, 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_euc,tFunc(tStr,tObj), 0);
@@ -2805,8 +2806,9 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit(&prog, 0, NULL, NULL);
   multichar_stor_offs = ADD_STORAGE(struct multichar_stor);
-  PIKE_MAP_VARIABLE ("charset",
+  PIKE_MAP_VARIABLE_SIZED ("charset",
 		     multichar_stor_offs + OFFSETOF (multichar_stor, name),
+                     PIKE_SIZEOF_MEMBER(multichar_stor, name),
 		     tStr, T_STRING, 0);
   ADD_FUNCTION("create", f_create_multichar,tFunc(tStr,tVoid), ID_PROTECTED);
   ADD_FUNCTION("feed", f_feed_multichar,tFunc(tStr,tObj), 0);
@@ -2836,7 +2838,8 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit (&prog, 0, NULL, NULL);
   rfc_charset_name_offs = ADD_STORAGE (struct pike_string *);
-  PIKE_MAP_VARIABLE ("charset", rfc_charset_name_offs, tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE_SIZED ("charset", rfc_charset_name_offs,
+                     sizeof(struct pike_string *), tStr, T_STRING, 0);
   rfc_base_program = end_program();
 
   prog.u.program = rfc_base_program;

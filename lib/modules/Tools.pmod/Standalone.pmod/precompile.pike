@@ -2730,14 +2730,26 @@ sprintf("        } else {\n"
                 name = name[1..];
         }
 
+            string map_name = sprintf("%O", ((string)name/".")[-1]);
+            string map_offset = sprintf("%s_storage_offset + OFFSETOF(%s_struct, %s)",
+                                        base, base, csym);
+            string map_type = sprintf("%s, %s, %s", type->output_c_type(),
+                                      type->type_number(), attributes->flags || "0");
+
 	    addfuncs+=
 	      IFDEF(define,
 		    ({
-		      PC.Token(sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
-				       "                    %s, %s, %s);",
-				       ((string)name/".")[-1], base, base, csym,
-				       type->output_c_type(), type->type_number(),
-				       attributes->flags || "0"),
+                      PC.Token(sprintf("#ifndef PIKE_MAP_VARIABLE_SIZED\n"
+                                       "  PIKE_MAP_VARIABLE(%s, %s,\n"
+                                       "                    %s);\n"
+                                       "#else\n"
+                                       "  PIKE_MAP_VARIABLE_SIZED(%s, %s,\n"
+                                       "    sizeof(((struct %s_struct *)0)->%s),\n"
+                                       "    %s);\n"
+                                       "#endif",
+                                       map_name, map_offset, map_type,
+                                       map_name, map_offset, base, csym,
+                                       map_type),
 			       x[pos2]->line),
 		    }));
 	    ret+=DEFINE(define);

@@ -1024,6 +1024,14 @@ PMOD_EXPORT int quick_map_variable(const char *name,
 		       int type_length,
 		       INT32 run_time_type,
 		       INT32 flags);
+PMOD_EXPORT int quick_map_variable_sized(const char *name,
+                                         int name_length,
+                                         size_t offset,
+                                         size_t size,
+                                         const char *type,
+                                         int type_length,
+                                         INT32 run_time_type,
+                                         INT32 flags);
 int define_variable(struct pike_string *name,
 		    struct pike_type *type,
 		    INT32 flags);
@@ -1251,6 +1259,13 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 #define PIKE_MAP_VARIABLE(NAME, OFFSET, TYPE, RTTYPE, FLAGS) \
   quick_map_variable(NAME, CONSTANT_STRLEN(NAME), OFFSET, \
                      TYPE, CONSTANT_STRLEN(TYPE), RTTYPE, FLAGS)
+
+/* Pass sizeof the mapped C member to check it against RTTYPE in
+ * PIKE_DEBUG builds. The unsized macro remains for external modules.
+ */
+#define PIKE_MAP_VARIABLE_SIZED(NAME, OFFSET, SIZE, TYPE, RTTYPE, FLAGS) \
+  quick_map_variable_sized(NAME, CONSTANT_STRLEN(NAME), OFFSET, SIZE, \
+                           TYPE, CONSTANT_STRLEN(TYPE), RTTYPE, FLAGS)
 
 #define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {		\
   DTYPE_START;							\

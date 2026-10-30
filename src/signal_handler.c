@@ -5460,21 +5460,27 @@ void init_signals(void)
 
   START_NEW_PROGRAM_ID(PROCESS);
   ADD_STORAGE(struct pid_status);
-  PIKE_MAP_VARIABLE("__pid", OFFSETOF(pid_status, pid),
+  PIKE_MAP_VARIABLE_SIZED("__pid", OFFSETOF(pid_status, pid),
+                    PIKE_SIZEOF_MEMBER(pid_status, pid),
 		    tInt, T_INT, ID_PROTECTED);
 #ifndef __NT__
   /* Note that several of the fields are renamed to
    * match closer with the corresponding function.
    */
-  PIKE_MAP_VARIABLE("__last_signal", OFFSETOF(pid_status, sig),
+  PIKE_MAP_VARIABLE_SIZED("__last_signal", OFFSETOF(pid_status, sig),
+                    PIKE_SIZEOF_MEMBER(pid_status, sig),
 		    tInt, T_INT, ID_PROTECTED);
-  PIKE_MAP_VARIABLE("__flags", OFFSETOF(pid_status, flags),
+  PIKE_MAP_VARIABLE_SIZED("__flags", OFFSETOF(pid_status, flags),
+                    PIKE_SIZEOF_MEMBER(pid_status, flags),
 		    tInt, T_INT, ID_PROTECTED|ID_PRIVATE); /* Don't touch! */
-  PIKE_MAP_VARIABLE("__status", OFFSETOF(pid_status, state),
+  PIKE_MAP_VARIABLE_SIZED("__status", OFFSETOF(pid_status, state),
+                    PIKE_SIZEOF_MEMBER(pid_status, state),
 		    tInt, T_INT, ID_PROTECTED);
-  PIKE_MAP_VARIABLE("__result", OFFSETOF(pid_status, result),
+  PIKE_MAP_VARIABLE_SIZED("__result", OFFSETOF(pid_status, result),
+                    PIKE_SIZEOF_MEMBER(pid_status, result),
 		    tInt, T_INT, ID_PROTECTED);
-  PIKE_MAP_VARIABLE("__callback", OFFSETOF(pid_status, callback),
+  PIKE_MAP_VARIABLE_SIZED("__callback", OFFSETOF(pid_status, callback),
+                    PIKE_SIZEOF_MEMBER(pid_status, callback),
 		    tFunc(tObjIs_PROCESS,tVoid), T_MIXED, ID_PROTECTED);
 #endif /* !__NT__ */
   set_init_callback(init_pid_status);

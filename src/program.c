@@ -7116,6 +7116,29 @@ PMOD_EXPORT int quick_map_variable(const char *name,
   return ret;
 }
 
+PMOD_EXPORT int quick_map_variable_sized(const char *name,
+                                         int name_length,
+                                         size_t offset,
+                                         size_t size,
+                                         const char *type,
+                                         int type_length,
+                                         INT32 run_time_type,
+                                         INT32 flags)
+{
+#ifdef PIKE_DEBUG
+  int expected_size = sizeof_variable(run_time_type & ~PIKE_T_NO_REF_FLAG);
+  if (expected_size && size != (size_t)expected_size) {
+    Pike_fatal("Mapped variable %s has size %lu, expected %d for %s.\n",
+               name, (unsigned long)size, expected_size,
+               get_name_of_type(run_time_type & ~PIKE_T_NO_REF_FLAG));
+  }
+#else
+  (void)size;
+#endif
+  return quick_map_variable(name, name_length, offset, type, type_length,
+                            run_time_type, flags);
+}
+
 int is_auto_variable_type( int variable )
 {
     struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,variable);

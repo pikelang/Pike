@@ -4734,10 +4734,13 @@ void th_init(void)
   /* This is needed to allow the gc to find the possible circular reference.
    * It also allows a thread to take over ownership of a key.
    */
-  PIKE_MAP_VARIABLE("_owner",
+  PIKE_MAP_VARIABLE_SIZED("_owner",
                     mutex_key_offset + OFFSETOF(key_storage, owner_obj),
+                    PIKE_SIZEOF_MEMBER(key_storage, owner_obj),
                     tObjIs_THREAD_ID, T_OBJECT, 0);
-  PIKE_MAP_VARIABLE("_mutex", mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
+  PIKE_MAP_VARIABLE_SIZED("_mutex",
+      mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
+      PIKE_SIZEOF_MEMBER(key_storage, mutex_obj),
                     tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   ADD_FUNCTION("_sprintf",f_mutex_key__sprintf,tFunc(tInt,tStr),ID_PROTECTED);
   ADD_FUNCTION("downgrade", f_mutex_key_downgrade, tFunc(tNone,tVoid), 0);
@@ -4785,7 +4788,8 @@ void th_init(void)
 
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(struct pike_cond);
-  PIKE_MAP_VARIABLE("_mutex", OFFSETOF(pike_cond, mutex_obj),
+  PIKE_MAP_VARIABLE_SIZED("_mutex", OFFSETOF(pike_cond, mutex_obj),
+                    PIKE_SIZEOF_MEMBER(pike_cond, mutex_obj),
                     tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   ADD_FUNCTION("create", f_cond_create,
                tFunc(tOr(tObjIs_THREAD_MUTEX, tVoid), tVoid),
@@ -4850,7 +4854,8 @@ void th_init(void)
 
   START_NEW_PROGRAM_ID(THREAD_ID);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
-  PIKE_MAP_VARIABLE("result", OFFSETOF(thread_state, result),
+  PIKE_MAP_VARIABLE_SIZED("result", OFFSETOF(thread_state, result),
+                    PIKE_SIZEOF_MEMBER(thread_state, result),
                     tMix, T_MIXED, 0);
   ADD_FUNCTION("create",f_thread_create,
                tFuncV(tMixed,tMixed,tVoid),

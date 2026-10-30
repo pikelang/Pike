@@ -151,9 +151,12 @@ EXIT
 
 EXTRA
 {
-  PIKE_MAP_VARIABLE("_fields", OFFSETOF(Odbc_Result_struct, fields),
+  PIKE_MAP_VARIABLE_SIZED("_fields", OFFSETOF(Odbc_Result_struct, fields),
+                    PIKE_SIZEOF_MEMBER(Odbc_Result_struct, fields),
                     tArr(tMap(tStr,tMix)), T_ARRAY, 0);
-  PIKE_MAP_VARIABLE("_null_value", OFFSETOF(Odbc_Result_struct, null_value),
+  PIKE_MAP_VARIABLE_SIZED("_null_value",
+      OFFSETOF(Odbc_Result_struct, null_value),
+      PIKE_SIZEOF_MEMBER(Odbc_Result_struct, null_value),
                     tMix, T_MIXED, 0);
 }
 
