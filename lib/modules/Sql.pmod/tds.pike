@@ -1,10 +1,14 @@
+#charset utf-8
+
 /*
  * A Pike implementation of the TDS protocol.
  *
- * Henrik Grubbström 2006-02-08.
+ * Henrik GrubbstrÃ¶m 2006-02-08.
  */
 
 #pike __REAL_VERSION__
+
+inherit __builtin.Sql.Connection;
 
 /* #define TDS_DEBUG */
 /* #define TDS_CONVERT_DEBUG */
@@ -50,11 +54,7 @@ protected string hex_dump(string data) {
   return lines * "";
 }
 
-#if (__REAL_MAJOR__ > 7) || ((__REAL_MAJOR__ == 7) && (__REAL_MINOR__ >= 6))
-// Static blocks affect nested classes in Pike 7.4.
-// We don't want that...
 protected {
-#endif /* Pike 7.6 or later */
   constant DEF_MAJOR = 8;
   constant DEF_MINOR = 0;
   constant DEF_PORT = 1433;
@@ -1376,7 +1376,7 @@ protected {
       TDS_WERROR("Login ok!\n");
     }
 
-    InPacket submit_query(compile_query query, void|array(mixed) params)
+    InPacket submit_query(TDSQuery query, void|array(mixed) params)
     {
       Packet p = Packet();
       string raw = query->splitted_query*"?";
@@ -1384,7 +1384,7 @@ protected {
       return send_packet(p, 0x01, 1);
     }
 
-    InPacket submit_execdirect(compile_query query, void|array(mixed) params)
+    InPacket submit_execdirect(TDSQuery query, void|array(mixed) params)
     {
       Packet p = Packet();
       p->put_smallint(-1);
@@ -1478,15 +1478,14 @@ protected {
     con = Connection(server, port, database, uid, password);
   }
 
-#if (__REAL_MAJOR__ > 7) || ((__REAL_MAJOR__ == 7) && (__REAL_MINOR__ >= 6))
 };
-#endif /* Pike 7.6 or later */
 
 
 //! A compiled query.
-class compile_query
+protected class TDSQuery
 {
   int n_param;
+  string source_query;
   string query_string;
   array(string) splitted_query;
 
@@ -1560,6 +1559,7 @@ class compile_query
   protected void create(string query)
   {
     TDS_WERROR("Compiling query: %O\n", query);
+    source_query = query;
     splitted_query = split_query_on_placeholders(query);
     n_param = sizeof(splitted_query)-1;
     if (n_param) {
@@ -1576,9 +1576,16 @@ class compile_query
   }
 }
 
-//! A query result set.
-class big_query
+object compile_query(string query)
 {
+  return TDSQuery(query);
+}
+
+//! A query result set.
+protected class TDSResult
+{
+  inherit __builtin.Sql.Result;
+
   protected int row_no;
   protected int eot;
 
@@ -1660,10 +1667,10 @@ class big_query
   //!
   //! @seealso
   //!   @[compile_query()]
-  protected void create(string|compile_query query)
+  protected void create(string|TDSQuery query)
   {
     if (stringp(query)) {
-      query = compile_query(query);
+      query = TDSQuery(query);
     }
 
     query->parse_prepared_query();
@@ -1680,8 +1687,24 @@ class big_query
   }
 }
 
-protected compile_query compiled_insert_id =
-  compile_query("SELECT @@identity AS insert_id");
+// Normalize sprintf-style and named bindings before encoding the TDS query.
+protected string|TDSQuery normalize_query(string|TDSQuery query,
+                                          array(mixed) extraargs)
+{
+  if (!sizeof(extraargs)) return query;
+  string source = stringp(query) ? query : query->source_query;
+  array(mixed) parts = handle_extraargs(source, extraargs);
+  return sizeof(parts) > 1 ? emulate_bindings(parts[0], parts[1]) :
+    parts[0];
+}
+
+__builtin.Sql.Result big_query(string|TDSQuery query, mixed ... extraargs)
+{
+  return TDSResult(normalize_query(query, extraargs));
+}
+
+protected TDSQuery compiled_insert_id =
+  TDSQuery("SELECT @@identity AS insert_id");
 
 //! Fetch the identity of the last insert (if available).
 //!

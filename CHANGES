@@ -1407,6 +1407,9 @@ o Sql
 
   - ODBC & tds: Support more datatypes.
 
+  - tds: Inherit the generic Sql.Connection API and support quoted
+    bindings in query() and big_query().
+
   - ODBC: Support big_typed_query().
 
   - pgsql: Lots of changes and fixes.
