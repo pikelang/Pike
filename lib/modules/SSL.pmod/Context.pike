@@ -1211,6 +1211,7 @@ int max_early_data_size = 0;
 //! tolerance, say, 10 seconds").
 int early_data_ticket_age_tolerance = 10;
 
+//! Cached sessions indexed by their session identifiers or tickets.
 mapping(string:Session) session_cache = ([]);
 
 // Remove sessions older than @[session_lifetime] from the session cache.

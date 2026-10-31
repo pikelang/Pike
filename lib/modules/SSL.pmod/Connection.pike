@@ -39,10 +39,15 @@ private constant Context = .Context;
 private constant Buffer = .Buffer;
 private constant KeySchedule = .KeySchedule;
 
+//! Session negotiated for this connection.
 Session|zero session;
+
 Context|zero context;
 
+//! Read states queued for activation by ChangeCipherSpec messages.
 array(State) pending_read_state = ({});
+
+//! Write states queued for activation by ChangeCipherSpec messages.
 array(State) pending_write_state = ({});
 
 /* State variables */
@@ -186,6 +191,10 @@ Packet change_cipher_packet()
   return Packet(version, PACKET_change_cipher_spec, "\001");
 }
 
+//! Compute the legacy handshake hash or PRF output for @[sender].
+//!
+//! @seealso
+//!   @[transcript_hash()]
 string(8bit) hash_messages(string(8bit) sender, int|void len)
 {
   switch( version )
@@ -211,6 +220,7 @@ string(8bit) hash_messages(string(8bit) sender, int|void len)
   }
 }
 
+//! Build a Certificate message for SSL 3.0 through TLS 1.2.
 Packet certificate_packet(array(string(8bit)) certificates)
 {
   return handshake_packet(HANDSHAKE_certificate,
@@ -232,7 +242,7 @@ string(8bit) transcript_hash()
 //!   TLS 1.3 and later only (ie whenever @[signature_context] is
 //!   given): the 16-bit @[SignatureScheme] to sign with, chosen by
 //!   the caller from among the certificate's and peer's mutually
-//!   acceptable schemes (RFC 8446 4.2.3) -- @[cipher_spec]'s
+//!   acceptable schemes (RFC 8446 4.2.3) -- @[Session.cipher_spec]'s
 //!   @expr{signature_alg@} is deliberately left at
 //!   @[SIGNATURE_anonymous] for @expr{KE_tls13@} suites (a
 //!   "not suite-tied" marker, not a claim of anonymity), so the
@@ -442,6 +452,7 @@ OUTER: foreach (map(globs, lower_case);; string the_glob) {
 // certificates are received session->peer_public_key is updated with
 // the public key object. If that is an ECC object, the curve is set
 // in session->curve.
+//! Read and verify a Certificate message for SSL 3.0 through TLS 1.2.
 int(0..1) handle_certificates(Buffer packet)
 {
   // FIXME: Throw exception if called more than once?
@@ -631,8 +642,12 @@ void shutdown()
 //
 
 
+//! Record-protection state currently used for incoming records.
 State|zero current_read_state;
+
+//! Record-protection state currently used for outgoing records.
 State|zero current_write_state;
+
 Stdio.Buffer|zero read_buffer = Stdio.Buffer();
 Packet|zero packet;
 

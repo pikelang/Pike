@@ -191,6 +191,7 @@ protected Packet certificate_request_packet(Context context)
     return handshake_packet(HANDSHAKE_certificate_request, struct);
 }
 
+//! Build a TLS 1.0-1.2 NewSessionTicket message.
 protected Packet new_session_ticket_packet(int lifetime_hint,
 					   string(8bit) ticket)
 {
@@ -213,6 +214,8 @@ void send_renegotiate()
   send_packet(hello_request(), PRI_application);
 }
 
+//! Send the initial server handshake messages for a new session
+//! using SSL 3.0 through TLS 1.2.
 protected int(-1..0) reply_new_session(array(int) cipher_suites,
                                        array(int) compression_methods)
 {

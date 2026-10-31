@@ -55,7 +55,7 @@ protected string _sprintf(int t)
 //! @param early_data
 //!   TLS 1.3 (@rfc{8446:2.3@}) 0-RTT application data to send
 //!   immediately after this ClientHello, if @[session] has a usable
-//!   resumption ticket that supports it (see @[offering_psk] and
+//!   resumption ticket that supports it (see @expr{offering_psk@} and
 //!   @expr{session->tls13_max_early_data_size@} below) -- opportunistic:
 //!   silently not sent as 0-RTT if the session can't support it (eg no
 //!   ticket, or @[retry_group] is set -- @rfc{8446:4.1.2@} forbids
@@ -741,6 +741,7 @@ protected int(-1..0) got_certificate_request(Buffer input)
   return 0;
 }
 
+//! Handle a TLS 1.0-1.2 NewSessionTicket message and save the ticket.
 protected int(-1..1) got_new_session_ticket(Buffer input)
 {
   COND_FATAL(!tickets_enabled, ALERT_handshake_failure,
