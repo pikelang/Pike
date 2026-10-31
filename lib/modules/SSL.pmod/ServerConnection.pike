@@ -557,7 +557,7 @@ protected object(Session)|zero try_resume_psk_1_3(string(8bit) psk_identity,
 //! (the peer's offered @[EXTENSION_signature_algorithms]) also accepts,
 //! restricted to the schemes TLS 1.3 actually allows for a live
 //! CertificateVerify (RSASSA-PSS or ECDSA; EdDSA isn't implemented,
-//! see @[Cipher.sign_1_3()]'s @note).
+//! see @[Cipher.sign_1_3()]'s note).
 //!
 //! @returns
 //!   The chosen @[SignatureScheme], or @expr{-1@} if none fit.

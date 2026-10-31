@@ -21,7 +21,7 @@ int seq_num = UNDEFINED;
 //!   @[Connection.send_packet()] only queues a packet -- the actual
 //!   @expr{encrypt_packet()@} call happens later, whenever
 //!   @[Connection.to_write()] drains the queue -- encrypting with
-//!   @emph{whatever @expr{current_write_state@} is at drain time}
+//!   whatever @expr{current_write_state@} is at drain time
 //!   would be wrong if it's been reassigned since this packet was
 //!   queued. Binding the state at queue time (here) and having
 //!   @[Connection.to_write()] prefer it over the live
