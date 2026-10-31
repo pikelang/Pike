@@ -1,7 +1,7 @@
 //
 // Create lookup tables for GBK.
 //
-// 2006-01-16 Henrik Grubbström
+// 2006-01-16 Henrik GrubbstrÃ¶m
 //
 
 import Parser.XML.Tree;

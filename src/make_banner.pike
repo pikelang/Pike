@@ -1,7 +1,7 @@
 /*
- * Make a 500×70 banner BMP image suitable for the Wix installer.
+ * Make a 500Ã—70 banner BMP image suitable for the Wix installer.
  *
- * 2004-11-02 Henrik Grubbström
+ * 2004-11-02 Henrik GrubbstrÃ¶m
  */
 
 int main(int argc, array(string) argv)

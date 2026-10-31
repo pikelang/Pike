@@ -1,7 +1,7 @@
 /*
  * Generates tree-transformation code from a specification.
  *
- * Henrik Grubbström 1999-11-06
+ * Henrik GrubbstrÃ¶m 1999-11-06
  */
 
 #pragma strict_types

@@ -1,7 +1,7 @@
 
 #pike __REAL_VERSION__
 
-//! The IrDA® Object Exchange Protocol.
+//! The IrDAÂ® Object Exchange Protocol.
 //! OBEX is a protocol for sending and receiving binary objects
 //! to mobile devices using transports such as IR and Bluetooth.
 

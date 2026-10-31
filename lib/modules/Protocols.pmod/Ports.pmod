@@ -1,7 +1,7 @@
 /*
  * IP port assignments
  *
- * Henrik Grubbström 1998-06-23
+ * Henrik GrubbstrÃ¶m 1998-06-23
  */
 
 //! A list of named ports.

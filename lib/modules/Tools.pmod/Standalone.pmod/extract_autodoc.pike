@@ -1,7 +1,7 @@
 /*
  * AutoDoc mk II extraction script.
  *
- * Henrik Grubbström 2001-01-08
+ * Henrik GrubbstrÃ¶m 2001-01-08
  */
 
 #pike __REAL_VERSION__

@@ -1,7 +1,7 @@
 /*
  * An LR(1) Parser in Pike
  *
- * Henrik Grubbström 1996-11-23
+ * Henrik GrubbstrÃ¶m 1996-11-23
  */
 
 #pike __REAL_VERSION__

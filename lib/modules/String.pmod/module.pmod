@@ -263,7 +263,7 @@ int levenshtein_distance(string a, string b)
 }
 
 //! Returns the soundex value of @[word] according to
-//! the original Soundex algorithm, patented by Margaret O´Dell
+//! the original Soundex algorithm, patented by Margaret OÂ´Dell
 //! and Robert C. Russel in 1918. The method is based on the phonetic
 //! classification of sounds by how they are made. It was only intended
 //! for hashing of english surnames, and even at that it isn't that
