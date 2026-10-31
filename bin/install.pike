@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-#charset iso-8859-1
+#charset utf-8
 
 // Pike installer and exporter.
 
@@ -3309,7 +3309,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2026 IDA, Linköping University
+#" Copyright (C) 1994-2026 IDA, LinkÃ¶ping University
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
 are welcome to redistribute it under certain conditions; Read the
 files COPYING and COPYRIGHT in the Pike distribution for more details.
