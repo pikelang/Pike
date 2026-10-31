@@ -111,7 +111,7 @@ PIKEFUN array(string) split_words_and_normalize( string input )
  *! equivalence is a basic equivalency between characters or
  *! sequences of characters.
  *!
- *! 'Å'  and  'A' '° (combining ring above)' are canonically equivalent.
+ *! 'Ã…'  and  'A'Â 'Â° (combining ring above)' are canonically equivalent.
  *!
  *! For round-trip compatibility with existing standards, Unicode has
  *! encoded many entities that are really variants of existing nominal
@@ -129,9 +129,9 @@ PIKEFUN array(string) split_words_and_normalize( string input )
  *!   @item
  *!     Circled and squared characters
  *!   @item
- *!     super/subscript ('²' -> '2')
+ *!     super/subscript ('Â²' -> '2')
  *!   @item
- *!     Fractions       ('½' -> '1/2')
+ *!     Fractions       ('Â½' -> '1/2')
  *!   @item
  *!     Other composed characters ('fi' -> 'f' 'i',  'kg' -> 'k' 'g')
  *! @endul
