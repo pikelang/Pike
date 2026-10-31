@@ -478,11 +478,15 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 //!   rather than assume an unbounded one.
 int(0..2) check_aead_usage_limit()
 {
-  if (!crypt || (session->cipher_spec->cipher_type != CIPHER_aead) ||
-      (session->cipher_spec->bulk_cipher_algorithm ==
-       Crypto.ChaCha20.POLY1305.State)) {
+  if (!crypt || (session->cipher_spec->cipher_type != CIPHER_aead)) {
     return AEAD_LIMIT_none;
   }
+#if constant(Crypto.ChaCha20.POLY1305)
+  if (session->cipher_spec->bulk_cipher_algorithm ==
+      Crypto.ChaCha20.POLY1305.State) {
+    return AEAD_LIMIT_none;
+  }
+#endif
 
   // ~2^24.5 full-size records, per RFC 9846 5.5's AES-GCM figure.
   constant hard_limit = 23726566;

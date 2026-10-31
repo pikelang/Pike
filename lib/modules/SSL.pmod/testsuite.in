@@ -5,6 +5,45 @@ dnl src/modules/_Stdio
 
 cond_begin( Crypto.Hash )
 
+dnl AEAD usage limits must work with and without optional ciphers.
+cond_resolv(Crypto.AES.GCM, [[
+test_any_equal([[
+  class State {
+    inherit SSL.State;
+    protected void create() {}
+  }
+  State state = State();
+  state->session = SSL.Session();
+  state->session->cipher_spec = SSL.Cipher.lookup(
+    SSL.Constants.TLS_aes_128_gcm_sha256,
+    SSL.Constants.PROTOCOL_TLS_1_3, 0, 0);
+  array(int) result = ({ state->check_aead_usage_limit() });
+  state->crypt = Crypto.AES.GCM.State();
+  state->next_seq_num = 16000000;
+  result += ({ state->check_aead_usage_limit(),
+               state->check_aead_usage_limit() });
+  state->next_seq_num = 23726566;
+  return result + ({ state->check_aead_usage_limit(),
+                    state->check_aead_usage_limit() });
+]], ({ 0, 1, 0, 2, 0 }))
+]])
+cond_begin([[ SSL.Constants.CIPHER_SUITES[SSL.Constants.TLS_chacha20_poly1305_sha256] ]])
+test_any([[
+  class State {
+    inherit SSL.State;
+    protected void create() {}
+  }
+  State state = State();
+  state->session = SSL.Session();
+  state->session->cipher_spec = SSL.Cipher.lookup(
+    SSL.Constants.TLS_chacha20_poly1305_sha256,
+    SSL.Constants.PROTOCOL_TLS_1_3, 0, 0);
+  state->crypt = Crypto.ChaCha20.POLY1305.State();
+  state->next_seq_num = 1 << 63;
+  return state->check_aead_usage_limit();
+]], SSL.Constants.AEAD_LIMIT_none)
+cond_end
+
 test_do( SSL.https )
 
 test_do( add_constant( "S", String.string2hex ) )
