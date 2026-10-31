@@ -134,7 +134,7 @@ int main(int argc, array(string) argv)
   Stdio.File outfile = Stdio.File(argv[1], "wct");
 
   outfile->
-    write("/*\n"
+    write(string_to_utf8(sprintf("/*\n"
           " * Created by make_ci.pike\n"
           " * on %s"
           " *\n"
@@ -142,7 +142,7 @@ int main(int argc, array(string) argv)
           " * Unicode characters.\n"
           " *\n"
           " * Henrik Grubbström 1999-03-20\n"
-          " */\n\n", ctime(time()));
+          " */\n\n", ctime(time()))));
 
   map(table, outfile->write);
 

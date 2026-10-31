@@ -184,7 +184,7 @@ doxygen:
 
 legal: bin/pike
 	bin/pike -e 'Stdio.write_file("COPYRIGHT", \
-	  Tools.Legal.Copyright.get_text());'
+	  string_to_utf8(Tools.Legal.Copyright.get_text()));'
 	bin/pike -e 'Stdio.write_file("COPYING", \
 	  Tools.Legal.License.get_text());'
 
