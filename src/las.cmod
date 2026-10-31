@@ -1984,6 +1984,7 @@ node *index_node(node * const n, struct pike_string *id)
 {
   node *ret;
   JMP_BUF tmp;
+  struct svalue *type_value;
 
   check_tree(n,0);
 
@@ -1997,6 +1998,10 @@ node *index_node(node * const n, struct pike_string *id)
     return mknode(F_INDEX, copy_node(n), mkstrnode(id));
   }
 
+  /* Keep the declared type rooted across indexing and exception recovery. */
+  type_value = Pike_sp;
+  push_undefined();
+
   if(SETJMP(tmp))
   {
     if (n && n->name) {
@@ -2006,6 +2011,12 @@ node *index_node(node * const n, struct pike_string *id)
       handle_compile_exception("Couldn't index module with '%pS'.", id);
     }
   }else{
+    if (n && n->type &&
+        (deprecated_typep(n->type) ||
+         type_attributep(n->type, MK_STRING("experimental")))) {
+      /* Constant lookup bypasses the normal indexing type check. */
+      check_indexing(n->type, string_type_string, NULL);
+    }
     resolv_constant(n);
     switch(TYPEOF(Pike_sp[-1]))
     {
@@ -2095,7 +2106,28 @@ node *index_node(node * const n, struct pike_string *id)
 	    push_undefined();
 	    exception = 1;
 	  } else {
-	    f_index(2);
+            struct program *p = NULL;
+            int identifier;
+
+            if (TYPEOF(Pike_sp[-2]) == T_OBJECT) {
+              p = Pike_sp[-2].u.object->prog;
+              if (p) p = p->inherits[SUBTYPEOF(Pike_sp[-2])].prog;
+              /* An overloaded index need not return the named member. */
+              if (p && FIND_LFUN(p, LFUN_INDEX) != -1) p = NULL;
+            } else if (TYPEOF(Pike_sp[-2]) == T_PROGRAM) {
+              p = Pike_sp[-2].u.program;
+            } else if (TYPEOF(Pike_sp[-2]) == T_FUNCTION) {
+              p = program_from_function(Pike_sp-2);
+            }
+            if (p &&
+                (identifier = find_shared_string_identifier(id, p)) >= 0) {
+              struct pike_type *type = ID_FROM_INT(p, identifier)->type;
+              if (type) {
+                SET_SVAL(*type_value, T_TYPE, 0, type, type);
+                add_ref(type);
+              }
+            }
+            f_index(2);
 	  }
 	  STACK_LEVEL_DONE(1);
 	  UNSETJMP(recovery);
@@ -2105,6 +2137,7 @@ node *index_node(node * const n, struct pike_string *id)
 	   !Pike_sp[-1].u.integer &&
 	   SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)
 	{
+          assign_svalue(type_value, &svalue_undefined);
 	  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
 	  {
 	    if (!exception) {
@@ -2175,6 +2208,12 @@ node *index_node(node * const n, struct pike_string *id)
   }
   UNSETJMP(tmp);
   ret=mkconstantsvaluenode(Pike_sp-1);
+  pop_stack();
+
+  if (TYPEOF(*type_value) == T_TYPE) {
+    free_type(ret->type);
+    copy_pike_type(ret->type, type_value->u.type);
+  }
   pop_stack();
 
   if (!n) {

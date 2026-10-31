@@ -16127,6 +16127,89 @@ test_any_equal([[
 ]], ({ (<>), ([]) }))
 
 // - attributes
+// Dot lookup retains the complete declared type, not just warning markers.
+test_any([[
+  class A { constant int(1..20) X = 17; }
+  return sprintf("%O", typeof(A.X));
+]], "int(1..20)")
+test_any([[
+  class A { __attribute__("dot_marker") constant X = 17; }
+  return sprintf("%O", typeof(A.X));
+]], "__attribute__(\"dot_marker\", int)")
+test_any([[
+  class A (<T>) { __attribute__("dot_marker") constant X = 17; }
+  class B { inherit A (<string>); }
+  return sprintf("%O", typeof(B.X));
+]], "__attribute__(\"dot_marker\", int)")
+
+// Constant dot lookup must retain warning attributes on declarations.
+test_compile_warning(
+  class A { __deprecated__ constant X = 17; }
+  int x = A.X;
+)
+test_compile_warning(
+  class A { __experimental__ constant X = 17; }
+  int x = A.X;
+)
+test_compile_warning(
+  class A { __deprecated__ constant X = 17; }
+  class B { inherit A; }
+  int x = B.X;
+)
+test_compile_warning(
+  constant A = class { @constant; __deprecated__ constant X = 17; }();
+  int x = A.X;
+)
+test_compile_warning(
+  class A { __deprecated__ constant X = ([ "x":17 ]); }
+  int x = A.X["x"];
+)
+test_any_equal([[
+  class Handler {
+    array(string) warnings = ({});
+    void compile_warning(string file, int line, string message) {
+      warnings += ({ message });
+    }
+  }
+  array(int) counts = ({});
+  foreach (({
+    "#pragma no_deprecation_warnings\n"
+      "class A { __deprecated__ constant X = 17; } int x = A.X;",
+    "#pragma no_experimental_warnings\n"
+      "class A { __experimental__ constant X = 17; } int x = A.X;",
+    "constant A = class { @constant; "
+      "__deprecated__ int f() { return 17; } }(); "
+      "function f = A.f;"
+  }), string source) {
+    Handler handler = Handler();
+    compile_string(source, "dot_attributes", handler);
+    counts += ({ sizeof(handler->warnings) });
+  }
+  return counts;
+]], ({ 0, 0, 1 }))
+
+test_any_equal([[
+  class Handler {
+    array(string) warnings = ({});
+    void compile_warning(string file, int line, string message) {
+      warnings += ({ message });
+    }
+  }
+  class Container {
+    __deprecated__ constant X = 17;
+    protected int `[](string key) { return 42; }
+  }
+  Handler handler = Handler();
+  add_constant("__dot_warning_container", Container());
+  mixed err = catch {
+    compile_string("int x = __dot_warning_container.X;",
+                   "dot_attributes", handler);
+  };
+  add_constant("__dot_warning_container");
+  if (err) throw(err);
+  return handler->warnings;
+]], ({}))
+
 test_compile_any(
   class A { __deprecated__ int foo(int x) { return x; } };
 )

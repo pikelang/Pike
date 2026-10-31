@@ -519,6 +519,9 @@ o Cpp
 
 o Compiler
 
+  - Compile-time lookup with '.' preserves the declared types of indexed
+    values, including custom attributes and deprecation warnings.
+
   - Constants initialized with anonymous classes or enums retain their
     declared visibility instead of becoming implicitly private.
 
