@@ -1,34 +1,34 @@
 #pike __REAL_VERSION__
 
-#charset iso-8859-5
+#charset utf-8
 
 //! Russian language locale
 
 
 inherit "abstract";
 
-constant name = "-LюЦААзьы";
+constant name = "п═я┐я│я│п╨п╦п╧";
 constant english_name = "russian";
 constant iso_639_1 = "ru";
 constant iso_639_2 = "rus";
 constant iso_639_2B = "rus";
 
-constant aliases = ({ "ru", "rus", "russian", "русский" });
+constant aliases = ({ "ru", "rus", "russian", "я─я┐я│я│п╨п╦п╧" });
 
 constant required_charset = "iso-8859-5";
 
 constant months = ({
-  "январь", "фебраль", "март", "апрель", "май",
-  "июнь", "июль", "августь", "сентябрь", "октябь",
-  "ноябрь", "декабрь" });
+  "я▐п╫п╡п╟я─я▄", "я└п╣п╠я─п╟п╩я▄", "п╪п╟я─я┌", "п╟п©я─п╣п╩я▄", "п╪п╟п╧",
+  "п╦я▌п╫я▄", "п╦я▌п╩я▄", "п╟п╡пЁя┐я│я┌я▄", "я│п╣п╫я┌я▐п╠я─я▄", "п╬п╨я┌я▐п╠я▄",
+  "п╫п╬я▐п╠я─я▄", "п╢п╣п╨п╟п╠я─я▄" });
 
 constant days = ({
-  "воскресенье","понедельник","вторник","среда", "четверк",
-  "пятница", "суббота" });
+  "п╡п╬я│п╨я─п╣я│п╣п╫я▄п╣","п©п╬п╫п╣п╢п╣п╩я▄п╫п╦п╨","п╡я┌п╬я─п╫п╦п╨","я│я─п╣п╢п╟", "я┤п╣я┌п╡п╣я─п╨",
+  "п©я▐я┌п╫п╦я├п╟", "я│я┐п╠п╠п╬я┌п╟" });
 
 string ordered(int i)
 {
-  return (string) i + "-е";
+  return (string) i + "-п╣";
 }
 
 string date(int timestamp, string|void m)
@@ -52,13 +52,13 @@ string date(int timestamp, string|void m)
   // !m
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
-    return "сегодня, в " + ctime(timestamp)[11..15];
+    return "я│п╣пЁп╬п╢п╫я▐, п╡ " + ctime(timestamp)[11..15];
 
   if(t1["yday"] == t2["yday"]-1 && t1["year"] == t2["year"])
-    return "вчера, v " + ctime(timestamp)[11..15];
+    return "п╡я┤п╣я─п╟, v " + ctime(timestamp)[11..15];
 
   if(t1["yday"] == t2["yday"]+1 && t1["year"] == t2["year"])
-    return "завтра, okolo "  + ctime(timestamp)[11..15];
+    return "п╥п╟п╡я┌я─п╟, okolo "  + ctime(timestamp)[11..15];
 
   if(t1["year"] != t2["year"])
     return month(t1["mon"]+1) + " " + (t1["year"]+1900);
@@ -73,17 +73,17 @@ string _number_1(int num, string gender)
   switch(num)
   {
    case 0:  return "";
-   case 1:  return ([ "m" : "один",
-		      "f" : "одна",
-		      "n" : "одно" ])[gender];
-   case 2:  return ("f" == gender) ? "двe" : "два";
-   case 3:  return "три";
-   case 4:  return "четыре";
-   case 5:  return "пять";
-   case 6:  return "шесть";
-   case 7:  return "семь";
-   case 8:  return "восемь";
-   case 9:  return "дебять";
+   case 1:  return ([ "m" : "п╬п╢п╦п╫",
+		      "f" : "п╬п╢п╫п╟",
+		      "n" : "п╬п╢п╫п╬" ])[gender];
+   case 2:  return ("f" == gender) ? "п╢п╡e" : "п╢п╡п╟";
+   case 3:  return "я┌я─п╦";
+   case 4:  return "я┤п╣я┌я▀я─п╣";
+   case 5:  return "п©я▐я┌я▄";
+   case 6:  return "я┬п╣я│я┌я▄";
+   case 7:  return "я│п╣п╪я▄";
+   case 8:  return "п╡п╬я│п╣п╪я▄";
+   case 9:  return "п╢п╣п╠я▐я┌я▄";
    default:
      error("russian->_number_1: internal error.\n");
   }
@@ -93,14 +93,14 @@ string _number_10(int num)
 {
   switch(num)
   {
-   case 2: return "двадцать";
-   case 3: return "тридцать";
-   case 4: return "сопок";
-   case 5: return "пятьдесят";
-   case 6: return "шестьдесят";
-   case 7: return "семьдесят";
-   case 8: return "восемьдесят";
-   case 9: return "девяносто";
+   case 2: return "п╢п╡п╟п╢я├п╟я┌я▄";
+   case 3: return "я┌я─п╦п╢я├п╟я┌я▄";
+   case 4: return "я│п╬п©п╬п╨";
+   case 5: return "п©я▐я┌я▄п╢п╣я│я▐я┌";
+   case 6: return "я┬п╣я│я┌я▄п╢п╣я│я▐я┌";
+   case 7: return "я│п╣п╪я▄п╢п╣я│я▐я┌";
+   case 8: return "п╡п╬я│п╣п╪я▄п╢п╣я│я▐я┌";
+   case 9: return "п╢п╣п╡я▐п╫п╬я│я┌п╬";
    default:
      error("russian->_number_10: internal error.\n");
   }
@@ -110,12 +110,12 @@ string _number_100(int num)
 {
   switch(num)
   {
-   case 1: return "сто";
-   case 2: return "двести";
+   case 1: return "я│я┌п╬";
+   case 2: return "п╢п╡п╣я│я┌п╦";
    case 3: case 4:
-     return _number_1(num, "m")+"ста";
+     return _number_1(num, "m")+"я│я┌п╟";
    case 5: case 6: case 7: case 8: case 9:
-     return _number_1(num, "m")+"сот";
+     return _number_1(num, "m")+"я│п╬я┌";
    default:
      error("russian->_number_10: internal error.\n");
   }
@@ -126,32 +126,32 @@ string _number(int num, string gender);
 string _number_1000(int num)
 {
   if (num == 1)
-    return "тысяча";
+    return "я┌я▀я│я▐я┤п╟";
 
   string pre = _number(num, "f");
   switch(num % 10)
   {
-   case 1: return pre + " тысяча";
+   case 1: return pre + " я┌я▀я│я▐я┤п╟";
    case 2: case 3: case 4:
-     return pre + " тысячи";
+     return pre + " я┌я▀я│я▐я┤п╦";
    default:
-     return pre + " тысяч";
+     return pre + " я┌я▀я│я▐я┤";
   }
 }
 
 string _number_1000000(int num)
 {
   if (num == 1)
-    return "миллион";
+    return "п╪п╦п╩п╩п╦п╬п╫";
 
   string pre = _number(num, "m");
   switch(num % 10)
   {
-   case 1: return pre + " миллион";
+   case 1: return pre + " п╪п╦п╩п╩п╦п╬п╫";
    case 2: case 3: case 4:
-     return pre + " миллиона";
+     return pre + " п╪п╦п╩п╩п╦п╬п╫п╟";
    default:
-     return pre + " миллионов";
+     return pre + " п╪п╦п╩п╩п╦п╬п╫п╬п╡";
   }
 }
 
@@ -166,16 +166,16 @@ string _number(int num, string gender)
     return _number_1(num, gender);
 
   if (num < 20)
-    return ([ 10: "десять",
-	      11: "одиннадцать",
-	      12: "двенадцать",
-	      13: "тринадцать",
-	      14: "четырнадцать",
-	      15: "пятнадцать",
-	      16: "шестнадцать",
-	      17: "семнадцать",
-	      18: "восемнадцать",
-	      19: "девятнадцать" ])[num];
+    return ([ 10: "п╢п╣я│я▐я┌я▄",
+	      11: "п╬п╢п╦п╫п╫п╟п╢я├п╟я┌я▄",
+	      12: "п╢п╡п╣п╫п╟п╢я├п╟я┌я▄",
+	      13: "я┌я─п╦п╫п╟п╢я├п╟я┌я▄",
+	      14: "я┤п╣я┌я▀я─п╫п╟п╢я├п╟я┌я▄",
+	      15: "п©я▐я┌п╫п╟п╢я├п╟я┌я▄",
+	      16: "я┬п╣я│я┌п╫п╟п╢я├п╟я┌я▄",
+	      17: "я│п╣п╪п╫п╟п╢я├п╟я┌я▄",
+	      18: "п╡п╬я│п╣п╪п╫п╟п╢я├п╟я┌я▄",
+	      19: "п╢п╣п╡я▐я┌п╫п╟п╢я├п╟я┌я▄" ])[num];
   if (num < 100)
     return _number_10(num/10) + " " + _number_1(num%10, gender);
 
@@ -194,10 +194,10 @@ string number(int num, string|void gender)
   if (!gender)   /* Solitary numbers are inflected as masculine */
     gender = "m";
   if (num<0) {
-    return "минус"+_number(-num, gender);
+    return "п╪п╦п╫я┐я│"+_number(-num, gender);
   } if (num) {
     return _number(num, gender);
   } else {
-    return "ноль";
+    return "п╫п╬п╩я▄";
   }
 }
