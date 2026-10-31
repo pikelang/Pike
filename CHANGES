@@ -494,6 +494,11 @@ o ADT.CircularList
 
   Fixed long standing buffer underrun issue.
 
+o Calendar
+
+  Hour, Minute, Second and Fraction factories in YMD calendars now declare
+  the extended YMD result types, matching the objects they create.
+
 o Charset
 
   - Corrected the CODAR-U (ISO-IR 59) mapping. Arabic presentation forms

@@ -2642,6 +2642,7 @@ class YMD_Time
 //! inherits YMD
 //------------------------------------------------------------------------
 
+function(mixed...:cHour) Hour=cHour;
 class cHour
 {
    inherit Time::cHour;
@@ -2655,6 +2656,7 @@ class cHour
 //! inherits YMD
 //------------------------------------------------------------------------
 
+function(mixed...:cMinute) Minute=cMinute;
 class cMinute
 {
    inherit Time::cMinute;
@@ -2668,6 +2670,7 @@ class cMinute
 //! inherits YMD
 //------------------------------------------------------------------------
 
+function(mixed...:cSecond) Second=cSecond;
 class cSecond
 {
    inherit Time::cSecond;
@@ -2681,6 +2684,7 @@ class cSecond
 //! inherits YMD
 //------------------------------------------------------------------------
 
+function(mixed...:cFraction) Fraction=cFraction;
 class cFraction
 {
    inherit Time::cFraction;

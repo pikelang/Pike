@@ -1,5 +1,19 @@
 START_MARKER
 
+dnl Factory declarations must follow YMD's extended time classes.
+test_compile([[
+  Calendar.YMD.cHour hour(int t) { return Calendar.ISO_UTC.Hour(t); }
+  Calendar.YMD.cMinute minute(int t) { return Calendar.ISO_UTC.Minute(t); }
+  Calendar.YMD.cSecond second(int t) { return Calendar.ISO_UTC.Second(t); }
+  Calendar.YMD.cFraction fraction(int t) {
+    return Calendar.ISO_UTC.Fraction(t);
+  }
+  hour(0); minute(0); second(0); fraction(0);
+]])
+test_equal(Calendar.ISO_UTC.Second("unix", 0)->day()->format_ymd(),
+           "1970-01-01")
+
+
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the
 dnl   Calendar module that had any errors. Please don't commit
