@@ -836,7 +836,7 @@ Examples:     @ul
                 @item
                   2 oz light rum
                 @item
-                  Juice of ½ lime
+                  Juice of Â½ lime
                 @item
                   Coca Cola
               @endul

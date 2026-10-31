@@ -89,12 +89,12 @@ create_pie(mapping diagram_data);
 
 
 Graphs: 
-Graphs är punkter eller punkter med linjer mellan sig. Punkterna anges
+Graphs Ã¤r punkter eller punkter med linjer mellan sig. Punkterna anges
 med x, y.
-Indata på formen x, y, y, y omvandlas av inläsningsfunktionen.
+Indata pÃ¥ formen x, y, y, y omvandlas av inlÃ¤sningsfunktionen.
 
 Bars:
-Barsdata består av en lista av listor med värden i. Värdena skrivs
+Barsdata bestÃ¥r av en lista av listor med vÃ¤rden i. VÃ¤rdena skrivs
 ut som staplar eller negativa staplar.
 
 Data lagras i ett data-mapping:
@@ -102,20 +102,20 @@ diagram_data
 
 
 string type;
-//Är lika med "graph", "bars", "sumbars", "pie";
+//Ã„r lika med "graph", "bars", "sumbars", "pie";
 
 string subtype;
-//Är alltid "line" för graph-er. Tänkbara för bars är "line", "dot", "box"  
-//Är "pie" för tårtor?
-//Sumbars: "norm" ger alla staplar lika höga.
+//Ã„r alltid "line" fÃ¶r graph-er. TÃ¤nkbara fÃ¶r bars Ã¤r "line", "dot", "box"  
+//Ã„r "pie" fÃ¶r tÃ¥rtor?
+//Sumbars: "norm" ger alla staplar lika hÃ¶ga.
 
-//Följande gäller för bars-line och graph-diagram
+//FÃ¶ljande gÃ¤ller fÃ¶r bars-line och graph-diagram
 string drawtype;
- "level"; //Om !=0 så är bars-diagrammet bara vågräta streck 
- "linear"; //Om !=0 så är bars/graph-diagrammet linjärt spline (default)
- "quadratic"; //Om !=0 så är bars/graph-diagrammet kvadratiskt spline
- "cubic";//Om !=0 så är bars/graph-diagrammet kubiskt spline 
- //För bars-box och pie:
+ "level"; //Om !=0 sÃ¥ Ã¤r bars-diagrammet bara vÃ¥grÃ¤ta streck 
+ "linear"; //Om !=0 sÃ¥ Ã¤r bars/graph-diagrammet linjÃ¤rt spline (default)
+ "quadratic"; //Om !=0 sÃ¥ Ã¤r bars/graph-diagrammet kvadratiskt spline
+ "cubic";//Om !=0 sÃ¥ Ã¤r bars/graph-diagrammet kubiskt spline 
+ //FÃ¶r bars-box och pie:
  "2D" - ritar 2D boxar/kakor
  "3D" - flash!!!
 
@@ -126,141 +126,141 @@ float|int 3Ddepth;
 //Anger hur djup 3D ska vara i pixel
 
 array(array(float|string)) data; 
-//Innehåller för graph 
+//InnehÃ¥ller fÃ¶r graph 
  // en array med arrayer av typ x-pos1, y-pos1, x-pos2, ...
-//För Bars:
+//FÃ¶r Bars:
  // x-data1, x-data2, ...
-//För pie:
+//FÃ¶r pie:
  // value1, value2, ... 
-//Om ett dataelement är lika med "\n" så betyder det VOID
+//Om ett dataelement Ã¤r lika med "\n" sÃ¥ betyder det VOID
 
 
 array(string) labels;
-//Innehåller en array med ({xstorhet, ystorhet, xenhet, yenhet})
-// För bars kan används inte xenhet
-//Om ett dataelement är lika med "\n" så betyder det VOiD
+//InnehÃ¥ller en array med ({xstorhet, ystorhet, xenhet, yenhet})
+// FÃ¶r bars kan anvÃ¤nds inte xenhet
+//Om ett dataelement Ã¤r lika med "\n" sÃ¥ betyder det VOiD
 
 array(string) xnames;
-//Innehåller en array med olika namn som ska stå längs x-axeln 
+//InnehÃ¥ller en array med olika namn som ska stÃ¥ lÃ¤ngs x-axeln 
 //(t ex jan, feb).
-//Om ett dataelement är lika med "\n" så betyder det VOiD
+//Om ett dataelement Ã¤r lika med "\n" sÃ¥ betyder det VOiD
 
 
 array(string) ynames;
-//Innehåller en array med olika namn som ska stå längs y-axeln (t ex
+//InnehÃ¥ller en array med olika namn som ska stÃ¥ lÃ¤ngs y-axeln (t ex
 //lite, mycket).
 // Dessa namn skrivs i diagrammet av create_pie.
-//Om ett dataelement är lika med "\n" så betyder det VOiD
+//Om ett dataelement Ã¤r lika med "\n" sÃ¥ betyder det VOiD
 
 
 array(object(image)) xnamesimg;
 array(object(image)) ynamesimg;
-//bilderna på x- och ynames.
+//bilderna pÃ¥ x- och ynames.
 
 int xmaxxnames;
 int ymaxxnames;
 int xmaxynames;
 int ymaxynames;
-//Anger max-storleken på text-bilderna.
+//Anger max-storleken pÃ¥ text-bilderna.
 
 int fontsize;
 //anger med vilken storlek texten ska skrivas
 
 int labelsize;
-// anger med vilken storlek texten för labels ska skrivas
-// Denna ska sättas till 0 om det inte finns några labels!!!
+// anger med vilken storlek texten fÃ¶r labels ska skrivas
+// Denna ska sÃ¤ttas till 0 om det inte finns nÃ¥gra labels!!!
 
 int legendfontsize;
-//Anger storleken på legend-texten.
+//Anger storleken pÃ¥ legend-texten.
 // (Default fontsize)
-//Om den är för stor minskas den. 
+//Om den Ã¤r fÃ¶r stor minskas den. 
 
 int legend_size;
-//Storleken på legenden.
+//Storleken pÃ¥ legenden.
 
 array(string) legend_texts;
-// innehåller texten som ska stå i Legenden.
+// innehÃ¥ller texten som ska stÃ¥ i Legenden.
 // Det ska vara en text per data
-// Är 0 om ingen text ska skrivas ut.
+// Ã„r 0 om ingen text ska skrivas ut.
 array(froat) values_for_xnames;
-//Innehåller en array med nivåerna som ska förknippas med vissa xnames.
-//Om dessa inte anges kan de sättas ut jämt.
-//Bars sätter denna själv
-// Dessa namn är de som används av pie-diagramet för legenden.
-//Om ett dataelement är lika med "\n" så betyder det VOID
+//InnehÃ¥ller en array med nivÃ¥erna som ska fÃ¶rknippas med vissa xnames.
+//Om dessa inte anges kan de sÃ¤ttas ut jÃ¤mt.
+//Bars sÃ¤tter denna sjÃ¤lv
+// Dessa namn Ã¤r de som anvÃ¤nds av pie-diagramet fÃ¶r legenden.
+//Om ett dataelement Ã¤r lika med "\n" sÃ¥ betyder det VOID
 
 
 array(froat) values_for_ynames;
-//Innehåller en array med nivåerna som ska förknippas med vissa ynames.
-//Om dessa inte anges kan de sättas ut jämt.
+//InnehÃ¥ller en array med nivÃ¥erna som ska fÃ¶rknippas med vissa ynames.
+//Om dessa inte anges kan de sÃ¤ttas ut jÃ¤mt.
 
 float xmaxvalue, xminvalue, ymaxvalue, yminvalue;
-//anger inom vilka områden man ska förvänta sig data. Minvalue sätts
-//i normala fall till min(0, minsta_värde) och maxvalue till 
-//max(0, största_värde).
+//anger inom vilka omrÃ¥den man ska fÃ¶rvÃ¤nta sig data. Minvalue sÃ¤tts
+//i normala fall till min(0, minsta_vÃ¤rde) och maxvalue till 
+//max(0, stÃ¶rsta_vÃ¤rde).
 
 
 float xspace, float yspace, 
-//anger hur lång det ska vara mellan utskrifterna av nuffror/xnames/ynames
+//anger hur lÃ¥ng det ska vara mellan utskrifterna av nuffror/xnames/ynames
 
 int xsize, ysize;
 //anger hur stor bild man ska generera.
 
 "image":image-object,
-// Denna kan sättas till bakgrundsbilden innan create_XXX anropas.
-// OBS om den ska användas så måste bgcolor vara 0!!!
+// Denna kan sÃ¤ttas till bakgrundsbilden innan create_XXX anropas.
+// OBS om den ska anvÃ¤ndas sÃ¥ mÃ¥ste bgcolor vara 0!!!
  
-"xstart": var_i_bilden_vi_kan_börja_rita_data-int, //från höger
-"ystart": var_i_bilden_vi_kan_börja_rita_data-int, //Nerifrån!
-"xstop":int, //från höger
-"ystop":int //Nerifrån!
+"xstart": var_i_bilden_vi_kan_bÃ¶rja_rita_data-int, //frÃ¥n hÃ¶ger
+"ystart": var_i_bilden_vi_kan_bÃ¶rja_rita_data-int, //NerifrÃ¥n!
+"xstop":int, //frÃ¥n hÃ¶ger
+"ystop":int //NerifrÃ¥n!
 
 "legendcolor":({int r, int g, int b}) 
-//bgfärgen på bakgrunden i legenden
-//Om legendcolor är 0 så är det bilden:
+//bgfÃ¤rgen pÃ¥ bakgrunden i legenden
+//Om legendcolor Ã¤r 0 sÃ¥ Ã¤r det bilden:
 
 "legendimage": object(image) 
-// som ska användas som bakgrundsbild.
+// som ska anvÃ¤ndas som bakgrundsbild.
 
 "bgcolor":({int r, int g, int b}) 
-//färgen på bakgrunden i bilden
-//Om bgcolor är 0 så är det bilden:
+//fÃ¤rgen pÃ¥ bakgrunden i bilden
+//Om bgcolor Ã¤r 0 sÃ¥ Ã¤r det bilden:
 
 "bgimage": object(image) 
-// som ska användas som bakgrundsbild.
+// som ska anvÃ¤ndas som bakgrundsbild.
 
 "axcolor":({int r, int g, int b}) 
-//Färgen på axlarna och på outlines i pie
+//FÃ¤rgen pÃ¥ axlarna och pÃ¥ outlines i pie
 
 "datacolors":({({int r, int g, int b}), ... }) 
-//Färgen på linjerna/barsen/slicerna
-//För grapher och bars måste de vara av samma antal som antalet 
-//uppsättningar data
+//FÃ¤rgen pÃ¥ linjerna/barsen/slicerna
+//FÃ¶r grapher och bars mÃ¥ste de vara av samma antal som antalet 
+//uppsÃ¤ttningar data
 
 "backdatacolors":({({int r, int g, int b}), ... }) 
-//Färgen på kontueren kring linjerna/barsen/slicerna
-//För grapher och bars måste de vara av samma antal som antalet 
-//uppsättningar data
+//FÃ¤rgen pÃ¥ kontueren kring linjerna/barsen/slicerna
+//FÃ¶r grapher och bars mÃ¥ste de vara av samma antal som antalet 
+//uppsÃ¤ttningar data
 
 "textcolor":({int r, int g, int b})
-// färgen på texten
+// fÃ¤rgen pÃ¥ texten
 
 "labelcolor":({int r, int g, int b})
-// färgen på labelstexten (default är textcolor):({int r, int g, int b})
+// fÃ¤rgen pÃ¥ labelstexten (default Ã¤r textcolor):({int r, int g, int b})
 
 "orient":"hor" eller "vert"
-//Anger om skriften på x-axel ska skrivas horizontelt eller vertikalt.
-//hor är default.
+//Anger om skriften pÃ¥ x-axel ska skrivas horizontelt eller vertikalt.
+//hor Ã¤r default.
 
-"linewidth":float bredd på alla linjer
+"linewidth":float bredd pÃ¥ alla linjer
 
-"backlinewidth":float bredd på alla linjer
+"backlinewidth":float bredd pÃ¥ alla linjer
 
-"grindwidth":float bredd på alla linjer i grinden
+"grindwidth":float bredd pÃ¥ alla linjer i grinden
 
-"vertgrind": int om denna är så blir det vertikala grind
+"vertgrind": int om denna Ã¤r sÃ¥ blir det vertikala grind
 
-"horgrind": int om denna är så blir det horizontella grind
+"horgrind": int om denna Ã¤r sÃ¥ blir det horizontella grind
 
 "image":object(image)
 //bilden som grafen ritas i.

@@ -25,7 +25,7 @@ if test x$with_dvb = xyes ; then
 
 dnl linux 2.6 has dvb/version.h but not linux/dvb/sec.h,
 dnl which dvb.c needs; this should probably be updated
-dnl some better way: FIXME!!1!ก /Mirar
+dnl some better way: FIXME!!1!ยก /Mirar
 
   dnl Checking for version 2+ API
   AC_CHECK_HEADERS(linux/dvb/version.h,

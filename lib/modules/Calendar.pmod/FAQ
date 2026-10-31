@@ -301,8 +301,8 @@ A:  You give the unit to be converted to the constructor of
     > Calendar.Coptic.Day(Calendar.dwim_day("14 feb 1983"));
     Result: Day(Mon 7 Ams 1699)
     > Calendar.Islamic.Minute(Calendar.dwim_day("14 feb 1983"));
-    Result: Minute(aha 29 Rebîul-âchir 1403 AH 13:00 CET - 
-    		   ith 1 Djumâda'l-ûla 1403 AH 13:00 CET)
+    Result: Minute(aha 29 RebÃ®ul-Ã¢chir 1403 AH 13:00 CET - 
+    		   ith 1 DjumÃ¢da'l-Ã»la 1403 AH 13:00 CET)
     > Calendar.Day(Calendar.Stardate.Tick(4711));
     Result: Day(Sat 17 Sep 2327 0:00 sharp)
 
