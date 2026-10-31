@@ -182,6 +182,16 @@ test_any([[
   return k->second(1)!=k->second(2);
 ]], 1)
 
+dnl The event data files are UTF-8. The Czech namedays were ISO-8859-2.
+test_equal([[Calendar.Events.find_namedays("se")->
+	       names(Calendar.Day(2000, 1, 27))]],
+	   [[({ "G\u00f6te", "G\u00f6ta" })]])
+test_equal([[Calendar.Events.find_namedays("cs")->
+	       names(Calendar.Day(2000, 1, 6))]],
+	   [[({ "T\u0159i kr\u00e1lov\u00e9" })]])
+test_eq([[Calendar.Events["bahai/declaration of bab"]->name]],
+	"Declaration of B\u00e1b")
+
 test_eq([[Calendar.ISO.Day (2007, 12, 31)->week()->month_day()]], 31);
 test_any([[
   object d = Calendar.ISO.Day (2007, 12, 01);

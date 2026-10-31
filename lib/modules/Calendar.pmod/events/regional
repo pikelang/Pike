@@ -273,10 +273,10 @@ Region "bahai"
   Event "bahai/birth of bab"            - "Birth of Bab"              Fixed Oct 20
   Event "bahai/birth of bahaullah"      - "Birth of Baha'u'llah"      Fixed Nov 12
   Event "bahai/day of the covenant"     - "Day of the Covenant"       Fixed Nov 27
-  Event "bahai/declaration of bab"      - "Declaration of Báb"        Fixed May 23
-  Event "bahai/festival of ridvan"      - "Festival of Ridván"        Fixed Apr 21
+  Event "bahai/declaration of bab"      - "Declaration of BÃ¡b"        Fixed May 23
+  Event "bahai/festival of ridvan"      - "Festival of RidvÃ¡n"        Fixed Apr 21
   Event "bahai/martyrdom of bab"        - "Martyrdom of Bab"          Fixed Jul  9
-  Event "bahai/naw-ruz"                 - "Naw-Rúz"                   Fixed Mar 21
+  Event "bahai/naw-ruz"                 - "Naw-RÃºz"                   Fixed Mar 21
 
 # anglican church (?)
 Region "anglican church"
@@ -288,10 +288,10 @@ Region "mormonism"
 
 # islam
 Region "islamic"
-  Event "islamic/al fitr"  h "Id al Fitr (End of Ramadan)"          Islamic_Fixed Schawwâl 1
+  Event "islamic/al fitr"  h "Id al Fitr (End of Ramadan)"          Islamic_Fixed SchawwÃ¢l 1
   Event "islamic/al adha"  h "Eid al Adha (Feast of the Sacrifice)" Islamic_Fixed Dhu'l-Hiddja 9
   Event "islamic/new year" - "Islamic New Year"                     Islamic_Fixed Muharram 1
-  Event "islamic/mouloud"  - "Mouloud (Birth of the Prophet)"       Islamic_Fixed Rebîu'l-awwal 12
+  Event "islamic/mouloud"  - "Mouloud (Birth of the Prophet)"       Islamic_Fixed RebÃ®u'l-awwal 12
   Event "islamic/al miraj" - "Leilat al-Meiraj (Ascension of the Prophet)"	Islamic_Fixed Redjeb 27
 
 # ====================================================================================================
@@ -394,7 +394,7 @@ Region "ag"
 
 #----------------------------------------------------------------
 # Argentina
-# Source: Julio César Gázquez (Apr 2000)
+# Source: Julio CÃ©sar GÃ¡zquez (Apr 2000)
 #----------------------------------------------------------------
 
 Region "ar"
@@ -407,7 +407,7 @@ Region "ar"
   Add   "new year"                h # "New Year's Day"          Fixed Jan  1
   Add   "c/easter"                h # "Easter"                  Easter +0
   Event "ar/malvinas"             h   "Malvinas Day"            Fixed Apr  2
-  Event "ar/gral san martin"      h   "Gral San Martín decease" Fixed Aug 17
+  Event "ar/gral san martin"      h   "Gral San MartÃ­n decease" Fixed Aug 17
   Add   "c/immaculate conception" h # "Immaculate Conception"   Fixed Dec  8
   Add   "c/good friday"           h # "Good Friday"             Easter -2
   Add   "c/christmas"             h # "Christmas Day"           Fixed Dec 25
@@ -780,7 +780,7 @@ Region "kh"
 Region "cm"
   Event "cm/independence"           h   "Independence Day"                               Fixed Jan  1
   Add   "new year"                  h # "New Year's Day"                                 (1-Jan 2000)
-  Event "cm/djoulde soumae"         h   "Djoulde Soumae (End of Ramadan)"                Islamic_Fixed Schawwâl 1
+  Event "cm/djoulde soumae"         h   "Djoulde Soumae (End of Ramadan)"                Islamic_Fixed SchawwÃ¢l 1
   Event "cm/youth"                  h   "Youth Day"                                      Fixed Feb 11
   Event "cm/feast of the sacrifice" h   "Feast of the Sacrifice (Festival of the Sheep)" Islamic_Fixed Dhu'l-Hiddja 9
   Add   "c/good friday"             h # "Good Friday"                                    (21-Apr 2000)
@@ -791,7 +791,7 @@ Region "cm"
   Event "cm/sheep festival"         h   "Sheep Festival"                                 Fixed May 21
   Add   "c/ascension"               h # "Ascension Thursday"                             (1-Jun 2000)
   Add   "c/pentecost monday"        - # "Pentecost Monday"                               Easter +50
-  Event "cm/mouloud"                h   "Mouloud (Birth of the Prophet)"                 Islamic_Fixed Rebîu'l-awwal 12
+  Event "cm/mouloud"                h   "Mouloud (Birth of the Prophet)"                 Islamic_Fixed RebÃ®u'l-awwal 12
   Add   "c/assumption"              h # "Assumption"                                     (15-Aug 2000)
   Event "cm/unification"            h   "Unification Day"                                Fixed Oct  1
   Add   "c/all saints"              - # "All Saints Day"                                 Fixed Nov  1
@@ -917,7 +917,7 @@ Region "td"
   Add   "c/ascension"                                        - # "Ascension"                                           Easter +39
   Add   "c/pentecost"                                        - # "Pentecost"                                           Easter +49
   Event "td/revolution"                                      h   "Revolution Day"                                      Fixed Jun  7
-  Event "td/mouloud"                                         h   "Mouloud (Prophet's Birthday)"                        Islamic_Fixed Rebîu'l-awwal 12
+  Event "td/mouloud"                                         h   "Mouloud (Prophet's Birthday)"                        Islamic_Fixed RebÃ®u'l-awwal 12
   Event "td/independence"                                    h   "Independence Day"                                    Fixed Aug 11
   Add   "c/assumption"                                       h # "Assumption Day"                                      (15-Aug 2000)
   Add   "c/all saints"                                       - # "All Saints Day"                                      Fixed Nov  1
@@ -1229,14 +1229,14 @@ Region "dk"
   Event "dk/2nd of christmas"         h   "2nd day of Christmas"           Fixed Dec 26
   Add   "new years eve"               - # "New Year's Eve"                 (31-Dec 2000)
 
-  Event "dk/princess marys birthday"  - "Kronprinsesse Marys fødselsdag"    Fixed Feb 5
-  Event "dk/olivers birthday"         - "Olivers fødselsdag"	            Fixed Feb 25
-  Event "dk/princess benediktes birthday" - "Prinsesse Benediktes fødselsdag" Fixed Apr 29
-  Event "dk/prince joakim birthday"    - "Prins Joakims fødselsdag"	    Fixed Jun 7
-  Event "dk/prince henrik birthday"    - "Prins Henriks fødselsdag"	    Fixed Jun 11
-  Event "dk/prince alexandra birthday" - "Prinsesse Alexandras fødselsdag"  Fixed Jun 30
-  Event "dk/prince felix birthday"     - "Prins Felix' fødselsdag"	    Fixed Jul 22
-  Event "dk/prince nikolais birthday"  - "Prins Nikolais fødselsdag"	    Fixed Aug 28
+  Event "dk/princess marys birthday"  - "Kronprinsesse Marys fÃ¸dselsdag"    Fixed Feb 5
+  Event "dk/olivers birthday"         - "Olivers fÃ¸dselsdag"	            Fixed Feb 25
+  Event "dk/princess benediktes birthday" - "Prinsesse Benediktes fÃ¸dselsdag" Fixed Apr 29
+  Event "dk/prince joakim birthday"    - "Prins Joakims fÃ¸dselsdag"	    Fixed Jun 7
+  Event "dk/prince henrik birthday"    - "Prins Henriks fÃ¸dselsdag"	    Fixed Jun 11
+  Event "dk/prince alexandra birthday" - "Prinsesse Alexandras fÃ¸dselsdag"  Fixed Jun 30
+  Event "dk/prince felix birthday"     - "Prins Felix' fÃ¸dselsdag"	    Fixed Jul 22
+  Event "dk/prince nikolais birthday"  - "Prins Nikolais fÃ¸dselsdag"	    Fixed Aug 28
 
 
 #--------------------------------------------------------------
@@ -1248,7 +1248,7 @@ Region "dj"
   Add   "islamic/al adha"         h # "Id al-Adha"                     (16-Mar 2000)
   Add   "islamic/new year"        h # "Islamic New Year"               (6-Apr 2000)
   Event "dj/fete du travail"      h   "Fete du Travail"                Fixed May  1
-  Event "dj/mouloud"              h   "Mouloud (Birth of the Prophet)" Islamic_Fixed Rebîu'l-awwal 12
+  Event "dj/mouloud"              h   "Mouloud (Birth of the Prophet)" Islamic_Fixed RebÃ®u'l-awwal 12
   Event "dj/independence feast"   -   "Independence Feast Day"         Fixed Jun 27
   Event "dj/independence"         h   "Independence Day"               Fixed Jul 27
   Add   "c/christmas"             h # "Christmas"                      (25-Dec 2000)
@@ -1316,14 +1316,14 @@ Region "ec"
 #--------------------------------------------------------------
 Region "eg"
   Add   "new year"                - # "New Year's Day"                   Fixed Jan  1
-  Event "eg/bairam feast"         h   "Bairam Feast (End of Ramadan)"    Islamic_Fixed Schawwâl 1
+  Event "eg/bairam feast"         h   "Bairam Feast (End of Ramadan)"    Islamic_Fixed SchawwÃ¢l 1
   Add   "unity"                   - # "Unity Day"                        Fixed Feb 22
 # Egypt Grand Feast 15-Mar
   Add   "islamic/new year"        h # "Islamic New Year"                 (6-Apr 2000)
   Event "eg/sinai liberation"     h   "Sinai Liberation Day"             Fixed Apr 25
   Event "eg/sham el nessim"       h   "Sham el Nessim (Egyptian Easter)" Julian_Easter +1
   Add   "labor"                   h # "Labor Day"                        (1-May 2000)
-  Event "eg/mouloud"              h   "Mouloud (Birth of the Prophet)"   Islamic_Fixed Rebîu'l-awwal 12
+  Event "eg/mouloud"              h   "Mouloud (Birth of the Prophet)"   Islamic_Fixed RebÃ®u'l-awwal 12
   Event "eg/leylet en-nuktah"     -   "Leylet en-Nuktah"                 Fixed Jun 17
   Event "eg/liberation"           h   "Liberation Day"                   Fixed Jun 18
 # Egypt Night of the Droplet 18-Jun
@@ -1416,7 +1416,7 @@ Region "et"
   Add   "orthodox/easter"                   h # "Orthodox Easter"
   Add   "labor"                             h # "Labor Day"                                                      (1-May 2000)
   Event "et/overthrow of the dergue regime" h   "Overthrow of the Dergue Regime"                                 Fixed May 28
-  Event "et/mouloud"                        h   "Mouloud (Birth of the Prophet)"  Islamic_Fixed Rebîu'l-awwal 12
+  Event "et/mouloud"                        h   "Mouloud (Birth of the Prophet)"  Islamic_Fixed RebÃ®u'l-awwal 12
   Event "et/ethiopian new year"             h   "Ethiopian New Year (Enqutatash)"                                Coptic_Fixed Tout 1
   Event "et/true cros"                      h   "True Cross Day (Meskal)"                                        Coptic_Fixed Tout 18
   Event "et/genna"                          -   "Genna"                                                          Fixed Jan  7
@@ -1451,13 +1451,13 @@ Region "fo"
   Add   "c/easter monday"         h # "Easter Monday"               (24-Apr 2000)
   Event "fo/flag"                 h   "Flag Day"                    Fixed Apr 25
   Event "fo/common prayer"        h   "Common Prayer Day"           Easter +26
-  Event "fo/nordoyastevna"        h   "Norðoyastevna"               WDRel May Wed 4th
+  Event "fo/nordoyastevna"        h   "NorÃ°oyastevna"               WDRel May Wed 4th
   Add   "c/ascension"             h # "Ascension"                   (1-Jun 2000)
   Event "fo/constitution"         h   "Constitution Day"            Fixed Jun  5
   Event "fo/eystanstevna"         h   "Eystanstevna"                WDRel Jun Wed 2nd
   Event "fo/whit sunday"          h   "Whit Sunday (Pentecost)"     Easter +49
   Event "fo/whit monday"          h   "Whit Monday"                 Easter +50
-  Event "fo/joansoka"             h   "Jóansøka"                    WDRel Jun Wed 4th
+  Event "fo/joansoka"             h   "JÃ³ansÃ¸ka"                    WDRel Jun Wed 4th
   Event "fo/varmakeldustevna"     h   "Varmakeldustevna"            WDRel Jul Wed 1st
   Event "fo/olavsoka eve"         h   "Olavsoka Eve"                Fixed Jul 28
   Event "fo/vestanstevna"         h   "Vestanstevna"                WDRel Jul Wed 4th
@@ -1479,7 +1479,7 @@ Region "fj"
   Add   "c/easter monday"         h # "Easter Monday"                  (24-Apr 2000)
 # Event "fi/ratu sir lala sukuna" h "Ratu Sir Lala Sukuna Day"          Fiji Ratu Sir Lala Sukuna Day 29-May ? ? ? ? moveable but still researching
   Event "fj/queens birthday"      h   "Queen's Birthday"               WDRel Jun Sat 2nd
-  Event "fj/mouloud"              h   "Mouloud (Birth of the Prophet)" Islamic_Fixed Rebîu'l-awwal 12
+  Event "fj/mouloud"              h   "Mouloud (Birth of the Prophet)" Islamic_Fixed RebÃ®u'l-awwal 12
 # Event "fi/constitution"         h "Constitution Day"                 Fiji Constitution Day 28-Jul ? ? ? ? moveable but still researching
   Event "fj/bank holiday"         -   "Bank Holiday"                   WDRel Aug Mon 1st
   Event "fj/fiji"                 -   "Fiji Day"                       WDRel Aug Mon 2nd
@@ -1528,7 +1528,7 @@ Region "fr"
   Event "fr/emancipation"            h   "Emancipation Day"        Fixed Apr 27
   Add   "labor"                      h # "Labor Day"               (1-May 2000)
   Event "fr/liberation"              h   "Liberation Day"          Fixed May  8
-  Event "fr/fete des saintes-maries" -   "Fête des Saintes-Maries" Fixed May 24
+  Event "fr/fete des saintes-maries" -   "FÃªte des Saintes-Maries" Fixed May 24
   Add   "c/ascension"                h # "Ascension Thursday"      (1-Jun 2000)
   Event "fr/d-day observance"        -   "D-Day Observance"        Fixed Jun  6
   Add   "c/pentecost monday"         h # "Pentecost Monday"        (12-Jun 2000)
@@ -1541,7 +1541,7 @@ Region "fr"
   Event "fr/bastille"                h   "Bastille Day"            Fixed Jul 14
   Event "fr/edgar degas birthday"    h   "Edgar Degas' Birthday"   Fixed Jul 19
   Add   "c/assumption"               h # "Assumption Day"          (15-Aug 2000)
-  Event "fr/fete nationale"          -   "Fête Nationale"          Fixed Sep 22
+  Event "fr/fete nationale"          -   "FÃªte Nationale"          Fixed Sep 22
   Add   "c/all saints"                h # "All Saint's Day"         Fixed Nov  1
   Add   "c/all souls"                - # "All Souls Day"           Fixed Nov  2
   Add   "armistice"                  h # "Armistice Day"           (11-Nov 2000)
@@ -1584,7 +1584,7 @@ Region "pf"
   Add   "labor"                           h # "Labor Day"                    (1-May 2000)
   Event "pf/heiva i tahiti"               h   "Heiva i Tahiti"               Fixed Jul  1
   Event "pf/bastille"                     h   "Bastille Day"                 Fixed Jul 14
-  Event "pf/mini fetes"                   h   "Mini Fêtes"                   Fixed Aug  1
+  Event "pf/mini fetes"                   h   "Mini FÃªtes"                   Fixed Aug  1
   Add   "c/assumption"                    h # "Assumption"                   (15-Aug 2000)
   Event "pf/internal autonomy"            h   "Internal Autonomy Day"        Fixed Sep  8
   Event "pf/stone fishing ceremony"       h   "Stone Fishing Ceremony"       Fixed Oct  1
@@ -1613,7 +1613,7 @@ Region "ga"
   Add   "labor"                   h # "Labor Day"                      (1-May 2000)
   Add   "c/pentecost"             h # "Pentecost"                      (11-Jun 2000)
   Add   "c/whitmonday"            - # "Whitmonday"                     Easter +50
-  Event "ga/mouloud"              h   "Mouloud (Birth of the Prophet)" Islamic_Fixed Rebîu'l-awwal 12
+  Event "ga/mouloud"              h   "Mouloud (Birth of the Prophet)" Islamic_Fixed RebÃ®u'l-awwal 12
   Add   "c/assumption"            h # "Assumption Day"                 (15-Aug 2000)
   Event "ga/independence"         h   "Independence Day"               Fixed Aug 16
   Event "ga/all saints"            h   "All Saint's Day"                Fixed Nov  1
@@ -1632,7 +1632,7 @@ Region "gm"
   Add   "c/good friday"           h # "Good Friday"                  (21-Apr 2000)
   Add   "c/easter monday"         h # "Easter Monday"                (24-Apr 2000)
   Add   "labor"                   h # "Labor Day"                    (1-May 2000)
-  Event "gm/mouloud"              h   "Mouloud (Prophet's Birthday)" Islamic_Fixed Rebîu'l-awwal 12
+  Event "gm/mouloud"              h   "Mouloud (Prophet's Birthday)" Islamic_Fixed RebÃ®u'l-awwal 12
   Event "gm/liberation"           h   "Liberation Day"               Fixed Jul 22
   Add   "c/assumption"            h # "Assumption Day"               (15-Aug 2000)
   Add   "c/christmas"             h # "Christmas"                    (25-Dec 2000)
@@ -1867,7 +1867,7 @@ Region "gn"
   Add   "labor"                               h # "Labor Day"                          (1-May 2000)
   Event "gn/organization of african unity"    h   "Organization of African Unity Day"  Fixed May 25
   Event "gn/presidents birthday"              h   "President's Birthday"               Fixed Jun  5
-  Event "gn/mouloud"                          h   "Mouloud (Prophet's Birthday)"       Islamic_Fixed Rebîu'l-awwal 12
+  Event "gn/mouloud"                          h   "Mouloud (Prophet's Birthday)"       Islamic_Fixed RebÃ®u'l-awwal 12
   Event "gn/martyr"                           h   "Martyr's Day"                       Fixed Aug  3
   Event "gn/anniversary of the womens revolt" h   "Anniversary of the Women's Revolt"  Fixed Aug 27
   Event "gn/referendum"                       h   "Referendum Day"                     Fixed Sep 28
@@ -1938,7 +1938,7 @@ Region "ht"
   Add   "un"                      - # "UN Day"                    Fixed Oct 24
   Add   "c/all saints"            - # "All Saints Day"            Fixed Nov  1
   Add   "c/all souls"             - # "All Souls Day"             Fixed Nov  2
-  Event "ht/vertieres"            -   "Vertières Day"             Fixed Nov 18
+  Event "ht/vertieres"            -   "VertiÃ¨res Day"             Fixed Nov 18
   Event "ht/discovery"            -   "Discovery Day"             Fixed Dec  5
   Add   "c/christmas"             - # "Christmas Day"             Fixed Dec 25
 
@@ -1952,7 +1952,7 @@ Region "hn"
   Event "hn/pan american"         -   "Pan American Day"      Fixed Apr 14
   Add   "labor"                   - # "Labor Day"             Fixed May  1
   Event "hn/independence"         -   "Independence Day"      Fixed Sep 15
-  Event "hn/morazan"              -   "Morazán Day"           Fixed Oct  3
+  Event "hn/morazan"              -   "MorazÃ¡n Day"           Fixed Oct  3
   Add   "columbus"                - # "Columbus Day"          Fixed Oct 12
   Event "hn/armed forces"         -   "Armed Forces Day"      Fixed Oct 21
   Add   "c/christmas"             - # "Christmas Day"         Fixed Dec 25
@@ -2065,7 +2065,7 @@ Region "id"
 # Event "indonesia/waisak"              h "Waisak Day (Buddha's Birthday)"         Indonesia Waisak Day (Buddha's Birthday) 11-May 30-Apr 19-May ? ? moveable
   Add   "c/ascension"             h # "Ascension Thursday"                          (1-Jun 2000)
 # Indonesia Galungan 9-Jun still researching
-  Event "id/mouloud"              h   "Mouloud (Prophet's Birthday)"                Islamic_Fixed Rebîu'l-awwal 12
+  Event "id/mouloud"              h   "Mouloud (Prophet's Birthday)"                Islamic_Fixed RebÃ®u'l-awwal 12
 # Indonesia Kuningan 19-Jun still researching
   Event "id/national children"    h   "National Children's Day"                     Fixed Jul 23
   Event "id/indonesian national"  h   "Indonesian National Day"                     Fixed Aug 17
@@ -2093,7 +2093,7 @@ Region "ir"
 # Iran 15th of Khordad 5-Jun still researching
 # Iran Chhelum 5-Jun still researching
 # Iran Muhammad's Deathday 13-Jun still researching
-  Event "ir/mouloud"              h   "Mouloud (Birth of the Prophet)"      Islamic_Fixed Rebîu'l-awwal 12
+  Event "ir/mouloud"              h   "Mouloud (Birth of the Prophet)"      Islamic_Fixed RebÃ®u'l-awwal 12
 # Iran Week of Unification begins 25-Jun still researching
 # Iran Birthday of the 1st Imam 23-Oct still researching
   Event "ir/lailat almiraj"       h   "Lailat al-Miraj"                     Islamic_Fixed Redjeb 27
@@ -2116,7 +2116,7 @@ Region "iq"
   Event "iq/ashoura"                h   "Ashoura"                                     Islamic_Fixed Muharram 10
   Event "iq/fao"                    h   "FAO Day"                                     Fixed Apr 17
   Add   "labor"                     h # "Labor Day"                                   (1-May 2000)
-  Event "iq/mouloud"                h   "Mouloud (Prophet's Birthday)"                Islamic_Fixed Rebîu'l-awwal 12
+  Event "iq/mouloud"                h   "Mouloud (Prophet's Birthday)"                Islamic_Fixed RebÃ®u'l-awwal 12
   Event "iq/national"               h   "National Day"                                Fixed Jul 14
   Event "iq/baath revolution"       h   "Ba'ath Revolution Day"                       Fixed Jul 17
   Event "iq/peace"                  h   "Peace Day (End of the Iran/Iraq war)"        Fixed Aug  8
@@ -2595,8 +2595,8 @@ Region "mu"
 Region "mx"
   Add   "new year"                     - # "New Year's Day"                 Fixed Jan  1
   Event "mx/constitution"              -   "Constitution Day"               Fixed Feb  5
-  Event "mx/birthday of benito juarez" -   "Birthday of Benito Juárez"      Fixed Mar 21
-  Event "mx/san marcós"                -   "San Marcós Day"                 Fixed Apr 25
+  Event "mx/birthday of benito juarez" -   "Birthday of Benito JuÃ¡rez"      Fixed Mar 21
+  Event "mx/san marcÃ³s"                -   "San MarcÃ³s Day"                 Fixed Apr 25
   Add   "labor"                        - # "Labor Day"                      Fixed May  1
   Event "mx/holy cross"                -   "Holy Cross Day"                 Fixed May  3
   Event "mx/cinco de mayo"             -   "Cinco de Mayo"                  Fixed May  5
@@ -2747,7 +2747,7 @@ Region "an"
   Event "an/queens"               -   "Queen's Birthday"      Fixed Apr 30
   Add   "labor"                   - # "Labor Day"             Fixed May  1
   Add   "c/ascension"             - # "Ascension"             Easter +39
-  Event "an/curaçao"              -   "Curaçao Day"           Fixed Jul  2
+  Event "an/curaÃ§ao"              -   "CuraÃ§ao Day"           Fixed Jul  2
   Event "an/bonaire"              -   "Bonaire Day"           Fixed Sep  6
   Event "an/saint maarten"        -   "St Maarten Day"        Fixed Nov 11
   Event "an/saint eustatius"      -   "St Eustatius Day"      Fixed Nov 16
@@ -2944,9 +2944,9 @@ Region "py"
   Add   "c/ascension"             - # "Ascension"                        Easter +39
   Event "py/peace of chaco"       -   "Peace of Chaco Day"               Fixed Jun 12
   Add   "c/corpus christi"        - # "Corpus Christi"                   Easter +60
-  Event "py/asunción"             -   "Founding of the City of Asunción" Fixed Aug 15
+  Event "py/asunciÃ³n"             -   "Founding of the City of AsunciÃ³n" Fixed Aug 15
   Event "py/constitution"         -   "Constitution Day"                 Fixed Aug 25
-  Event "py/battle of boquerón"   -   "Battle of Boquerón Day"           Fixed Sep 29
+  Event "py/battle of boquerÃ³n"   -   "Battle of BoquerÃ³n Day"           Fixed Sep 29
   Event "py/day of the race"      -   "Day of the Race"                  Fixed Oct 12
   Add   "c/all saints"            - # "All Saints Day"                   Fixed Nov  1
   Event "py/virgin of caacupe"    -   "Virgin of Caacupe"                Fixed Dec  8
@@ -2997,7 +2997,7 @@ Region "ph"
 // ----------------------------------------------------------------
 // Portugal
 // verified
-// source: Sérgio Araújo <sergio@projecto-oasis.cx>
+// source: SÃ©rgio AraÃºjo <sergio@projecto-oasis.cx>
 // ----------------------------------------------------------------
 
 # portugal
@@ -3006,7 +3006,7 @@ Region "pt"
   Add   "c/good friday"                      h # "Good Friday"                     Easter -2
   Event "pt/liberty"                         h   "Liberty Day"                     Fixed Apr 25
   Add   "labor"                              h # "Labor Day"                       Fixed May  1
-  Event "pt/camões memorial"                 -   "Camões Memorial Day"             Fixed Jun 10
+  Event "pt/camÃµes memorial"                 -   "CamÃµes Memorial Day"             Fixed Jun 10
   Event "pt/portugal"                        h   "Portugal Day"                    Fixed Jun 10
   Add   "c/corpus christi"                   h # "Corpus Christi"                  Easter +60
   Add   "c/assumption"                       h # "Assumption Day"                  Fixed Aug 15
@@ -3030,7 +3030,7 @@ Region "pr"
   Event "pr/memorial"                -   "Memorial Day"                        Fixed May 28
   Event "pr/saint johns"             -   "St John's Day"                       Fixed Jun 24
   Event "pr/san juan"                -   "San Juan Day"                        Fixed Jun 24
-  Event "pr/muõoz rivera"            -   "Muõoz Rivera Day"                    Fixed Jul 17
+  Event "pr/muÃµoz rivera"            -   "MuÃµoz Rivera Day"                    Fixed Jul 17
   Event "pr/constitution"            -   "Constitution Day"                    Fixed Jul 25
   Event "pr/barbosa"                 -   "Barbosa Day"                         Fixed Jul 27
   Event "pr/ponce de leon"           -   "Ponce de Leon Day"                   Fixed Aug 12
@@ -3456,19 +3456,19 @@ Region "se"
   Event "se/waffle"                   -    "Waffle Day"               Fixed Mar 25
   Add   "c/annunciation"              -  # "Annunciation"             Fixed Mar 25
   Add   "c/easter eve"                -  # "Easter Eve"               Easter -1
-  Event "se/valborg eve"              -    "Valborgsmässoafton"       Fixed Apr 30
+  Event "se/valborg eve"              -    "ValborgsmÃ¤ssoafton"       Fixed Apr 30
   Event "se/mothers"                  -    "Mother's Day"             WDRel May Sun last
 
 # http://oresund.malmo.se/Regional_info/Fester/Svensk/maj.htm
-#  Mors dag firas den sista söndagen i maj. Mors dag lanserades 1905
-#  av den amerikanska lärarinnan Ann Jarvis och firades första gången
-#  i USA andra söndagen i maj 1907.I Sverige togs traditionen upp 1919
-#  på initiativ av Cecilia Bååth - Holmberg, som flyttade det till
-#  sista söndagen i maj. 1920 gav hon ut en handledning om hur man
-#  skulle fira Mors dag. Det är inte många fester som tillkommit genom
-#  att någon talat om hur firandet skall gå till. I våra dagar har de
-#  kommersiella intressena tagit över, men många mödrar får
-#  fortfarande kaffe på sängen och bjuds på middag och blommor.
+#  Mors dag firas den sista sÃ¶ndagen i maj. Mors dag lanserades 1905
+#  av den amerikanska lÃ¤rarinnan Ann Jarvis och firades fÃ¶rsta gÃ¥ngen
+#  i USA andra sÃ¶ndagen i maj 1907.I Sverige togs traditionen upp 1919
+#  pÃ¥ initiativ av Cecilia BÃ¥Ã¥th - Holmberg, som flyttade det till
+#  sista sÃ¶ndagen i maj. 1920 gav hon ut en handledning om hur man
+#  skulle fira Mors dag. Det Ã¤r inte mÃ¥nga fester som tillkommit genom
+#  att nÃ¥gon talat om hur firandet skall gÃ¥ till. I vÃ¥ra dagar har de
+#  kommersiella intressena tagit Ã¶ver, men mÃ¥nga mÃ¶drar fÃ¥r
+#  fortfarande kaffe pÃ¥ sÃ¤ngen och bjuds pÃ¥ middag och blommor.
 
 
   Add   "c/pentecost eve"             -  # "Pentecost Eve"            Easter +48
@@ -3575,7 +3575,7 @@ Region "tg"
   Add   "c/whitmonday"            - # "Whitmonday"                               Easter +50
   Event "tg/martyrs of pya"       -   "Martyrs of Pya"                           Fixed Jun 21
   Add   "c/assumption"            - # "Assumption Day"                           Fixed Aug 15
-  Event "tg/lome"                 -   "Anniversary of the failed attack on Lomé" Fixed Sep 24
+  Event "tg/lome"                 -   "Anniversary of the failed attack on LomÃ©" Fixed Sep 24
   Add   "c/all saints"            - # "All Saints Day"                           Fixed Nov  1
   Add   "c/christmas"             - # "Christmas Day"                            Fixed Dec 25
 
@@ -3637,7 +3637,7 @@ Region "tr"
   Event "tr/spring"                   -   "Spring Day"                   Fixed May  1
   Event "tr/hidrellez"                -   "Hidrellez"                    Fixed May  6
   Event "tr/youth and sports"         -   "Youth and Sports Day"         Fixed May 19
-  Event "tr/ataturk commemoration"    -   "Atatürk Commemoration"        Fixed May 19
+  Event "tr/ataturk commemoration"    -   "AtatÃ¼rk Commemoration"        Fixed May 19
   Event "tr/freedom and constitution" -   "Freedom and Constitution Day" Fixed May 27
   Event "tr/navy and merchant marine" -   "Navy and Merchant Marine Day" Fixed Jul  1
   Event "tr/victory"                  -   "Victory Day"                  Fixed Aug 30
@@ -4574,7 +4574,7 @@ Region "yu"
   Event "yu/republic"             -   "Republic Day"                    Fixed Nov 29
 
 
-# zaïre
+# zaÃ¯re
 Region "zr"
   Add   "new year"                - # "New Year's Day"                      Fixed Jan  1
   Event "zr/martyrs"              -   "Day of the Martyrs for Independence" Fixed Jan  4

@@ -15,8 +15,8 @@ constant wd2n=(["Mon":1,"Tue":2,"Wed":3,"Thu":4,"Fri":5,"Sat":6,"Sun":7]);
 
 void read_all_data()
 {
-   all_data=master()->master_read_file(
-      combine_path(__DIR__,"events/regional"));
+   all_data=utf8_to_string(master()->master_read_file(
+      combine_path(__DIR__,"events/regional")));
 }
 
 
@@ -253,8 +253,8 @@ Event.Namedays find_namedays(string region)
    array(array(string))|zero names = 0;
    int start=-1,stop=-1;
    int leapdayshift=2000;
-   string charset="iso-8859-1";
-   function(string:string)|zero decoder = 0;
+   string charset="utf-8";
+   function(string:string)|zero decoder = utf8_to_string;
 
    foreach (all[i..i2]/"\n",string line)
    {
@@ -311,7 +311,9 @@ Event.Namedays find_namedays(string region)
 	    break;
 	 case "leapday":
 	    sscanf(s,"%{%*[, ]%[^,]%}",name);
-	    names[365]=`+(@name);
+	    name=`+(@name);
+	    if (decoder) name=map(name,decoder);
+	    names[365]=name;
 	    break;
 	 default:
 	    if (w[0]=='#') break;
