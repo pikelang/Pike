@@ -1003,6 +1003,10 @@ static void f_error_create(INT32 args)
  */
 
 /*! @decl constant int is_cpp_or_compilation_error
+ *!
+ *!   Always @expr{1@}. Marker constant that can be used to identify
+ *!   that a caught error object is a @[Cpp] or @[Compilation] error
+ *!   without resorting to @[Program.implements()] et al.
  */
 
 /*! @endclass
@@ -1017,6 +1021,10 @@ static void f_error_create(INT32 args)
  */
 
 /*! @decl constant int is_cpp_or_compilation_error
+ *!
+ *!   Always @expr{1@}. Marker constant that can be used to identify
+ *!   that a caught error object is a @[Cpp] or @[Compilation] error
+ *!   without resorting to @[Program.implements()] et al.
  */
 
 /*! @endclass

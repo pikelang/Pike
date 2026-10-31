@@ -1758,8 +1758,10 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format,
  *!     Repeatedly matches 'format' as many times as possible and assigns an
  *!     array of arrays with the results to the lvalue.
  *!   @value "%O"
- *!     Match a Pike constant, such as string or integer (currently only
- *!     integer, string and character constants are functional).
+ *!     Match a Pike constant, such as a string, integer, float,
+ *!     character constant, or array, mapping or multiset literal built
+ *!     from such constants (nested arbitrarily) -- essentially anything
+ *!     that @[sprintf] with @tt{%O@} may output.
  *!   @value "%%"
  *!     Match a single percent character (hence this is how you quote the %
  *!     character to just match, and not start an lvalue matcher directive).
@@ -2236,9 +2238,10 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
  *!                                          type(function)|zero cont_type, @
  *!                                          mapping state)
  *!
- *!   Type attribute handler for @expr{"sscanf_input"@}.
+ *!   Type attribute handler for @expr{"sscanf_input"@},
+ *!   @expr{"sscanf_format"@} and @expr{"sscanf_80_format"@}.
  *!
- *! @param attr
+ *! @param attribute_name
  *!   Attribute to handle, one of @expr{"sscanf_input"@},
  *!   @expr{"sscanf_format"@} or @expr{"sscanf_80_format"@}.
  *!

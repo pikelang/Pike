@@ -955,7 +955,7 @@ PIKECLASS Backend
    *! Get some statistics about the backend.
    *!
    *! @returns
-   *!   Returns a mapping with the follwoing content:
+   *!   Returns a mapping with the following content:
    *!   @mapping
    *!     @member int "num_call_outs"
    *!       The number of active call-outs.
@@ -990,6 +990,11 @@ PIKECLASS Backend
  *!
  *! @[call_out()] places a call to the function @[f] with the argument
  *! @[args] in a queue to be called in about @[delay] seconds.
+ *!
+ *! @note
+ *!   @[f] is not type checked when the call_out is scheduled; a
+ *!   non-callable value will only cause an error once the call_out
+ *!   actually fires.
  *!
  *! If @[f] returns @expr{-1@}, no other call out or callback will be
  *! called by the backend in this round. I.e. @[`()] will return right
@@ -2014,7 +2019,7 @@ PIKECLASS Backend
    *!   Perform one pass through the backend.
    *!
    *!   Calls any outstanding call-outs and non-blocking I/O
-   *!   callbacks that are registred in this backend object.
+   *!   callbacks that are registered in this backend object.
    *!
    *! @param sleep_time
    *!   Wait at most @[sleep_time] seconds. The default when
@@ -4513,7 +4518,7 @@ PIKECLASS PollDeviceBackend
    *!   Perform one pass through the backend.
    *!
    *!   Calls any outstanding call-outs and non-blocking I/O
-   *!   callbacks that are registred in this backend object.
+   *!   callbacks that are registered in this backend object.
    *!
    *! @param sleep_time
    *!   Wait at most @[sleep_time] seconds. The default when
@@ -5249,7 +5254,7 @@ PIKECLASS PollBackend
    *!   Perform one pass through the backend.
    *!
    *!   Calls any outstanding call-outs and non-blocking I/O
-   *!   callbacks that are registred in this backend object.
+   *!   callbacks that are registered in this backend object.
    *!
    *! @param sleep_time
    *!   Wait at most @[sleep_time] seconds. The default when
@@ -5796,7 +5801,7 @@ PIKECLASS SelectBackend
    *!   Perform one pass through the backend.
    *!
    *!   Calls any outstanding call-outs and non-blocking I/O
-   *!   callbacks that are registred in this backend object.
+   *!   callbacks that are registered in this backend object.
    *!
    *! @param sleep_time
    *!   Wait at most @[sleep_time] seconds. The default when
@@ -5896,12 +5901,12 @@ PIKECLASS SelectBackend
 /*! @endmodule
  */
 
-/*! @decl mixed call_out(function f, float|int delay, mixed ... args)
- *! @decl void _do_call_outs()
+/*! @decl array call_out(function f, float|int delay, mixed ... args)
+ *! @decl int _do_call_outs()
  *! @decl int find_call_out(function f)
- *! @decl int find_call_out(mixed id)
+ *! @decl int find_call_out(array id)
  *! @decl int remove_call_out(function f)
- *! @decl int remove_call_out(function id)
+ *! @decl int remove_call_out(array id)
  *! @decl array(array) call_out_info()
  *!   These are aliases for the corresponding functions in
  *!   @[Pike.DefaultBackend].

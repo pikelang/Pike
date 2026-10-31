@@ -4721,7 +4721,7 @@ gauge: TOK_GAUGE catch_arg
   {
     /*! @decl float gauge(mixed expression)
      *!
-     *!   Gauge the time that the expression takes to evaluate.
+     *!   Gauge the CPU time that the expression takes to evaluate.
      *!
      *! @param expression
      *!   Expression to evaluate.
@@ -4744,6 +4744,13 @@ gauge: TOK_GAUGE catch_arg
      *!
      *! @returns
      *!   Returns the time in seconds as a @tt{float@}.
+     *!
+     *! @note
+     *!   This measures CPU time consumed (via @[gethrvtime()]), not
+     *!   wall-clock time. Time spent blocked on I/O, sleeping, or
+     *!   waiting for another thread is @b{not@} included; e.g.
+     *!   @expr{gauge { sleep(1.0); }@} returns a value close to
+     *!   @expr{0.0@}, not @expr{1.0@}.
      *!
      *! @note
      *!   @[gauge] is not a @tt{function@}, but a special form. It is thus
@@ -4848,7 +4855,7 @@ catch: TOK_CATCH
         *!   not valid to pass as a @tt{function@}.
         *!
         *!   Note also that @[catch] does not perform any filtering of
-        *!   the caught values. If a caught value is not of interrest
+        *!   the caught values. If a caught value is not of interest
         *!   it is up to user code to re-@[throw] the value.
         *!
         *! @seealso

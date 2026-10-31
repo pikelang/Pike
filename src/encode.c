@@ -2161,8 +2161,8 @@ static void free_encode_data(struct encode_data *data)
  *! master itself is used if it has no @expr{Encoder@} class.
  *!
  *! If @expr{@[codec]->nameof(o)@} returns @tt{UNDEFINED@} for an
- *! object, @expr{val = o->encode_object(o)@} will be called. The
- *! returned value will be passed to @expr{o->decode_object(o, val)@}
+ *! object, @expr{val = codec->encode_object(o)@} will be called. The
+ *! returned value will be passed to @expr{codec->decode_object(o, val)@}
  *! when the object is decoded.
  *!
  *! @note
@@ -5189,6 +5189,23 @@ static INT32 my_decode(struct pike_string *tmp,
  *!   @[Decoder()->programof()]
  */
 
+/*! @decl string|array encode_object(object o)
+ *!
+ *!   Called by @[encode_value()] to encode the state of @[o] when
+ *!   @[nameof()] has returned @[UNDEFINED] for it.
+ *!
+ *! @param o
+ *!   Object to encode.
+ *!
+ *! @returns
+ *!   Returns an encoding of @[o]'s state. The returned value will be
+ *!   passed as @[data] to the corresponding @[Decoder()->decode_object()]
+ *!   call by @[decode_value()].
+ *!
+ *! @seealso
+ *!   @[nameof()], @[Decoder()->decode_object()]
+ */
+
 /*! @endclass
  */
 
@@ -5248,6 +5265,29 @@ static INT32 my_decode(struct pike_string *tmp,
  *!
  *! @seealso
  *!   @[functionof()], @[objectof()]
+ */
+
+/*! @decl array|void decode_object(object o, string|array data)
+ *!
+ *!   Called by @[decode_value()] to restore the state of @[o],
+ *!   encoded by the corresponding @[Encoder()->encode_object()] call.
+ *!
+ *! @param o
+ *!   The object being decoded. It may not yet be fully initialized;
+ *!   in particular its @expr{lfun::create()@} (if any) has not been
+ *!   called yet.
+ *!
+ *! @param data
+ *!   The value returned by the corresponding
+ *!   @[Encoder()->encode_object()] call.
+ *!
+ *! @returns
+ *!   If @[o] has an @expr{lfun::create()@} and this function returns
+ *!   an array, that array's elements are used as the arguments to
+ *!   @[o]'s @expr{lfun::create()@}.
+ *!
+ *! @seealso
+ *!   @[Encoder()->encode_object()]
  */
 
 /*! @decl object __register_new_program(program p)
@@ -5420,7 +5460,7 @@ extern struct program *MasterCodec_program;
  *!   Value to decode.
  *!
  *! @param codec
- *!   @[Codec] to use when encoding objects and programs.
+ *!   @[Codec] to use when decoding objects and programs.
  *!
  *! @param trace
  *!   @[String.Buffer] to contain a readable dump of the value.
