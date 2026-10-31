@@ -4,7 +4,7 @@
 // Filesystem monitor with support for symbolic links.
 //
 //
-// 2010-01-25 Henrik Grubbström
+// 2010-01-25 Henrik GrubbstrÃ¶m
 //
 //! Filesystem monitor with support for symbolic links.
 //!

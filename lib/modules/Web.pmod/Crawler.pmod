@@ -32,7 +32,7 @@
 //!     Supports HTTP and HTTPS
 //! @enddl
 
-// Author:  Johan Schön.
+// Author:  Johan SchÃ¶n.
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG

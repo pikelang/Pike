@@ -3,7 +3,7 @@
 /*
  * Generates a parser from a textual specification.
  *
- * Henrik Grubbström 1996-12-06
+ * Henrik GrubbstrÃ¶m 1996-12-06
  */
 
 //! This module generates an LR parser from a grammar specified according
