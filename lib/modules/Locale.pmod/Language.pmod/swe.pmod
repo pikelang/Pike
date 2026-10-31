@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Swedish language locale
@@ -19,13 +19,13 @@ constant months = ({
   "november", "december" });
 
 constant days = ({
-  "söndag","måndag","tisdag","onsdag", "torsdag","fredag",
-  "lördag" });
+  "sÃ¶ndag","mÃ¥ndag","tisdag","onsdag", "torsdag","fredag",
+  "lÃ¶rdag" });
 
 constant languages=([
   "cat":"katalanska",
   "ces":"tjeckiska",
-  "nld":"nederländska",
+  "nld":"nederlÃ¤ndska",
   "fin":"finska",
   "fra":"franska",
   "deu":"tyska",
@@ -78,7 +78,7 @@ string date(int timestamp, string|void m)
     return "i dag, klockan " + ctime(timestamp)[11..15];
 
   if(t1["yday"] == t2["yday"]-1 && t1["year"] == t2["year"])
-    return "i går, klockan " + ctime(timestamp)[11..15];
+    return "i gÃ¥r, klockan " + ctime(timestamp)[11..15];
 
   if(t1["yday"] == t2["yday"]+1 && t1["year"] == t2["year"])
     return "i morgon, vid "  + ctime(timestamp)[11..15];
@@ -95,13 +95,13 @@ string _number(int num)
   {
    case 0:  return "";
    case 1:  return "ett";
-   case 2:  return "två";
+   case 2:  return "tvÃ¥";
    case 3:  return "tre";
    case 4:  return "fyra";
    case 5:  return "fem";
    case 6:  return "sex";
    case 7:  return "sju";
-   case 8:  return "åtta";
+   case 8:  return "Ã¥tta";
    case 9:  return "nio";
    case 10: return "tio";
    case 11: return "elva";
@@ -119,7 +119,7 @@ string _number(int num)
    case 50: return "femtio";
    case 60: return "sextio";
    case 70: return "sjuttio";
-   case 80: return "åttio";
+   case 80: return "Ã¥ttio";
    case 90: return "nittio";
    case 21..29: case 31..39: case 41..49:
    case 51..59: case 61..69: case 71..79:
@@ -134,7 +134,7 @@ string _number(int num)
    case 2000000..999999999:
      return _number(num/1000000)+"miljoner"+_number(num%1000000);
    default:
-    return "många";
+    return "mÃ¥nga";
   }
 }
 

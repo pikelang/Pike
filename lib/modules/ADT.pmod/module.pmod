@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 #pragma strict_types
 
@@ -74,7 +74,7 @@ class struct {
     return [object(this_program)]add_int(i,len);
   }
 
-  //! Appends a variable string @[s] preceded with an unsigned integer
+  //! Appends a variable stringÂ @[s] preceded with an unsigned integer
   //! of the size @[len_width] declaring the length of the string. The
   //! string @[s] should be 8 bits wide.
   this_program put_var_string(string(0..255) s, int(0..) len_width)

@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-#charset iso-8859-1
+#charset utf-8
 
 #define c1 c[0]
 #define c2 c[1]
@@ -49,7 +49,7 @@ void main(int argc, array argv)
 
     string decode_hex( string d )
     {
-      return (string)column(array_sscanf(d,"%{%x%*[ ]%}")[0],0);
+      return (string)column(array_sscanf(d,"%{%x%*[Â ]%}")[0],0);
     };
     
     array c = map( l/";"[..4], decode_hex );

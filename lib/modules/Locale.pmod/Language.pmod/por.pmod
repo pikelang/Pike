@@ -1,11 +1,11 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Portuguese language locale
 
 inherit "abstract";
 
-constant name = "Português";
+constant name = "PortuguÃªs";
 constant english_name = "portuguese";
 constant iso_639_1 = "pt";
 constant iso_639_2 = "por";
@@ -14,17 +14,17 @@ constant iso_639_2B = "por";
 constant aliases = ({ "pt", "por", "port", "portuguese" });
 
 constant months = ({
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio",
+  "Janeiro", "Fevereiro", "MarÃ§o", "Abril", "Maio",
   "Junho", "Julho", "Agosto", "Setembro", "Outubro",
   "Novembro", "Dezembro" });
 
 constant days = ({
-  "Domingo","Segunda Feira","Terça Feira","Quarta Feira",
-  "Quinta Feira","Sexta Feira","Sábado" });
+  "Domingo","Segunda Feira","TerÃ§a Feira","Quarta Feira",
+  "Quinta Feira","Sexta Feira","SÃ¡bado" });
 
 string ordered(int i)
 {
-    return i+"º";
+    return i+"Âº";
 }
 
 string date(int timestamp, string|void m)
@@ -53,7 +53,7 @@ string date(int timestamp, string|void m)
     return "ontem, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
-    return "amanhã, "+ ctime(timestamp)[11..15];
+    return "amanhÃ£, "+ ctime(timestamp)[11..15];
 
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
@@ -121,10 +121,10 @@ string number(int num)
    case 2000..999999: return number(num/1000)+" mil "+number(num%1000);
 
    case 1000000..1999999:
-     return "um milhão "+number(num%1000000);
+     return "um milhÃ£o "+number(num%1000000);
 
    case 2000000..999999999:
-     return number(num/1000000)+" milhões "+number(num%1000000);
+     return number(num/1000000)+" milhÃµes "+number(num%1000000);
 
    default:
     return "muito!!";

@@ -2,7 +2,7 @@
 // original author: mirar
 //! @appears Regexp.PCRE2
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! @ignore
@@ -251,7 +251,7 @@ class Plain
 //!     "do",
 //!     "\1234"
 //! })
-//! Result: Regexp.PCRE2("b(a*)([^-Ê\234]*)(Ê\234*)m")
+//! Result: Regexp.PCRE2("b(a*)([^-ÃŠ\234]*)(ÃŠ\234*)m")
 //! @endcode
    this_program matchall(string subject,
                          function(array(string)|void,

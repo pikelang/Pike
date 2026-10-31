@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 #pragma strict_types
@@ -36,7 +36,7 @@ protected private inherit _Charset;
 //!   @item utf32be
 //!   @item utf32le
 //!   @item utf75
-//!   @item utf7½
+//!   @item utf7Â½
 //!     Unicode Transformation Format (aka UTF) encodings.
 //!   @item shiftjis
 //!   @item euc-kr
@@ -439,7 +439,7 @@ private class GSM03_38dec
     // https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=139
     string res =
       replace(trailer + decoder->drain(),
-	      "\eØ\e\u039b\e(\e)\e/\e<\e=\e>\e¡\ee"/2,
+	      "\eÃ˜\e\u039b\e(\e)\e/\e<\e=\e>\eÂ¡\ee"/2,
 	      "\f^{}\\[~]|\u20ac"/1);
     trailer = "";
     if (sizeof(res) && res[-1] == '\e') trailer = "\e";
@@ -630,7 +630,7 @@ Decoder decoder(string|zero name)
     "utf32be": UTF32dec,
     "utf32le": UTF32LEdec,
     "utf75": UTF7_5dec,
-    "utf7½": UTF7_5dec,
+    "utf7Â½": UTF7_5dec,
     "shiftjis": ShiftJisDec,
     "mskanji": ShiftJisDec,
     "isoir156": ISO6937dec,
@@ -1065,7 +1065,7 @@ private class GSM03_38enc
     // cf http://en.wikipedia.org/wiki/Short_message_service
     s = replace(s,
 		"\f^{}\\[~]|\u20ac"/1,
-		"\eØ\e\u039b\e(\e)\e/\e<\e=\e>\e¡\ee"/2);
+		"\eÃ˜\e\u039b\e(\e)\e/\e<\e=\e>\eÂ¡\ee"/2);
     encoder->feed(s);
     return this;
   }
@@ -1161,7 +1161,7 @@ Encoder encoder(string|zero name, string|void replacement,
     "utf32be": UTF32enc,
     "utf32le": UTF32LEenc,
     "utf75": UTF7_5enc,
-    "utf7½": UTF7_5enc,
+    "utf7Â½": UTF7_5enc,
     "gb18030": GB18030Enc,
     "gbk": GBKenc,
     "gsm": GSM03_38enc,

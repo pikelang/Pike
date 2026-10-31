@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -134,9 +134,9 @@ class Angle {
   }
 
   //! Returns degrees, minutes and seconds as a string, e.g.
-  //! 47°6'36.00".
+  //! 47Â°6'36.00".
   string format_dms() {
-    return sprintf("%d°%d'%.2f\"", (int)degree(), minute(), second());
+    return sprintf("%dÂ°%d'%.2f\"", (int)degree(), minute(), second());
   }
 
   //! Sets the angle to the provided degree. Alters the type to degrees.
@@ -332,7 +332,7 @@ class Angle {
     switch(t) {
     case 'O':
       switch(type) {
-      case "deg": return "Angle(" + angle + "°)";
+      case "deg": return "Angle(" + angle + "Â°)";
       case "rad": return "Angle(" + angle + " rads)";
       case "gon": return "Angle(" + angle + " gons)";
       case "str": return "Angle(" + angle + " streck)";

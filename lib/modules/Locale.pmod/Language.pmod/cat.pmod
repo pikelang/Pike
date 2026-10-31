@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Catalan language locale.
@@ -14,7 +14,7 @@ constant iso_639_2B = "cat";
 constant aliases = ({ "ca", "cat", "catala", "catalan", "es_CA" });
 
 constant months=({
-  "gener", "febrer", "març", "abril", "maig",
+  "gener", "febrer", "marÃ§", "abril", "maig",
   "juny", "juliol", "agost", "setembre", "octubre",
   "novembre", "desembre" });
 
@@ -31,7 +31,7 @@ string ordered(int i)
     case 3: return "3r";
     case 4: return "4t";
     default:
-            return i+"è";
+            return i+"Ã¨";
   }
 }
 
@@ -74,7 +74,7 @@ string date(int timestamp, string|void m)
     return "ahir, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
-    return "demà, "+ ctime(timestamp)[11..15];
+    return "demÃ , "+ ctime(timestamp)[11..15];
 
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
@@ -135,6 +135,6 @@ string number(int num)
      return number(num/1000000)+" milions "+number(num%1000000);
 
    default:
-    return "moltíssim";
+    return "moltÃ­ssim";
   }
 }
