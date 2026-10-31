@@ -14,7 +14,7 @@ constant OPTION = class {
       @constant;
       inherit @module@.OPTION;
       //! Backwards compatibility
-      constant __deprecated__(int) UTF8 = UTF;
+      __deprecated__ constant UTF8 = UTF;
    }();
 #endif
 
