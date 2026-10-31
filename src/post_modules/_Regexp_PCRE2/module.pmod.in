@@ -9,6 +9,15 @@
 inherit @module@; // C-module
 //! @endignore
 
+#if constant(@module@.OPTION)
+constant OPTION = class {
+      @constant;
+      inherit @module@.OPTION;
+      //! Backwards compatibility
+      constant __deprecated__(int) UTF8 = UTF;
+   }();
+#endif
+
 // there are other maybe useful stuff in _Regexp_PCRE2
 // so don't stop compiling because it's not complete:
 #if constant(@module@._pcre) // there are other maybe useful stuff
