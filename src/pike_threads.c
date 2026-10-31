@@ -2656,7 +2656,7 @@ static void f_mutex_future_lock(INT32 UNUSED(args))
  *!
  *! @note
  *!   Note that if the current thread already holds a shared key,
- *!   a new will be created without waiting, and regardless of
+ *!   a new key will be created without waiting, and regardless of
  *!   the value of @[type].
  *!
  *! @note
@@ -3071,8 +3071,8 @@ PMOD_EXPORT void f_mutex_locking_thread(INT32 args)
 
   for (k = m->key; k; k = k->next) {
     if (k->kind == KEY_PENDING) continue;
-    if (m->key->owner) {
-      ref_push_object(m->key->owner->thread_obj);
+    if (k->owner) {
+      ref_push_object(k->owner->thread_obj);
       return;
     }
   }
@@ -3096,7 +3096,7 @@ PMOD_EXPORT void f_mutex_locking_key(INT32 args)
 
   for (k = m->key; k; k = k->next) {
     if (k->kind == KEY_PENDING) continue;
-    ref_push_object(m->key->self);
+    ref_push_object(k->self);
     return;
   }
   push_int(0);
@@ -3545,7 +3545,11 @@ static void f_mutex_key_upgrade(INT32 args)
 
   ASSERT_NOT_SIGNAL_CONTEXT();
 
-  if (key->kind >= KEY_PENDING) return;
+  if (key->kind >= KEY_PENDING) {
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
 
   if (key->kind != KEY_DOWNGRADED) {
     Pike_error("Upgrade is not allowed for non-degraded mutex keys.\n");
@@ -4441,7 +4445,7 @@ PMOD_EXPORT void f_thread_local(INT32 args)
  *! Get the thread local value.
  *!
  *! @returns
- *!   Returns the value prevoiusly stored in the @[Local] object by
+ *!   Returns the value previously stored in the @[Local] object by
  *!   the @[set()] method by this thread (if set). Returns @[UNDEFINED]
  *!   if no value has been set by the current thread.
  *!
@@ -4477,7 +4481,7 @@ void f_thread_local_get(INT32 args)
  *!   This function returns its argument.
  *!
  *! @note
- *!   Note that the value set can only be retreived by the same thread.
+ *!   Note that the value set can only be retrieved by the same thread.
  *!
  *! @seealso
  *!   @[get()]
