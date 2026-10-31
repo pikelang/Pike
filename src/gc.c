@@ -3501,9 +3501,12 @@ static void free_obj_arr(void *oa)
 /*! @class MasterObject
  */
 
-/*! @decl void runtime_warning(string subsystem, string msg, mixed|void data)
+/*! @decl void runtime_warning(string subsystem, string msg, mixed ... data)
  *!
- *!   Called by the Pike runtime to warn about data inconsistencies.
+ *!   Called by the Pike runtime, and by parts of the Pike standard
+ *!   library, to warn about data inconsistencies. The default master
+ *!   object implements this method and writes most warnings to
+ *!   stderr, with special handling for some messages as noted below.
  *!
  *! @param subsystem
  *!   Runtime subsystem where the warning was generated.
@@ -3513,13 +3516,17 @@ static void free_obj_arr(void *oa)
  *!       The garbage collector.
  *!     @value "runtime"
  *!       The runtime itself.
+ *!     @value "concurrent"
+ *!       @[Concurrent.Future] and @[Concurrent.Promise].
  *!   @endstring
  *!
  *! @param msg
  *!   Warning message.
  *!
  *! @param data
- *!   Optional data that further describes the warning specified by @[msg].
+ *!   Optional extra data that further describes the warning specified
+ *!   by @[msg]. The number and meaning of these values depend on
+ *!   @[subsystem] and @[msg].
  *!
  *! Currently the following subsystems and messages are defined:
  *! @xml{<matrix><r><c><b><tt>subsystem</tt></b></c>
@@ -3530,7 +3537,13 @@ static void free_obj_arr(void *oa)
  *!              <r><c><p>A cycle where the destruction order isn't
  *!                       deterministic was detected by the garbage collector.
  *!                    </p><p><tt>cycle</tt> is an array of the elements
- *!                           in the cycle.</p></c></r>
+ *!                           in the cycle.</p>
+ *!                    <p>Note: as of this writing this message is not
+ *!                       actually generated -- both the C code that would
+ *!                       send it and the default master's handling of it
+ *!                       have been disabled since before the @tt{__weak__@}
+ *!                       variable modifier existed, and have not been
+ *!                       revisited since it was added.</p></c></r>
  *!              <r><c><expr>"runtime"</expr></c>
  *!                 <c><expr>"unsupported_compat"</expr></c>
  *!                 <c><tt><b><ref>Version</ref></b>
@@ -3539,6 +3552,18 @@ static void free_obj_arr(void *oa)
  *!                       the oldest supported version was requested.
  *!                    </p><p><tt>requested_version</tt> is the
  *!                           requested version.</p></c></r>
+ *!              <r><c><expr>"concurrent"</expr></c>
+ *!                 <c><expr>"Ignored return value."</expr></c>
+ *!                 <c><tt><b>mixed</b> <expr>value</expr>,
+ *!                        <b>function</b> <expr>callback</expr>
+ *!                        [, <b>object</b> <expr>future</expr>]</tt></c></r>
+ *!              <r><c><p>A callback registered with @[Concurrent.Future] or
+ *!                       @[Concurrent.Promise] returned a value that was
+ *!                       silently discarded.</p><p><tt>value</tt> is the
+ *!                       returned value and <tt>callback</tt> is the
+ *!                       callback that returned it. The optional
+ *!                       <tt>future</tt> is the @[Concurrent.Future] the
+ *!                       callback was attached to.</p></c></r>
  *!      </matrix>@}
  */
 
@@ -4383,6 +4408,20 @@ void do_gc_callback(struct callback *UNUSED(cb), void *UNUSED(arg1),
  *!     @member int "total_gc_real_time"
  *!       The total amount of real time that has been spent in
  *!       implicit GC runs, in nanoseconds.
+ *!   @endmapping
+ *!
+ *!   In builds with debug support enabled, the mapping is extended
+ *!   with these elements:
+ *!   @mapping
+ *!     @member int "max_rec_frames"
+ *!       The maximum number of recursion frames that have been used
+ *!       by the garbage collector.
+ *!     @member int "max_link_frames"
+ *!       The maximum number of link frames that have been used by
+ *!       the garbage collector.
+ *!     @member int "max_free_extra_frames"
+ *!       The maximum number of free extra frames that have been held
+ *!       by the garbage collector.
  *!   @endmapping
  *!
  *! @seealso
@@ -5719,9 +5758,11 @@ PMOD_EXPORT int mc_count_bytes (const void *thing)
  *!
  *! @param things
  *!   One or more things to count memory size for. Only things passed
- *!   by reference are allowed, except for functions which are
- *!   forbidden because a meaningful size calculation can't be done
- *!   for them.
+ *!   by reference are allowed. Functions are not counted directly:
+ *!   a function belonging to a program is replaced by that program, a
+ *!   function implemented in C without an associated Pike program
+ *!   counts as zero bytes, and any other function (e.g. a lambda or a
+ *!   bound object method) is replaced by its implementing object.
  *!
  *!   Integers are allowed because they are bignum objects when they
  *!   become sufficiently large. However, passing an integer that is
@@ -6368,6 +6409,11 @@ void identify_loop_visit_leave(void *UNUSED(thing), int type,
  *!       element, and where the elements refer to each other in order, and the
  *!       last element refers to the first.
  *!   @endmixed
+ *!
+ *! @throws
+ *!   Throws an error if @[x] is not of a reference-counted type
+ *!   (@expr{array|multiset|mapping|object|program|string|type@}, or a
+ *!   non-builtin @expr{function@}).
  */
 void f_identify_cycle(INT32 args)
 {
@@ -6375,17 +6421,17 @@ void f_identify_cycle(INT32 args)
   struct svalue *k;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("identify_loops", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("identify_cycle", 1);
 
   s = Pike_sp - 1;
 
   if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
-    SIMPLE_ARG_TYPE_ERROR("identify_loops", 1,
+    SIMPLE_ARG_TYPE_ERROR("identify_cycle", 1,
 			  "array|multiset|mapping|object|program|string|type");
   }
   if (TYPEOF(*s) == T_FUNCTION) {
     if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) {
-      SIMPLE_ARG_TYPE_ERROR("identify_loops", 1,
+      SIMPLE_ARG_TYPE_ERROR("identify_cycle", 1,
 			    "array|multiset|mapping|object|program|string|type");
     }
     SET_SVAL_TYPE(*s, T_OBJECT);
@@ -6451,7 +6497,7 @@ void f_identify_cycle(INT32 args)
 
 #ifdef PIKE_DEBUG
   if (s != Pike_sp-1) {
-    Pike_fatal("Stack error in identify_loops.\n");
+    Pike_fatal("Stack error in identify_cycle.\n");
   }
 #endif
 
