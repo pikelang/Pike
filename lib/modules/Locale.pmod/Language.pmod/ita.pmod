@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Italian language locale by Francesco Chemolli
@@ -19,8 +19,8 @@ constant months = ({
   "Novembre", "Dicembre" });
 
 constant days = ({
-  "domenica","lunedì","martedì","mercoledì",
-  "giovedì","venerdì","sabato" });
+  "domenica","lunedÃ¬","martedÃ¬","mercoledÃ¬",
+  "giovedÃ¬","venerdÃ¬","sabato" });
 
 string number (int num)
 {
@@ -86,7 +86,7 @@ string number (int num)
 	return number(num/1000000)+" milioni";
       return number(num-(num%1000000))+" "+number(num%1000000);
     default:
-      return "più di un miliardo";
+      return "piÃ¹ di un miliardo";
     }
   return ("error");
 }
@@ -95,7 +95,7 @@ string ordered(int i)
 {
   if (!i)
     return "errore";
-  return i+"º";
+  return i+"Âº";
   // I know you prefer to use ISO latin-1, but I just can't type it :P
   // Fixed. BTW, what is the problem typing ^Q282 in emacs? /grubba
 	// Maybe I don't use emacs? /kinkie

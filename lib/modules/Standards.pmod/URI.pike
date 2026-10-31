@@ -1,10 +1,10 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! This class implements URI parsing and resolving of relative references to
 //! absolute form, as defined in @rfc{2396@} and @rfc{3986@}.
 
-// Implemented by Johan Sundström and Johan Schön.
+// Implemented by Johan SundstrÃ¶m and Johan SchÃ¶n.
 
 #pragma strict_types
 
@@ -50,7 +50,7 @@ string raw_uri = "";
 // FIXME: What about decoding of Percent-Encoding (RFC3986 2.1)?
 //        cf pct-encoded in the functions below.
 
-// Parse authority component (according to RFC 1738, § 3.1)
+// Parse authority component (according to RFC 1738, Â§ 3.1)
 // Updated to RFC 3986 $ 3.2.
 // NOTE: Censors the userinfo from the @[authority] variable.
 protected void parse_authority()
@@ -66,7 +66,7 @@ protected void parse_authority()
     WERR("parse_authority(): user=%O, password=%O", user, password);
   }
   if(scheme)
-    port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
+    port = Protocols.Ports.tcp[scheme]; // Set a good default Ã¡ la RFC 1700
   // host        = IP-literal / IPv4address / reg-name
   if (has_prefix(host_port, "[")) {
     // IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
@@ -122,7 +122,7 @@ string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
   string buf = rel;
   array(string) segments = ({});
 
-  // RFC 2396, §5.2.5:
+  // RFC 2396, Â§5.2.5:
   //    If the path component begins with a slash character ("/"),
   //    then the reference is an absolute-path and we skip to step 7.
   //
@@ -132,7 +132,7 @@ string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
   //     to get rid of them. We simply ignore the base URI's
   //     path if rel is absolute.
   if (!has_prefix(rel, "/")) {
-    // RFC 2396, §5.2.6:
+    // RFC 2396, Â§5.2.6:
     // a) All but the last segment of the base URI's path component is
     //    copied to the buffer.  In other words, any characters after the
     //    last (right-most) slash character, if any, are excluded.
@@ -230,7 +230,7 @@ void reparse_uri(this_program|string|void base_uri)
   else
     this::base_uri = [object(this_program)]base_uri;
 
-  // RFC 2396, §5.2:
+  // RFC 2396, Â§5.2:
   // 1) The URI reference is parsed into the potential four components and
   //    fragment identifier, as described in Section 4.3.
   // URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
@@ -244,7 +244,7 @@ void reparse_uri(this_program|string|void base_uri)
   if((!uri || uri == "") && this::base_uri)
   {
     WERR("Path is empty -- Inherit entire base URI "
-	  "as per RFC 2396, §5.2 step 2. Done!");
+	  "as per RFC 2396, Â§5.2 step 2. Done!");
     inherit_properties(this::base_uri);
     return;
   }
@@ -275,7 +275,7 @@ void reparse_uri(this_program|string|void base_uri)
     if(!this::base_uri)
 	error("Standards.URI: got a relative URI (no scheme) lacking a base_uri!\n");
   } else {
-    /* RFC 3986 §3.1
+    /* RFC 3986 Â§3.1
      *
      * An implementation should accept uppercase letters as equivalent
      * to lowercase in scheme names (e.g., allow "HTTP" as well as
@@ -341,7 +341,7 @@ void reparse_uri(this_program|string|void base_uri)
     if(authority)
       parse_authority();
 
-    WERR("Scheme found! RFC 2396, §5.2, step 3 "
+    WERR("Scheme found! RFC 2396, Â§5.2, step 3 "
 	  "says we're absolute. Done!");
     return;
   }
@@ -469,7 +469,7 @@ protected mixed `[]=(string property, mixed value)
       return value;
 
     case "scheme":
-      /* RFC 3986 §3.1
+      /* RFC 3986 Â§3.1
        *
        * An implementation should accept uppercase letters as equivalent
        * to lowercase in scheme names (e.g., allow "HTTP" as well as

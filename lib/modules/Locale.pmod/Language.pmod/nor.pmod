@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Norwegian language locale
@@ -19,8 +19,8 @@ constant months = ({
   "november", "december" });
 
 constant days = ({
-  "søndag","mandag","tisdag","onsdag",
-  "torsdag","fredag","lørdag" });
+  "sÃ¸ndag","mandag","tisdag","onsdag",
+  "torsdag","fredag","lÃ¸rdag" });
 
 string ordered(int i)
 {
@@ -51,7 +51,7 @@ string date(int timestamp, string|void m)
     return "i dag, klokken " + ctime(timestamp)[11..15];
 
   if(t1["yday"] == t2["yday"]-1 && t1["year"] == t2["year"])
-    return "i går, klokken " + ctime(timestamp)[11..15];
+    return "i gÃ¥r, klokken " + ctime(timestamp)[11..15];
 
   if(t1["yday"] == t2["yday"]+1 && t1["year"] == t2["year"])
     return "i morgen, ved "  + ctime(timestamp)[11..15];
@@ -78,7 +78,7 @@ string number(int num)
    case 5:  return "fem";
    case 6:  return "seks";
    case 7:  return "sju";
-   case 8:  return "åtte";
+   case 8:  return "Ã¥tte";
    case 9:  return "ni";
    case 10: return "ti";
    case 11: return "elleve";
@@ -96,7 +96,7 @@ string number(int num)
    case 50: return "femti";
    case 60: return "seksti";
    case 70: return "sytti";
-   case 80: return "åtti";
+   case 80: return "Ã¥tti";
    case 90: return "nitti";
    case 21..29: case 31..39: case 41..49:
    case 51..59: case 61..69: case 71..79:

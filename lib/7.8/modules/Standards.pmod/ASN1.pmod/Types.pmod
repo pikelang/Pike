@@ -1,7 +1,7 @@
 //! Encodes various asn.1 objects according to the Distinguished
 //! Encoding Rules (DER)
 
-#charset iso-8859-1
+#charset utf-8
 #pike 8.0
 #pragma no_deprecation_warnings
 
@@ -831,7 +831,7 @@ class PrintableString
   constant type_name = "PrintableString";
 }
 
-Regexp asn1_teletex_invalid_chars = Regexp ("([\\\\{}\240Æ©¨¶\255–])");
+Regexp asn1_teletex_invalid_chars = Regexp ("([\\\\{}\240¬Æ¬©¬¨¬¶\255√ê])");
 
 //!
 int(0..1) asn1_teletex_valid (string s)
@@ -902,47 +902,47 @@ class TeletexString
 #define CA(char) "\317" char	/* Combining caron */
 
   constant encode_from = ({
-    /*"#", "$",*/ "§",		// Note 3
+    /*"#", "$",*/ "¬§",		// Note 3
     "\\", "{", "}",		// Note 7
     "\240",			// No-break space (note 7)
-    "◊",			// Multiplication sign
-    "˜",			// Division sign
-    "π",			// Superscript one
-    "Æ",			// Registered sign (note 7)
-    "©",			// Copyright sign (note 7)
-    "¨",			// Not sign (note 7)
-    "¶",			// Broken bar (note 7)
-    "∆",			// Latin capital ligature ae
-    "™",			// Feminine ordinal indicator
-    "ÿ",			// Latin capital letter o with stroke
-    "∫",			// Masculine ordinal indicator
-    "ﬁ",			// Latin capital letter thorn
-    "Ê",			// Latin small ligature ae
-    "",			// Latin small letter eth
-    "¯",			// Latin small letter o with stroke
-    "ﬂ",			// Latin small letter sharp s
-    "˛",			// Latin small letter thorn
+    "√ó",			// Multiplication sign
+    "√∑",			// Division sign
+    "¬π",			// Superscript one
+    "¬Æ",			// Registered sign (note 7)
+    "¬©",			// Copyright sign (note 7)
+    "¬¨",			// Not sign (note 7)
+    "¬¶",			// Broken bar (note 7)
+    "√Ü",			// Latin capital ligature ae
+    "¬™",			// Feminine ordinal indicator
+    "√ò",			// Latin capital letter o with stroke
+    "¬∫",			// Masculine ordinal indicator
+    "√û",			// Latin capital letter thorn
+    "√¶",			// Latin small ligature ae
+    "√∞",			// Latin small letter eth
+    "√∏",			// Latin small letter o with stroke
+    "√ü",			// Latin small letter sharp s
+    "√æ",			// Latin small letter thorn
     "\255",			// Soft hyphen (note 7)
-    "–",			// Latin capital letter eth (no equivalent)
+    "√ê",			// Latin capital letter eth (no equivalent)
     // Combinations
     "^", "`", "~",		// Note 4
-    "¥", "®", "Ø", "∏",
-    "¿", "¡", "¬", "√", "ƒ", "≈",
-    "‡", "·", "‚", "„", "‰", "Â",
-    "«",
-    "Á",
-    "»", "…", " ", "À",
-    "Ë", "È", "Í", "Î",
-    "Ã", "Õ", "Œ", "œ",
-    "Ï", "Ì", "Ó", "Ô",
-    "—",
-    "Ò",
-    "“", "”", "‘", "’", "÷",
-    "Ú", "Û", "Ù", "ı", "ˆ",
-    "Ÿ", "⁄", "€", "‹",
-    "˘", "˙", "˚", "¸",
-    "›",
-    "˝",
+    "¬¥", "¬®", "¬Ø", "¬∏",
+    "√Ä", "√Å", "√Ç", "√É", "√Ñ", "√Ö",
+    "√†", "√°", "√¢", "√£", "√§", "√•",
+    "√á",
+    "√ß",
+    "√à", "√â", "√ä", "√ã",
+    "√®", "√©", "√™", "√´",
+    "√å", "√ç", "√é", "√è",
+    "√¨", "√≠", "√Æ", "√Ø",
+    "√ë",
+    "√±",
+    "√í", "√ì", "√î", "√ï", "√ñ",
+    "√≤", "√≥", "√¥", "√µ", "√∂",
+    "√ô", "√ö", "√õ", "√ú",
+    "√π", "√∫", "√ª", "√º",
+    "√ù",
+    "√Ω",
   });
 
   constant encode_to = ({
@@ -952,10 +952,10 @@ class TeletexString
     "\264",			// Multiplication sign
     "\270",			// Division sign
     "\321",			// Superscript one
-    ENC_ERR("Æ"),		// Registered sign (note 7)
-    ENC_ERR("©"),		// Copyright sign (note 7)
-    ENC_ERR("¨"),		// Not sign (note 7)
-    ENC_ERR("¶"),		// Broken bar (note 7)
+    ENC_ERR("¬Æ"),		// Registered sign (note 7)
+    ENC_ERR("¬©"),		// Copyright sign (note 7)
+    ENC_ERR("¬¨"),		// Not sign (note 7)
+    ENC_ERR("¬¶"),		// Broken bar (note 7)
     "\341",			// Latin capital ligature ae
     "\343",			// Feminine ordinal indicator
     "\351",			// Latin capital letter o with stroke
@@ -967,7 +967,7 @@ class TeletexString
     "\373",			// Latin small letter sharp s
     "\374",			// Latin small letter thorn
     ENC_ERR("\255"),		// Soft hyphen (note 7)
-    ENC_ERR("–"),		// Latin capital letter eth (no equivalent)
+    ENC_ERR("√ê"),		// Latin capital letter eth (no equivalent)
     // Combinations
     CI(" "), GR(" "), TI(" "),	// Note 4
     AC(" "), DI(" "), MA(" "), CE(" "),
@@ -1074,8 +1074,8 @@ class TeletexString
     DEC_ERR("\255"),		// Upwards arrow (note 7)
     DEC_ERR("\256"),		// Rightwards arrow (note 7)
     DEC_ERR("\257"),		// Downwards arrow (note 7)
-    "◊",			// Multiplication sign
-    "˜",			// Division sign
+    "√ó",			// Multiplication sign
+    "√∑",			// Division sign
     DEC_ERR("\271"),		// Right single quotation mark (note 7)
     DEC_ERR("\272"),		// Right double quotation mark (note 7)
     DEC_ERR("\300"),		// Note 5
@@ -1095,47 +1095,47 @@ class TeletexString
     DEC_COMB_MARK OG(""),	// Combining ogonek
     DEC_COMB_MARK CA(""),	// Combining caron
     DEC_ERR("\320"),		// Em dash (note 7)
-    "π",			// Superscript one
-    "Æ",			// Registered sign (note 7)
-    "©",			// Copyright sign (note 7)
+    "¬π",			// Superscript one
+    "¬Æ",			// Registered sign (note 7)
+    "¬©",			// Copyright sign (note 7)
     DEC_ERR("\324"),		// Trade mark sign (note 7)
     DEC_ERR("\325"),		// Eighth note (note 7)
-    "¨",			// Not sign (note 7)
-    "¶",			// Broken bar (note 7)
+    "¬¨",			// Not sign (note 7)
+    "¬¶",			// Broken bar (note 7)
     DEC_ERR("\330"), DEC_ERR("\331"), DEC_ERR("\332"), DEC_ERR("\333"), // Note 2
     DEC_ERR("\334"),		// Vulgar fraction one eighth (note 7)
     DEC_ERR("\335"),		// Vulgar fraction three eighths (note 7)
     DEC_ERR("\336"),		// Vulgar fraction five eighths (note 7)
     DEC_ERR("\337"),		// Vulgar fraction seven eighths (note 7)
     DEC_ERR("\340"),		// Ohm sign
-    "∆",			// Latin capital ligature ae
+    "√Ü",			// Latin capital ligature ae
     DEC_ERR("\342"),		// Latin capital letter d with stroke
-    "™",			// Feminine ordinal indicator
+    "¬™",			// Feminine ordinal indicator
     DEC_ERR("\344"),		// Latin capital letter h with stroke
     DEC_ERR("\345"),		// Note 2
     DEC_ERR("\346"),		// Latin capital ligature ij
     DEC_ERR("\347"),		// Latin capital letter l with middle dot
     DEC_ERR("\350"),		// Latin capital letter l with stroke
-    "ÿ",			// Latin capital letter o with stroke
+    "√ò",			// Latin capital letter o with stroke
     DEC_ERR("\352"),		// Latin capital ligature oe
-    "∫",			// Masculine ordinal indicator
-    "ﬁ",			// Latin capital letter thorn
+    "¬∫",			// Masculine ordinal indicator
+    "√û",			// Latin capital letter thorn
     DEC_ERR("\355"),		// Latin capital letter t with stroke
     DEC_ERR("\356"),		// Latin capital letter eng
     DEC_ERR("\357"),		// Latin small letter n preceded by apostrophe
     DEC_ERR("\360"),		// Latin small letter kra
-    "Ê",			// Latin small ligature ae
+    "√¶",			// Latin small ligature ae
     DEC_ERR("\362"),		// Latin small letter d with stroke
-    "",			// Latin small letter eth
+    "√∞",			// Latin small letter eth
     DEC_ERR("\364"),		// Latin small letter h with stroke
     DEC_ERR("\365"),		// Latin small letter dotless i
     DEC_ERR("\366"),		// Latin small ligature ij
     DEC_ERR("\367"),		// Latin small letter l with middle dot
     DEC_ERR("\370"),		// Latin small letter l with stroke
-    "¯",			// Latin small letter o with stroke
+    "√∏",			// Latin small letter o with stroke
     DEC_ERR("\372"),		// Latin small ligature oe
-    "ﬂ",			// Latin small letter sharp s
-    "˛",			// Latin small letter thorn
+    "√ü",			// Latin small letter sharp s
+    "√æ",			// Latin small letter thorn
     DEC_ERR("\375"),		// Latin small letter t with stroke
     DEC_ERR("\376"),		// Latin small letter eng
     "\255",			// Soft hyphen (note 7)
@@ -1143,34 +1143,34 @@ class TeletexString
 
   constant decode_comb = ([
     GR(" "): "`",
-    AC(" "): "¥",
+    AC(" "): "¬¥",
     CI(" "): "^",
     TI(" "): "~",
-    DI(" "): "®",
+    DI(" "): "¬®",
     // RA(" "): DEC_ERR(RA(" ")),
-    MA(" "): "Ø",
+    MA(" "): "¬Ø",
     // BR(" "): DEC_ERR(BR(" ")),
     // DA(" "): DEC_ERR(DA(" ")),
-    CE(" "): "∏",
+    CE(" "): "¬∏",
     // DO(" "): DEC_ERR(DO(" ")),
     // OG(" "): DEC_ERR(OG(" ")),
     // CA(" "): DEC_ERR(CA(" ")),
-    GR("A"): "¿", AC("A"): "¡", CI("A"): "¬", TI("A"): "√", DI("A"): "ƒ", RA("A"): "≈",
-    GR("a"): "‡", AC("a"): "·", CI("a"): "‚", TI("a"): "„", DI("a"): "‰", RA("a"): "Â",
-    CE("C"): "«",
-    CE("c"): "Á",
-    GR("E"): "»", AC("E"): "…", CI("E"): " ", DI("E"): "À",
-    GR("e"): "Ë", AC("e"): "È", CI("e"): "Í", DI("e"): "Î",
-    GR("I"): "Ã", AC("I"): "Õ", CI("I"): "Œ", DI("I"): "œ",
-    GR("i"): "Ï", AC("i"): "Ì", CI("i"): "Ó", DI("i"): "Ô",
-    TI("N"): "—",
-    TI("n"): "Ò",
-    GR("O"): "“", AC("O"): "”", CI("O"): "‘", TI("O"): "’", DI("O"): "÷",
-    GR("o"): "Ú", AC("o"): "Û", CI("o"): "Ù", TI("o"): "ı", DI("o"): "ˆ",
-    GR("U"): "Ÿ", AC("U"): "⁄", CI("U"): "€", DI("U"): "‹",
-    GR("u"): "˘", AC("u"): "˙", CI("u"): "˚", DI("u"): "¸",
-    GR("Y"): "›",
-    GR("y"): "˝",
+    GR("A"): "√Ä", AC("A"): "√Å", CI("A"): "√Ç", TI("A"): "√É", DI("A"): "√Ñ", RA("A"): "√Ö",
+    GR("a"): "√†", AC("a"): "√°", CI("a"): "√¢", TI("a"): "√£", DI("a"): "√§", RA("a"): "√•",
+    CE("C"): "√á",
+    CE("c"): "√ß",
+    GR("E"): "√à", AC("E"): "√â", CI("E"): "√ä", DI("E"): "√ã",
+    GR("e"): "√®", AC("e"): "√©", CI("e"): "√™", DI("e"): "√´",
+    GR("I"): "√å", AC("I"): "√ç", CI("I"): "√é", DI("I"): "√è",
+    GR("i"): "√¨", AC("i"): "√≠", CI("i"): "√Æ", DI("i"): "√Ø",
+    TI("N"): "√ë",
+    TI("n"): "√±",
+    GR("O"): "√í", AC("O"): "√ì", CI("O"): "√î", TI("O"): "√ï", DI("O"): "√ñ",
+    GR("o"): "√≤", AC("o"): "√≥", CI("o"): "√¥", TI("o"): "√µ", DI("o"): "√∂",
+    GR("U"): "√ô", AC("U"): "√ö", CI("U"): "√õ", DI("U"): "√ú",
+    GR("u"): "√π", AC("u"): "√∫", CI("u"): "√ª", DI("u"): "√º",
+    GR("Y"): "√ù",
+    GR("y"): "√Ω",
   ]);
 
   /* Notes from Moras paper:

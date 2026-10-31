@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 /*
@@ -1435,7 +1435,7 @@ protected class VirtualNode {
 		   full_name);
 #endif /* 0 */
 	    // We need to allocate a short namespace symbol.
-	    // FIXME: This is O(n²).
+	    // FIXME: This is O(nÂ²).
 	    int i;
 	    while(backward_lookup[mShortNamespace = ("NS"+i+":")]) {
 	      i++;
@@ -1487,7 +1487,7 @@ protected class VirtualNode {
 	      werror("Namespace %O not found in %O\n",
 		     ns, forward_lookup);
 #endif /* 0 */
-	      // FIXME: This is O(n²).
+	      // FIXME: This is O(nÂ²).
 	      int i;
 	      while(backward_lookup[prefix = ("NS"+i+":")]) {
 		i++;

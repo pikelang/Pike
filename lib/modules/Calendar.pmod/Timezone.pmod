@@ -61,7 +61,7 @@
 //!	which is a MAXINT on most systems - 13 Dec 1901 20:45:52
 //!	to 19 Jan 2038 3:14:07, UTC.
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 // ----------------------------------------------------------------
@@ -925,7 +925,7 @@ class Runtime_timezone_compiler
 			if (y1!=NUL_YEAR && y1<firstyear) firstyear=y1;
 			if (my[INF_YEAR])
 			   tr+=({"         default: // .."+max(y1,mn-1),
-				  " and ½½½..\n"});
+				  " and Â½Â½Â½..\n"});
 			else
 			   tr+=({"         default: // .."+max(y1,mn-1),
 				  ":\n"});
@@ -939,7 +939,7 @@ class Runtime_timezone_compiler
 			if (!my[NUL_YEAR])
 			   tr+=({"         case "+y0,"..:\n"});
 			else
-			   tr[0]=replace(tr[0],"½½½",(string)y0);
+			   tr[0]=replace(tr[0],"Â½Â½Â½",(string)y0);
 		     }
 		     else
 			tr+=({"         case "+y0,".."+y1+":\n"});

@@ -1,5 +1,5 @@
 // -*- mode: pike; c-basic-offset: 3; -*-
-#charset iso-8859-1
+#charset utf-8
 
 #pike __REAL_VERSION__
 
@@ -605,7 +605,7 @@ multiset(string) get_method_names(array(array(string)) decls)
 
 array(string) nice_order(array(string) arr)
 {
-   sort(map(arr,replace,({"_","`"}),({"ÿ","þ"})),
+   sort(map(arr,replace,({"_","`"}),({"Ã¿","Ã¾"})),
 	arr);
    return arr;
 }

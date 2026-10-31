@@ -3,7 +3,7 @@
 // Translated to Pike and expanded by Mirar
 //
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Decodes the given @[peerid], returning an identification string
@@ -184,7 +184,7 @@ protected string|zero azureus_style(string peerid)
     "TS" : "Torrentstorm",
     "TT" : "TuoTu",
     "UL" : "uLeecher!",
-    "UT" : "µTorrent",
+    "UT" : "ÂµTorrent",
     "VG" : "Vagaa",
     "WT" : "BitLet",
     "WY" : "FireTorrent",

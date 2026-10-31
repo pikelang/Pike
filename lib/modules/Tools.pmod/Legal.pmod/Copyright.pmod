@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Contains functions and information to store and present
@@ -8,40 +8,40 @@ protected mapping(string:array(string)) copyrights = ([
 
   "Pike":
   ({
-    "Copyright © 1994-1996 Fredrik Hübinette",
-    "Copyright © 1996-1997 Informationsvävarna AB",
-    "Copyright © 1997-2000 Idonex AB",
-    "Copyright © 2000-2002 Roxen Internet Software AB",
-    "Copyright © 2002-2026 Department of Computer and Information Science,\n"
-    "                      Linköping University",
+    "Copyright Â© 1994-1996 Fredrik HÃ¼binette",
+    "Copyright Â© 1996-1997 InformationsvÃ¤varna AB",
+    "Copyright Â© 1997-2000 Idonex AB",
+    "Copyright Â© 2000-2002 Roxen Internet Software AB",
+    "Copyright Â© 2002-2026 Department of Computer and Information Science,\n"
+    "                      LinkÃ¶ping University",
   }),
 
   "Unicode Character Database":
-  ({ "Copyright © 1991-2015 Unicode, Inc." }),
+  ({ "Copyright Â© 1991-2015 Unicode, Inc." }),
 
   "TrueVision Targa code":
-  ({ "Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit" }),
+  ({ "Copyright Â© 1997 Raphael FRANCOIS and Gordon Matzigkeit" }),
 
   "Emacs font lock definitions":
-  ({ "Copyright © 2002 Martin Stjernholm" }),
+  ({ "Copyright Â© 2002 Martin Stjernholm" }),
 
   "IDEA encryption and decryption code":
-  ({ "Copyright © Xuejia Lai" }),
+  ({ "Copyright Â© Xuejia Lai" }),
 
   "MD5 password hash code":
-  ({ "Copyright © Poul-Henning Kamp" }),
+  ({ "Copyright Â© Poul-Henning Kamp" }),
 
   "Regular expression matching code":
-  ({ "Copyright © 1986 by University of Toronto." }),
+  ({ "Copyright Â© 1986 by University of Toronto." }),
 
   "Zlib detection and verification code":
-  ({ "Copyright © 1995-1998 Jean-loup Gailly and Mark Adler" }),
+  ({ "Copyright Â© 1995-1998 Jean-loup Gailly and Mark Adler" }),
 
   "JPEG transform code":
-  ({ "Copyright © 1991-1998, Thomas G. Lane, Independent JPEG Group" }),
+  ({ "Copyright Â© 1991-1998, Thomas G. Lane, Independent JPEG Group" }),
 
   "Doug Lea's Malloc":
-  ({ "Copyright © 1987-2005 Doug Lea" }),
+  ({ "Copyright Â© 1987-2005 Doug Lea" }),
 ]);
 
 //! Adds a copyright message for the copyright @[holders] for the

@@ -2,7 +2,7 @@
 
 // Updated 2014-08-06 from http://lcweb.loc.gov/standards/iso639-2/
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 // Mapping from ISO 639-2/T code to language name.
@@ -171,7 +171,7 @@ protected constant languages = ([
   "grn":"Guarani",
   "gsw":"Alemannic",
   "guj":"Gujarati",
-  "gwi":"Gwich´in",
+  "gwi":"GwichÂ´in",
   "hai":"Haida",
   "hau":"Hausa",
   "haw":"Hawaiian",
@@ -318,7 +318,7 @@ protected constant languages = ([
   "niu":"Niuean",
   "nld":"Dutch",
   "nno":"Norwegian Nynorsk",
-  "nob":"Norwegian Bokmål",
+  "nob":"Norwegian BokmÃ¥l",
   "non":"Norse, Old",
   "nor":"Norwegian",
   "nso":"Northern Sotho",
@@ -330,7 +330,7 @@ protected constant languages = ([
   "nyn":"Nyankole",
   "nyo":"Nyoro",
   "nzi":"Nzima",
-  "oci":"Occitan (post 1500); Provençal",
+  "oci":"Occitan (post 1500); ProvenÃ§al",
   "oji":"Ojibwa",
   "ori":"Oriya",
   "orm":"Oromo",
@@ -352,7 +352,7 @@ protected constant languages = ([
   "pon":"Pohnpeian",
   "por":"Portuguese",
   "pra":"Prakrit languages",
-  "pro":"Provençal, Old (to 1500)",
+  "pro":"ProvenÃ§al, Old (to 1500)",
   "pus":"Pushto",
 // qaa-qtz is Reserved for local use
   "que":"Quechua",
@@ -386,7 +386,7 @@ protected constant languages = ([
   "sin":"Sinhalese",
   "sio":"Siouan languages",
   "sit":"Sino-Tibetan (Other)",
-  "skå":"Skånska",
+  "skÃ¥":"SkÃ¥nska",
   "sla":"Slavic (Other)",
   "slk":"Slovak",
   "slv":"Slovenian",
@@ -463,7 +463,7 @@ protected constant languages = ([
   "vai":"Vai",
   "ven":"Venda",
   "vie":"Vietnamese",
-  "vol":"Volapük",
+  "vol":"VolapÃ¼k",
   "vot":"Votic",
   "wak":"Wakashan languages",
   "wal":"Wolaitta",

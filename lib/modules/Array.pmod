@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 #pragma strict_types
@@ -539,8 +539,8 @@ int(-1..1) dwim_sort_func(string a, string b)
 int(-1..1) lyskom_sort_func(string a,string b)
 {
    string a0=a,b0=b;
-   a=replace(lower_case(a),"][\\}{|"/1,"åäöåäö"/1);
-   b=replace(lower_case(b),"][\\}{|"/1,"åäöåäö"/1);
+   a=replace(lower_case(a),"][\\}{|"/1,"Ã¥Ã¤Ã¶Ã¥Ã¤Ã¶"/1);
+   b=replace(lower_case(b),"][\\}{|"/1,"Ã¥Ã¤Ã¶Ã¥Ã¤Ã¶"/1);
 
    while (sscanf(a0=a,"%*[ \t](%*[^)])%*[ \t]%s",a)==4 && a0!=a);
    while (sscanf(b0=b,"%*[ \t](%*[^)])%*[ \t]%s",b)==4 && b0!=b);

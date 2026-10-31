@@ -1,8 +1,8 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 
-//! German language locale by Tvns Böker.
+//! German language locale by Tvns BÃ¶ker.
 
 
 inherit "abstract";
@@ -16,7 +16,7 @@ constant iso_639_2B = "ger";
 constant aliases = ({ "de", "deu", "ger", "deutsch", "german" });
 
 constant months = ({
-  "Januar", "Februar", "März", "April", "Mai",
+  "Januar", "Februar", "MÃ¤rz", "April", "Mai",
   "Juni", "Juli", "August", "September", "Oktober",
   "November", "Dezember" });
 
@@ -75,20 +75,20 @@ string number(int num)
    case 2:  return "zwei";
    case 3:  return "drei";
    case 4:  return "vier";
-   case 5:  return "fünf";
+   case 5:  return "fÃ¼nf";
    case 6:  return "sechs";
    case 7:  return "sieben";
    case 8:  return "acht";
    case 9:  return "neun";
    case 10: return "zehn";
    case 11: return "elf";
-   case 12: return "zwölf";
+   case 12: return "zwÃ¶lf";
    case 13..15:
    case 18..19: return number(num%10)+"zehn";
    case 16: return "sechzehn";
    case 17: return "siebzehn";
    case 20: return "zwanzig";
-   case 30: return "dreißig";
+   case 30: return "dreiÃŸig";
    case 70: return "siebzig";
    case 40: case 50: case 60: case 80: case 90:
      return number(num/10)+"zig";

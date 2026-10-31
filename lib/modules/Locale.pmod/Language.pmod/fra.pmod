@@ -1,22 +1,22 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! French language locale by Patrick Kremer.
 
 inherit "abstract";
 
-constant name = "français";
+constant name = "franÃ§ais";
 constant english_name = "french";
 constant iso_639_1 = "fr";
 constant iso_639_2 = "fra";
 constant iso_639_2B = "fre";
 
-constant aliases = ({ "fr", "fra", "fre", "français", "french" });
+constant aliases = ({ "fr", "fra", "fre", "franÃ§ais", "french" });
 
 constant months = ({
-  "janvier", "février", "mars", "avril", "mai",
-  "juin", "juillet", "août", "septembre", "octobre",
-  "novembre", "décembre" });
+  "janvier", "fÃ©vrier", "mars", "avril", "mai",
+  "juin", "juillet", "aoÃ»t", "septembre", "octobre",
+  "novembre", "dÃ©cembre" });
 
 constant days = ({
   "dimanche", "lundi", "mardi", "mercredi",
@@ -41,7 +41,7 @@ string date(int timestamp, string|void m)
   if(m=="full")
     return ctime(timestamp)[11..15]+", le "+
       ordered(t1["mday"]) + " "  + month(t1["mon"]+1)
-      + " de l'année " +(t1["year"]+1900);
+      + " de l'annÃ©e " +(t1["year"]+1900);
 
   if(m=="date")
     return ordered(t1["mday"]) + " "  + month(t1["mon"]+1)
@@ -71,7 +71,7 @@ string date(int timestamp, string|void m)
 string number(int num)
 {
   if(!num)
-    return "zéro";
+    return "zÃ©ro";
   if(num<0)
     return "moins "+number(-num);
   switch(num)

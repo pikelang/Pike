@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Finnish language locale created by Janne Edelman, Turku Unix Users
@@ -16,7 +16,7 @@ constant aliases = ({ "fi", "fin", "finnish", "suomi" });
 
 constant months = ({
   "tammikuu", "helmikuu", "maaliskuu", "huhtikuu", "toukokuu",
-  "kesäkuu", "heinäkuu", "elokuu", "syyskuu", "lokakuu",
+  "kesÃ¤kuu", "heinÃ¤kuu", "elokuu", "syyskuu", "lokakuu",
   "marraskuu", "joulukuu" });
 
 constant days = ({
@@ -49,7 +49,7 @@ string date(int timestamp, string|void m)
   // !m
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
-    return "tänään, " + ctime(timestamp)[11..15];
+    return "tÃ¤nÃ¤Ã¤n, " + ctime(timestamp)[11..15];
 
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "eilen, "+ ctime(timestamp)[11..15];
@@ -74,26 +74,26 @@ string number(int num)
    case 1:  return "yksi";
    case 2:  return "kaksi";
    case 3:  return "kolme";
-   case 4:  return "neljä";
+   case 4:  return "neljÃ¤";
    case 5:  return "viisi";
    case 6:  return "kuusi";
-   case 7:  return "seitsemän";
+   case 7:  return "seitsemÃ¤n";
    case 8:  return "kahdeksan";
-   case 9:  return "yhdeksän";
+   case 9:  return "yhdeksÃ¤n";
    case 10: return "kymmenen";
    case 11: return "yksitoista";
    case 12: return "kaksitoista";
    case 13: return "kolmetoista";
-   case 14: return "neljätoista";
+   case 14: return "neljÃ¤toista";
    case 15: return "viisitoista";
    case 16: return "kuusitoista";
-   case 17: return "seitsemäntoista";
+   case 17: return "seitsemÃ¤ntoista";
    case 18: return "kahdeksantoista";
-   case 19: return "yhdeksäntoista";
+   case 19: return "yhdeksÃ¤ntoista";
    case 20: case 30: case 40:
    case 50: case 60: case 70:
    case 80: case 90:
-     return number(num/10)+"kymmentä";
+     return number(num/10)+"kymmentÃ¤";
    case 21..29: case 31..39:
    case 51..59: case 61..69: case 71..79:
    case 81..89: case 91..99: case 41..49:

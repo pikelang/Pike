@@ -1,6 +1,6 @@
 /* -*- mode: Pike; c-basic-offset: 3; -*- */
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 import ".";
@@ -69,9 +69,9 @@ Event.Event make_event(string source)
 		 "\"%s\n",
 		 id,flags,s)!=7)
 	 error("Events: rule error; unknown format:\n%O\n",source);
-      sscanf(replace(s,"\\\"","»»»1902318231»»»"),
+      sscanf(replace(s,"\\\"","Â»Â»Â»1902318231Â»Â»Â»"),
 	     "%s\"%*[ \t]%s",s,rule);
-      s=replace(s,"»»»1902318231»»»","\"");
+      s=replace(s,"Â»Â»Â»1902318231Â»Â»Â»","\"");
    }
 
    string ruleid=rule,mn,wd,a;
