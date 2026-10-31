@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 
 string|zero get_url_data(string url)
 {
@@ -69,7 +69,7 @@ protected int test_year(string str, string match, string err)
 
 int test_master_year() {
   return test_year( Stdio.read_file("lib/master.pike.in"),
-                    "%*s 1994-%d Linköping", "master.pike.in");
+                    "%*s 1994-%d Link", "master.pike.in");
 }
 
 int test_install_year() {
