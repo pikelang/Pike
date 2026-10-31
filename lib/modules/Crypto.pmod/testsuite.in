@@ -1211,9 +1211,9 @@ dnl --- End of Jay Kominek ROT 13 conformance test
 test_do( C->set_rot_key(2) )
 test_eq( C->encrypt("Pelle"), "Rgnng" )
 test_eq( C->decrypt("Rgnng"), "Pelle" )
-test_do( C->set_rot_key(3, "ABCabcåäö"/1) )
-test_eq( C->encrypt("Abbas"), "aääås" )
-test_eq( C->decrypt("aääås"), "Abbas" )
+test_do( C->set_rot_key(3, "ABCabc\u00e5\u00e4\u00f6"/1) )
+test_eq( C->encrypt("Abbas"), "a\u00e4\u00e4\u00e5s" )
+test_eq( C->decrypt("a\u00e4\u00e4\u00e5s"), "Abbas" )
 test_do( C->set_null_chars(0.2, "xyz"/1) )
 test_eq( C->decrypt(C->encrypt("A"*100)), "A"*100 )
 

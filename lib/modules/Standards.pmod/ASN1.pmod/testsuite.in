@@ -131,16 +131,16 @@ dnl --- END tests from
 dnl A Layman's Guide to a Subset of ASN.1, BER, and DER)
 dnl
 
-dnl §8.9
+dnl Â§8.9
 test_any([[
   import Types;
   return Sequence( ({ IA5String("Smith"), Boolean(17) }) )->get_der();
 ]], "0\n\26\5Smith\1\1\xff")
 
-dnl §8.19
+dnl Â§8.19
 test_eq(Types.Identifier(2,100,3)->get_der(), String.hex2string("0603813403"))
 
-dnl §8.21
+dnl Â§8.21
 test_eq( Types.VisibleString("Jones")->get_der(), "\32\5Jones" )
 
 test_eq( Types.BitString()->set_from_ascii("011011100101110111")->get_der(),
@@ -163,10 +163,10 @@ test_eq(Types.UTC()->set_posix(673566340)->get_der(),
 
 test_eq(Types.UTC("910506214540Z")->get_posix(), 673566340)
 
-dnl test_eq(Types.TeletexString("clés publiques")->get_der(),
+dnl test_eq(Types.TeletexString("clÃ©s publiques")->get_der(),
 dnl   String.hex2string("140f636cc26573207075626c6971756573"))
 
-test_eq(Types.BrokenTeletexString("clés publiques")->get_der(),
+test_eq(Types.BrokenTeletexString("cl\u00e9s publiques")->get_der(),
   String.hex2string("140e636ce973207075626c6971756573"))
 
 test_any([[

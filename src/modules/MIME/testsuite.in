@@ -110,7 +110,7 @@ test_buffer_handling(qp)
 test_buffer_handling(uue)
 
 test_eq([[MIME.decode_qp("AbC=3a=4C=25z=\nxyz")]],"AbC:L%zxyz")
-test_eq([[MIME.encode_qp("едц≈ƒ÷=Ff")]],"=E5=E4=F6=C5=C4=D6=3DFf")
+test_eq([[MIME.encode_qp("\u00e5\u00e4\u00f6\u00c5\u00c4\u00d6=Ff")]],"=E5=E4=F6=C5=C4=D6=3DFf")
 test_eq([[MIME.encode_qp("How much wood could a woodchuck "
 	"chuck if a woodchuck could chuck wood?")]],
 	"How=20much=20wood=20could=20a=20woodchuck=20chuck=20if=20"
@@ -141,8 +141,8 @@ test_equal([[MIME.tokenize("foo&bar,fu.m:\"asdf(z\\\"\\\\)x\"afn(xy(z))ds")]],
 	({"foo&bar",44,"fu.m",58,"asdf(z\"\\)x","afn","ds"}))
 test_equal([[MIME.tokenize("   asdf \t[foo\"bar\"ga(zonk)]  \"ghjk\"  ")]],
 	({"asdf","[foo\"bar\"ga(zonk)]","ghjk"}))
-test_equal([[MIME.quote(({"asdf","ghij","a:b","foo",44,"bar",58,44,"едц"}))]],
-	[["asdf ghij \"a:b\" foo,bar:,\"едц\""]])
+test_equal([[MIME.quote(({"asdf","ghij","a:b","foo",44,"bar",58,44,"\u00e5\u00e4\u00f6"}))]],
+	[["asdf ghij \"a:b\" foo,bar:,\"\u00e5\u00e4\u00f6\""]])
 
 test_equal([[MIME.tokenize_labled("\":sysmail\"@  Some-Group. Some-Org, "
 	"Muhammed.(I am  the greatest) Ali @(t()\\)he)Vegas.[10.0.3.19]")]],

@@ -2,11 +2,11 @@ START_MARKER
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
-Image.PNM.decode("P4\n5 5\nx¸Øèð") )
+Image.PNM.decode("P4\n5 5\nx\u00b8\u00d8\u00e8\u00f0") )
 
 test_eq([[ Image.GIF.decode(MIME.decode_base64(
   "R0lGODlhBQAFAIAAAAAAAP///ywAAAAABQAFAAACCAxwEWrY8BwoADs=")) ]],
-Image.PNM.decode("P4\n5 5\nx\00èØèð") )
+Image.PNM.decode("P4\n5 5\nx\00\u00e8\u00d8\u00e8\u00f0") )
 
 dnl netpbm wikipedia examples
 cond_resolv(Gz.uncompress, [[

@@ -48,11 +48,11 @@ test_equal(Regexp("(a)"*39)->split("a"*50),({"a"})*39)
 test_eval_error(Regexp("(a)"*40)->split("a"*50))
 
 dnl Regexp->replace
-test_equal( Regexp(".*")->replace("abrakadabra", "·"), "·")
-test_equal( Regexp("^ab")->replace("abrakadabra", "·"), "·rakadabra")
-test_equal( Regexp("(a)")->replace("abrakadabra", "·"), "·br·k·d·br·")
-test_equal( Regexp(".*")->replace("abrakadabra", "·"), "·")
-test_equal( Regexp("k|br")->replace("abrakadabra", "·"), "a·a·ada·a")
+test_equal( Regexp(".*")->replace("abrakadabra", "\u00b7"), "\u00b7")
+test_equal( Regexp("^ab")->replace("abrakadabra", "\u00b7"), "\u00b7rakadabra")
+test_equal( Regexp("(a)")->replace("abrakadabra", "\u00b7"), "\u00b7br\u00b7k\u00b7d\u00b7br\u00b7")
+test_equal( Regexp(".*")->replace("abrakadabra", "\u00b7"), "\u00b7")
+test_equal( Regexp("k|br")->replace("abrakadabra", "\u00b7"), "a\u00b7a\u00b7ada\u00b7a")
 test_equal( Regexp("k|br")->replace("abrakadabra",
               lambda(string s) { return "["+upper_case(s)+"]"; }),
                                                       "a[BR]a[K]ada[BR]a")
@@ -65,7 +65,7 @@ cond_resolv(Regexp.match, [[
   test_eq(Regexp.match("^[abc]$","-"),0)
   test_eq(Regexp.match("^[abc]$","a"),1)
   test_equal(Regexp.split("^(a*)[^a]*$","aaabbb"),({"aaa"}))
-  test_equal( Regexp.replace("(a)", "abrakadabra", "·"), "·br·k·d·br·")
+  test_equal( Regexp.replace("(a)", "abrakadabra", "\u00b7"), "\u00b7br\u00b7k\u00b7d\u00b7br\u00b7")
 ]])
 
 END_MARKER

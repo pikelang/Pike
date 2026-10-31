@@ -104,8 +104,8 @@ test_hilfe("z;", "3")
 test_hilfe("y;", "2")
 test_hilfe("int z;", "Hilfe Error: \"z\" already defined as constant.\n")
 test_hilfe("int y;", "Hilfe Error: \"y\" already defined as constant.\n")
-test_hilfe("array|Stdio.File ä;", "")
-test_hilfe("Stdio.File|array ä;", "")
+test_hilfe("array|Stdio.File \u00e4;", "")
+test_hilfe("Stdio.File|array \u00e4;", "")
 test_hilfe("int(1..3)|string b=3;", "")
 test_hilfe("array(int) c=({1,2,3});", "")
 
@@ -218,7 +218,7 @@ test_true([[ Tools.Hilfe.main ]])
 
 
 // Tools.Legal
-test_true([[ has_prefix(Tools.Legal.Copyright.get_latest_pike(), "Copyright © ") ]])
+test_true([[ has_prefix(Tools.Legal.Copyright.get_latest_pike(), "Copyright \u00a9 ") ]])
 test_true([[ mappingp( Tools.Legal.Copyright.get_all() ) ]])
 test_true([[ arrayp( Tools.Legal.Copyright.get_all()->Pike ) ]])
 test_any([[

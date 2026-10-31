@@ -1204,12 +1204,12 @@ test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
                  ({ 4, 5, 6, 7, 8, 9 }) }),
               ({ ({ 9, 7, 8, 4, 5, 6 }),
                  ({ 0, 1, 2, 3 }), ({}) }) }))
-test_equal(Array.diff("qadfgoksdfäojerjgöohjgdgkm"/"",
-                      "xadfgokälojeorjgöoyjgdgkmzzz"/""),
-           ({ ({ ({ "q" }), "adfgok"/"", "sdf"/"", ({ "ä" }), ({}),
-                 "oje"/"", ({}), "rjgöo"/"", ({ "h" }), "jgdgkm"/"", ({}) }),
-              ({ ({ "x" }), "adfgok"/"", ({}), ({ "ä" }), ({ "l" }),
-                 "oje"/"", ({ "o" }), "rjgöo"/"", ({ "y" }), "jgdgkm"/"",
+test_equal(Array.diff("qadfgoksdf\u00e4ojerjg\u00f6ohjgdgkm"/"",
+                      "xadfgok\u00e4lojeorjg\u00f6oyjgdgkmzzz"/""),
+           ({ ({ ({ "q" }), "adfgok"/"", "sdf"/"", ({ "\u00e4" }), ({}),
+                 "oje"/"", ({}), "rjg\u00f6o"/"", ({ "h" }), "jgdgkm"/"", ({}) }),
+              ({ ({ "x" }), "adfgok"/"", ({}), ({ "\u00e4" }), ({ "l" }),
+                 "oje"/"", ({ "o" }), "rjg\u00f6o"/"", ({ "y" }), "jgdgkm"/"",
                  "zzz"/"" }) }))
 test_equal(Array.diff("123.org"/"","http://123.org/"/""),
 	   ({ ({ ({}), "123.org"/"", ({}) }),
@@ -1217,7 +1217,7 @@ test_equal(Array.diff("123.org"/"","http://123.org/"/""),
 
 dnl Array.diff_compare_table
 
-test_equal(Array.longest_ordered_sequence("dfgaokäpojghadjjioijrgxcvb"/""),
+test_equal(Array.longest_ordered_sequence("dfgaok\u00e4pojghadjjioijrgxcvb"/""),
 	   ({ 0, 1, 2, 10, 11, 16, 18, 19, 20, 22 }));
 
 test_equal([[ Array.interleave_array( ({

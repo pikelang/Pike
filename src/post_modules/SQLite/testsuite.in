@@ -31,9 +31,9 @@ cond_resolv( SQLite.SQLite, [[
   test_equal( db->big_query("SELECT * FROM test WHERE aa=1")->fetch_row();, ({"1","4.5","xyz","xyz"}) )
   test_equal( db->big_typed_query("SELECT * FROM test WHERE aa=1")->fetch_row();, ({1,4.5,"xyz","xyz"}) )
 
-  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (2,'blå','blå')")->fetch_row();, 0 )
-  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=2")->fetch_row();, ({"blå","blå"}) )
-  test_equal( db->big_typed_query("SELECT cc,dd FROM test WHERE aa=2")->fetch_row();, ({"blå","blå"}) )
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (2,'bl\u00e5','bl\u00e5')")->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=2")->fetch_row();, ({"bl\u00e5","bl\u00e5"}) )
+  test_equal( db->big_typed_query("SELECT cc,dd FROM test WHERE aa=2")->fetch_row();, ({"bl\u00e5","bl\u00e5"}) )
 
   test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (3,'f\x1234','f\x1234')")->fetch_row();, 0 )
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=3")->fetch_row();, ({"f\x1234","f\x1234"}) )
@@ -47,9 +47,9 @@ cond_resolv( SQLite.SQLite, [[
   test_equal( db->big_query("SELECT * FROM test WHERE aa=11")->fetch_row();, ({"11","4.5","xyz","xyz"}) )
   test_equal( db->big_typed_query("SELECT * FROM test WHERE aa=11")->fetch_row();, ({11,4.5,"xyz","xyz"}) )
 
-  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([ 1:12,2:"blå",3:"blå"]) )->fetch_row();, 0 )
-  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=12")->fetch_row();, ({"blå","blå"}) )
-  test_equal( db->big_typed_query("SELECT cc,dd FROM test WHERE aa=12")->fetch_row();, ({"blå","blå"}) )
+  test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([ 1:12,2:"bl\u00e5",3:"bl\u00e5"]) )->fetch_row();, 0 )
+  test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=12")->fetch_row();, ({"bl\u00e5","bl\u00e5"}) )
+  test_equal( db->big_typed_query("SELECT cc,dd FROM test WHERE aa=12")->fetch_row();, ({"bl\u00e5","bl\u00e5"}) )
 
   test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([1:13,2:"f\x1234",3:"f\x1234"]))->fetch_row();, 0 )
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=13")->fetch_row();, ({"f\x1234","f\x1234"}) )
