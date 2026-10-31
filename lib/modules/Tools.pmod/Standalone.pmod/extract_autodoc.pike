@@ -592,6 +592,8 @@ string|zero extract(string filename, string imgdest,
 	((i = search(file, "//""! ""submodule ")) != -1)) &&
        (sizeof(array_sscanf(file[i..],"%s\n%*s")[0]/" ") == 3))) {
     // Mirar-style markup.
+    // The source is UTF-8, but may also be ISO-8859-1 in old sources.
+    catch { file = utf8_to_string(file); };
     if(imgsrc && imgdest) {
       mixed err = catch {
 	Tools.AutoDoc.MirarDocParser mirar_parser =
