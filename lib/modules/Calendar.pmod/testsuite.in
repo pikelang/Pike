@@ -175,7 +175,7 @@ test_eq([[ Calendar.ISO.Week(2003, 1)->format_ymd() ]], "2002-12-30")
 test_eq([[ Calendar.ISO.Week(2004, 1)->format_ymd() ]], "2003-12-29")
 test_eq([[ Calendar.ISO.Week(2005, 1)->format_ymd() ]], "2005-01-03")
 
-test_eq([[Calendar.Language["swe"]->week_day_name_from_number(1)]], "måndag")
+test_eq([[Calendar.Language["swe"]->week_day_name_from_number(1)]], "m\u00e5ndag")
 
 test_any([[
   object k=Calendar.Events.se["midsummers eve"]->next(Calendar.Year());
