@@ -1329,7 +1329,7 @@ static void img_png_decode(INT32 args, int mode)
 	    break;
          }
          case 0x504c5445: /* PLTE */
-	    /* palette info, 3×n bytes */
+	    /* palette info, 3Ã—n bytes */
 
 	    if (ct) break; /* we have a palette already */
 
@@ -1522,7 +1522,7 @@ static void img_png_decode(INT32 args, int mode)
       }
    }
 
-   /* on stack: mapping   n×string */
+   /* on stack: mapping   nÃ—string */
 
    if ( mode != MODE_HEADER_ONLY )
    {

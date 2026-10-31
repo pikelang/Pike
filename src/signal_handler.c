@@ -4472,7 +4472,7 @@ void f_create_process(INT32 args)
       /* Perform fd remapping */
       {
         int fd;
-	/* Note: This is O(n²), but that ought to be ok. */
+	/* Note: This is O(nÂ²), but that ought to be ok. */
 	for (fd=0; fd<num_fds; fd++) {
 	  /*fprintf(stderr, "Remapping fd %d to %d\n", fds[fd], fd);*/
 	  if (fds[fd] == -1) continue;

@@ -7,7 +7,7 @@
 /*
  * Password handling for Pike.
  *
- * Henrik Grubbström 1997-01-28
+ * Henrik GrubbstrÃ¶m 1997-01-28
  * Fixed to be semi-thread-safe by Hubbe. 1998-04-06
  * Notice: the *pw* and *gr* functions are NEVER really thread
  *         safe. If some other function executes a *pw* function

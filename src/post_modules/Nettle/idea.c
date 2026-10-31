@@ -26,7 +26,7 @@
  *
  ***********************************************************************
  *
- * Some changes including endianness cleanup done by Niels Möller.
+ * Some changes including endianness cleanup done by Niels MÃ¶ller.
  *
  */
 

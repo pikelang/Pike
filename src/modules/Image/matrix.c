@@ -1087,7 +1087,7 @@ void img_rotate(INT32 args,int xpn)
 **! method object rotate(int|float angle,int r,int g,int b)
 **! method object rotate_expand(int|float angle)
 **! method object rotate_expand(int|float angle,int r,int g,int b)
-**!	Rotates an image a certain amount of degrees (360° is
+**!	Rotates an image a certain amount of degrees (360Â° is
 **!	a complete rotation) counter-clockwise:
 **!
 **!	<table><tr valign=center>
