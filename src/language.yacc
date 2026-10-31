@@ -3238,7 +3238,7 @@ enum: TOK_ENUM
     }
 
     type_stack_mark();
-    push_type(T_ZERO);	/* Joined type so far. */
+    push_type(PIKE_T_UNKNOWN);	/* Joined type so far. */
   }
   optional_identifier '{'
   {
