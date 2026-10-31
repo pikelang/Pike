@@ -354,6 +354,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> optional_default_value
 %type <n> optional_default_type
 %type <n> optional_type
+%type <n> constant_initializer
 %type <n> opt_generic_bindings
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
@@ -668,8 +669,20 @@ import: TOK_IMPORT constant_expr ';'
 
 generic: TOK_GENERIC generic_type_decl_list ';'
 
+constant_initializer:
+  {
+    $<number>$ = Pike_compiler->current_modifiers;
+  }
+  safe_assignment_expr
+  {
+    /* Anonymous class and enum expressions set implicit modifiers. */
+    Pike_compiler->current_modifiers = $<number>1;
+    $$ = $2;
+  }
+  ;
+
 /* NB: $0 is optional_type. */
-constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
+constant_name: TOK_IDENTIFIER '=' constant_initializer
   {
     /* This can be made more lenient in the future */
 
@@ -788,8 +801,8 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
     if($3) free_node($3);
     free_node($1);
   }
-  | bad_const_expr_ident '=' safe_assignment_expr { if ($3) free_node($3); }
-  | error '=' safe_assignment_expr { if ($3) free_node($3); }
+  | bad_const_expr_ident '=' constant_initializer { if ($3) free_node($3); }
+  | error '=' constant_initializer { if ($3) free_node($3); }
   ;
 
 constant_list: constant_name

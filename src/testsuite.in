@@ -4454,6 +4454,42 @@ test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 
+// Constant initializers must not overwrite declaration modifiers (#10236).
+test_any_equal([[
+  array(array(string)) result = ({});
+  foreach (({
+    "constant FOO = class {};",
+    "constant FOO = class { @constant; }();",
+    "public constant FOO = class { @constant; }();",
+    "constant FOO = class {}, BAR = 17;",
+    "constant FOO = enum { A = 17 };",
+    "constant program FOO = class {};"
+  }), string source) {
+    result += ({ sort(indices(compile_string(source)())) });
+  }
+  return result;
+]], ({ ({ "FOO" }), ({ "FOO" }), ({ "FOO" }),
+       ({ "BAR", "FOO" }), ({ "FOO" }), ({ "FOO" }) }))
+
+test_any_equal([[
+  array(array(string)) result = ({});
+  foreach (({ "private", "protected" }), string modifier) {
+    object o = compile_string(modifier +
+      " constant FOO = class {}, BAR = 17; "
+      "array get() { return ({ FOO, BAR }); }")();
+    result += ({ indices(o) });
+    if (o->get()[1] != 17) error("Lost constant value.\n");
+  }
+  return result;
+]], ({ ({ "get" }), ({ "get" }) }))
+
+test_any([[
+  class Parent { constant FOO = class {}; }
+  class Child { inherit Parent; constant FOO = 17; }
+  return Child()->FOO;
+]], 17)
+
+
 test_compile_error_any([[
  mixed foo;
  mapping query_variables() { return ([]); };

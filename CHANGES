@@ -514,6 +514,9 @@ o Cpp
 
 o Compiler
 
+  - Constants initialized with anonymous classes or enums retain their
+    declared visibility instead of becoming implicitly private.
+
   - Enum types no longer implicitly include zero when none of their
     enumerators has that value.
 
@@ -1722,4 +1725,4 @@ Lysator pikelang/pike: #1694, #2100, #2315, #3110, #3150, #3429, #3658, #3681,
   #10197, #10198, #10199, #10200, #10201, #10202, #10203, #10204, #10205,
   #10206, #10207, #10208, #10209, #10210, #10211, #10212, #10213, #10214,
   #10216, #10217, #10218, #10219, #10220, #10221, #10222, #10223, #10224,
-  #10225, #10227, #10228, #10231, #10233, #10234
+  #10225, #10227, #10228, #10231, #10233, #10234, #10236
