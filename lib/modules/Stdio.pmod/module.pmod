@@ -2133,6 +2133,7 @@ class FILE
 
   private function(string:string(8bit)) output_conversion;
   private function(string(8bit):string) input_conversion;
+  private string current_charset;
 
   protected string _sprintf( int type, mapping flags )
   {
@@ -2249,9 +2250,19 @@ class FILE
         lambda(string s) {
           return [string(8bit)]out->feed(s)->drain();
 	};
+      current_charset = out->charset;
     }
-    else
+    else {
       input_conversion = output_conversion = 0;
+      current_charset = charset - "-";
+    }
+  }
+
+  string get_charset()
+  //! Gets the normalized name of the input and output charset of
+  //! this file if set, otherwise 0 is returned,
+  {
+    return current_charset;
   }
 
   //! Read one line of input with support for input conversion.
