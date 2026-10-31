@@ -3308,7 +3308,6 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc)
 }
 
 /*! @decl mixed `()(function fun, mixed ... args)
- *! @decl mixed call_function(function fun, mixed ... args)
  *!
  *! Call a function.
  *!
@@ -3316,6 +3315,22 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc)
  *!
  *! @seealso
  *!   @[lfun::`()()]
+ */
+
+/*! @decl mixed call_function(function fun, mixed ... args)
+ *!
+ *! Call a function.
+ *!
+ *! Calls the function @[fun] with the arguments specified by @[args].
+ *!
+ *! @deprecated `()
+ *!   This is just an older name for the @[`()()] operator. Calling
+ *!   @[call_function()] explicitly generates a deprecation warning;
+ *!   ordinary call syntax (@expr{fun(@@args)@}) does not, and should
+ *!   be used instead.
+ *!
+ *! @seealso
+ *!   @[`()()], @[lfun::`()()]
  */
 PMOD_EXPORT void f_call_function(INT32 args)
 {
