@@ -469,6 +469,10 @@ o GI
   through GLib's C API even when its accessor functions are absent from
   the typelib.
 
+  Boolean callback results are now returned to GLib, allowing idle and
+  timeout sources to remove themselves. Narrow return values from older
+  GI versions are handled correctly on 64-bit big-endian systems.
+
 o Concurrent.Future
 
   delay() now preserves an explicitly assigned backend throughout its
@@ -492,6 +496,11 @@ o ADT.CircularList
 
 o Charset
 
+  - Corrected the CODAR-U (ISO-IR 59) mapping. Arabic presentation forms
+    now decode to ordinary Unicode characters and combining sequences;
+    hamza and several letter mappings have also been corrected. The
+    encoding is many-to-one and is not fully reversible.
+
   - Updated Unicode translation table for ISO IR-181 to follow n1818.
 
   - The encoders now support encoding of characters outside the BMP.
@@ -504,6 +513,9 @@ o Cpp
   - Improved cleanup when preprocessor callbacks throw errors.
 
 o Compiler
+
+  - Enum types no longer implicitly include zero when none of their
+    enumerators has that value.
 
   - Getter return types are now inferred correctly when the getter has
     optional parameters. Argument-type filtering handles named and
@@ -671,6 +683,12 @@ o SSL.File: Propagate fatal alerts to close and write callbacks.
   are now signalled on the close and write callbacks with errno set
   to ECONNABORTED and fatal alerts received from the peer have errno
   set to ECONNRESET.
+
+o Standards.IIM
+
+  IPTC values are decoded independently, preserving ISO-2022 charset
+  declarations. Malformed UTF-8 values fall back to ISO-8859-1 without
+  affecting the decoding of other values in the same file.
 
 o Standards.JSON and Standards.JSON5
 
@@ -1132,7 +1150,7 @@ o Backend.PollDeviceBackend
 
 o Calendar
 
-  - Timezone data updated to tzdb-2026e.
+  - Timezone data updated to tzdb-2026f.
 
   - The timezone expert system has been updated for the first time
     in quite a while.
@@ -1639,6 +1657,10 @@ o Added @alias for alternate names of documented symbols. References
 
 o Lots of previously undocumented symbols are now documented.
 
+  ADT.Interval now documents endpoint types, open and closed boundaries,
+  interval operators and membership, with examples and notes on existing
+  endpoint limitations.
+
 o Add some support for documenting annotations.
 
 o Lots of broken cross-references have been fixed.
@@ -1680,23 +1702,24 @@ o The testsuite supports multiple and nested conditional requirements
 Issues fixed
 ------------
 
-Github pikelang/pike: #16, #25, #40, #49, #70, #71
+Github pikelang/pike: #4, #16, #25, #36, #38, #40, #49, #54, #55, #56, #70, #71
 
-Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3658, #3681, #4312,
-  #4934, #5466, #7363, #7831, #8042, #10003, #10004, #10006, #10012,
-  #10017, #10018, #10021, #10022, #10023, #10026, #10027, #10028, #10029,
-  #10033, #10035, #10037, #10039, #10040, #10041, #10042, #10043, #10045,
-  #10046, #10047, #10048, #10050, #10055, #10059, #10065, #10072, #10076,
-  #10077, #10083, #10084, #10085, #10086, #10089, #10090, #10094, #10096,
-  #10097, #10098, #10104, #10105, #10107, #10109, #10111, #10112, #10113,
-  #10114, #10117, #10118, #10119, #10120, #10121, #10122, #10125, #10128,
-  #10129, #10130, #10131, #10132, #10133, #10134, #10135, #10136, #10137,
-  #10139, #10142, #10143, #10144, #10146, #10147, #10149, #10150, #10151,
-  #10154, #10155, #10156, #10158, #10159, #10160, #10161, #10162, #10163,
-  #10164, #10165, #10167, #10168, #10170, #10171, #10173, #10174, #10175,
-  #10176, #10177, #10178, #10179, #10180, #10181, #10182, #10183, #10185,
-  #10186, #10187, #10188, #10191, #10192, #10193, #10195, #10196, #10197,
-  #10198, #10199, #10200, #10201, #10202, #10203, #10204, #10205, #10206,
-  #10207, #10208, #10209, #10210, #10211, #10212, #10213, #10214, #10216,
-  #10217, #10218, #10219, #10220, #10221, #10222, #10223, #10224, #10225,
-  #10227, #10228, #10231, #10233, #10234
+Lysator pikelang/pike: #1694, #2100, #2315, #3110, #3150, #3429, #3658, #3681,
+  #4312, #4826, #4897, #4934, #5466, #7363, #7831, #8042, #10001, #10003,
+  #10004, #10006, #10012, #10017, #10018, #10021, #10022, #10023, #10026,
+  #10027, #10028, #10029, #10033, #10035, #10037, #10039, #10040, #10041,
+  #10042, #10043, #10044, #10045, #10046, #10047, #10048, #10050, #10055,
+  #10059, #10063, #10065, #10072, #10076, #10077, #10083, #10084, #10085,
+  #10086, #10089, #10090, #10094, #10096, #10097, #10098, #10100, #10104,
+  #10105, #10107, #10109, #10111, #10112, #10113, #10114, #10117, #10118,
+  #10119, #10120, #10121, #10122, #10125, #10126, #10127, #10128, #10129,
+  #10130, #10131, #10132, #10133, #10134, #10135, #10136, #10137, #10139,
+  #10142, #10143, #10144, #10146, #10147, #10149, #10150, #10151, #10154,
+  #10155, #10156, #10158, #10159, #10160, #10161, #10162, #10163, #10164,
+  #10165, #10167, #10168, #10170, #10171, #10173, #10174, #10175, #10176,
+  #10177, #10178, #10179, #10180, #10181, #10182, #10183, #10184, #10185,
+  #10186, #10187, #10188, #10189, #10191, #10192, #10193, #10195, #10196,
+  #10197, #10198, #10199, #10200, #10201, #10202, #10203, #10204, #10205,
+  #10206, #10207, #10208, #10209, #10210, #10211, #10212, #10213, #10214,
+  #10216, #10217, #10218, #10219, #10220, #10221, #10222, #10223, #10224,
+  #10225, #10227, #10228, #10231, #10233, #10234
