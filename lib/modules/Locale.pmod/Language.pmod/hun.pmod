@@ -1,4 +1,4 @@
-#charset iso-8859-2
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Hungarian language locale by Zsolt Varga.
@@ -14,20 +14,20 @@ constant iso_639_2B = "hun";
 constant aliases = ({ "hu", "hun", "magyar", "hungarian" });
 
 constant months = ({
-  "január", "február", "március",
-  "április", "május", "június",
-  "július", "augusztus", "szeptember",
-  "október", "november", "december" });
+  "januÃ¡r", "februÃ¡r", "mÃ¡rcius",
+  "Ã¡prilis", "mÃ¡jus", "jÃºnius",
+  "jÃºlius", "augusztus", "szeptember",
+  "oktÃ³ber", "november", "december" });
 
 constant days = ({
-  "vasárnap", "hétfõ", "kedd",
-  "szerda", "csütörtök", "péntek",
+  "vasÃ¡rnap", "hÃ©tfÅ‘", "kedd",
+  "szerda", "csÃ¼tÃ¶rtÃ¶k", "pÃ©ntek",
   "szombat" });
 
 string ordered(int i)
 {
     if(!i)
-      return "értelmezhetetlen";
+      return "Ã©rtelmezhetetlen";
     return i+". ";
 }
 
@@ -73,22 +73,22 @@ string number(int num)
   {
    case 0:  return "";
    case 1:  return "egy";
-   case 2:  return "kettõ";
-   case 3:  return "három";
-   case 4:  return "négy";
-   case 5:  return "öt";
+   case 2:  return "kettÅ‘";
+   case 3:  return "hÃ¡rom";
+   case 4:  return "nÃ©gy";
+   case 5:  return "Ã¶t";
    case 6:  return "hat";
-   case 7:  return "hét";
+   case 7:  return "hÃ©t";
    case 8:  return "nyolc";
    case 9:  return "kilenc";
-   case 10: return "tíz";
+   case 10: return "tÃ­z";
    case 11..19: return "tizen"+number(num%10);
-   case 20: return "húsz";
+   case 20: return "hÃºsz";
    case 21..29: return "huszon"+number(num%10);
 
    case 30: return "harminc";
    case 40: return "negyven";
-   case 50: return "ötven";
+   case 50: return "Ã¶tven";
    case 60: return "hatvan";
    case 70: return "hetven";
    case 80: return "nyolcvan";
@@ -100,13 +100,13 @@ string number(int num)
      return number((num/10)*10)+number(num%10);
 
    case 100..999:
-     return number(num/100)+"száz"+number(num%100);
+     return number(num/100)+"szÃ¡z"+number(num%100);
 
    case 1000..999999:
      return number(num/1000)+"ezer"+number(num%1000);
 
    case 1000000..999999999:
-     return number(num/1000000)+"millió-"+number(num%1000000);
+     return number(num/1000000)+"milliÃ³-"+number(num%1000000);
 
    default:
     return "sok";

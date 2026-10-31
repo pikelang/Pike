@@ -1,33 +1,33 @@
 #pike __REAL_VERSION__
 
-#charset iso-8859-2
+#charset utf-8
 
 //! Czech language locale by Jan Petrous 16.10.1997,
 //! based on Slovenian language module by Iztok Umek.
 
 inherit "abstract";
 
-constant name = "èesky";
+constant name = "Äesky";
 constant english_name = "czech";
 constant iso_639_1 = "cs";
 constant iso_639_2 = "ces";
 constant iso_639_2B = "cze";
 
-constant aliases = ({ "cs", "cz", "cze", "ces", "czech", "èesky" });
+constant aliases = ({ "cs", "cz", "cze", "ces", "czech", "Äesky" });
 
 constant required_charset = "iso-8859-2";
 
 constant languages=([
-  "cat":"katalánsky",
-  "ces":"èesky",
+  "cat":"katalÃ¡nsky",
+  "ces":"Äesky",
   "nld":"holandsky",
   "fin":"finsky",
   "fra":"francouzsky",
-  "deu":"nìmecky",
+  "deu":"nÄ›mecky",
   "eng":"anglicky",
-  "spa":"¹panìlsky",
+  "spa":"Å¡panÄ›lsky",
   "hrv":"chorvatsky",
-  "hun":"maïarsky",
+  "hun":"maÄarsky",
   "ita":"italsky",
   "jpn":"japonsky",
   "mri":"maorsky",
@@ -38,17 +38,17 @@ constant languages=([
   "sin":"slovinsky",
   "slk":"slovensky",
   "srn":"srbsky",
-  "swe":"¹védsky"
+  "swe":"Å¡vÃ©dsky"
 ]);
 
 constant months = ({
-  "ledna", "února", "bøezna", "dubna", "kvìtna",
-  "èervna", "èervence", "srpna", "záøí", "øíjna",
+  "ledna", "Ãºnora", "bÅ™ezna", "dubna", "kvÄ›tna",
+  "Äervna", "Äervence", "srpna", "zÃ¡Å™Ã­", "Å™Ã­jna",
   "listopadu", "prosince" });
 
 constant days = ({
-  "nedìle","pondìlí","úterı","støeda",
-  "ètvrtek","pátek","sobota" });
+  "nedÄ›le","pondÄ›lÃ­","ÃºterÃ½","stÅ™eda",
+  "Ätvrtek","pÃ¡tek","sobota" });
 
 string ordered(int i)
 {
@@ -85,10 +85,10 @@ string date(int timestamp, string|void m)
     return ("dnes, "+ ctime(timestamp)[11..15]);
 
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
-    return ("vèera, "+ ctime(timestamp)[11..15]);
+    return ("vÄera, "+ ctime(timestamp)[11..15]);
 
   if((t1["yday"]-1) == t2["yday"] && t1["year"] == t2["year"])
-    return ("zítra, "+ ctime(timestamp)[11..15]);
+    return ("zÃ­tra, "+ ctime(timestamp)[11..15]);
 
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
@@ -105,43 +105,43 @@ string number(int num)
   {
    case 0:  return ("");
    case 1:  return ("jedna");
-   case 2:  return ("dvì");
-   case 3:  return ("tøi");
-   case 4:  return ("ètyøi");
-   case 5:  return ("pìt");
-   case 6:  return ("±est");
+   case 2:  return ("dvÄ›");
+   case 3:  return ("tÅ™i");
+   case 4:  return ("ÄtyÅ™i");
+   case 5:  return ("pÄ›t");
+   case 6:  return ("Ä…est");
    case 7:  return ("sedm");
    case 8:  return ("osm");
-   case 9:  return ("devìt");
+   case 9:  return ("devÄ›t");
    case 10: return ("deset");
-   case 11: return ("jedenáct");
-   case 12: return ("dvanáct");
-   case 13: case 16..18: return (number(num-10)+"náct");
-   case 14: return ("ètrnáct");
-   case 15: return ("patnást");
-   case 19: return ("devatenáct");
+   case 11: return ("jedenÃ¡ct");
+   case 12: return ("dvanÃ¡ct");
+   case 13: case 16..18: return (number(num-10)+"nÃ¡ct");
+   case 14: return ("ÄtrnÃ¡ct");
+   case 15: return ("patnÃ¡st");
+   case 19: return ("devatenÃ¡ct");
    case 20: return ("dvacet");
-   case 30: return ("tøicet");
-   case 40: return ("ètyøicet");
-   case 50: return ("padesát");
-   case 60: return ("±edesát");
-   case 70: return ("sedmdesát");
-   case 80: return ("osmdesát");
-   case 90: return ("devadesát");
+   case 30: return ("tÅ™icet");
+   case 40: return ("ÄtyÅ™icet");
+   case 50: return ("padesÃ¡t");
+   case 60: return ("Ä…edesÃ¡t");
+   case 70: return ("sedmdesÃ¡t");
+   case 80: return ("osmdesÃ¡t");
+   case 90: return ("devadesÃ¡t");
    case 21..29: case 31..39:
    case 51..59: case 61..69: case 71..79:
    case 81..89: case 91..99: case 41..49:
      return (number((num/10)*10)+number(num%10));
    case 100..199: return ("sto"+number(num%100));
-   case 200..299: return ("dvìstì "+number(num%100));
+   case 200..299: return ("dvÄ›stÄ› "+number(num%100));
    case 300..499: return (number(num/100)+"sta "+number(num%100));
    case 500..999: return (number(num/100)+"set "+number(num%100));
-   case 1000..1999: return ("tisíc "+number(num%1000));
-   case 2000..2999: return ("dva tisíce "+number(num%1000));
-   case 3000..999999: return (number(num/1000)+" tisíc "+number(num%1000));
+   case 1000..1999: return ("tisÃ­c "+number(num%1000));
+   case 2000..2999: return ("dva tisÃ­ce "+number(num%1000));
+   case 3000..999999: return (number(num/1000)+" tisÃ­c "+number(num%1000));
    case 1000000..999999999:
      return (number(num/1000000)+" milion "+number(num%1000000));
    default:
-    return ("hodnì");
+    return ("hodnÄ›");
   }
 }

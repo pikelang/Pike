@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-#charset iso-8859-2
+#charset utf-8
 
 //! Polish language locale by Piotr Klaban <makler@@man.torun.pl>.
 
@@ -17,41 +17,41 @@ constant aliases = ({ "pl", "po", "pol", "polish" });
 constant required_charset = "iso-8859-2";
 
 constant languages=([
-  "cat":"kataloñski",
+  "cat":"kataloÅ„ski",
   "ces":"czeski",
   "nld":"holenderski",
-  "fin":"fiñski",
+  "fin":"fiÅ„ski",
   "fra":"francuski",
   "deu":"niemiecki",
   "eng":"angielski",
-  "spa":"hiszpañski",
+  "spa":"hiszpaÅ„ski",
   "hrv":"chorwacki",
-  "hun":"wêgierski",
-  "ita":"w³oski",
-  "jpn":"japoñski",
+  "hun":"wÄ™gierski",
+  "ita":"wÅ‚oski",
+  "jpn":"japoÅ„ski",
   "mri":"maoryjski",
   "nor":"norweski",
   "pol":"polski",
   "por":"portugalski",
   "rus":"rosyjski",
-  "slk":"s³owacki",
+  "slk":"sÅ‚owacki",
   "srp":"serbski",
   "swe":"szwedzki"
 ]);
 
 constant months = ({
-  "Styczeñ", "Luty", "Marzec", "Kwiecieñ", "Maj",
-  "Czerwiec", "Lipiec", "Sierpieñ", "Wrzesien", "Pa¼dziernik",
-  "Listopad", "Grudzieñ" });
+  "StyczeÅ„", "Luty", "Marzec", "KwiecieÅ„", "Maj",
+  "Czerwiec", "Lipiec", "SierpieÅ„", "Wrzesien", "PaÅºdziernik",
+  "Listopad", "GrudzieÅ„" });
 
 constant dated_months = ({
   "Stycznia", "Lutego", "Marca", "Kwietnia", "Maja",
-  "Czerwca", "Lipca", "Sierpnia", "Wrze¶nia", "Pa¼dziernika",
+  "Czerwca", "Lipca", "Sierpnia", "WrzeÅ›nia", "PaÅºdziernika",
   "Listopada", "Grudnia" });
 
 constant days = ({
-  "Niedziela","Poniedzia³ek","Wtorek","¦roda",
-  "Czwartek","Pi±tek","Sobota" });
+  "Niedziela","PoniedziaÅ‚ek","Wtorek","Åšroda",
+  "Czwartek","PiÄ…tek","Sobota" });
 
 string month(int(1..12) num, int|void dated)
 {
@@ -63,7 +63,7 @@ string ordered(int i)
   switch(i)
   {
    case 0:
-    return "b³±d";
+    return "bÅ‚Ä…d";
    default:
     return i+".";
   }
@@ -90,7 +90,7 @@ string date(int timestamp, string|void m)
   // !m
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
-    return "dzi¶, "+ ctime(timestamp)[11..15];
+    return "dziÅ›, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "wczoraj, "+ ctime(timestamp)[11..15];
@@ -118,32 +118,32 @@ string number(int num)
    case 2:  return "dwa";
    case 3:  return "trzy";
    case 4:  return "cztery";
-   case 5:  return "piêæ";
-   case 6:  return "sze¶æ";
+   case 5:  return "piÄ™Ä‡";
+   case 6:  return "szeÅ›Ä‡";
    case 7:  return "siedem";
    case 8:  return "osiem";
-   case 9:  return "dziewiêæ";
-   case 10: return "dziesiêæ";
-   case 11: return "jedena¶cie";
-   case 12: return "dwana¶cie";
-   case 13: return "trzyna¶cie";
-   case 14: return "czterna¶cie";
-   case 15: return "piêtna¶cie";
-   case 16: return "szesna¶cie";
-   case 17: return "siedemna¶cie";
-   case 18: return "osiemna¶cie";
-   case 19: return "dziewiêtna¶cie";
-   case 20: return "dwadzie¶cia";
-   case 30: return "trzydzie¶ci";
-   case 40: return "czterdzie¶ci";
+   case 9:  return "dziewiÄ™Ä‡";
+   case 10: return "dziesiÄ™Ä‡";
+   case 11: return "jedenaÅ›cie";
+   case 12: return "dwanaÅ›cie";
+   case 13: return "trzynaÅ›cie";
+   case 14: return "czternaÅ›cie";
+   case 15: return "piÄ™tnaÅ›cie";
+   case 16: return "szesnaÅ›cie";
+   case 17: return "siedemnaÅ›cie";
+   case 18: return "osiemnaÅ›cie";
+   case 19: return "dziewiÄ™tnaÅ›cie";
+   case 20: return "dwadzieÅ›cia";
+   case 30: return "trzydzieÅ›ci";
+   case 40: return "czterdzieÅ›ci";
    case 50: case 60: case 70: case 80: case 90:
-     return number(num/10)+"dziesi±t";
+     return number(num/10)+"dziesiÄ…t";
    case 21..29: case 31..39:
    case 51..59: case 61..69: case 71..79:
    case 81..89: case 91..99: case 41..49:
      return number((num/10)*10)+" "+number(num%10);
    case 100: return "sto";
-   case 200: return "dwie¶cie";
+   case 200: return "dwieÅ›cie";
    case 300: return "trzysta";
    case 400: return "czterysta";
    case 500: case 600: case 700: case 800: case 900:
@@ -152,9 +152,9 @@ string number(int num)
    case 501..599: case 601..699: case 701..799: case 801..899:
    case 901..999:
      return number(num-(num%100))+" "+number(num%100);
-   case 1000..1999: return "tysi±c "+number(num%1000);
-   case 2000..4999: return number(num/1000)+" tysi±ce "+number(num%1000);
-   case 5000..999999: return number(num/1000)+" tysiêcy "+number(num%1000);
+   case 1000..1999: return "tysiÄ…c "+number(num%1000);
+   case 2000..4999: return number(num/1000)+" tysiÄ…ce "+number(num%1000);
+   case 5000..999999: return number(num/1000)+" tysiÄ™cy "+number(num%1000);
    case 1000001..1999999:
      return number(num/1000000)+" milion "+number(num%1000000);
    case 2000000..999999999:
@@ -164,7 +164,7 @@ string number(int num)
 	case 2: case 3: case 4:
 	     return number(num/1000000)+" miliony "+number(num%1000000);
 	default:
-	     return number(num/1000000)+" milionów "+number(num%1000000);
+	     return number(num/1000000)+" milionÃ³w "+number(num%1000000);
      }
    default:
     return "wiele";
