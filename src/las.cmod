@@ -1988,7 +1988,7 @@ void resolv_type(node *n)
  */
 static void low_index_node(node * const n, struct pike_string *id)
 {
-  struct svalue *type_value = Pike_sp;
+  struct svalue *type_value = Pike_sp - 1;
   if (n && n->type &&
       (deprecated_typep(n->type) ||
        type_attributep(n->type, MK_STRING("experimental")))) {
