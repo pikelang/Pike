@@ -1980,46 +1980,24 @@ void resolv_type(node *n)
   pop_stack();
 }
 
-node *index_node(node * const n, struct pike_string *id)
+/* On entry Pike_sp[-1] is space for the type of the indexed value.
+ *
+ * On exit an additional value has been pushed.
+ *
+ * May throw runtime errors.
+ */
+static void low_index_node(node * const n, struct pike_string *id)
 {
-  node *ret;
-  JMP_BUF tmp;
-  struct svalue *type_value;
-
-  check_tree(n,0);
-
-  if (!is_const(n)) {
-    /* Index dynamically. */
-    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
-	!(THIS_COMPILATION->lex.pragmas & ID_DYNAMIC_DOT))
-    {
-      yywarning("Using . to index dynamically.");
-    }
-    return mknode(F_INDEX, copy_node(n), mkstrnode(id));
+  struct svalue *type_value = Pike_sp;
+  if (n && n->type &&
+      (deprecated_typep(n->type) ||
+       type_attributep(n->type, MK_STRING("experimental")))) {
+    /* Constant lookup bypasses the normal indexing type check. */
+    check_indexing(n->type, string_type_string, NULL);
   }
-
-  /* Keep the declared type rooted across indexing and exception recovery. */
-  type_value = Pike_sp;
-  push_undefined();
-
-  if(SETJMP(tmp))
+  resolv_constant(n);
+  switch(TYPEOF(Pike_sp[-1]))
   {
-    if (n && n->name) {
-      handle_compile_exception("Couldn't index module %pS with '%pS'.",
-                               n->name, id);
-    } else {
-      handle_compile_exception("Couldn't index module with '%pS'.", id);
-    }
-  }else{
-    if (n && n->type &&
-        (deprecated_typep(n->type) ||
-         type_attributep(n->type, MK_STRING("experimental")))) {
-      /* Constant lookup bypasses the normal indexing type check. */
-      check_indexing(n->type, string_type_string, NULL);
-    }
-    resolv_constant(n);
-    switch(TYPEOF(Pike_sp[-1]))
-    {
     case T_INT:
       if (!Pike_sp[-1].u.integer) {
 	if(!Pike_compiler->num_parse_error) {
@@ -2204,15 +2182,48 @@ node *index_node(node * const n, struct pike_string *id)
       }
       END_CYCLIC();
     }
+  }
+}
+
+node *index_node(node * const n, struct pike_string *id)
+{
+  node *ret;
+  JMP_BUF tmp;
+
+  check_tree(n,0);
+
+  if (!is_const(n)) {
+    /* Index dynamically. */
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+        !(THIS_COMPILATION->lex.pragmas & ID_DYNAMIC_DOT))
+    {
+      yywarning("Using . to index dynamically.");
     }
+    return mknode(F_INDEX, copy_node(n), mkstrnode(id));
+  }
+
+  /* Keep the declared type rooted across indexing and exception recovery. */
+  push_undefined();
+
+  if(SETJMP(tmp))
+  {
+    if (n && n->name) {
+      handle_compile_exception("Couldn't index module %pS with '%pS'.",
+                               n->name, id);
+    } else {
+      handle_compile_exception("Couldn't index module with '%pS'.", id);
+    }
+  }else{
+    low_index_node(n, id);
   }
   UNSETJMP(tmp);
   ret=mkconstantsvaluenode(Pike_sp-1);
   pop_stack();
 
-  if (TYPEOF(*type_value) == T_TYPE) {
+  if (TYPEOF(Pike_sp[-1]) == T_TYPE) {
+    /* FIXME: Unify the two types? */
     free_type(ret->type);
-    copy_pike_type(ret->type, type_value->u.type);
+    copy_pike_type(ret->type, Pike_sp[-1].u.type);
   }
   pop_stack();
 
