@@ -601,6 +601,7 @@ ALL      -  <bugs/>
             <deprecated> ... </deprecated>
             <example/>
             <note/>
+            <requires name="..."/>
             <seealso/>
 
 <method> -  <param name="..."/>

@@ -1666,6 +1666,10 @@ o Added @alias for alternate names of documented symbols. References
   to an alias link to the canonical declaration, including members of
   aliased modules and classes.
 
+o Added @requires markup for platform, architecture and optional
+  feature requirements in AutoDoc. The requirements are retained
+  in XML and shown in generated HTML documentation.
+
 o Lots of previously undocumented symbols are now documented.
 
   ADT.Interval now documents endpoint types, open and closed boundaries,
