@@ -1,5 +1,9 @@
 // -*- Pike -*-
 
+#if __VERSION__ < 9.0 && constant(_Regexp_PCRE._pcre)
+#define PREFER_PCRE1
+#endif
+
 #pike __REAL_VERSION__
 #include <regexp.h>
 
@@ -11,7 +15,7 @@ final constant PCRE1=_Regexp_PCRE; // Regexp.PCRE1
 final constant PCRE2=_Regexp_PCRE2; // Regexp.PCRE2
 #endif
 
-#if constant(_Regexp_PCRE2._pcre)
+#if constant(_Regexp_PCRE2._pcre) && !defined(PREFER_PCRE1)
 //! @module PCRE
 //!
 //! Compatibility PCRE wrapper module.

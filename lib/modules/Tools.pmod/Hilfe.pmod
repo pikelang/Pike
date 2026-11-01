@@ -1454,6 +1454,9 @@ class Evaluator {
   //! The function to use when writing to the user.
   array|object|function(string : int(0..)) write;
 
+  //! A flag indicating whether widestrings can be passed to write
+  int(0..1) safe_widestring_write = 0;
+
   //! Adds another output function.
   void add_writer(object|function(string : int(0..)) new) {
     if(arrayp(write))
@@ -1479,7 +1482,7 @@ class Evaluator {
       if(arrayp(in)) in *= "";
       if(sizeof(args))
 	in = sprintf(in, @args);
-      if (String.width(in) > 8) {
+      if (String.width(in) > 8 && !safe_widestring_write) {
 	// Variable and function names may contain wide characters...
 	// Perform Unicode escaping.
 	in = map(in/"",
@@ -2523,6 +2526,8 @@ class StdinHilfe
   {
     readline = Stdio.Readline();
     write = readline->write;
+    if (readline->get_output_controller()->get_charset() == "utf8")
+      safe_widestring_write = 1;
     ::create();
 
     add_constant("werror",do_write);

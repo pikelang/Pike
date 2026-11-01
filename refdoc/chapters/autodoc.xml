@@ -175,6 +175,31 @@ try to group together different keywords:</p>
 
 </subsection>
 
+<subsection title="Platform and feature requirements">
+
+<p>Use <tt>@requires</tt> to record a condition under which a declaration
+ is available. Write one requirement per line. Consecutive requirements
+ share any following explanation and mean that all listed conditions
+ apply. The name is kept as data in the generated XML, so consumers can
+ present or filter it independently of the prose.</p>
+
+<example>
+//! @requires __OS__.POSIX
+//! @requires Nettle.GCM
+//!   Both conditions must be met.
+</example>
+
+<p>The generated group contains <tt>&lt;requires name="__OS__.POSIX"/&gt;</tt>
+ and <tt>&lt;requires name="Nettle.GCM"/&gt;</tt>, followed by a
+ <tt>&lt;text&gt;</tt> child for the explanation. Use <tt>__OS__.</tt>
+ for operating-system families, <tt>__CPU__.</tt> for architectures,
+ and a Pike symbol path for an optional library or feature. For example,
+ <tt>__OS__.WIN32</tt> and <tt>__CPU__.IA64</tt> are valid names.
+ The markup records the stated requirements; it does not infer an
+ operating-system hierarchy.</p>
+
+</subsection>
+
 <subsection title="Keyword parameters">
 
 <p>After the leading <tt>@keyword</tt> (that may be preceded only by whitespace)
@@ -1213,7 +1238,10 @@ int b;
 <matrix>
 <r><c><b>Context</b></c><c><b>Additional section markers</b></c></r>
 
-<r><c>Any documented entity</c><c><tt>note</tt>, <tt>example</tt>, <tt>bugs</tt>, <tt>deprecated</tt>, <tt>seealso</tt> and other general sections accepted by the markup parser.</c></r>
+<r><c>Any documented entity</c>
+  <c><tt>note</tt>, <tt>example</tt>, <tt>bugs</tt>,
+      <tt>deprecated</tt>, <tt>requires</tt>, <tt>seealso</tt>
+      and other general sections accepted by the markup parser.</c></r>
 
 <r><c>Method</c><c><tt>&lt;param name="..."/&gt;</tt>, <tt>&lt;returns/&gt;</tt> and <tt>&lt;throws/&gt;</tt>.</c></r>
 

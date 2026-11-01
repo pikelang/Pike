@@ -222,31 +222,36 @@ class Socket2
 {
   inherit Socket;
 
+  // A distinctive pad string keeps unrelated uses of "%s" from affecting
+  // the reference count. No field width is set, so no padding is added.
+  constant write_format = "%'socktest.pike:Socket2.write_callback's";
+
   void write_callback()
   {
     got_callback();
     if(sizeof(output_buffer))
     {
-      int prerefs = Debug.refs ("%s");
-      int tmp=o->write(({"%s"}), output_buffer);
-      if (Debug.refs ("%s") != prerefs) {
-	log_msg ("Format string leak from %d to %d.\n",
-		 prerefs, Debug.refs ("%s"));
+      int prerefs = Debug.refs (write_format);
+      int tmp=o->write(({write_format}), output_buffer);
+      if (Debug.refs (write_format) != prerefs) {
+        log_msg ("Format string leak from %d to %d.\n",
+                 prerefs, Debug.refs (write_format));
 	exit_test (1);
       }
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
+        return;
       } else {
         log_msg("Socket %d: Failed to write all data.\n", num);
-	exit_test(1);
+        num_failed++;
       }
-    }else{
-      o->set_write_callback(0);
-      o->close("w");
-      output_finished++;
-      cleanup();
     }
+
+    o->set_write_callback(0);
+    o->close("w");
+    output_finished++;
+    cleanup();
   }
 }
 

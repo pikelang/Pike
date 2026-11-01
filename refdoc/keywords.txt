@@ -422,6 +422,18 @@ XML:          `@param Foo' =>
               <param name="Foo"/>
 _______________________________________________________________________________
 
+Keyword:      @requires
+Description:  Records a platform, architecture or feature needed for the
+              documented entity. Multiple requirements all apply.
+Arguments:    <name> (one name per keyword)
+Children:     Optional explanatory text (with markup).
+Groups with:  @requires
+Examples:     //! @requires __OS__.WIN32
+              //! @requires __CPU__.IA64
+              //! @requires Nettle.GCM
+XML:          <requires name="..."/>
+_______________________________________________________________________________
+
 Keyword:      @returns
 Description:  Documentation for the return value of a method. The type
               of the return value is deduced from the declaration.

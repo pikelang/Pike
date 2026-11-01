@@ -91,6 +91,7 @@ protected private void processWarning(string message, mixed ... args) {
 //   <note/>
 //   <param/>
 //   <returns/>
+//   <requires name="..."/>
 //   <seealso/>
 //   <text/>
 //   <throws/>

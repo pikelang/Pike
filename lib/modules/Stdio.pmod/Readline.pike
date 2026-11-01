@@ -452,6 +452,12 @@ class OutputController
   }
 
   //!
+  string get_charset()
+  {
+    return outfd->get_charset();
+  }
+
+  //!
   protected void create(.File|void _outfd,
 			.Terminfo.Termcap|string|void _term)
   {

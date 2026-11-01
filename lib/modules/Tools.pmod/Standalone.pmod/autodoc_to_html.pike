@@ -999,6 +999,23 @@ string parse_doc(Node n, void|int no_text) {
       }
       break;
 
+    case "requires":
+      array(string) requirements = ({});
+      foreach(c->get_elements("requires"), Node requirement) {
+        string feature = requirement->get_attributes()->name;
+        if (feature)
+          requirements += ({ "<code>" +
+                             Parser.encode_html_entities(feature) +
+                             "</code>" });
+      }
+      ret += lay->dochead + "Requires" + lay->_dochead;
+      ret += lay->docbody + "<p>" +
+        String.implode_nicely(requirements) + "</p>\n" + lay->_docbody;
+      if (c = c->get_first_element("text")) {
+        ret += lay->docbody + parse_text(c) + lay->_docbody;
+      }
+      break;
+
     case "fixme":
       ret += lay->fixmehead + "FIXME" + lay->_fixmehead;
       if (c = c->get_first_element("text")) {

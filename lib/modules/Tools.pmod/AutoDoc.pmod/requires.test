@@ -1,0 +1,96 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+// @requires extraction and HTML rendering.
+
+constant FLAGS = Tools.AutoDoc.FLAG_NO_DYNAMIC | Tools.AutoDoc.FLAG_QUIET;
+int succeeded;
+int failed;
+
+void check(mixed actual, mixed expected, string label)
+{
+  if (equal(actual, expected)) succeeded++;
+  else {
+    failed++;
+    werror("%s: expected %O, got %O.\n", label, expected, actual);
+  }
+}
+
+object extract_pike(string source)
+{
+  object root = Tools.AutoDoc.PikeObjects.AutoDoc();
+  object namespace = Tools.AutoDoc.PikeObjects.NameSpace();
+  namespace->name = "predef";
+  root->addChild(namespace);
+  Tools.AutoDoc.PikeExtractor.extractModule(root, namespace, source,
+                                           "Requirements.pmod", "Requirements",
+                                           FLAGS);
+  return Parser.XML.Tree.simple_parse_input(root->xml(FLAGS))
+           ->get_first_element();
+}
+
+array(object) elements(object tree, string tag)
+{
+  array(object) result = ({});
+  tree->walk_preorder(lambda(object node) {
+    if (node->get_any_name() == tag) result += ({ node });
+  });
+  return result;
+}
+
+int main()
+{
+  mixed failure = catch {
+    object pike_tree = extract_pike(#"
+//! Main description.
+//! @requires __OS__.POSIX
+//! @requires Nettle.GCM
+//!   Both features are needed.
+int available() { return 1; }
+");
+    object doc = elements(pike_tree, "doc")[0];
+    array(object) requirements = elements(doc, "requires");
+    check(sizeof(requirements), 2,
+          "Both Pike requirements survive XML extraction");
+    check(map(requirements, lambda(object node) {
+      return node->get_attributes()->name;
+    }), ({ "__OS__.POSIX", "Nettle.GCM" }), "Requirement names in XML");
+    check(has_value(doc->get_first_element("text")->value_of_node(),
+                    "Main description."), 1,
+          "Main description remains separate");
+    string html = Tools.Standalone.autodoc_to_html()->parse_doc(doc);
+    check(has_value(html, "<dt class='head--doc'>Requires</dt>"), 1,
+          "Requirements rendered as a section");
+    check(has_value(html, "<code>__OS__.POSIX</code> and " +
+                          "<code>Nettle.GCM</code>"), 1,
+          "Grouped requirements rendered together");
+    check(has_value(html, "Both features are needed."), 1,
+          "Requirement explanation rendered");
+
+    object c_root = Tools.AutoDoc.CExtractor.extract(#"
+/*! @decl int available()
+ *! Main description.
+ *! @requires __OS__.WIN32
+ */
+", "requirements.c", "predef", FLAGS);
+    object c_tree = Parser.XML.Tree.simple_parse_input(c_root->xml(FLAGS))
+                      ->get_first_element();
+    check(elements(c_tree, "requires")[0]->get_attributes()->name,
+          "__OS__.WIN32", "C source requirement survives XML extraction");
+
+    foreach(({ ({ "@requires", "lacking required parameter" }),
+               ({ "@requires Foo Bar", "too many parameters" }) }),
+            array(string) invalid) {
+      mixed err = catch {
+        extract_pike("//! " + invalid[0] + "\nint bad() { return 0; }\n");
+      };
+      check(!!err && has_value(describe_backtrace(err), invalid[1]), 1,
+            "Reject invalid " + invalid[0]);
+    }
+  };
+  if (failure) {
+    failed++;
+    werror("AutoDoc requirements test aborted: %s",
+           describe_backtrace(failure));
+  }
+  Tools.Testsuite.report_result(succeeded, failed);
+  return !!failed;
+}
