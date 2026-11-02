@@ -232,11 +232,26 @@ class Socket2
     if(sizeof(output_buffer))
     {
       int prerefs = Debug.refs (write_format);
+      if (prerefs > 2) {
+        // prerefs should typically be 2, but under some
+        // circumstances it can be larger. Perform a gc()
+        // in an attempt to reduce it to the minimum.
+        gc();
+        log_msg("Extra initial format string reference (%d > 2).\n",
+                prerefs);
+        prerefs = Debug.refs (write_format);
+      }
       int tmp=o->write(({write_format}), output_buffer);
-      if (Debug.refs (write_format) != prerefs) {
-        log_msg ("Format string leak from %d to %d.\n",
-                 prerefs, Debug.refs (write_format));
-	exit_test (1);
+      int postrefs = Debug.refs (write_format);
+      if (postrefs != prerefs) {
+        gc();
+        if (Debug.refs (write_format) != prerefs) {
+          log_msg ("Format string leak from %d to %d.\n",
+                   prerefs, Debug.refs (write_format));
+          exit_test (1);
+        }
+        log_msg("Spurious extra format string reference (%d != %d).\n",
+                postrefs, prerefs);
       }
       if(tmp >= 0)
       {

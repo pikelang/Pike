@@ -2980,6 +2980,9 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 	    if(end!=sp[-1].u.string)
 	    {
 	      xmlerror("Unmatched end tag.", sp[-1].u.string);
+              if (end) {
+                xmlerror("Expected end tag.", end);
+              }
 	    }else{
 	      end=0;
 	    }

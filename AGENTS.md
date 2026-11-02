@@ -30,6 +30,9 @@ Aim to keep lines within 80 characters where practical.
 
 Edit generator inputs such as `.cmod`, `language.yacc`, and `treeopt.in`; regenerate their outputs through the build rather than committing generated C or headers. Use existing AutoDoc conventions for public APIs. Run `git diff --check` before submitting.
 
+Pike source files are in ISO-8859-1 unless there is a `#charset` header
+saying otherwise. New files should typically use UTF-8.
+
 ## Portability
 
 Handle operating system API differences in the C runtime or native modules,
@@ -44,6 +47,14 @@ such as `USE_NONBLOCKING_CONNECT_AND_ACCEPT`. Avoid direct OS checks such as
 For workarounds enabled by OS detection, provide a configure option to enable
 or disable them independently of the OS default. This allows use on other
 affected platforms and disabling on systems where the bug has been fixed.
+
+Pike scripts that may need to be executed by a previously installed Pike
+interpreter (like eg the cmod precompiler) should use syntax compatible
+with Pike 8.0 (and later).
+
+Configure scripts should attempt to support most versions of Autoconf
+2.50 and later. Use the old-style names (eg autoconf.in rather than
+autoconf.ac). Avoid automate and automake.
 
 ## Testing Guidelines
 
