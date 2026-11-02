@@ -1099,7 +1099,7 @@ node *debug_mknode(int token, node *a, node *b)
 	 * very well be zero.
 	 */
 	fix_type_field(CDR(a));
-	if (CDR(a)->type && (CDR(a)->type != mixed_type_string)) {
+        if (CDR(a) && CDR(a)->type && (CDR(a)->type != mixed_type_string)) {
 	  struct pike_type *not_zero =
 	    type_binop(PT_BINOP_MINUS, CDR(a)->type, zero_type_string, 0, 0, 0);
 	  if (not_zero && (not_zero != CDR(a)->type)) {

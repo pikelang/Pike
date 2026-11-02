@@ -416,6 +416,11 @@ test_compile_any([[
   }
 ]])
 
+// An undeclared source for null-safe indexing must not crash the compiler.
+test_compile_error([[
+  void boom() { if (mapping user = session->?user) ; }
+]])
+
 test_eq((["answer":42])->?answer, 42)
 
 test_do([[
