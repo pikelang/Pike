@@ -20,6 +20,10 @@
 
 #include "pikecode.h"
 
+#ifdef PIKE_ENABLE_SSA
+#include "code/ssa.c"
+#endif
+
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #include "code/ia32.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_AMD64

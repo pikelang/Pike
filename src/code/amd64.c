@@ -96,6 +96,9 @@ enum amd64_reg {P_REG_RAX = 0, P_REG_RBX = 3, P_REG_RCX = 1, P_REG_RDX = 2,
 
 static enum amd64_reg sp_reg = -1, fp_reg = -1, mark_sp_reg = -1;
 static int dirty_regs = 0, ret_for_func = 0;
+#ifdef PIKE_ENABLE_SSA
+static struct pikecode_ssa_state ssa_state;
+#endif
 ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc was updated. */
 static int branch_check_threads_update_etc = 0;
 static int store_pc = 0;
@@ -107,9 +110,14 @@ struct label {
   ptrdiff_t offset[MAX_LABEL_USES];
 };
 
+static void flush_dirty_regs(void);
+
 static void label( struct label *l )
 {
   int i;
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   if (l->addr >= 0) Pike_fatal("Label reused.\n");
   for( i=0; i<l->n_label_uses; i++ )
   {
@@ -910,8 +918,12 @@ static void cmp_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
 
 static int jmp_rel_imm32( int addr )
 {
-  int rel = addr - (PIKE_PC + 5); // counts from the next instruction
+  int rel;
   int res;
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
+  rel = addr - (PIKE_PC + 5); // counts from the next instruction
   opcode( 0xe9 );
   res = PIKE_PC;
   id( rel );
@@ -920,7 +932,11 @@ static int jmp_rel_imm32( int addr )
 
 static void jmp_rel_imm( int addr )
 {
-  int rel = addr - (PIKE_PC + 2); // counts from the next instruction
+  int rel;
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
+  rel = addr - (PIKE_PC + 2); // counts from the next instruction
   if(rel >= -0x80 && rel <= 0x7f )
   {
       opcode( 0xeb );
@@ -932,7 +948,11 @@ static void jmp_rel_imm( int addr )
 
 static void call_rel_imm32( int addr )
 {
-  int rel = addr - (PIKE_PC + 5); // counts from the next instruction
+  int rel;
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
+  rel = addr - (PIKE_PC + 5); // counts from the next instruction
   opcode( 0xe8 );
   id( rel );
   sp_reg = -1;
@@ -942,6 +962,9 @@ static void call_rel_imm32( int addr )
 
 static void jmp_reg( enum amd64_reg reg )
 {
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   rex(0,reg,0,0);
   opcode( 0xff );
   modrm( 3, 4, reg );
@@ -949,6 +972,9 @@ static void jmp_reg( enum amd64_reg reg )
 
 static void call_reg( enum amd64_reg reg )
 {
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   rex(0,reg,0,0);
   opcode( 0xff );
   modrm( 3, 2, reg );
@@ -1121,6 +1147,9 @@ static void add_imm_mem( int imm32, enum amd64_reg reg, int offset )
 
 static void jump_rel8( struct label *res, unsigned char op )
 {
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   opcode( op );
 
   if (res->addr >= 0) {
@@ -1139,6 +1168,9 @@ static void jump_rel8( struct label *res, unsigned char op )
 static int jnz_imm_rel32( int rel )
 {
   int res;
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   opcode( 0xf );
   opcode( 0x85 );
   res = PIKE_PC;
@@ -1149,6 +1181,9 @@ static int jnz_imm_rel32( int rel )
 static int jz_imm_rel32( int rel )
 {
   int res;
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   opcode( 0xf );
   opcode( 0x84 );
   res = PIKE_PC;
@@ -1211,6 +1246,9 @@ void amd64_start_function(int store_lines )
 /* Called when the current function is done */
 void amd64_end_function(int UNUSED(no_pc))
 {
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   branch_check_threads_update_etc = 0;
 }
 
@@ -1281,6 +1319,10 @@ void amd64_ins_entry(void)
 
 void amd64_flush_code_generator_state(void)
 {
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+  pikecode_ssa_reset(&ssa_state);
+#endif
   amd64_prev_stored_pc = -1;
   ret_for_func = 0;
   fp_reg = -1;
@@ -1293,11 +1335,17 @@ static void flush_dirty_regs(void)
 {
   /* NB: PIKE_FP_REG is currently never dirty. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
+#ifdef PIKE_ENABLE_SSA
+    if (pikecode_ssa_store(&ssa_state, PIKE_SSA_SP))
+#endif
     mov_reg_mem(PIKE_SP_REG, Pike_interpreter_reg,
 			      OFFSETOF(Pike_interpreter_struct, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
   if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
+#ifdef PIKE_ENABLE_SSA
+    if (pikecode_ssa_store(&ssa_state, PIKE_SSA_MARK_SP))
+#endif
     mov_reg_mem(PIKE_MARK_SP_REG, Pike_interpreter_reg,
 			      OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
     dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
@@ -1315,6 +1363,9 @@ static void amd64_load_fp_reg(void)
                 OFFSETOF(Pike_interpreter_struct, frame_pointer),
                 PIKE_FP_REG);
     fp_reg = PIKE_FP_REG;
+#ifdef PIKE_ENABLE_SSA
+    pikecode_ssa_read(&ssa_state, PIKE_SSA_FP);
+#endif
   }
 }
 
@@ -1325,6 +1376,9 @@ static void amd64_load_sp_reg(void)
                 OFFSETOF(Pike_interpreter_struct, stack_pointer),
                 PIKE_SP_REG);
     sp_reg = PIKE_SP_REG;
+#ifdef PIKE_ENABLE_SSA
+    pikecode_ssa_read(&ssa_state, PIKE_SSA_SP);
+#endif
   }
 }
 
@@ -1335,6 +1389,9 @@ static void amd64_load_mark_sp_reg(void)
                 OFFSETOF(Pike_interpreter_struct, mark_stack_pointer),
                 PIKE_MARK_SP_REG);
     mark_sp_reg = PIKE_MARK_SP_REG;
+#ifdef PIKE_ENABLE_SSA
+    pikecode_ssa_read(&ssa_state, PIKE_SSA_MARK_SP);
+#endif
   }
 }
 
@@ -1383,7 +1440,11 @@ static void amd64_add_sp( int num )
   amd64_load_sp_reg();
   add_reg_imm( sp_reg, num * sizeof(struct svalue));
   dirty_regs |= 1 << PIKE_SP_REG;
+#ifdef PIKE_ENABLE_SSA
+  pikecode_ssa_define(&ssa_state, PIKE_SSA_SP);
+#else
   flush_dirty_regs(); /* FIXME: Need to change LABEL handling to remove this  */
+#endif
 }
 
 static void amd64_add_mark_sp( int num )
@@ -1391,7 +1452,11 @@ static void amd64_add_mark_sp( int num )
   amd64_load_mark_sp_reg();
   add_reg_imm( mark_sp_reg, num * sizeof(struct svalue*));
   dirty_regs |= 1 << PIKE_MARK_SP_REG;
+#ifdef PIKE_ENABLE_SSA
+  pikecode_ssa_define(&ssa_state, PIKE_SSA_MARK_SP);
+#else
   flush_dirty_regs(); /* FIXME: Need to change LABEL handling to remove this */
+#endif
 }
 
 /* Note: Uses RAX and RCX internally. reg MUST not be P_REG_RAX. */
@@ -1699,6 +1764,14 @@ static void sync_registers(int flags)
   if (flags & I_UPDATE_SP) sp_reg = P_REG_INVALID;
   if (flags & I_UPDATE_M_SP) mark_sp_reg = P_REG_INVALID;
   if (flags & I_UPDATE_FP) fp_reg = P_REG_INVALID;
+#ifdef PIKE_ENABLE_SSA
+  if (flags & I_UPDATE_SP)
+    pikecode_ssa_clobber(&ssa_state, PIKE_SSA_SP);
+  if (flags & I_UPDATE_M_SP)
+    pikecode_ssa_clobber(&ssa_state, PIKE_SSA_MARK_SP);
+  if (flags & I_UPDATE_FP)
+    pikecode_ssa_clobber(&ssa_state, PIKE_SSA_FP);
+#endif
 }
 
 static void amd64_call_c_opcode(void *addr, int flags)
@@ -3106,6 +3179,9 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 #endif
     case F_BRANCH:
       START_JUMP();
+#ifdef PIKE_ENABLE_SSA
+      flush_dirty_regs();
+#endif
       add_to_program(0xe9);
       ret=(INT32) PIKE_PC;
       PUSH_INT(0);
@@ -3119,6 +3195,10 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
   amd64_load_sp_reg();
   test_reg(P_REG_RAX);
 
+  /* The branch may leave this straight-line region. */
+#ifdef PIKE_ENABLE_SSA
+  flush_dirty_regs();
+#endif
   if (backward_jump) {
     INT32 skip;
     add_to_program (0x74);	/* jz rel8 */

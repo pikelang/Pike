@@ -1,5 +1,14 @@
 Code generation templates for Pike.
 
+The experimental machine-state SSA model is in ssa.[ch]. Enable it with
+--enable-ssa. The model assigns versions to the interpreter pointer,
+frame pointer, stack pointer, and mark stack pointer as code is emitted.
+The amd64 backend currently uses these versions to defer stack pointer
+stores across straight-line code, materializing them at calls and
+control-flow boundaries. Other backends still use their existing register
+caches. This is an initial backend-independent value model, not a full
+machine-instruction SSA IR.
+
 One set of these paired files is included by the selection code
 in ../pikecode.[ch]. The selection code is also present in
 ../program.h (for PIKE_OPCODE_T).

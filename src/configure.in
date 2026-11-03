@@ -117,6 +117,15 @@ AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
              [], [enable_make_conf=yes])
 
+AC_ARG_ENABLE(ssa, MY_DESCR([--enable-ssa],
+              [enable SSA compiler stage (experimental)]),
+              [], [enable_ssa=no])
+
+if test "x$enable_ssa" != "xno"; then
+    PIKE_MSG_NOTE([Enabling SSA compiler stage. EXPERIMENTAL!])
+    AC_DEFINE(PIKE_ENABLE_SSA, 1, [Enable the SSA stage of the compiler.])
+fi
+
 initial_cflags="${CFLAGS}"
 initial_cppflags="${CPPFLAGS}"
 initial_ldflags="${LDFLAGS}"

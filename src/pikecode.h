@@ -13,6 +13,10 @@
 
 #include "program.h"
 
+#ifdef PIKE_ENABLE_SSA
+#include "code/ssa.h"
+#endif
+
 void ins_pointer(INT32 ptr);
 INT32 read_pointer(INT32 off);
 void upd_pointer(INT32 off, INT32 ptr);
