@@ -992,7 +992,7 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
 	    }
 	    UNSETJMP(recovery);
 	  }
-	} while (--signal_masks[sig]);
+        } while (signal_masks[sig] && --signal_masks[sig]);
       } else {
 	/* Signal handler is being called somewhere else.
 	 * Make it repeat when finished.
@@ -1055,7 +1055,7 @@ static int signum(char *name)
  *! @seealso
  *!   @[kill()], @[signame()], @[signum()]
  */
-static void f_signal(int args)
+static void f_signal(INT32 args)
 {
   int signum;
   sigfunctype func;
@@ -1132,6 +1132,45 @@ static void f_signal(int args)
   pop_n_elems(args-1);
 }
 
+/*! @decl void clear_signal_mask(int sig)
+ *!
+ *! Allow a new callback for @[sig] while its current callback is running.
+ *! Normally Pike defers another delivery of the same signal until the
+ *! current callback returns. Call this from the callback before entering
+ *! code that might block and needs a second delivery to interrupt it.
+ *!
+ *! This clears Pike's callback reentry guard, not the operating system's
+ *! signal mask. A signal already received while the guard was set is
+ *! preserved for later delivery.
+ *!
+ *! @throws
+ *!   An error if @[sig] is out of range or has no active callback.
+ *!
+ *! @seealso
+ *!   @[signal()], @[alarm()], @[ualarm()]
+ */
+static void f_clear_signal_mask(INT32 args)
+{
+  int sig;
+
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("clear_signal_mask", 1);
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
+    SIMPLE_ARG_TYPE_ERROR("clear_signal_mask", 1, "int");
+
+  sig = Pike_sp[-1].u.integer;
+  if ((sig < 0) || (sig >= MAX_SIGNALS))
+    Pike_error("Signal %d out of range.\n", sig);
+  if (!(Pike_interpreter.flags & INTERPRETER_HAS_SIGNAL_CONTEXT) ||
+      !signal_masks[sig])
+    Pike_error("Signal %d has no active callback.\n", sig);
+
+  if (signal_masks[sig] > 1)
+    sig_push(sig);
+  signal_masks[sig] = 0;
+  pop_stack();
+}
+
 void set_default_signal_handler(int signum, void (*func)(INT32))
 {
   int is_on=!!SAFE_IS_ZERO(signal_callbacks+signum);
@@ -1150,7 +1189,7 @@ void set_default_signal_handler(int signum, void (*func)(INT32))
  *! @seealso
  *!   @[signame()], @[kill()], @[signal()]
  */
-static void f_signum(int args)
+static void f_signum(INT32 args)
 {
   int i;
   if(args < 1)
@@ -1171,7 +1210,7 @@ static void f_signum(int args)
  *! @seealso
  *!   @[kill()], @[signum()], @[signal()]
  */
-static void f_signame(int args)
+static void f_signame(INT32 args)
 {
   char *n;
   if(args < 1)
@@ -5545,6 +5584,9 @@ void init_signals(void)
   ADD_EFUN("signal",f_signal,
 	   tFunc(tInt tOr(tVoid,tFunc(tOr(tVoid,tInt),tVoid)),tMix),
 	   OPT_SIDE_EFFECT);
+
+  ADD_EFUN("clear_signal_mask", f_clear_signal_mask,
+           tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 
 #ifdef HAVE_KILL
 /* function(int|object,int:int) */
