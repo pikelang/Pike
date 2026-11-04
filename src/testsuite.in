@@ -9645,6 +9645,33 @@ cond([[all_constants()->kill && has_value(cpp("__NT__"), "__NT__") ]],
   test_do(signal(signum("SIGFPE")))
 ]])
 
+cond([[all_constants()->kill && signum("SIGUSR1") > 0]],
+[[
+  test_any_equal([[
+    int sig = signum("SIGUSR1");
+    int stage = 0;
+    int deadline;
+    mixed old = signal(sig, lambda(int s) {
+      stage = 1;
+      signal(s, lambda(int ignored) { stage = 2; });
+      clear_signal_mask(s);
+      kill(getpid(), s);
+      deadline = time() + 3;
+      while (stage == 1 && time() < deadline) { }
+      if (stage != 2) stage = -1;
+    });
+    kill(getpid(), sig);
+    deadline = time() + 5;
+    while (!stage && time() < deadline) { }
+    signal(sig, 0);
+    if (stage == 2) {
+      if (functionp(old)) signal(sig, old);
+      else signal(sig);
+    }
+    return stage;
+  ]], 2)
+]])
+
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1)")
 test_eq(sprintf("%O", typeof("")),"string(zero:)")
