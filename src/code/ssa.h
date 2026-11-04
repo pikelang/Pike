@@ -19,6 +19,7 @@ enum pikecode_ssa_slot {
 enum pikecode_ssa_op_kind {
   PIKE_SSA_NONE,
   PIKE_SSA_LOAD,
+  PIKE_SSA_PHI,
   PIKE_SSA_DEFINE,
   PIKE_SSA_STORE,
   PIKE_SSA_CLOBBER
@@ -53,6 +54,8 @@ struct pikecode_ssa_state {
 void pikecode_ssa_reset(struct pikecode_ssa_state *state);
 void pikecode_ssa_read(struct pikecode_ssa_state *state,
                        enum pikecode_ssa_slot slot);
+void pikecode_ssa_merge_reg(struct pikecode_ssa_state *state,
+                            enum pikecode_ssa_slot slot);
 void pikecode_ssa_define(struct pikecode_ssa_state *state,
                          enum pikecode_ssa_slot slot);
 int pikecode_ssa_take_store(struct pikecode_ssa_state *state,

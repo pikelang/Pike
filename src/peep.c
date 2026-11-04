@@ -209,6 +209,11 @@ INT32 assemble(int store_linenumbers)
   INT32 entry_point;
   INT32 max_label=-1,tmp;
   INT32 *labels, *jumps, *uses, *aliases;
+#ifdef CODE_GENERATOR_FP_VALID
+  INT32 *fp_label_seen;
+  unsigned char *fp_label_valid;
+  size_t fp_label_count;
+#endif
   ptrdiff_t e, length;
   p_instr *c;
   struct pike_string *triples = NULL;
@@ -363,10 +368,22 @@ INT32 assemble(int store_linenumbers)
     if (c->opcode == F_ENTRY) c->opcode = F_NOP;
 #endif
 
+#ifdef CODE_GENERATOR_FP_VALID
+  fp_label_count = (size_t)max_label + 2;
+  labels = xalloc(fp_label_count *
+                  (5 * sizeof(INT32) + sizeof(*fp_label_valid)));
+#else
   labels=xalloc(sizeof(INT32) * 4 * (max_label+2));
+#endif
   jumps = labels + max_label + 2;
   aliases = jumps + max_label + 2;
   uses = aliases + max_label + 2;
+#ifdef CODE_GENERATOR_FP_VALID
+  fp_label_seen = uses + fp_label_count;
+  fp_label_valid = (unsigned char *)(fp_label_seen + fp_label_count);
+  memset(fp_label_seen, 0, fp_label_count * sizeof(*fp_label_seen));
+  memset(fp_label_valid, 1, fp_label_count);
+#endif
   while(relabel)
   {
     /* First do the relabel pass. */
@@ -532,6 +549,9 @@ INT32 assemble(int store_linenumbers)
   FLUSH_CODE_GENERATOR_STATE();
   for(e=0;e<length;e++)
   {
+#ifdef CODE_GENERATOR_FP_VALID
+    p_instr *codegen_instr = c;
+#endif
 #ifdef DISASSEMBLE_CODE
     size_t opcode_start = PIKE_PC;
 #endif
@@ -653,7 +673,14 @@ INT32 assemble(int store_linenumbers)
       if(labels[c->arg] != -1)
 	Pike_fatal("Duplicate label %d!\n", c->arg);
 #endif
+#ifdef CODE_GENERATOR_FP_VALID
+      /* An unseen edge (including a back edge) requires a reload. */
+      FLUSH_CODE_GENERATOR_STATE_KEEP_FP(
+        CODE_GENERATOR_FP_VALID() && fp_label_valid[c->arg] &&
+        (fp_label_seen[c->arg] == uses[c->arg]));
+#else
       FLUSH_CODE_GENERATOR_STATE();
+#endif
       labels[c->arg] = (INT32)PIKE_PC;
       if ((e+1 < length) &&
 	  (c[1].opcode != F_LABEL) &&
@@ -783,6 +810,24 @@ INT32 assemble(int store_linenumbers)
 #endif
       }
     }
+
+#ifdef CODE_GENERATOR_FP_VALID
+    /* Record the state at each emitted jump to a forward label. */
+    if (codegen_instr->opcode != F_POINTER) {
+      int flags = instrs[codegen_instr->opcode - F_OFFSET].flags;
+      INT32 target = -1;
+
+      if (flags & I_POINTER)
+        target = codegen_instr->arg;
+      else if (flags & I_HASPOINTER)
+        target = codegen_instr[1].arg;
+      if (target >= 0) {
+        fp_label_seen[target]++;
+        if (!(flags & I_BRANCH) || !CODE_GENERATOR_FP_VALID())
+          fp_label_valid[target] = 0;
+      }
+    }
+#endif
 
 #ifdef DISASSEMBLE_CODE
     if((lex->pragmas & ID_DISASSEMBLE) && PIKE_PC > opcode_start)

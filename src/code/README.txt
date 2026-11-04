@@ -12,6 +12,8 @@ not a full machine-instruction SSA IR.
 For code generation comparisons, PIKE_SSA_EAGER_STORES=1 restores eager
 stores in the same binary. PIKE_SSA_STATS=1 prints aggregate counts of
 state loads, definitions, stores, and generated code bytes at process exit.
+PIKE_SSA_NO_FP_JOIN=1 disables frame-pointer register preservation at
+forward control-flow joins for a same-binary comparison.
 For example, run the same Pike program with PIKE_SSA_STATS=1 alone and with
 both variables set, then compare the reported store counts and code bytes.
 

@@ -40,6 +40,16 @@ void pikecode_ssa_read(struct pikecode_ssa_state *state,
   state->value[slot].block = state->block;
 }
 
+void pikecode_ssa_merge_reg(struct pikecode_ssa_state *state,
+                            enum pikecode_ssa_slot slot)
+{
+  state->reg[slot] = state->memory[slot];
+  state->value[slot].kind = PIKE_SSA_PHI;
+  state->value[slot].slot = slot;
+  state->value[slot].value = state->reg[slot];
+  state->value[slot].block = state->block;
+}
+
 void pikecode_ssa_define(struct pikecode_ssa_state *state,
                          enum pikecode_ssa_slot slot)
 {

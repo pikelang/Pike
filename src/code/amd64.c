@@ -99,6 +99,7 @@ static int ret_for_func = 0;
 #ifdef PIKE_ENABLE_SSA
 static struct pikecode_ssa_state ssa_state;
 static int ssa_eager_stores = -1;
+static int ssa_no_fp_join = 0;
 static int ssa_report_stats = 0;
 static struct {
   unsigned long loads[PIKE_SSA_SLOT_COUNT];
@@ -106,6 +107,7 @@ static struct {
   unsigned long stores[PIKE_SSA_SLOT_COUNT];
   unsigned long barriers[PIKE_SSA_BARRIER_COUNT];
   unsigned long code_bytes;
+  unsigned long fp_joins;
 } ssa_stats;
 #else
 static int dirty_regs = 0;
@@ -1238,7 +1240,8 @@ static void amd64_ssa_report_stats(void)
   fprintf(stderr,
           "SSA codegen: ip loads=%lu; sp loads=%lu defs=%lu stores=%lu; "
           "fp loads=%lu; mark loads=%lu defs=%lu stores=%lu; "
-          "code bytes=%lu; calls=%lu branches=%lu merges=%lu; eager=%d\n",
+          "code bytes=%lu; calls=%lu branches=%lu merges=%lu; "
+          "fp joins=%lu; eager=%d\n",
           ssa_stats.loads[PIKE_SSA_IP],
           ssa_stats.loads[PIKE_SSA_SP],
           ssa_stats.definitions[PIKE_SSA_SP],
@@ -1251,6 +1254,7 @@ static void amd64_ssa_report_stats(void)
           ssa_stats.barriers[PIKE_SSA_CALL],
           ssa_stats.barriers[PIKE_SSA_BRANCH],
           ssa_stats.barriers[PIKE_SSA_MERGE],
+          ssa_stats.fp_joins,
           ssa_eager_stores);
 }
 #endif
@@ -1261,6 +1265,7 @@ void amd64_start_function(int store_lines )
 #ifdef PIKE_ENABLE_SSA
   if (ssa_eager_stores < 0) {
     ssa_eager_stores = getenv("PIKE_SSA_EAGER_STORES") != NULL;
+    ssa_no_fp_join = getenv("PIKE_SSA_NO_FP_JOIN") != NULL;
     ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;
     if (ssa_report_stats) atexit(amd64_ssa_report_stats);
   }
@@ -1382,6 +1387,23 @@ void amd64_flush_code_generator_state(void)
   dirty_regs = 0;
 #endif
 }
+
+#ifdef PIKE_ENABLE_SSA
+int amd64_fp_reg_valid(void)
+{
+  return fp_reg >= 0;
+}
+
+void amd64_flush_code_generator_state_keep_fp(int keep_fp)
+{
+  amd64_flush_code_generator_state();
+  if (keep_fp && !ssa_no_fp_join) {
+    fp_reg = PIKE_FP_REG;
+    pikecode_ssa_merge_reg(&ssa_state, PIKE_SSA_FP);
+    if (ssa_report_stats) ssa_stats.fp_joins++;
+  }
+}
+#endif
 
 static void flush_dirty_regs(void)
 {

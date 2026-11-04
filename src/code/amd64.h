@@ -45,6 +45,14 @@ void amd64_ins_start_function(void);
 void amd64_flush_code_generator_state(void);
 #define FLUSH_CODE_GENERATOR_STATE()	amd64_flush_code_generator_state()
 
+#ifdef PIKE_ENABLE_SSA
+int amd64_fp_reg_valid(void);
+void amd64_flush_code_generator_state_keep_fp(int keep_fp);
+#define CODE_GENERATOR_FP_VALID() amd64_fp_reg_valid()
+#define FLUSH_CODE_GENERATOR_STATE_KEEP_FP(KEEP) \
+  amd64_flush_code_generator_state_keep_fp(KEEP)
+#endif
+
 int amd64_ins_f_jump(unsigned int op, int backward_jump);
 int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump);
 int amd64_ins_f_jump_with_2_args(unsigned int op, INT32 a, INT32 b,
