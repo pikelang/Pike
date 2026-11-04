@@ -1,4 +1,4 @@
-#charset iso-8859-2
+#charset utf-8
 #pike __REAL_VERSION__
 
 
@@ -21,7 +21,7 @@ constant months = ({
 
 constant days = ({
   "Nedelja","Ponedeljek","Torek","Sreda",
-  "Èetrtek","Petek","Sobota" });
+  "ÄŒetrtek","Petek","Sobota" });
 
 string number(int num)
 {
@@ -35,9 +35,9 @@ string number(int num)
    case 1:  return "ena";
    case 2:  return "dva";
    case 3:  return "tri";
-   case 4:  return "¹tiri";
+   case 4:  return "Å¡tiri";
    case 5:  return "pet";
-   case 6:  return "¹est";
+   case 6:  return "Å¡est";
    case 7:  return "sedem";
    case 8:  return "osem";
    case 9:  return "devet";
@@ -53,9 +53,9 @@ string number(int num)
    case 101..199: return "sto "+number(num%100);
    case 200..299: return "dvesto "+number(num%100);
    case 300..999: return number(num/100)+"sto "+number(num%100);
-   case 1000: return "tisoè";
-   case 1001..1999: return "tisoè "+number(num%1000);
-   case 2000..999999: return number(num/1000)+" tisoè "+number(num%1000);
+   case 1000: return "tisoÄ";
+   case 1001..1999: return "tisoÄ "+number(num%1000);
+   case 2000..999999: return number(num/1000)+" tisoÄ "+number(num%1000);
    case 1000000..1999999:
      return "milijon "+number(num%1000000);
    case 2000000..2999999:
@@ -71,7 +71,7 @@ string number(int num)
 }
 
 mapping(int:string) small_orders = ([ 1: "prvi", 2: "drugi", 3: "tretji",
-                                     4: "èetrti", 7: "sedmi", 8: "osmi" ]);
+                                     4: "Äetrti", 7: "sedmi", 8: "osmi" ]);
 
 string ordered(int i)
 {
@@ -121,7 +121,7 @@ string date(int timestamp, string|void m)
     return "danes, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
-    return "vèeraj, "+ ctime(timestamp)[11..15];
+    return "vÄeraj, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "danes, "+ ctime(timestamp)[11..15];

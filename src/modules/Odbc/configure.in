@@ -1,7 +1,7 @@
 #
 # Configure script for the odbc-module
 #
-# Henrik Grubbström
+# Henrik GrubbstrÃ¶m
 #
 
 AC_INIT(odbc.cmod)

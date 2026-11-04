@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 
 string|zero get_url_data(string url)
 {
@@ -41,7 +41,8 @@ int test_constants() {
 }
 
 int test_copyright() {
-  if(Stdio.read_file("COPYRIGHT")!=Tools.Legal.Copyright.get_text()) {
+  if(Stdio.read_file("COPYRIGHT") !=
+     string_to_utf8(Tools.Legal.Copyright.get_text())) {
     write("COPYRIGHT needs to be updated.\n");
     return 1;
   }
@@ -69,7 +70,7 @@ protected int test_year(string str, string match, string err)
 
 int test_master_year() {
   return test_year( Stdio.read_file("lib/master.pike.in"),
-                    "%*s 1994-%d Linköping", "master.pike.in");
+                    "%*s 1994-%d Link\\u00f6ping", "master.pike.in");
 }
 
 int test_install_year() {

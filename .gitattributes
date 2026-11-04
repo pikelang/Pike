@@ -29,6 +29,7 @@
 # Some binary files without extensions.
 /src/install-welcome binary
 /src/modules/Image/testfont binary
+/packaging/amigaos/InstallPike.info binary
 # List of files that should be indented with tab as per tradition:
 Makefile -space_indent tab_indent
 Makefile.in -space_indent tab_indent

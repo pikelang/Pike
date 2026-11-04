@@ -7,7 +7,7 @@
 /*
  * Access to syslog from Pike.
  *
- * Henrik Grubbström 1997-01-28
+ * Henrik GrubbstrÃ¶m 1997-01-28
  */
 
 /*

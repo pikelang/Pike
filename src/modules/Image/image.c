@@ -3039,7 +3039,7 @@ void image_rgb_to_yuv(INT32 args)
 **!    o = given color
 **!    d = destination pixel
 **!    d.red=d.blue=d.green=
-**!	   ((o.red-p.red)²+(o.green-p.green)²+(o.blue-p.blue)²)>>8
+**!	   ((o.red-p.red)Â²+(o.green-p.green)Â²+(o.blue-p.blue)Â²)>>8
 **!    </pre>
 **!
 **!	<table><tr valign=center>
@@ -3049,7 +3049,7 @@ void image_rgb_to_yuv(INT32 args)
 **!	<td><illustration> return lena()->distancesq(255,255,0); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
-**!	<td>distance² to cyan</td>
+**!	<td>distanceÂ² to cyan</td>
 **!	<td>...to purple</td>
 **!	<td>...to yellow</td>
 **!	</tr></table>
@@ -3200,7 +3200,7 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 	    if ( (j=DISTANCE(rgb,src[x+y*xsize])) <=low_limit) break;
 	 xr=x;
 /*	 x++; hokuspokus /mirar */
-/*       nån dag ska jag försöka begripa varför... */
+/*       nÃ¥n dag ska jag fÃ¶rsÃ¶ka begripa varfÃ¶r... */
 	 if (x>x2) return;
 	 continue;
       }

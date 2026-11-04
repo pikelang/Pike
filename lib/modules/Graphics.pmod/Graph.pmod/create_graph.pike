@@ -7,7 +7,7 @@
 //! @[create_graph] draws a graph but there are also some other functions
 //! used by @[create_pie] and @[create_bars].
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 #include "graph.h"
@@ -35,7 +35,7 @@ object tileimage(object img, int xs, int ys)
   return dest;
 }
 
-private constant pfix = ({ "a", "f", "p", "n", "µ", "m", "",
+private constant pfix = ({ "a", "f", "p", "n", "Âµ", "m", "",
 			   "k", "M", "G", "T", "P", "E" });
 
 // This function writes a float like on an engineer-format.
@@ -605,8 +605,8 @@ string no_end_zeros(string f)
   if (has_value(f, "."))
   {
     int j;
-    /* FIXME  Vad i Hvte gör du här?! */
-    //Jag vet vad jag gör! Idi! :-)
+    /* FIXME  Vad i Hvte gÃ¶r du hÃ¤r?! */
+    //Jag vet vad jag gÃ¶r! Idi! :-)
     for(j=sizeof(f)-1; f[j]=='0'; j--)
     {}
     if (f[j]=='.')

@@ -221,7 +221,7 @@ CHRONO("begin hsv...");
   n=this->xsize*this->ysize;
   while (n--)
   {
-     /* Första färg, sista mörkhet */
+     /* FÃ¶rsta fÃ¤rg, sista mÃ¶rkhet */
      double j=(s0->r+s0->g+s0->b-s2->r-s2->g-s2->b)/3.0;
                 /* riktning - - riktning | */
 

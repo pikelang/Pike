@@ -5,14 +5,14 @@ test_true([[objectp(Charset)]])
 test_true([[functionp(Charset.decoder)]])
 test_true([[objectp(Charset.decoder("latin1"))]])
 test_true([[functionp(Charset.decoder("latin1")->feed)]])
-test_eq([[Charset.decoder("latin1")->feed("xyzåäö¤ß¶")->drain()]],"xyzåäö¤ß¶")
+test_eq([[Charset.decoder("latin1")->feed("xyz\u00e5\u00e4\u00f6\u00a4\u00df\u00b6")->drain()]],"xyz\u00e5\u00e4\u00f6\u00a4\u00df\u00b6")
 
 // 7-bit ASCII
-test_eq([[Charset.encoder("ASCII", "?", lambda(string ch) { return "&#" + ch[0] + ";"; })->feed("räksmörgås")->drain()]],"r&#228;ksm&#246;rg&#229;s")
+test_eq([[Charset.encoder("ASCII", "?", lambda(string ch) { return "&#" + ch[0] + ";"; })->feed("r\u00e4ksm\u00f6rg\u00e5s")->drain()]],"r&#228;ksm&#246;rg&#229;s")
 
 // Charset.rfc1345
-test_eq([[Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")
-test_eq([[Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
+test_eq([[Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"\u00e5\u00e4\u00f6\u00c5\u00c4\u00d6")
+test_eq([[Charset.decoder("iso-ir-126")->feed("abc\u00e5\u00e4\u00f6")->drain()]],
 	"abc\x3b5\x3b4\x3c6")
 test_eq([[Charset.decoder("iso-ir-129")->
             feed((string)(Array.enumerate(32, 1, 0xa0) +
@@ -30,8 +30,8 @@ test_eq([[Charset.encoder("iso-ir-129")->
 
 // Charset.ISO2022
 test_eq([[Charset.decoder("iso-2022")->
-	feed("\033-Aeäv\016ed\017v\033$(BF|K\\\033(Bfoo")->drain()]],
-	"eävåäv\x65e5\x672c""foo")
+	feed("\033-Ae\u00e4v\016ed\017v\033$(BF|K\\\033(Bfoo")->drain()]],
+	"e\u00e4v\u00e5\u00e4v\x65e5\x672c""foo")
 // Verify that characters mapping to multiple UTF-16 characters work.
 // ISO-IR 233 aka JIS X0213.
 test_eq([[Charset.decoder("iso-2022")->
@@ -72,10 +72,10 @@ test_any([[
 // Charset.UTF7
 test_eq([[Charset.decoder("utf-7")->
 	feed("foobar+-xy-+--z+AOUA5AD2!+ZeVnLA-X")->drain()]],
-	"foobar+xy-+-zåäö!\x65e5\x672cX")
+	"foobar+xy-+-z\u00e5\u00e4\u00f6!\x65e5\x672cX")
 
 // Charset.UTF8
-test_eq([[Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
+test_eq([[Charset.decoder("utf-8")->feed("\u00c3\u00a5\u00c3\u00a4\u00c3\u00b6")->drain()]],"\u00e5\u00e4\u00f6")
 
 test_eq(Charset.encoder ("utf-8")->feed ("\ud7ff")->drain(), "\u00ed\u009f\u00bf")
 test_eval_error(return Charset.encoder ("utf-8")->feed ("\ud800")->drain())

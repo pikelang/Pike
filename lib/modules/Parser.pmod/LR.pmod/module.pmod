@@ -1,11 +1,11 @@
+#charset utf-8
 /*
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
  *
- * Henrik Grubbström 1996-11-24
+ * Henrik GrubbstrÃ¶m 1996-11-24
  */
 
-#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //! LALR(1) parser generator.
@@ -319,7 +319,7 @@ class Parser
 	  res += ({ symbol_to_string(symbol), " " });
 	}
       }
-      res += ({ "· " });
+      res += ({ "Â· " });
       if (offset != sizeof(r->symbols)) {
 	foreach(r->symbols[offset..], int|string symbol) {
 	  res += ({ symbol_to_string(symbol), " " });

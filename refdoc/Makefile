@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# Henrik Grubbström 2001-02-02
+# Henrik GrubbstrÃ¶m 2001-02-02
 #
 
 # make devel can be used if changes are made only to the CSS or JS and you

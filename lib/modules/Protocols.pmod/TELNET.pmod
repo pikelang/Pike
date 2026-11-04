@@ -1,7 +1,7 @@
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
-// Henrik Grubbström <grubba@roxen.com> 1998-04-04
+// Henrik GrubbstrÃ¶m <grubba@roxen.com> 1998-04-04
 //
 
 #pike __REAL_VERSION__

@@ -1,10 +1,10 @@
 #! /usr/bin/env pike
-#charset iso-8859-1
+#charset utf-8
 
 /*
  * Creates the file case_info.h
  *
- * Henrik Grubbström 1999-03-20
+ * Henrik GrubbstrÃ¶m 1999-03-20
  */
 
 #pragma strict_types
@@ -134,15 +134,15 @@ int main(int argc, array(string) argv)
   Stdio.File outfile = Stdio.File(argv[1], "wct");
 
   outfile->
-    write("/*\n"
+    write(string_to_utf8(sprintf("/*\n"
           " * Created by make_ci.pike\n"
           " * on %s"
           " *\n"
           " * Table used for looking up the case of\n"
           " * Unicode characters.\n"
           " *\n"
-          " * Henrik Grubbström 1999-03-20\n"
-          " */\n\n", ctime(time()));
+          " * Henrik GrubbstrÃ¶m 1999-03-20\n"
+          " */\n\n", ctime(time()))));
 
   map(table, outfile->write);
 
