@@ -3,11 +3,17 @@ Code generation templates for Pike.
 The experimental machine-state SSA model is in ssa.[ch]. Enable it with
 --enable-ssa. The model assigns versions to the interpreter pointer,
 frame pointer, stack pointer, and mark stack pointer as code is emitted.
-The amd64 backend currently uses these versions to defer stack pointer
-stores across straight-line code, materializing them at calls and
-control-flow boundaries. Other backends still use their existing register
-caches. This is an initial backend-independent value model, not a full
-machine-instruction SSA IR.
+The amd64 backend keeps pending stack pointer stores as small IR nodes.
+It lowers the latest node at calls and control-flow boundaries, so earlier
+stores in the same straight-line region can be removed. Other backends still
+use their existing register caches. This is an initial machine-state IR,
+not a full machine-instruction SSA IR.
+
+For code generation comparisons, PIKE_SSA_EAGER_STORES=1 restores eager
+stores in the same binary. PIKE_SSA_STATS=1 prints aggregate counts of
+state loads, definitions, stores, and generated code bytes at process exit.
+For example, run the same Pike program with PIKE_SSA_STATS=1 alone and with
+both variables set, then compare the reported store counts and code bytes.
 
 One set of these paired files is included by the selection code
 in ../pikecode.[ch]. The selection code is also present in

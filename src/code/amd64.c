@@ -95,9 +95,20 @@ enum amd64_reg {P_REG_RAX = 0, P_REG_RBX = 3, P_REG_RCX = 1, P_REG_RDX = 2,
 #endif
 
 static enum amd64_reg sp_reg = -1, fp_reg = -1, mark_sp_reg = -1;
-static int dirty_regs = 0, ret_for_func = 0;
+static int ret_for_func = 0;
 #ifdef PIKE_ENABLE_SSA
 static struct pikecode_ssa_state ssa_state;
+static int ssa_eager_stores = -1;
+static int ssa_report_stats = 0;
+static struct {
+  unsigned long loads[PIKE_SSA_SLOT_COUNT];
+  unsigned long definitions[PIKE_SSA_SLOT_COUNT];
+  unsigned long stores[PIKE_SSA_SLOT_COUNT];
+  unsigned long barriers[PIKE_SSA_BARRIER_COUNT];
+  unsigned long code_bytes;
+} ssa_stats;
+#else
+static int dirty_regs = 0;
 #endif
 ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc was updated. */
 static int branch_check_threads_update_etc = 0;
@@ -111,12 +122,15 @@ struct label {
 };
 
 static void flush_dirty_regs(void);
+#ifdef PIKE_ENABLE_SSA
+static void amd64_ssa_barrier(enum pikecode_ssa_barrier_kind kind);
+#endif
 
 static void label( struct label *l )
 {
   int i;
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_MERGE);
 #endif
   if (l->addr >= 0) Pike_fatal("Label reused.\n");
   for( i=0; i<l->n_label_uses; i++ )
@@ -921,7 +935,7 @@ static int jmp_rel_imm32( int addr )
   int rel;
   int res;
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
   rel = addr - (PIKE_PC + 5); // counts from the next instruction
   opcode( 0xe9 );
@@ -934,7 +948,7 @@ static void jmp_rel_imm( int addr )
 {
   int rel;
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
   rel = addr - (PIKE_PC + 2); // counts from the next instruction
   if(rel >= -0x80 && rel <= 0x7f )
@@ -950,7 +964,7 @@ static void call_rel_imm32( int addr )
 {
   int rel;
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_CALL);
 #endif
   rel = addr - (PIKE_PC + 5); // counts from the next instruction
   opcode( 0xe8 );
@@ -963,7 +977,7 @@ static void call_rel_imm32( int addr )
 static void jmp_reg( enum amd64_reg reg )
 {
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
   rex(0,reg,0,0);
   opcode( 0xff );
@@ -973,7 +987,7 @@ static void jmp_reg( enum amd64_reg reg )
 static void call_reg( enum amd64_reg reg )
 {
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_CALL);
 #endif
   rex(0,reg,0,0);
   opcode( 0xff );
@@ -1148,7 +1162,7 @@ static void add_imm_mem( int imm32, enum amd64_reg reg, int offset )
 static void jump_rel8( struct label *res, unsigned char op )
 {
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
   opcode( op );
 
@@ -1169,7 +1183,7 @@ static int jnz_imm_rel32( int rel )
 {
   int res;
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
   opcode( 0xf );
   opcode( 0x85 );
@@ -1182,7 +1196,7 @@ static int jz_imm_rel32( int rel )
 {
   int res;
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
   opcode( 0xf );
   opcode( 0x84 );
@@ -1218,9 +1232,39 @@ static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
 static void amd64_ins_branch_check_threads_etc(int code_only);
 static int func_start = 0;
 
+#ifdef PIKE_ENABLE_SSA
+static void amd64_ssa_report_stats(void)
+{
+  fprintf(stderr,
+          "SSA codegen: ip loads=%lu; sp loads=%lu defs=%lu stores=%lu; "
+          "fp loads=%lu; mark loads=%lu defs=%lu stores=%lu; "
+          "code bytes=%lu; calls=%lu branches=%lu merges=%lu; eager=%d\n",
+          ssa_stats.loads[PIKE_SSA_IP],
+          ssa_stats.loads[PIKE_SSA_SP],
+          ssa_stats.definitions[PIKE_SSA_SP],
+          ssa_stats.stores[PIKE_SSA_SP],
+          ssa_stats.loads[PIKE_SSA_FP],
+          ssa_stats.loads[PIKE_SSA_MARK_SP],
+          ssa_stats.definitions[PIKE_SSA_MARK_SP],
+          ssa_stats.stores[PIKE_SSA_MARK_SP],
+          ssa_stats.code_bytes,
+          ssa_stats.barriers[PIKE_SSA_CALL],
+          ssa_stats.barriers[PIKE_SSA_BRANCH],
+          ssa_stats.barriers[PIKE_SSA_MERGE],
+          ssa_eager_stores);
+}
+#endif
+
 /* Called at the start of a function. */
 void amd64_start_function(int store_lines )
 {
+#ifdef PIKE_ENABLE_SSA
+  if (ssa_eager_stores < 0) {
+    ssa_eager_stores = getenv("PIKE_SSA_EAGER_STORES") != NULL;
+    ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;
+    if (ssa_report_stats) atexit(amd64_ssa_report_stats);
+  }
+#endif
   store_pc = store_lines;
   branch_check_threads_update_etc = 0;
   /*
@@ -1247,7 +1291,9 @@ void amd64_start_function(int store_lines )
 void amd64_end_function(int UNUSED(no_pc))
 {
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_FUNCTION);
+  if (ssa_report_stats)
+    ssa_stats.code_bytes += PIKE_PC - func_start;
 #endif
   branch_check_threads_update_etc = 0;
 }
@@ -1311,6 +1357,10 @@ void amd64_ins_entry(void)
   sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
   mov_reg_reg(ARG1_REG, Pike_interpreter_reg);
   amd64_flush_code_generator_state();
+#ifdef PIKE_ENABLE_SSA
+  pikecode_ssa_read(&ssa_state, PIKE_SSA_IP);
+  if (ssa_report_stats) ssa_stats.loads[PIKE_SSA_IP]++;
+#endif
 
   if( PIKE_PC - orig_ppc != ENTRY_PROLOGUE_SIZE ) /* sanity check */
     Pike_fatal("ENTRY_PROLOGUE_SIZE incorrectly set, should be 0x%lx\n",
@@ -1320,7 +1370,7 @@ void amd64_ins_entry(void)
 void amd64_flush_code_generator_state(void)
 {
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_MERGE);
   pikecode_ssa_reset(&ssa_state);
 #endif
   amd64_prev_stored_pc = -1;
@@ -1328,29 +1378,48 @@ void amd64_flush_code_generator_state(void)
   fp_reg = -1;
   sp_reg = -1;
   mark_sp_reg = -1;
+#ifndef PIKE_ENABLE_SSA
   dirty_regs = 0;
+#endif
 }
 
 static void flush_dirty_regs(void)
 {
+#ifdef PIKE_ENABLE_SSA
+  struct pikecode_ssa_op op;
+  if (pikecode_ssa_take_store(&ssa_state, PIKE_SSA_SP, &op)) {
+    mov_reg_mem(PIKE_SP_REG, Pike_interpreter_reg,
+                OFFSETOF(Pike_interpreter_struct, stack_pointer));
+    if (ssa_report_stats) ssa_stats.stores[PIKE_SSA_SP]++;
+  }
+  if (pikecode_ssa_take_store(&ssa_state, PIKE_SSA_MARK_SP, &op)) {
+    mov_reg_mem(PIKE_MARK_SP_REG, Pike_interpreter_reg,
+                OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+    if (ssa_report_stats) ssa_stats.stores[PIKE_SSA_MARK_SP]++;
+  }
+#else
   /* NB: PIKE_FP_REG is currently never dirty. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
-#ifdef PIKE_ENABLE_SSA
-    if (pikecode_ssa_store(&ssa_state, PIKE_SSA_SP))
-#endif
     mov_reg_mem(PIKE_SP_REG, Pike_interpreter_reg,
 			      OFFSETOF(Pike_interpreter_struct, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
   if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
-#ifdef PIKE_ENABLE_SSA
-    if (pikecode_ssa_store(&ssa_state, PIKE_SSA_MARK_SP))
-#endif
     mov_reg_mem(PIKE_MARK_SP_REG, Pike_interpreter_reg,
 			      OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
     dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
   }
+#endif
 }
+
+#ifdef PIKE_ENABLE_SSA
+static void amd64_ssa_barrier(enum pikecode_ssa_barrier_kind kind)
+{
+  flush_dirty_regs();
+  pikecode_ssa_barrier(&ssa_state, kind);
+  if (ssa_report_stats) ssa_stats.barriers[kind]++;
+}
+#endif
 
 
 /* NB: We load Pike_fp et al into registers that
@@ -1365,6 +1434,7 @@ static void amd64_load_fp_reg(void)
     fp_reg = PIKE_FP_REG;
 #ifdef PIKE_ENABLE_SSA
     pikecode_ssa_read(&ssa_state, PIKE_SSA_FP);
+    if (ssa_report_stats) ssa_stats.loads[PIKE_SSA_FP]++;
 #endif
   }
 }
@@ -1378,6 +1448,7 @@ static void amd64_load_sp_reg(void)
     sp_reg = PIKE_SP_REG;
 #ifdef PIKE_ENABLE_SSA
     pikecode_ssa_read(&ssa_state, PIKE_SSA_SP);
+    if (ssa_report_stats) ssa_stats.loads[PIKE_SSA_SP]++;
 #endif
   }
 }
@@ -1391,6 +1462,7 @@ static void amd64_load_mark_sp_reg(void)
     mark_sp_reg = PIKE_MARK_SP_REG;
 #ifdef PIKE_ENABLE_SSA
     pikecode_ssa_read(&ssa_state, PIKE_SSA_MARK_SP);
+    if (ssa_report_stats) ssa_stats.loads[PIKE_SSA_MARK_SP]++;
 #endif
   }
 }
@@ -1439,10 +1511,12 @@ static void amd64_add_sp( int num )
 {
   amd64_load_sp_reg();
   add_reg_imm( sp_reg, num * sizeof(struct svalue));
-  dirty_regs |= 1 << PIKE_SP_REG;
 #ifdef PIKE_ENABLE_SSA
   pikecode_ssa_define(&ssa_state, PIKE_SSA_SP);
+  if (ssa_report_stats) ssa_stats.definitions[PIKE_SSA_SP]++;
+  if (ssa_eager_stores) flush_dirty_regs();
 #else
+  dirty_regs |= 1 << PIKE_SP_REG;
   flush_dirty_regs(); /* FIXME: Need to change LABEL handling to remove this  */
 #endif
 }
@@ -1451,10 +1525,12 @@ static void amd64_add_mark_sp( int num )
 {
   amd64_load_mark_sp_reg();
   add_reg_imm( mark_sp_reg, num * sizeof(struct svalue*));
-  dirty_regs |= 1 << PIKE_MARK_SP_REG;
 #ifdef PIKE_ENABLE_SSA
   pikecode_ssa_define(&ssa_state, PIKE_SSA_MARK_SP);
+  if (ssa_report_stats) ssa_stats.definitions[PIKE_SSA_MARK_SP]++;
+  if (ssa_eager_stores) flush_dirty_regs();
 #else
+  dirty_regs |= 1 << PIKE_MARK_SP_REG;
   flush_dirty_regs(); /* FIXME: Need to change LABEL handling to remove this */
 #endif
 }
@@ -1533,7 +1609,11 @@ static void amd64_mark(int offset)
 
 static void amd64_call_c_function(void *addr)
 {
+#ifdef PIKE_ENABLE_SSA
+  amd64_ssa_barrier(PIKE_SSA_CALL);
+#else
   flush_dirty_regs();
+#endif
   call_imm(addr);
 }
 
@@ -1759,7 +1839,11 @@ static void maybe_load_fp(void)
 static void sync_registers(int flags)
 {
   maybe_update_pc();
+#ifdef PIKE_ENABLE_SSA
+  amd64_ssa_barrier(PIKE_SSA_CALL);
+#else
   flush_dirty_regs();
+#endif
 
   if (flags & I_UPDATE_SP) sp_reg = P_REG_INVALID;
   if (flags & I_UPDATE_M_SP) mark_sp_reg = P_REG_INVALID;
@@ -2828,7 +2912,11 @@ void ins_f_byte(unsigned int b)
     /* So, it is just a normal return. */
     LABEL_B;
     /* Actually return */
+#ifdef PIKE_ENABLE_SSA
+    amd64_ssa_barrier(PIKE_SSA_FUNCTION);
+#else
     flush_dirty_regs();
+#endif
     amd64_return_from_function();
     /* */
     LABEL_A;
@@ -3180,7 +3268,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
     case F_BRANCH:
       START_JUMP();
 #ifdef PIKE_ENABLE_SSA
-      flush_dirty_regs();
+      amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
       add_to_program(0xe9);
       ret=(INT32) PIKE_PC;
@@ -3197,7 +3285,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
   /* The branch may leave this straight-line region. */
 #ifdef PIKE_ENABLE_SSA
-  flush_dirty_regs();
+  amd64_ssa_barrier(PIKE_SSA_BRANCH);
 #endif
   if (backward_jump) {
     INT32 skip;
