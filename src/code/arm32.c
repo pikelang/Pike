@@ -2635,6 +2635,61 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
         ret = PIKE_PC;
         b_imm(0, ARM_COND_AL);
         return ret;
+    case F_BRANCH_UNLESS_LT:
+    case F_BRANCH_UNLESS_LE:
+    case F_BRANCH_UNLESS_GT:
+    case F_BRANCH_UNLESS_GE:
+        {
+            struct label slow, taken, done;
+            enum arm32_register left, right;
+            enum arm32_condition cond;
+
+            arm32_ins_branch_check_threads_etc();
+            arm32_debug_instr_prologue_0(opcode);
+            label_init(&slow);
+            label_init(&taken);
+            label_init(&done);
+
+            left = ra_alloc_any();
+            right = ra_alloc_any();
+            arm32_load_sp_reg();
+            load32_reg_imm(left, ARM_REG_PIKE_SP,
+                           -2*(INT32)sizeof(struct svalue));
+            load32_reg_imm(right, ARM_REG_PIKE_SP,
+                           -(INT32)sizeof(struct svalue));
+            cond = arm32_ne_types(left, right,
+                                  TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+            b_imm(label_dist(&slow), cond);
+
+            load32_reg_imm(left, ARM_REG_PIKE_SP,
+                           -2*(INT32)sizeof(struct svalue)+OFFSETOF(svalue, u));
+            load32_reg_imm(right, ARM_REG_PIKE_SP,
+                           -(INT32)sizeof(struct svalue)+OFFSETOF(svalue, u));
+            arm32_change_sp(-2);
+            cmp_reg_reg(left, right);
+            ra_free(left);
+            ra_free(right);
+
+            switch (opcode) {
+            case F_BRANCH_UNLESS_LT: cond = ARM_COND_GE; break;
+            case F_BRANCH_UNLESS_LE: cond = ARM_COND_GT; break;
+            case F_BRANCH_UNLESS_GT: cond = ARM_COND_LE; break;
+            default:                 cond = ARM_COND_LT; break;
+            }
+            b_imm(label_dist(&taken), cond);
+            b_imm(label_dist(&done), ARM_COND_AL);
+
+            label_generate(&slow);
+            arm32_call_c_opcode_slowpath(opcode);
+            cmp_reg_imm(ARM_REG_RVAL, 0, 0);
+            b_imm(label_dist(&done), ARM_COND_EQ);
+
+            label_generate(&taken);
+            ret = PIKE_PC;
+            b_imm(0, ARM_COND_AL);
+            label_generate(&done);
+            return ret;
+        }
     case F_LOOP: {
           struct label fallback, jump;
 

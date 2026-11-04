@@ -3419,6 +3419,14 @@ OPCODE0(F_GET_SET_LVALUE, "&get/set", I_UPDATE_SP, {
     Pike_sp++;
   });
 
+/* Keep these opcodes last to preserve existing bytecode numbers.  Unlike
+ * the opposite ordered comparison, these branches also handle unordered
+ * values (eg NaN) correctly. */
+CJUMP(F_BRANCH_UNLESS_LT, "branch unless <", !is_lt);
+CJUMP(F_BRANCH_UNLESS_LE, "branch unless <=", !is_le);
+CJUMP(F_BRANCH_UNLESS_GT, "branch unless >", !is_gt);
+CJUMP(F_BRANCH_UNLESS_GE, "branch unless >=", !is_ge);
+
 /*
 #undef PROG_COUNTER
 */

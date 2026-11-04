@@ -3105,6 +3105,60 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
         ret = PIKE_PC;
         b_imm(0);
         return ret;
+    case F_BRANCH_UNLESS_LT:
+    case F_BRANCH_UNLESS_LE:
+    case F_BRANCH_UNLESS_GT:
+    case F_BRANCH_UNLESS_GE:
+        {
+            struct label slow, taken, done;
+            enum arm64_register left, right;
+            enum arm64_condition cond;
+
+            arm64_ins_branch_check_threads_etc();
+            arm64_debug_instr_prologue_0(opcode);
+            label_init(&slow);
+            label_init(&taken);
+            label_init(&done);
+
+            left = ra_alloc_any();
+            right = ra_alloc_any();
+            arm64_load_sp_reg();
+            load32_reg_imm(left, ARM_REG_PIKE_SP,
+                           -2*(INT32)sizeof(struct svalue));
+            load32_reg_imm(right, ARM_REG_PIKE_SP,
+                           -(INT32)sizeof(struct svalue));
+            cond = arm64_ne_types(left, right,
+                                  TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+            b_imm_cond(label_dist(&slow), cond);
+
+            load_svalue_int(left, ARM_REG_PIKE_SP,
+                            -2*(INT32)sizeof(struct svalue));
+            load_svalue_int(right, ARM_REG_PIKE_SP,
+                            -(INT32)sizeof(struct svalue));
+            arm64_change_sp(-2);
+            cmp_reg_reg(left, right);
+            ra_free(left);
+            ra_free(right);
+
+            switch (opcode) {
+            case F_BRANCH_UNLESS_LT: cond = ARM_COND_GE; break;
+            case F_BRANCH_UNLESS_LE: cond = ARM_COND_GT; break;
+            case F_BRANCH_UNLESS_GT: cond = ARM_COND_LE; break;
+            default:                 cond = ARM_COND_LT; break;
+            }
+            b_imm_cond(label_dist(&taken), cond);
+            b_imm(label_dist(&done));
+
+            label_generate(&slow);
+            arm64_call_c_opcode_slowpath(opcode);
+            cbz32_imm(ARM_REG_RVAL, label_dist(&done));
+
+            label_generate(&taken);
+            ret = PIKE_PC;
+            b_imm(0);
+            label_generate(&done);
+            return ret;
+        }
     case F_LOOP: {
           struct label fallback, jump;
 

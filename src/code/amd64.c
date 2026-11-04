@@ -3220,6 +3220,31 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       test_reg( P_REG_RAX );
       return jnz_imm_rel32(0);
 
+    case F_BRANCH_UNLESS_LT:
+    case F_BRANCH_UNLESS_LE:
+    case F_BRANCH_UNLESS_GT:
+    case F_BRANCH_UNLESS_GE:
+      START_JUMP();
+      if_not_two_int(&label_A, 1);
+      amd64_add_sp(-2);
+      clear_reg(P_REG_RCX);
+      cmp_reg_reg(P_REG_RBX, P_REG_RAX);
+      switch (op) {
+      case F_BRANCH_UNLESS_LT: set_if_gte(P_REG_RCX); break;
+      case F_BRANCH_UNLESS_LE: set_if_gt(P_REG_RCX); break;
+      case F_BRANCH_UNLESS_GT: set_if_lte(P_REG_RCX); break;
+      case F_BRANCH_UNLESS_GE: set_if_lt(P_REG_RCX); break;
+      }
+      mov_reg_reg(P_REG_RCX, P_REG_RAX);
+      jmp(&label_B);
+
+    LABEL_A;
+      amd64_call_c_opcode(instrs[off].address, flags);
+      amd64_load_sp_reg();
+    LABEL_B;
+      test_reg(P_REG_RAX);
+      return jnz_imm_rel32(0);
+
     case F_BRANCH_WHEN_EQ: /* sp[-2] != sp[-1] */
     case F_BRANCH_WHEN_NE: /* sp[-2] != sp[-1] */
 /*      START_JUMP();*/
