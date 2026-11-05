@@ -224,4 +224,25 @@ cond([[getenv("PIKE_TEST_PGSQL_URL")]], [[
 ]])
 ]])
 
+dnl Freeing Sql.pgsql connections should print nothing from their
+dnl backend thread, such as "Bad argument 1 to create(). Expected
+dnl function." Frees 10 connections in a child process. Needs
+dnl PIKE_TEST_PGSQL_URL.
+cond([[!all_constants()->OMIT_SLOW_TESTS]], [[
+cond([[getenv("PIKE_TEST_PGSQL_URL")]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      string url = getenv("PIKE_TEST_PGSQL_URL");
+      void use_one() { Sql.Sql(url)->query("SELECT 1"); };
+      for (int i = 0; i < 10; i++) use_one();
+      sleep(0.5);
+      return 0;
+    #} }));
+    if (r->exitcode || has_value(r->stderr, "Expected function"))
+      return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
+
 END_MARKER

@@ -462,7 +462,7 @@ class conxiin {
 #endif
      );
     void|Thread.MutexKey lock = fillreadmux->lock();
-    if (procmsg && id)
+    if (procmsg && functionp(id))
       procmsg = 0, lock = 0, Thread.Thread(id);
     else if (fillread)
       didreadcb = 1, fillread.signal();
