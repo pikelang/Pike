@@ -189,14 +189,15 @@ PIKEFUN void create(object o)
 	if (!storage)
 		Pike_error ("I need a Postgres object or an heir of it.\n");
 
-        if (!THIS->result) /*this ensures we _DO_ have a result*/
-		Pike_error ("Bad result.\n");
-#ifdef PGRESDEBUG
-	pgdebug("Got %d tuples.\n",PQntuples(THIS->result));
-#endif
+	/* The connection, for fetching more rows and for the commit in
+	 * _destruct(). make_postgres_result() sets the result after
+	 * this. */
+	if (THIS->pgo) free_object(THIS->pgo);
+	add_ref(THIS->pgo = Pike_sp[-args].u.object);
+	THIS->pgod = (struct Postgres_postgres_struct *)storage;
 }
 
-  PIKEFUN void _destruct()
+  PIKEFUN void _destruct(int|void reason)
     flags ID_PROTECTED;
   {
     if (THIS->pgod) {

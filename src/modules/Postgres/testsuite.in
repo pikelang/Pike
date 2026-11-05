@@ -1,1 +1,26 @@
+START_MARKER
 
+dnl Queries that return rows should give their rows. Needs a PostgreSQL
+dnl server URI in PIKE_TEST_PGSQL_URL env, e.g.
+dnl pgsql://user:password@localhost:5432/database.
+cond([[getenv("PIKE_TEST_PGSQL_URL") && master()->resolv("Postgres.postgres")]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      Standards.URI u = Standards.URI(getenv("PIKE_TEST_PGSQL_URL"));
+      object db = Postgres.postgres(u->host, u->path[1..], u->user,
+                                    u->password, u->port);
+      object|zero r = db->big_query("SELECT 1 AS a, 'x' AS b");
+      array rows = ({});
+      while (array row = r->fetch_row()) rows += ({ row });
+      r = 0;
+      write("%O\n", rows);
+      return 0;
+    #} }));
+    if (r->exitcode || sizeof(r->stderr) ||
+        r->stdout != sprintf("%O\n", ({ ({ "1", "x" }) })))
+      return sprintf("exit %d: %s%s", r->exitcode, r->stdout, r->stderr);
+    return 0;
+  ]], 0)
+]])
+
+END_MARKER
