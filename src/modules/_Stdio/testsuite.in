@@ -1135,4 +1135,22 @@ test_any([[
 ]], 0)
 ]])
 
+dnl errno() in a UDP read callback should be 0 for a datagram that
+dnl arrived, not an older error (EAGAIN from a read of nothing before
+dnl it).
+test_any([[
+  object u = _Stdio.UDP()->bind(0, "127.0.0.1");
+  int port = (int)(u->query_address() / " ")[1];
+  u->_set_nonblocking();
+  u->read();
+  int in_cb = -1;
+  u->_set_read_callback(lambda() { in_cb = u->errno(); u->read(); });
+  object s = Stdio.UDP()->bind(0, "127.0.0.1");
+  s->send("127.0.0.1", port, "x");
+  for (int i = 0; i < 100 && in_cb < 0; i++) Pike.DefaultBackend(0.05);
+  u->close();
+  s->close();
+  return in_cb;
+]], 0)
+
 END_MARKER
