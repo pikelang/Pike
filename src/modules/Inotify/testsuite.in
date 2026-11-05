@@ -83,4 +83,35 @@ ifefun(testdir,
   test_do(add_constant("testdir"));
 ]])
 
+dnl A poll() from System.Inotify's event callback should neither crash
+dnl nor deliver an event twice.
+cond_resolv(System.Inotify, [[
+test_any([[
+  mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+    string dir = sprintf("inotify_poll_reentry_%d", getpid());
+    mkdir(dir);
+    object in = System.Inotify._Instance();
+    in->set_nonblocking();
+    in->add_watch(dir, System.Inotify.IN_CREATE);
+    mapping(string:int) seen = ([]);
+    int depth;
+    in->set_event_callback(lambda(int wd, int mask, int cookie, string name) {
+        seen[name]++;
+        if (!depth++) in->poll();
+        depth--;
+      });
+    for (int i = 0; i < 4; i++) Stdio.write_file(dir + "/f" + i, "");
+    in->poll();
+    Stdio.recursive_rm(dir);
+    if (sizeof(seen) != 4 || max(@values(seen)) != 1) {
+      werror("events %O\n", seen);
+      return 2;
+    }
+    return 0;
+  #} }));
+  if (r->exitcode) return sprintf("exit %d: %s", r->exitcode, r->stderr);
+  return 0;
+]], 0)
+]])
+
 END_MARKER
