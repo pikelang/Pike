@@ -194,4 +194,43 @@ test_any([[
   return x->read(2);
 ]], "c")
 
+dnl Clearing and setting a file's read callback from another thread
+dnl while a backend thread delivers reads should not make the backend
+dnl call a NULL callback ("Attempt to call the NULL-value").
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond_resolv(Thread.Thread, [[
+  test_any([[
+    Stdio.File r = Stdio.File(), w = r->pipe();
+    Pike.Backend be = Pike.Backend();
+    r->set_backend(be);
+    int stop;
+    string first;
+    void cb(mixed id, string data) { };
+    r->set_read_callback(cb);
+    Thread.Thread writer = Thread.Thread(lambda() {
+        while (!stop) { w->write("x" * 64); sleep(0.0001); }
+      });
+    Thread.Thread toggler = Thread.Thread(lambda() {
+        while (!stop) {
+          r->set_read_callback(0);
+          sleep(0.00005);
+          r->set_read_callback(cb);
+          sleep(0.00005);
+        }
+      });
+    int t = time();
+    while (time() - t < 10 && !first) {
+      mixed err = catch { be(0.01); };
+      if (err) first = describe_error(err);
+    }
+    stop = 1;
+    writer->wait();
+    toggler->wait();
+    r->close();
+    w->close();
+    return first;
+  ]], 0)
+]])
+]])
+
 END_MARKER
