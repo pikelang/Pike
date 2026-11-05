@@ -17,6 +17,37 @@
 #define IMAGE_EMMX  8
 extern int image_cpuid;
 
+/* Drawing loops let go of the interpreter lock while they read and
+ * write an image's pixels and size. _decode() and create(), which
+ * replace an image's memory, wait until none does (see
+ * image_wait_for_unlocked()), and loops that start meanwhile keep the
+ * lock. Use these instead of THREADS_ALLOW() and THREADS_DISALLOW()
+ * around code that uses an image's memory. */
+extern int image_threads_unlocked, image_replace_waiting;
+void image_wait_for_unlocked(void);
+#ifdef PIKE_THREADS
+#define IMAGE_THREADS_ALLOW() do {					\
+    int img_unlocked__ = !image_replace_waiting;			\
+    struct thread_state *cur_ts__ = Pike_interpreter.thread_state;	\
+    if (img_unlocked__) {						\
+      image_threads_unlocked++;						\
+      pike_threads_allow (cur_ts__ COMMA_DLOC);				\
+    }									\
+    HIDE_GLOBAL_VARIABLES();						\
+    {
+#define IMAGE_THREADS_DISALLOW()					\
+    ;}									\
+    REVEAL_GLOBAL_VARIABLES();						\
+    if (img_unlocked__) {						\
+      pike_threads_disallow (cur_ts__ COMMA_DLOC);			\
+      image_threads_unlocked--;						\
+    }									\
+  } while (0)
+#else
+#define IMAGE_THREADS_ALLOW() THREADS_ALLOW()
+#define IMAGE_THREADS_DISALLOW() THREADS_DISALLOW()
+#endif
+
 #define COLORTYPE unsigned char
 #define COLORMAX 255
 #define COLORLMAX 0x7fffffff

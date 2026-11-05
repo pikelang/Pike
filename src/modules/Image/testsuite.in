@@ -1147,4 +1147,33 @@ test_encoding(XPM,[[
   img=c*img;
 ]],[[,(["colortable":c]) ]])
 test_encoding(TIFF,,)
+dnl Drawing on an image in several threads while another replaces its
+dnl memory with _decode() should not crash.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond_resolv(Thread.Thread, [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      Image.Image img = Image.Image(512, 512);
+      int stop;
+      array(Thread.Thread) ts = map(enumerate(3), lambda(int id) {
+          return Thread.Thread(lambda() {
+              while (!stop)
+                catch { img->box(0, 0, 511, 511, id * 80, 0, 0); };
+            });
+        });
+      int t = time();
+      for (int i = 0; time() - t < 5; i++) {
+        int w = (i & 1) ? 512 : 8;
+        img->_decode(({ w, w, "\1\2\3" * (w * w) }));
+      }
+      stop = 1;
+      ts->wait();
+      return 0;
+    #} }));
+    if (r->exitcode) return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
+
 END_MARKER

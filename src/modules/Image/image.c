@@ -393,7 +393,7 @@ static void img_apply_matrix(struct image *dest,
    double qr,qg,qb;
    double r=0,g=0,b=0;
 
-THREADS_ALLOW();
+IMAGE_THREADS_ALLOW();
 
    widthheight=width*height;
    sumr=sumg=sumb=0;
@@ -413,11 +413,11 @@ THREADS_ALLOW();
    ex=width-bx;
    ey=height-by;
 
-THREADS_DISALLOW();
+IMAGE_THREADS_DISALLOW();
 
    d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize + RGB_VEC_PAD);
 
-THREADS_ALLOW();
+IMAGE_THREADS_ALLOW();
 CHRONO("apply_matrix, one");
 
    for (y=by; y<img->ysize-ey; y++)
@@ -492,7 +492,7 @@ CHRONO("apply_matrix, three");
    *dest=*img;
    dest->img=d;
 
-THREADS_DISALLOW();
+IMAGE_THREADS_DISALLOW();
 }
 
 /***************** methods *************************************/
@@ -974,6 +974,9 @@ void image_create(INT32 args)
    }
    if (args<2) return;
 
+   /* Other threads may be drawing on this image without the
+    * interpreter lock (see IMAGE_THREADS_ALLOW()). */
+   image_wait_for_unlocked();
    get_all_args(NULL, args, "%i%i", &THIS->xsize, &THIS->ysize);
    if (image_size_check(THIS->xsize,THIS->ysize))
       Pike_error("create: image too small or large (>2Gpixels)\n");
@@ -1934,7 +1937,7 @@ static void image_tuned_box(INT32 args)
   yw=y2-y1;
   if(xw == 0 || yw == 0) return;
   this=THIS;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
 
   if (! (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha))
     {
@@ -2012,7 +2015,7 @@ static void image_tuned_box(INT32 args)
 
 	}
     }
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 }
 
 /*
@@ -2126,7 +2129,7 @@ static void image_gradients(INT32 args)
    if (!first)
       SIMPLE_WRONG_NUM_ARGS_ERROR("gradients",1);
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
 
    xz=img->xsize;
    for (y=0; y<img->ysize; y++)
@@ -2198,7 +2201,7 @@ static void image_gradients(INT32 args)
 
    while (first) { c=first; first=c->next; free(c); }
 
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_object(o);
 }
@@ -2359,7 +2362,7 @@ void image_grey(INT32 args)
    d=img->img;
    s=THIS->img;
    x=THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (x--)
    {
       d->r=d->g=d->b=
@@ -2369,7 +2372,7 @@ void image_grey(INT32 args)
       d++;
       s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -2452,7 +2455,7 @@ void image_color(INT32 args)
 
    x=THIS->xsize*THIS->ysize;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
 #if 0
 #ifdef ASSEMBLY_OK
    if( (image_cpuid & IMAGE_MMX) && x>>2 )
@@ -2470,7 +2473,7 @@ void image_color(INT32 args)
       d++;
       s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -2516,7 +2519,7 @@ void image_invert(INT32 args)
    d = (char *)img->img;
    s = (char *)THIS->img;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    if (sz >= sizeof(INT_TYPE))
    {
      INT_TYPE *dd = (INT_TYPE *)d;
@@ -2532,7 +2535,7 @@ void image_invert(INT32 args)
    {
      *(d++) = ~*(s++);
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -2609,7 +2612,7 @@ void image_threshold(INT32 args)
    s=THIS->img;
 
    x=THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    if (level==-1)
       while (x--)
       {
@@ -2635,7 +2638,7 @@ void image_threshold(INT32 args)
 	 s++;
       }
 
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -2733,7 +2736,7 @@ void image_hsv_to_rgb(INT32 args)
    d=img->img;
    s=THIS->img;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    i=img->xsize*img->ysize;
    while (i--)
    {
@@ -2779,7 +2782,7 @@ void image_hsv_to_rgb(INT32 args)
    }
 exit_loop:
    ;	/* Needed to keep some compilers happy. */
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    if (err) {
      Pike_error("%s\n", err);
@@ -2820,7 +2823,7 @@ void image_rgb_to_hsv(INT32 args)
    d=img->img;
    s=THIS->img;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    i=img->xsize*img->ysize;
    while (i--)
    {
@@ -2843,7 +2846,7 @@ void image_rgb_to_hsv(INT32 args)
       d->b = v;
       s++; d++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -2948,7 +2951,7 @@ void image_yuv_to_rgb(INT32 args)
    d=img->img;
    s=THIS->img;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    i=img->xsize*img->ysize;
    while (i--)
    {
@@ -2968,7 +2971,7 @@ void image_yuv_to_rgb(INT32 args)
      d->b = CLAMP(b, 0, 255);
      s++; d++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -2996,7 +2999,7 @@ void image_rgb_to_yuv(INT32 args)
    d=img->img;
    s=THIS->img;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    i=img->xsize*img->ysize;
    while (i--)
    {
@@ -3011,7 +3014,7 @@ void image_rgb_to_yuv(INT32 args)
      d->b = CLAMP(cb, 16, 239);
      s++; d++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -3090,7 +3093,7 @@ void image_distancesq(INT32 args)
    s=THIS->img;
    rgb=THIS->rgb;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    i=img->xsize*img->ysize;
    while (i--)
    {
@@ -3101,7 +3104,7 @@ void image_distancesq(INT32 args)
       d->r=d->g=d->b=testrange(dist);
       d++; s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -3990,14 +3993,14 @@ void image_modify_by_intensity(INT32 args)
    s=THIS->img;
 
    x=THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (x--)
    {
       unsigned int q = (s->r*rgb.r + s->g*rgb.g + s->b*rgb.b)/div;
       *(d++)=list[testrange( q )];
       s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    free(list);
 
@@ -4042,14 +4045,14 @@ static void image_apply_curve_3( unsigned char curve[3][256] )
   d = ((struct image*)get_storage( o, image_program ))->img;
   i = THIS->xsize*THIS->ysize;
 
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   for( ; i>0; i-- )
   {
     d->r = curve[0][s->r];
     d->g = curve[1][s->g];
     (d++)->b = curve[2][(s++)->b];
   }
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 
   push_object( o );
 }
@@ -4064,14 +4067,14 @@ static void image_apply_curve_1( unsigned char curve[256] )
   o = clone_object( image_program, 2 );
   d = ((struct image*)get_storage( o, image_program ))->img;
   i = THIS->xsize*THIS->ysize;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   for( ; i>0; i-- )
   {
     d->r = curve[s->r];
     d->g = curve[s->g];
     (d++)->b = curve[(s++)->b];
   }
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
   push_object( o );
 }
 
@@ -4085,14 +4088,14 @@ static void image_apply_curve_2( struct object *o,
   d = ((struct image*)get_storage(o,image_program))->img;
   i = THIS->xsize*THIS->ysize;
 
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   switch( channel )
   {
    case 0: for( ; i>0; i--,d++ ) d->r = curve[d->r]; break;
    case 1: for( ; i>0; i--,d++ ) d->g = curve[d->g]; break;
    case 2: for( ; i>0; i--,d++ ) d->b = curve[d->b]; break;
   }
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 
   push_object( o );
 }
@@ -4356,7 +4359,7 @@ void image_gamma(INT32 args)
    s=THIS->img;
 
    x=THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (x--)
    {
       d->r=newr[s->r];
@@ -4365,7 +4368,7 @@ void image_gamma(INT32 args)
       d++;
       s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    pop_n_elems(args);
    push_object(o);
@@ -4855,6 +4858,9 @@ void image__decode( INT32 args )
     if( w*h*(ptrdiff_t) sizeof(rgb_group) != a->item[2].u.string->len )
 	Pike_error("Illegal image data\n");
 
+    /* Other threads may be drawing on this image without the
+     * interpreter lock (see IMAGE_THREADS_ALLOW()). */
+    image_wait_for_unlocked();
     if( THIS->img )
 	free( THIS->img );
 

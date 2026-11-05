@@ -11,6 +11,7 @@
 #include "program_id.h"
 #include "operators.h"
 #include "module_support.h"
+#include "pike_threadlib.h"
 
 #include "image.h"
 #include "assembly.h"
@@ -167,6 +168,24 @@ static void image_magic_index(INT32 args)
 }
 
 int image_cpuid;
+
+/* See IMAGE_THREADS_ALLOW() in image.h. */
+int image_threads_unlocked, image_replace_waiting;
+
+/* Waits, with the interpreter lock released, until no drawing loop
+ * runs without it; those that start meanwhile keep it, so that the
+ * wait ends. */
+void image_wait_for_unlocked(void)
+{
+  if (!image_threads_unlocked) return;
+  image_replace_waiting++;
+  while (image_threads_unlocked) {
+    THREADS_ALLOW();
+    sysleep(0.0001);
+    THREADS_DISALLOW();
+  }
+  image_replace_waiting--;
+}
 #ifdef ASSEMBLY_OK
 static void init_cpuidflags( )
 {

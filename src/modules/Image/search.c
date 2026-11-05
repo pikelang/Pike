@@ -282,7 +282,7 @@ void image_make_ascii(INT32 args)
   max=xmax*ymax;
   s=begin_shared_string(max);
 
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
 
   /*fix /n at each row*/
   for(i=xmax-1; i<max; i+=xmax)
@@ -388,7 +388,7 @@ void image_make_ascii(INT32 args)
 **!	</pre>
   */
 
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 
   pop_n_elems(args);
   push_string(end_shared_string(s));
@@ -506,7 +506,7 @@ void img_apply_max(struct image *dest,
 
    d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
 
-THREADS_ALLOW();
+IMAGE_THREADS_ALLOW();
 
    widthheight=width*height;
    sumr=sumg=sumb=0;
@@ -599,7 +599,7 @@ j++;
    *dest=*img;
    dest->img=d;
 
-THREADS_DISALLOW();
+IMAGE_THREADS_DISALLOW();
 }
 
 

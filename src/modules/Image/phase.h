@@ -33,7 +33,7 @@ void IMAGE_PHASE(INT32 args)
 
   pop_n_elems(args);
 
-THREADS_ALLOW();
+IMAGE_THREADS_ALLOW();
      xz=this->xsize;
      yz=this->ysize;
 
@@ -84,7 +84,7 @@ THREADS_ALLOW();
 
 #undef DALOOP
 
-THREADS_DISALLOW();
+IMAGE_THREADS_DISALLOW();
 
   push_object(o);
 }
