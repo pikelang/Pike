@@ -521,6 +521,24 @@ dnl create/add( system.memory )
   ]], 1)
 cond_end
 
+dnl A Stdio.Buffer made of a System.Memory should stay readable after
+dnl the System.Memory's free(), which must throw or leave the memory to
+dnl the buffer. (crash)
+cond([[ System["__MMAP__"] ]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      System.Memory m = System.Memory(1 << 20);
+      m[0] = 65;
+      Stdio.Buffer b = Stdio.Buffer(m);
+      catch { m->free(); };
+      if (b[0] != 65 || sizeof(b->read()) != 1 << 20) return 2;
+      return 0;
+    #} }));
+    if (r->exitcode) return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+
 dnl create/add( buffer )
 test_any([[
   Stdio.Buffer a = Stdio.Buffer("buffer 1");

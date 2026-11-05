@@ -4262,6 +4262,38 @@ PMOD_EXPORT enum memobj_type pike_get_memory_object( struct object *o, struct pi
   return MEMOBJ_NONE;
 }
 
+/* Objects whose memory a buffer uses directly (a Stdio.Buffer made of a
+ * System.Memory, and its sub-buffers), with the number of buffers that
+ * do: System.Memory doesn't free or replace pinned memory. Keyed by
+ * address, as the exit callbacks of a destructed object look too (the
+ * buffers hold references). */
+static struct mapping *pinned_memory_objects = NULL;
+
+PMOD_EXPORT void pike_pin_memory_object(struct object *o, int delta)
+{
+  struct svalue key, *v;
+  INT_TYPE n;
+  SET_SVAL(key, T_INT, NUMBER_NUMBER, integer, (INT_TYPE)(ptrdiff_t)o);
+  if (!pinned_memory_objects) pinned_memory_objects = allocate_mapping(4);
+  v = low_mapping_lookup(pinned_memory_objects, &key);
+  n = (v ? v->u.integer : 0) + delta;
+  if (n > 0) {
+    struct svalue val;
+    SET_SVAL(val, T_INT, NUMBER_NUMBER, integer, n);
+    mapping_insert(pinned_memory_objects, &key, &val);
+  } else if (v) {
+    map_delete(pinned_memory_objects, &key);
+  }
+}
+
+PMOD_EXPORT int pike_memory_object_pinned(struct object *o)
+{
+  struct svalue key;
+  if (!pinned_memory_objects) return 0;
+  SET_SVAL(key, T_INT, NUMBER_NUMBER, integer, (INT_TYPE)(ptrdiff_t)o);
+  return !!low_mapping_lookup(pinned_memory_objects, &key);
+}
+
 PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr,
 						       size_t *len, int *shift )
 {
@@ -4307,6 +4339,10 @@ void exit_object(void)
 
   destruct_objects_to_destruct();
 
+  if (pinned_memory_objects) {
+    free_mapping(pinned_memory_objects);
+    pinned_memory_objects = NULL;
+  }
   if( shm_program )
   {
       free_program( shm_program );
