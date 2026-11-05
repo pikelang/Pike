@@ -623,6 +623,7 @@ static void gdbmmod_iter_next(INT32 UNUSED(args))
     add_ref(this->iter);
     return;
   }
+  pop_stack();
   push_undefined();
 }
 
@@ -659,13 +660,14 @@ static void gdbmmod_indices(INT32 UNUSED(args))
 {
   struct gdbm_glue *this=THIS;
   struct svalue *start = Pike_sp;
+  /* Each key that gdbmmod_iter_next() finds stays on the stack. */
   gdbmmod_iter_first(0);
-  pop_stack();
-  while( this->iter )
-  {
-    ref_push_string( this->iter );
+  while (1) {
     gdbmmod_iter_next(0);
-    pop_stack();
+    if (!this->iter) {
+      pop_stack();
+      break;
+    }
   }
   push_array(aggregate_array( Pike_sp-start ));
 }
@@ -683,14 +685,13 @@ static void gdbmmod_values(INT32 UNUSED(args))
   struct gdbm_glue *this=THIS;
   struct svalue *start = Pike_sp;
   gdbmmod_iter_first(0);
-  pop_stack();
-
-  while( this->iter )
-  {
-    ref_push_string( this->iter );
-    gdbmmod_fetch(1);
+  while (1) {
     gdbmmod_iter_next(0);
-    pop_stack();
+    if (!this->iter) {
+      pop_stack();
+      break;
+    }
+    gdbmmod_fetch(1);
   }
   push_array(aggregate_array( Pike_sp-start ));
 }

@@ -64,6 +64,21 @@ test_any([[
   return err ? describe_error(err) : got;
 ]], "value")
 
+dnl indices() and values() of a Gdbm.DB should list its keys and values
+dnl instead of erroring with "Too large array (size -1 is too big)".
+test_any_equal([[
+  string path = "gdbm_indices.gdbm";
+  rm(path);
+  object db = Gdbm.DB(path, "rwc");
+  db->store("a", "1");
+  db->store("b", "2");
+  mixed res;
+  mixed err = catch { res = ({ sort(indices(db)), sort(values(db)) }); };
+  db->close();
+  rm(path);
+  return err ? describe_error(err) : res;
+]], ({ ({ "a", "b" }), ({ "1", "2" }) }))
+
 cond_end // Gdbm
 
 END_MARKER
