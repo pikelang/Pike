@@ -4522,6 +4522,34 @@ dnl Syntax error in consts value must not leave a NULL in recovery (crash).
 test_compile_error([[ constant x = ; ]])
 test_compile_error([[ class A { constant x = ; } ]])
 
+dnl A fresh ([]), (<>) or ({ 1, 2 }) literal should stay fresh in a
+dnl program that also folds an equal container from another object at
+dnl compile time, and the folded values should still be that object's.
+test_any_equal([[
+  object h = class {
+      mapping m = ([]);
+      multiset s = (<>);
+      array a = ({ 1, 2 });
+    }();
+  add_constant("literal_folded_holder", h);
+  program p = compile_string(#"
+    mixed peek_m(mixed k) { return literal_folded_holder.m[k]; }
+    mixed peek_s(mixed k) { return literal_folded_holder.s[k]; }
+    mixed peek_a(int i) { return literal_folded_holder.a[i]; }
+    mapping fresh_mapping() { mapping x = ([]); return x; }
+    multiset fresh_multiset() { multiset x = (<>); return x; }
+    array fresh_array() { array x = ({ 1, 2 }); return x; }
+  ");
+  add_constant("literal_folded_holder");
+  object o = p();
+  h->m->key = "from the other object";
+  h->s->key = 1;
+  h->a[0] = "from the other object";
+  return ({ o->fresh_mapping(), o->fresh_multiset(), o->fresh_array(),
+            o->peek_m("key") == h->m->key && o->peek_s("key") &&
+            o->peek_a(0) == h->a[0] });
+]], ({ ([]), (<>), ({ 1, 2 }), 1 }))
+
 // Constant initializers must not overwrite declaration modifiers (#10236).
 test_any_equal([[
   array(array(string)) result = ({});
