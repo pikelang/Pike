@@ -2058,8 +2058,6 @@ class proxy {
     qportals = Thread.Queue();
     readyforquerycount = 1;
     qportals->write(1);
-    if (!(c = conxion(this, qportals, 0)))
-      error("Couldn't connect to database on %s:%d\n", host, port);
     runtimeparameter = ([]);
     unnamedportalmux = MUTEX();
     unnamedstatement = MUTEX();
@@ -2067,6 +2065,8 @@ class proxy {
     portalsinflight = Thread.ResourceCount();
     statementsinflight = Thread.ResourceCount();
     wasparallelisable = 0;
+    if (!(c = conxion(this, qportals, 0)))
+      error("Couldn't connect to database on %s:%d\n", host, port);
   }
 
   final int is_open() {
