@@ -801,6 +801,12 @@ o Sql.Sql is no longer a wrapper class, but a function.
   new base class __builtin.Sql.Connection. Note that it is
   still possible to use Sql.Sql as the type of connection objects.
 
+o Sql.Connection()->promise_query() returns a typed Concurrent.Future.
+
+  The experimental Sql.Promise and Sql.FutureResult classes have been
+  removed. The future carries a buffered Sql.Result. Record limits can
+  be set through the new options mapping passed to promise_query().
+
 o Standards.XML.Wix now generates XML intended for Wix 3.x.
 
   Generation of XML for Wix 2.x is available in 8.0::Standards.XML.Wix.

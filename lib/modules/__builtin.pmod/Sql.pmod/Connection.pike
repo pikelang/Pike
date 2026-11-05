@@ -1259,66 +1259,148 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   return res;
 }
 
+private Concurrent.Future(<.Result>) promise_query_impl(
+    string q, zero|mapping(string|int:mixed) bindings,
+    zero|function(array, .Result, array :array) map_cb,
+    zero|mapping(string:int) options)
+{
+  int minresults = 0, maxresults = -1, discardover = -1;
+  int received, completed;
+
+  if (options) {
+    foreach (indices(options), string key) {
+      int value = options[key];
+      switch (key) {
+      case "min_records":
+        if (value < 0) ERROR("min_records must be nonnegative.\n");
+        minresults = value;
+        break;
+      case "max_records":
+        if (value < -1) ERROR("max_records must be at least -1.\n");
+        maxresults = value;
+        break;
+      case "discard_records":
+        if (value < -1) ERROR("discard_records must be at least -1.\n");
+        discardover = value;
+        break;
+      default:
+        ERROR("Unknown promise_query() option %O.\n", key);
+      }
+    }
+  }
+
+  Concurrent.Promise(<.Result>) promise = Concurrent.Promise(<.Result>)();
+  Concurrent.Future(<.Result>) future = promise->future();
+  array(array(mixed)) data = ({});
+
+  void failed(mixed msg) {
+    if (completed) return;
+    completed = 1;
+    promise->try_failure(arrayp(msg) ? msg : ({msg, backtrace()}));
+  }
+
+  void succeeded(.Result result) {
+    if (completed) return;
+    .Result buffered;
+    mixed err = catch {
+      result->eof();
+      array(mapping(string:mixed)) columns = result->fetch_fields() || ({});
+      int affected = result->affected_rows();
+      string status = result->status_command_complete() || "";
+      buffered = .BufferedResult(data, columns, affected, status);
+    };
+    if (err) failed(err);
+    else {
+      completed = 1;
+      promise->try_success(buffered);
+    }
+  }
+
+  void result_cb(.Result result, array(array(mixed)) rows) {
+    if (completed) return;
+    if (rows) {
+      received += sizeof(rows);
+      if (maxresults >= 0 && received > maxresults) {
+        failed(sprintf("Too many records returned: %d > %d\n%O",
+                       received, maxresults, result));
+        return;
+      }
+      if (map_cb) {
+        mixed err = catch(rows = predef::filter(
+          predef::map(rows, map_cb, result, data), arrayp));
+        if (err) {
+          failed(err);
+          return;
+        }
+      }
+      if (discardover >= 0) {
+        int room = discardover - sizeof(data);
+        if (room > 0) data += rows[..room-1];
+      } else data += rows;
+    } else if (received >= minresults)
+      succeeded(result);
+    else
+      failed(catch(result->eof()) ||
+             sprintf("Insufficient number of records returned\n%O", result));
+  }
+
+  mixed err = catch(this->streaming_typed_query(q, bindings)
+                    ->set_result_array_callback(result_cb));
+  if (err) failed(err);
+  return future;
+}
+
 //! Sends a typed query to the database asynchronously.
 //!
 //! @returns
-//!   An @[Sql.Promise] object which can be used to obtain
-//!   an @[Sql.FutureResult] object to evaluate the query.
+//!   A @[Concurrent.Future] carrying a buffered @[Sql.Result]. A failed
+//!   query rejects the future with an error.
+//!   The result cursor starts at the first row. Use @[res_obj_to_array()]
+//!   to convert the result to labeled rows.
 //!
-//! @seealso
-//!   @[streaming_typed_query()], @[Sql.Promise], @[Sql.FutureResult]
-//!
+//! @param bindings
+//!   Bindings for the query.
 //! @param map_cb
-//!
-//!  Callback function which is called for every row returned.
-//!  First parameter is the row, second parameter is the result object
-//!  being processed, and the third parameter is the array of result rows
-//!  already collected so far.  The function should return the modified
-//!  version of the row that needs to be stored, or it should return
-//!  @expr{0@} to discard the row.
+//!   Called for every row returned. The arguments are the row, the result
+//!   object, and the rows already collected. Return the modified row, or
+//!   @expr{0@} to discard it.
+//! @param options
+//!   Optional mapping with the following keys:
+//!   @mapping
+//!     @member int "min_records"
+//!       Fail if fewer rows are returned. Defaults to @expr{0@}.
+//!     @member int "max_records"
+//!       Fail if more rows are returned. @expr{-1@} disables the limit.
+//!     @member int "discard_records"
+//!       Keep at most this many rows. @expr{-1@} keeps all rows.
+//!   @endmapping
 //!
 //! @example
 //! @code
-//!
-//! Sql.Connection db = Sql.Connection("...");
-//! Sql.Promise q1 = db->promise_query("SELECT 42")->max_records(10);
-//! Sql.Promise q2 = db->promise_query("SELECT :foo::INT", (["foo":2]));
-//!
-//! array(Concurrent.Future) all = ({ q1, q2 })->future();
-//!
-//! // To get a callback for each of the requests
-//!
-//! all->on_success(lambda (Sql.FutureResult resp) {
-//!   werror("Got result %O from %O\n", resp->get(), resp->query);
+//! Sql.Connection db = Sql.Sql("mysql://localhost/testdb");
+//! Concurrent.Future(<Sql.Result>) query =
+//!   db->promise_query("SELECT 42", 0, 0, (["max_records":10]));
+//! query->on_success(lambda (Sql.Result result) {
+//!   werror("Got %O\n", result->fetch_row());
 //! });
-//! all->on_failure(lambda (Sql.FutureResult resp) {
-//!   werror("Request %O failed: %O\n", resp->query,
-//!    resp->status_command_complete);
-//! });
-//!
-//! // To get a callback when all of the requests are done. In this case
-//! // on_failure will be called if any of the requests fails.
-//!
-//! Concurrent.Future all2 = Concurrent.results(all);
-//!
-//! all2->on_success(lambda (array(Sql.FutureResult) resp) {
-//!   werror("All requests were successful: %O\n", resp);
-//! });
-//! all->on_failure(lambda (Sql.FutureResult resp) {
-//!   werror("Requests %O failed with %O.\n", resp->query,
-//!    resp->status_command_complete);
+//! query->on_failure(lambda (mixed error) {
+//!   werror("Query failed: %O\n", error);
 //! });
 //! @endcode
 //!
-//! @note
-//!   This is an experimental API, and is likely to be changed to
-//!   return other objects in future releases of Pike.
-public variant __experimental__ Concurrent.Future promise_query(string q,
-                     void|mapping(string|int:mixed) bindings,
-                     void|function(array, .Result, array :array) map_cb) {
-  return __builtin.Sql.Promise(this, q, bindings, map_cb)->future();
+//! @seealso
+//!   @[streaming_typed_query()], @[Sql.Result]
+public variant __experimental__ Concurrent.Future(<.Result>)
+promise_query(string q, void|zero|mapping(string|int:mixed) bindings,
+              void|zero|function(array, .Result, array :array) map_cb,
+              void|zero|mapping(string:int) options)
+{
+  return promise_query_impl(q, bindings, map_cb, options);
 }
-public variant __experimental__ Concurrent.Future promise_query(string q,
-                     function(array, .Result, array :array) map_cb) {
-  return __builtin.Sql.Promise(this, q, 0, map_cb)->future();
+
+public variant __experimental__ Concurrent.Future(<.Result>)
+promise_query(string q, function(array, .Result, array :array) map_cb,
+              void|zero|mapping(string:int) options)
+{
+  return promise_query_impl(q, 0, map_cb, options);
 }
