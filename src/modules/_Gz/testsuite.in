@@ -1,0 +1,44 @@
+START_MARKER
+
+dnl Several threads deflating through one Gz.deflate should lose no
+dnl data: the inflated stream must hold each thread's letter as many
+dnl times as it was given. In child processes, as freed memory may crash
+dnl them. Without the fix a child loses data in about 80% of runs; up to
+dnl three children, so this fails in nearly every run.
+cond_resolv(Thread.Thread, [[
+  test_any([[
+    string child = #{
+      int threads = 4, calls = 1000, len = 100;
+      Gz.deflate d = Gz.deflate();
+      Thread.Mutex out_lock = Thread.Mutex();
+      string out = "";
+      map(enumerate(threads), lambda(int id) {
+          return Thread.Thread(lambda() {
+              string data = sprintf("%c", 'a' + id) * len;
+              for (int i = 0; i < calls; i++) {
+                string chunk = d->deflate(data, Gz.NO_FLUSH);
+                Thread.MutexKey k = out_lock->lock();
+                out += chunk;
+                destruct(k);
+              }
+            });
+        })->wait();
+      string s = Gz.inflate()->inflate(out + d->deflate("", Gz.FINISH));
+      int bad = sizeof(s) != threads * calls * len;
+      for (int id = 0; id < threads; id++)
+        bad += String.count(s, sprintf("%c", 'a' + id)) != calls * len;
+      if (bad) werror("%d bytes out, expected %d\n", sizeof(s),
+                      threads * calls * len);
+      return !!bad;
+    #};
+    for (int run = 0; run < 3; run++) {
+      mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", child }));
+      if (r->exitcode)
+        return sprintf("run %d: exit %d: %s", run + 1, r->exitcode,
+                       r->stderr);
+    }
+    return 0;
+  ]], 0)
+]])
+
+END_MARKER
