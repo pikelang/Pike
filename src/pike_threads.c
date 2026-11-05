@@ -1449,6 +1449,8 @@ union pike_hrtime {
 };
 #endif
 
+static void low_thread_yield(int handover);
+
 static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *UNUSED(arg2))
 {
 #ifdef PROFILE_CHECK_THREADS
@@ -1704,7 +1706,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 #ifdef PIKE_DEBUG
     UINT64 old_thread_swaps = thread_swaps;
 #endif
-    pike_thread_yield();
+    low_thread_yield(1);
 #ifdef PIKE_DEBUG
     if (thread_swaps != old_thread_swaps)
       check_threads_swaps++;
@@ -1712,7 +1714,13 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
   }
 }
 
-PMOD_EXPORT void pike_thread_yield(void)
+/* With handover set (at the end of a time slice), sleep a little
+ * instead of yielding: a thread woken from a condition wait takes the
+ * interpreter lock back inside the wait (pike_low_wait_interpreter()),
+ * without the interpreter_lock_wanted handshake, and nearly never got
+ * it in the moment that a yield leaves it free, so it could wait for
+ * tens of seconds while this thread ran. */
+static void low_thread_yield(int handover)
 {
   DEBUG_CHECK_THREAD();
 
@@ -1723,7 +1731,13 @@ PMOD_EXPORT void pike_thread_yield(void)
    * poorly defined. It might not really yield we need it to. It might
    * make us yield to another process instead of just another thread.
    * It might even make us sleep for a short while. */
-  th_yield();
+#ifdef HAVE_NANOSLEEP
+  if (handover) {
+    struct timespec t = { 0, 50000 };
+    nanosleep(&t, NULL);
+  } else
+#endif
+    th_yield();
   THREADS_DISALLOW();
 
 #ifdef USE_CLOCK_FOR_SLICES
@@ -1743,6 +1757,11 @@ PMOD_EXPORT void pike_thread_yield(void)
 #endif
 
   DEBUG_CHECK_THREAD();
+}
+
+PMOD_EXPORT void pike_thread_yield(void)
+{
+  low_thread_yield(0);
 }
 
 struct thread_starter

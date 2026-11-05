@@ -7213,6 +7213,46 @@ void test()
     })->wait();
   ]])
 
+dnl Condition waits of 1 ms should not take over 2 seconds while another
+dnl thread runs Pike code that doesn't block. Run 100s of them, in a child
+dnl process killed after 60 seconds.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+  test_any([[
+    Process.Process p = Process.Process(RUNPIKE_ARRAY + ({ "-e", #{
+      int stop;
+      Thread.Thread busy = Thread.Thread(lambda() {
+          int x;
+          while (!stop) x++;
+        });
+      Thread.Mutex m = Thread.Mutex();
+      Thread.Condition c = Thread.Condition();
+      float worst = 0.0;
+      for (int i = 0; i < 200; i++) {
+        int t = gethrtime();
+        object|zero key = m->lock();
+        c->wait(key, 0.001);
+        key = 0;
+        worst = max(worst, (gethrtime() - t) / 1e6);
+      }
+      stop = 1;
+      busy->wait();
+      if (worst > 2.0) {
+        werror("a 1 ms wait took %.2f s\n", worst);
+        return 1;
+      }
+      return 0;
+    #} }));
+    int t = time();
+    while (!p->status() && time() - t < 60) sleep(0.1);
+    if (!p->status()) {
+      p->kill(9);
+      p->wait();
+      return "200 waits of 1 ms took over 60 s";
+    }
+    return p->wait();
+  ]], 0)
+]])
+
 cond_end // thread_create
 
 cond([[0]],
