@@ -263,7 +263,9 @@
 #undef USE_SIGCHILD
 #endif
 
-#if defined(USE_SIGCHILD) && defined(__linux__) && defined(_REENTRANT)
+/* With threads, any thread may take a signal, so two may push to the
+ * FIFOs at once; only the pipe takes them from several producers. */
+#if defined(_REENTRANT) && !defined(__NT__)
 #define NEED_SIGNAL_SAFE_FIFO
 #endif
 
@@ -333,7 +335,9 @@
 			 sizeof(val))) < 0 &&			 \
 	   errno==EINTR)					 \
       ;								 \
-    DO_IF_DEBUG(if (sz != sizeof(val))				 \
+    /* A full pipe already holds a wake-up for the reader. */	 \
+    DO_IF_DEBUG(if (sz != sizeof(val) &&			 \
+                    (sz >= 0 || errno != EAGAIN))		 \
 		  Pike_fatal("Atomic pipe write failed!!\n"); )	 \
     errno = errno_save;					 	 \
     PIKE_CONCAT(pre,_data_available)=1;				 \
@@ -1964,7 +1968,7 @@ static void f_pid_status_wait(INT32 args)
 #ifdef HAVE_POLL
 	    {
 	      struct pollfd pfd[1];
-#ifdef NEED_SIGNAL_SAFE_FIFO
+#if defined(NEED_SIGNAL_SAFE_FIFO) && defined(USE_SIGCHILD)
 	      pfd[0].fd = wait_fd[0];
 	      pfd[0].events = POLLIN;
 	      poll (pfd, 1, 10000);
@@ -4892,7 +4896,9 @@ void Pike_f_fork(INT32 args)
 #endif
 
     REINIT_FIFO(sig, unsigned char);
+#ifdef USE_SIGCHILD
     REINIT_FIFO(wait,wait_data);
+#endif
 
     /* FIXME: Ought to clear pid_mapping here. */
     call_callback(&fork_child_callback, 0);
@@ -5458,7 +5464,9 @@ void init_signals(void)
   int e;
 
   INIT_FIFO(sig, unsigned char);
+#ifdef USE_SIGCHILD
   INIT_FIFO(wait,wait_data);
+#endif
 
 #ifdef __NT__
   init_interleave_mutex(&handle_protection_mutex);

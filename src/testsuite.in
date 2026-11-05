@@ -9928,6 +9928,38 @@ cond([[all_constants()->kill && signum("SIGUSR1") > 0]],
   ]], 2)
 ]])
 
+dnl A process should survive 40000 SIGUSR1s sent while it sleeps in C
+dnl code, and handle them, without "Atomic pipe write failed!!" in debug
+dnl builds. In child processes.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond([[all_constants()->kill && signum("SIGUSR1") > 0]], [[
+  test_any([[
+    string sender = #{
+      int pid = (int)argv[-1];
+      for (int i = 0; i < 40000; i++) kill(pid, signum("SIGUSR1"));
+      return 0;
+    #};
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      int got;
+      signal(signum("SIGUSR1"), lambda() { got++; });
+      object p = Process.Process(
+        Standards.JSON.decode(getenv("SIGNAL_FIFO_SENDER")) +
+        ({ (string)getpid() }));
+      sleep(5);
+      p->wait();
+      sleep(0.5);
+      write("%d signals handled\n", got);
+      return 0;
+    #} }), ([ "env": getenv() + ([
+      "SIGNAL_FIFO_SENDER":
+        Standards.JSON.encode(RUNPIKE_ARRAY + ({ "-e", sender })) ]) ]));
+    if (r->exitcode || !has_value(r->stdout, "signals handled"))
+      return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
+
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1)")
 test_eq(sprintf("%O", typeof("")),"string(zero:)")
