@@ -264,6 +264,12 @@ DECLARATIONS;
 PIKECLASS odbc
 {
   CVAR SQLHDBC hdbc;
+  /* Serializes the library calls on the connection and on its results'
+   * statements (ODBC_ALLOW_ON()). Never destroyed, as a result may still
+   * use it after the connection was destructed. */
+  CVAR PIKE_MUTEX_T lock;
+  CVAR void *lock_owner;
+  CVAR int lock_depth;
   CVAR SQLLEN affected_rows;
   CVAR unsigned int flags;
   CVAR struct pike_string *last_error;
@@ -281,6 +287,40 @@ PIKECLASS odbc
   SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc)
   {
     return odbc->hdbc;
+  }
+  /* Take the connection's lock, with the interpreter lock let go of.
+   * self is the thread's thread state. */
+  void low_odbc_lock(struct Odbc_odbc_struct *odbc, void *self)
+  {
+    /* Only this thread sets the owner to itself, and clears it before
+     * letting go. */
+    if (odbc->lock_owner == self) {
+      odbc->lock_depth++;
+      return;
+    }
+    mt_lock(&odbc->lock);
+    odbc->lock_owner = self;
+    odbc->lock_depth = 1;
+  }
+  void low_odbc_unlock(struct Odbc_odbc_struct *odbc)
+  {
+    if (--odbc->lock_depth) return;
+    odbc->lock_owner = NULL;
+    mt_unlock(&odbc->lock);
+  }
+  /* Hold the lock across several library calls on a results statement,
+   * with the interpreter lock, so that no call on another statement of
+   * the connection comes in between. */
+  void pike_odbc_lock(struct Odbc_odbc_struct *odbc)
+  {
+    void *self = ODBC_SELF();
+    THREADS_ALLOW();
+    low_odbc_lock(odbc, self);
+    THREADS_DISALLOW();
+  }
+  void pike_odbc_unlock(void *odbc)
+  {
+    low_odbc_unlock(odbc);
   }
   void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows)
   {
@@ -328,11 +368,11 @@ void odbc_error(const char *fun, const char *msg,
   SQLINTEGER native_error;
   HDBC hdbc = odbc?odbc->hdbc:SQL_NULL_HDBC;
 
-  ODBC_ALLOW();
+  ODBC_ALLOW_ON(odbc);
   _code = SQLErrorW(odbc_henv, hdbc, hstmt, errcode, &native_error,
 		    errmsg, (SQL_MAX_MESSAGE_LENGTH-1), &errmsg_len);
   errmsg[errmsg_len] = '\0';
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
 
   if (odbc) {
     if (odbc->last_error) {
@@ -398,10 +438,13 @@ INIT
   PIKE_ODBC->affected_rows = 0;
   PIKE_ODBC->flags = 0;
   PIKE_ODBC->last_error = NULL;
+  mt_init(&PIKE_ODBC->lock);
+  PIKE_ODBC->lock_owner = NULL;
+  PIKE_ODBC->lock_depth = 0;
 
-  ODBC_ALLOW();
+  ODBC_ALLOW_ON(PIKE_ODBC);
   code = SQLAllocConnect(odbc_henv, &hdbc);
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
   PIKE_ODBC->hdbc = hdbc;
 
   odbc_check_error("init_odbc_struct", "ODBC initialization failed",
@@ -418,7 +461,7 @@ EXIT
     const char *err_msg = NULL;
 
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
-    ODBC_ALLOW();
+    ODBC_ALLOW_ON(PIKE_ODBC);
     if (flags & PIKE_ODBC_CONNECTED) {
       code = SQLDisconnect(hdbc);
       if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
@@ -430,7 +473,7 @@ EXIT
 	err_msg = "Freeing HDBC";
       hdbc = SQL_NULL_HDBC;
     }
-    ODBC_DISALLOW();
+    ODBC_DISALLOW_ON();
     PIKE_ODBC->hdbc = hdbc;
 
     if (err_msg)
@@ -518,16 +561,16 @@ PIKEFUN void create(string|void server, string|void database,
     add_ref(pwd = empty_pike_string);
   if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
-    ODBC_ALLOW();
+    ODBC_ALLOW_ON(PIKE_ODBC);
     code = SQLDisconnect(hdbc);
-    ODBC_DISALLOW();
+    ODBC_DISALLOW_ON();
     /* Disconnect old hdbc */
     odbc_check_error("odbc->create", "Disconnecting HDBC", code, NULL, NULL);
   }
 
   /* FIXME: Support wide strings. */
 
-  ODBC_ALLOW();
+  ODBC_ALLOW_ON(PIKE_ODBC);
 #ifdef PIKE_THREADS
   {
     int lock_enabled = enable_connect_lock;
@@ -543,7 +586,7 @@ PIKEFUN void create(string|void server, string|void database,
     if (lock_enabled) mt_unlock (&connect_mutex);
   }
 #endif
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
   odbc_check_error("odbc->create", "Connect failed", code, NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED | odbc_driver_flags(hdbc);
 }
@@ -649,9 +692,9 @@ PIKEFUN object big_query(string q)
     {
       HDBC hdbc = PIKE_ODBC->hdbc;
       RETCODE code;
-      ODBC_ALLOW();
+      ODBC_ALLOW_ON(PIKE_ODBC);
       code = SQLTransact(odbc_henv, hdbc, SQL_COMMIT);
-      ODBC_DISALLOW();
+      ODBC_DISALLOW_ON();
       odbc_check_error("odbc->big_query", "Couldn't commit query",
 		       code, NULL, NULL);
     }
@@ -713,9 +756,9 @@ PIKEFUN object big_typed_query(string q)
     {
       HDBC hdbc = PIKE_ODBC->hdbc;
       RETCODE code;
-      ODBC_ALLOW();
+      ODBC_ALLOW_ON(PIKE_ODBC);
       code = SQLTransact(odbc_henv, hdbc, SQL_COMMIT);
-      ODBC_DISALLOW();
+      ODBC_DISALLOW_ON();
       odbc_check_error("odbc->big_query", "Couldn't commit query",
 		       code, NULL, NULL);
     }
@@ -819,8 +862,9 @@ PIKEFUN void reload()
  */
 PIKEFUN array(string) list_dbs()
 {
-  static SQLWCHAR buf[SQL_MAX_DSN_LENGTH+1];
-  static SQLWCHAR descr[256];
+  /* On the stack, as threads may list them at once. */
+  SQLWCHAR buf[SQL_MAX_DSN_LENGTH+1];
+  SQLWCHAR descr[256];
   SQLSMALLINT buf_len = 0;
   SQLSMALLINT descr_len = 0;
   int cnt = 0;

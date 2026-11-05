@@ -161,10 +161,30 @@ struct Odbc_odbc_struct;
 #define ODBC_ALLOW() THREADS_ALLOW()
 #define ODBC_DISALLOW() THREADS_DISALLOW()
 
+/* The same for calls on the connection ODBC or on its results statements, which the connection's lock serializes. */
+#ifdef PIKE_THREADS
+#define ODBC_SELF() ((void *)Pike_interpreter.thread_state)
+#else
+#define ODBC_SELF() ((void *)1)
+#endif
+#define ODBC_ALLOW_ON(ODBC) do {					\
+    struct Odbc_odbc_struct *odbc_conn_ = (ODBC);			\
+    void *odbc_self_ = ODBC_SELF();					\
+    THREADS_ALLOW();							\
+    if (odbc_conn_) low_odbc_lock(odbc_conn_, odbc_self_)
+#define ODBC_DISALLOW_ON()						\
+    if (odbc_conn_) low_odbc_unlock(odbc_conn_);			\
+    THREADS_DISALLOW();							\
+  } while (0)
+
 /*
  * Prototypes
  */
 SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc);
+void low_odbc_lock(struct Odbc_odbc_struct *odbc, void *self);
+void low_odbc_unlock(struct Odbc_odbc_struct *odbc);
+void pike_odbc_lock(struct Odbc_odbc_struct *odbc);
+void pike_odbc_unlock(void *odbc);
 void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows);
 unsigned int pike_odbc_get_flags(struct Odbc_odbc_struct *odbc);
 void push_sqlwchar(SQLWCHAR *str, size_t len);
@@ -176,4 +196,5 @@ void init_odbc_res_programs(void);
 void exit_odbc_res(void);
 
 #endif /* HAVE_ODBC */
+
 #endif /* PIKE_PRECOMPILED_ODBC_H */
