@@ -534,6 +534,17 @@ static void gdbmmod_store(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+/* `[]= also gets the indexing context and access type, while store()
+ * takes its third argument for the insert flag. */
+static void gdbmmod_index_assign(INT32 args)
+{
+  if (args > 2) {
+    pop_n_elems(args - 2);
+    args = 2;
+  }
+  gdbmmod_store(args);
+}
+
 /* Compat */
 static void gdbmmod_store_compat(INT32 args)
 {
@@ -759,8 +770,9 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("store", gdbmmod_store_compat,
 	       tFunc(tStr8 tStr8 tOr(tInt01, tVoid), tInt), 0);
   /* function(string, string, int(0..1)|void: string) */
-  ADD_FUNCTION("`[]=", gdbmmod_store,
-	       tFunc(tStr8 tSetvar(0, tStr8) tOr(tInt01, tVoid), tVar(0)), 0);
+  ADD_FUNCTION("`[]=", gdbmmod_index_assign,
+	       tFunc(tStr8 tSetvar(0, tStr8) tOr(tMix, tVoid) tOr(tInt, tVoid),
+		     tVar(0)), 0);
   /* function(string:string) */
   ADD_FUNCTION("fetch",gdbmmod_fetch,tFunc(tStr,tStr8),0);
   /* function(string:string) */

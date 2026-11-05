@@ -51,6 +51,19 @@ cond_begin([[ master()->resolv("Gdbm") ]])
   test_do(rm("test.gdbm"))
   test_do(add_constant("GDBMBASE"))
 
+dnl db[key] = value should be accepted instead of erroring with "Bad
+dnl argument 3".
+test_any([[
+  string path = "gdbm_index_assign.gdbm";
+  rm(path);
+  object db = Gdbm.DB(path, "rwc");
+  mixed err = catch { db["key"] = "value"; };
+  mixed got = !err && db["key"];
+  db->close();
+  rm(path);
+  return err ? describe_error(err) : got;
+]], "value")
+
 cond_end // Gdbm
 
 END_MARKER
