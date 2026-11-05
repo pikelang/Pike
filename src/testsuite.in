@@ -7249,6 +7249,59 @@ test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([1:1]); m[1]++; return m[1]++;]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
 
+dnl The _destruct() of values that a mapping frees while it changes
+dnl should see the mapping whole: an m_clear() of values that iterate
+dnl the mapping must not crash, and a weak mapping's freed entries must
+dnl not find kept ones missing. Objects that inherit
+dnl Pike.DestructImmediate are destructed at once.
+test_any_equal([[
+  string common = #{
+    mapping m;
+    class O {
+      inherit Pike.DestructImmediate;
+      function(:void)|zero check;
+      protected void create(function(:void)|zero c) { check = c; }
+      protected void _destruct() { if (check) check(); }
+    };
+  #};
+  string clear_case = common + #{
+    m = ([]);
+    int n;
+    for (int i = 0; i < 64; i++)
+      m[i] = O(lambda() { foreach (m; mixed k; mixed v) n++; });
+    m_clear(m);
+    write("ok\n");
+    return 0;
+  #};
+  string weak_case = common + #{
+    m = set_weak_flag(([]), Pike.WEAK_INDICES);
+    array keep = ({});
+    array(string) bad = ({});
+    function(:void) check = lambda() {
+      int missing;
+      foreach (keep, object k) if (!m[k]) missing++;
+      if (missing)
+        bad += ({ sprintf("%d of %d kept entries missing", missing,
+                          sizeof(keep)) });
+    };
+    for (int i = 0; i < 300; i++) {
+      object k = O(0);
+      keep += ({ k });
+      m[k] = 1;
+      if (i < 8) m[O(check)] = 1;
+    }
+    write("%s\n", sizeof(bad) ? bad[0] : "ok");
+    return 0;
+  #};
+  array res = ({});
+  foreach (({ clear_case, weak_case }), string code) {
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", code }));
+    res += ({ r->exitcode ? sprintf("exit %d: %s", r->exitcode, r->stderr) :
+              String.trim(r->stdout) });
+  }
+  return res;
+]], ({ "ok", "ok" }))
+
 // multiset tests
 
 test_any([[multiset m=(<>);int e;
