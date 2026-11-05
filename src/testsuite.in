@@ -4518,6 +4518,10 @@ test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 
+dnl Syntax error in consts value must not leave a NULL in recovery (crash).
+test_compile_error([[ constant x = ; ]])
+test_compile_error([[ class A { constant x = ; } ]])
+
 // Constant initializers must not overwrite declaration modifiers (#10236).
 test_any_equal([[
   array(array(string)) result = ({});
