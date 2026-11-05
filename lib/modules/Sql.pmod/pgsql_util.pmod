@@ -161,9 +161,19 @@ protected void create() {
   call_out(default_backend_runs, 0);
 }
 
+private Thread.Mutex destructmux = Thread.Mutex();
+
+//! Destructs @[client] unless another thread is doing so: the local
+//! backend destructs freed connections, and exit the rest.
+final void destruct_client(proxy client) {
+  Thread.MutexKey lock = destructmux->lock(2);
+  if (client)
+    destruct(client);
+}
+
 protected void _destruct() {
   foreach (clients; proxy client; )
-    destruct(client);
+    destruct_client(client);
 }
 
 private Regexp iregexp(string expr) {

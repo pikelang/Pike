@@ -183,4 +183,45 @@ cond([[getenv("PIKE_TEST_PGSQL_URL")]], [[
 ]])
 ]])
 
+dnl Freed Sql.pgsql connections should be closed on the server, without
+dnl "Operation not supported in a signal context": counts the server's
+dnl connections before and after freeing 20, each after a failed query
+dnl (SELECT 1/0), in a child process. Fails on every run without the
+dnl fix. The child still holds a connection when it exits, which must
+dnl not print "Cannot access parent of destructed object". Needs a
+dnl PostgreSQL server: PIKE_TEST_PGSQL_URL, e.g.
+dnl pgsql://user:password@localhost/database, for a user that no other
+dnl client uses meanwhile.
+cond([[!all_constants()->OMIT_SLOW_TESTS]], [[
+cond([[getenv("PIKE_TEST_PGSQL_URL")]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      string url = getenv("PIKE_TEST_PGSQL_URL");
+      string user = Standards.URI(url)->user;
+      int count(object db) {
+        return (int)db->query("SELECT count(*) AS n FROM pg_stat_activity "
+                              "WHERE usename = %s", user)[0]->n;
+      };
+      void use_one() {
+        object db = Sql.Sql(url);
+        catch { db->query("SELECT 1/0"); };
+      };
+      object watch = Sql.Sql(url);
+      int before = count(watch);
+      for (int i = 0; i < 20; i++) use_one();
+      sleep(1);
+      write("%d %d\n", before, count(watch));
+      return 0;
+    #} }));
+    int before, after;
+    sscanf(r->stdout, "%d %d", before, after);
+    if (r->exitcode || has_value(r->stderr, "signal context") ||
+        has_value(r->stderr, "destructed object") || after != before)
+      return sprintf("exit %d, %d connections before, %d after 20 freed: %s",
+                     r->exitcode, before, after, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
+
 END_MARKER
