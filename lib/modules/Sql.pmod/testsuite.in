@@ -245,4 +245,69 @@ cond([[getenv("PIKE_TEST_PGSQL_URL")]], [[
 ]])
 ]])
 
+dnl Sql.pgsql connections opened from four threads at once should each
+dnl answer their first query right, without errors or hangs: 200
+dnl connections in a child process with a watchdog, up to five times.
+dnl The races need CPU contention, so this keeps every CPU thread busy
+dnl with a child process each. Without the fixes a child then fails in
+dnl about 40% of runs, and almost never on an idle machine, so this
+dnl fails about 9 runs in 10. Needs PIKE_TEST_PGSQL_URL.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond([[getenv("PIKE_TEST_PGSQL_URL")]], [[
+  test_any([[
+    string child = #{
+      string url = getenv("PIKE_TEST_PGSQL_URL");
+      Thread.Thread(lambda() {
+          sleep(60);
+          werror("hung\n");
+          _exit(3);
+        });
+      map(enumerate(4), lambda(int id) {
+          return Thread.Thread(lambda() {
+              for (int i = 0; i < 50; i++) {
+                mixed err = catch {
+                    object db = Sql.Sql(url);
+                    if ((int)db->query("SELECT " + i + " AS x")[0]->x != i)
+                      werror("wrong\n");
+                    db->close();
+                  };
+                if (err) werror("error: %s", describe_error(err));
+              }
+            });
+        })->wait();
+      _exit(0);
+    #};
+    int cpus = 4;
+    catch {
+      cpus = max((int)Process.run(({ "getconf", "_NPROCESSORS_ONLN" }))->stdout,
+                 1);
+    };
+    array(Process.Process) busy = map(enumerate(cpus), lambda(int i) {
+        return Process.Process(RUNPIKE_ARRAY + ({ "-e", #{
+          int parent = getppid(), start = gethrtime();
+          for (int i = 0;; i++)
+            if (!(i & 0xfffff) &&
+                (getppid() != parent || gethrtime() - start > 300000000))
+              return 0;
+        #} }));
+      });
+    string res;
+    for (int run = 0; run < 5 && !res; run++) {
+      mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", child }));
+      // Only errors, wrong answers and hangs count: debug builds may
+      // print diagnostics too.
+      array(string) bad = filter(r->stderr / "\n", lambda(string l) {
+          return has_prefix(l, "error: ") || l == "wrong" || l == "hung";
+        });
+      if (r->exitcode || sizeof(bad))
+        res = sprintf("run %d: exit %d: %s", run + 1, r->exitcode,
+                      bad * "\n");
+    }
+    busy->kill(signum("SIGKILL"));
+    busy->wait();
+    return res;
+  ]], 0)
+]])
+]])
+
 END_MARKER

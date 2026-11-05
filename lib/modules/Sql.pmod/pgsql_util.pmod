@@ -656,16 +656,19 @@ outer:
   final int close() {
     if (!closenext && nostash) {
       closenext = 1;
+      // Read first: the signal below may get this object destructed.
+      conxiin in = i;
+      object sock = socket;
       {
-        Thread.MutexKey lock = i->fillreadmux->lock();
-        if (i->fillread) {  // Delayed close() after flushing the output buffer
+        Thread.MutexKey lock = in->fillreadmux->lock();
+        if (in->fillread) {  // Delayed close() after flushing the output buffer
           shuffle->set_done_callback(done_cb);
-          i->fillread.signal();
-          i->fillread = 0;
+          in->fillread.signal();
+          in->fillread = 0;
         }
       }
-      PD("%d>Delayed close, flush write\n", socket->query_fd());
-      i->read_cb(socket->query_id(), 0);
+      PD("%d>Delayed close, flush write\n", sock->query_fd());
+      in->read_cb(sock->query_id(), 0);
       return 0;
     } else
       return -1;
