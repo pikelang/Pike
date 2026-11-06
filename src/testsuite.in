@@ -7253,6 +7253,26 @@ cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
   ]], 0)
 ]])
 
+dnl sprintf("%O") of a mutex should name the holder after "Locked by",
+dnl not the thread that waits for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    string s = sprintf("%O", m);
+    destruct(k);
+    waiter->wait();
+    int waiting, locked;
+    if (sscanf(s, "Thread.Mutex(/* Waiting by 0x%x Locked by 0x%x */)",
+               waiting, locked) != 2)
+      return s;
+    return waiting != locked;
+  ]], 1)
+
 cond_end // thread_create
 
 cond([[0]],

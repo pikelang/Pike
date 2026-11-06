@@ -3161,7 +3161,7 @@ void f_mutex__sprintf (INT32 args)
         push_static_text(",");
       }
       push_static_text(" 0x");
-      push_int64(PTR_TO_INT(THREAD_T_TO_PTR(m->key->owner->id)));
+      push_int64(PTR_TO_INT(THREAD_T_TO_PTR(k->owner->id)));
       f_int2hex(1);
     }
     push_static_text(" */)");
