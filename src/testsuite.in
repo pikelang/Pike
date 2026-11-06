@@ -12955,6 +12955,29 @@ test_any_equal([[
      "genfunc":(< "gen" >), "asyncgenfunc": (< "asyncgen" >) ])
 ]])
 
+test_any_equal([[
+  // Issue #10145: Re-evaluate annotations in pass 2.
+  class Anno(string label) {
+    inherit Pike.Annotation;
+    @constant;
+    string get_label() { return label; }
+  }
+  class Data { @Anno("variable"): int number; }
+  class Base { int field; int base_field; }
+  class Derived {
+    @Anno("inherit"):
+    inherit Base;
+    @Anno("alias"): int field;
+  }
+  Data data = Data();
+  mapping vars = mkmapping(indices(data), annotations(data));
+  Derived derived = Derived();
+  mapping fields = mkmapping(indices(derived), annotations(derived, 1));
+  return ({ indices(vars->number)[0]->get_label(),
+            indices(fields->field)[0]->get_label(),
+            indices(fields->base_field)[0]->get_label() });
+]], [[ ({ "variable", "alias", "inherit" }) ]])
+
 // foop
 define(do_test_foop,[[
 test_eq($1 (17), !($2))
