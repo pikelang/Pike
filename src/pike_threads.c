@@ -2212,9 +2212,9 @@ struct mutex_storage
  * where each future lock is represented by an array containing:
  *
  *   Index 0: Promise        promise
- *   Index 1: int(0..1)|void is_shared
- *
- * The second element may be left out if zero.
+ *   Index 1: int(0..1)       is_shared
+ *   Index 2: Thread.Thread   the thread that asked for it, which the
+ *                            key is given to
  */
 static struct mapping *pending_mutex_futures;
 
@@ -2638,7 +2638,9 @@ static void f_mutex_future_lock(INT32 UNUSED(args))
 
   promise = make_promise();
   push_object(promise);
-  f_aggregate(1);
+  push_int(0);				/* Exclusive. */
+  ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  f_aggregate(3);
 
   /* NB: At this point the promise is held by the array on the stack. */
 
@@ -3087,7 +3089,8 @@ static void f_mutex_future_shared_lock(INT32 UNUSED(args))
   promise = make_promise();
   push_object(promise);
   push_int(1);				/* Shared. */
-  f_aggregate(2);
+  ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  f_aggregate(3);
 
   /* NB: At this point the promise is held by the array on the stack. */
 
@@ -3503,6 +3506,19 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
 
               /* Locking succeeded. */
               multiset_delete(pending, Pike_sp - 2);
+
+              /* The key is the asking thread's, not this one's. */
+              if ((a->size > 2) &&
+                  (TYPEOF(ITEM(a)[2]) == PIKE_T_OBJECT) &&
+                  (ITEM(a)[2].u.object->prog == thread_id_prog) &&
+                  (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) &&
+                  (Pike_sp[-1].u.object->prog == mutex_key)) {
+                struct key_storage *k = OB2KEY(Pike_sp[-1].u.object);
+                struct object *old = k->owner_obj;
+                k->owner = OBJ2THREADSTATE(ITEM(a)[2].u.object);
+                add_ref(k->owner_obj = ITEM(a)[2].u.object);
+                if (old) free_object(old);
+              }
 
               apply(ITEM(a)[0].u.object, "success", 1);
 

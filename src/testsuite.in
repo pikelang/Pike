@@ -7295,6 +7295,27 @@ dnl after a thread that waited in lock() was killed.
     return ({ got_lock, got_shared });
   ]], ({ 1, 1 }))
 
+dnl The key that a future_lock() gets when the mutex is unlocked should
+dnl belong to the thread that asked for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    object asker, fkey;
+    Thread.Thread t = Thread.Thread(lambda() {
+        asker = this_thread();
+        fkey = m->future_lock()->get();
+      });
+    sleep(0.2);
+    destruct(k);
+    for (int i = 0; i < 100 && !fkey; i++) sleep(0.01);
+    object holder = m->current_locking_thread();
+    mixed err = catch { object k2 = m->trylock(); if (k2) destruct(k2); };
+    int ok = holder == asker && !err;
+    if (fkey) destruct(fkey);
+    t->wait();
+    return ok;
+  ]], 1)
+
 cond_end // thread_create
 
 cond([[0]],
