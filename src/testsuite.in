@@ -7273,6 +7273,28 @@ dnl not the thread that waits for it.
     return waiting != locked;
   ]], 1)
 
+dnl lock() and shared_lock() should succeed once the mutex is free, also
+dnl after a thread that waited in lock() was killed.
+  test_any_equal([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    waiter->kill();
+    sleep(0.2);
+    destruct(k);
+    object got = m->lock(1, 2.0);
+    int got_lock = !!got;
+    if (got) destruct(got);
+    object shared = m->shared_lock(1, 2.0);
+    int got_shared = !!shared;
+    if (shared) destruct(shared);
+    return ({ got_lock, got_shared });
+  ]], ({ 1, 1 }))
+
 cond_end // thread_create
 
 cond([[0]],

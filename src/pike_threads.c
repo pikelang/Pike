@@ -2243,6 +2243,53 @@ struct key_storage
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
+/* Handles an error while a thread waits for a mutex, as when the thread
+ * is killed in check_threads_etc(). The thread no longer waits, so the
+ * key it waited with must not stay in the list as waiting. Otherwise the
+ * keys after it would wait for it for good. In lock() and shared_lock()
+ * only the waiter holds that key, so freeing it unlinks it. upgrade()
+ * makes its key downgraded again, and Condition.wait() unlinks its key. */
+enum mutex_wait_kind { MUTEX_WAIT_NEW_KEY, MUTEX_WAIT_UPGRADE, MUTEX_WAIT_COND };
+struct mutex_wait_unwind
+{
+  enum mutex_wait_kind kind;
+  struct mutex_storage *m;
+  struct key_storage *key;
+};
+
+static void mutex_wait_unwind(void *arg)
+{
+  struct mutex_wait_unwind *w = arg;
+  struct mutex_storage *m = w->m;
+  struct key_storage *key = w->key;
+  m->num_waiting--;
+  switch (w->kind) {
+  case MUTEX_WAIT_NEW_KEY:
+    free_object(key->self);
+    break;
+  case MUTEX_WAIT_UPGRADE:
+    key->kind = KEY_DOWNGRADED;
+    co_broadcast(&m->condition);
+    break;
+  case MUTEX_WAIT_COND: {
+    struct object *mutex_obj = key->mutex_obj;
+    if (key->prev) {
+      key->prev->next = key->next;
+    } else {
+      m->key = key->next;
+    }
+    if (key->next) key->next->prev = key->prev;
+    key->prev = key->next = NULL;
+    key->mut = NULL;
+    key->mutex_obj = NULL;
+    key->kind = KEY_INITIALIZED;
+    co_broadcast(&m->condition);
+    if (mutex_obj) free_object(mutex_obj);
+    break;
+  }
+  }
+}
+
 /*! @class Mutex
  *!
  *! @[Mutex] is a class that implements mutual exclusion and shared locks.
@@ -2333,6 +2380,8 @@ void f_mutex_lock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key;
   struct object *o;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
   INT_TYPE type = 0;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -2412,6 +2461,10 @@ void f_mutex_lock(INT32 args)
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_NEW_KEY;
+    mw.m = m;
+    mw.key = key;
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -2450,6 +2503,7 @@ void f_mutex_lock(INT32 args)
         check_threads_etc();
       } while (key->next);
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
   }
 
@@ -2696,6 +2750,8 @@ void f_mutex_shared_lock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key, *prev = NULL;
   struct object *o, *prev_o = NULL;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
   INT_TYPE type = 0;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -2794,6 +2850,10 @@ void f_mutex_shared_lock(INT32 args)
     }
 
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_NEW_KEY;
+    mw.m = m;
+    mw.key = OB2KEY(o);
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -2831,6 +2891,7 @@ void f_mutex_shared_lock(INT32 args)
         check_threads_etc();
       }
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
 
     if (m->key && (m->key->kind == KEY_DOWNGRADED)) {
@@ -3561,6 +3622,8 @@ static void f_mutex_key_upgrade(INT32 args)
   struct key_storage *key = THIS_KEY;
   struct mutex_storage *m = key->mut;
   INT_TYPE seconds = 0, nanos = 0;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
 
   ASSERT_NOT_SIGNAL_CONTEXT();
 
@@ -3603,6 +3666,10 @@ static void f_mutex_key_upgrade(INT32 args)
     key->kind = KEY_PENDING;
 
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_UPGRADE;
+    mw.m = m;
+    mw.key = key;
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -3642,6 +3709,7 @@ static void f_mutex_key_upgrade(INT32 args)
         check_threads_etc();
       } while (key->next);
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
   }
 
@@ -3868,6 +3936,8 @@ void f_cond_wait(INT32 args)
   struct key_storage *key;
   struct pike_cond *c;
   INT_TYPE seconds = 0, nanos = 0;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
@@ -3944,6 +4014,10 @@ void f_cond_wait(INT32 args)
 
   /* Lock mutex */
   mut->num_waiting++;
+  mw.kind = MUTEX_WAIT_COND;
+  mw.m = mut;
+  mw.key = key;
+  SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
   {
     key->kind = KEY_PENDING;
     if ((key->next = mut->key)) {
@@ -3960,6 +4034,7 @@ void f_cond_wait(INT32 args)
     }
     key->kind = KEY_EXCLUSIVE;
   }
+  UNSET_ONERROR(mw_uwp);
   mut->num_waiting--;
 
   pop_stack();
