@@ -1,7 +1,7 @@
 /*
  * Implements the generic result module of the SQL-interface
  *
- * Henrik Grubbström 1996-01-09
+ * Henrik GrubbstrÃ¶m 1996-01-09
  */
 
 #pike __REAL_VERSION__

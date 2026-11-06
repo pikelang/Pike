@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike 7.9
 
 //! Pike 7.8 compatibility @[predef::Stdio] implementation.
@@ -1022,7 +1022,7 @@ class File
   //!   deregistered if an end-of-stream occurs, and all events in the
   //!   case of an error. I.e. there won't be any more calls to the
   //!   callbacks unless they are reinstalled. This doesn't affect the
-  //!   callback settings - @[query_read_callback] et al will still
+  //!   callback settings - @[query_read_callback] etÂ al will still
   //!   return the installed callbacks.
   //! @endul
   //!

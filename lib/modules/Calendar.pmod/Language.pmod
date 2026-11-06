@@ -1,12 +1,12 @@
 /* -*- mode: Pike; c-basic-offset: 3; -*- */
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 protected string flat(string s)
 {
    return replace(lower_case(s),
-		  "‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ¯˘˙˚¸˝˛ˇ'- "/1,
+		  "√†√°√¢√£√§√•√¶√ß√®√©√™√´√¨√≠√Æ√Ø√∞√±√≤√≥√¥√µ√∂√∏√π√∫√ª√º√Ω√æ√ø'- "/1,
 		  "aaaaaaeceeeeiiiidnoooooouuuuyty"/1+({""})*3);
 }
 
@@ -242,18 +242,18 @@ protected class _ymd_base
 // islamic defaults
 
    array(string) islamic_months=
-   ",Muharram,Safar,RebÓu'l-awwal,RebÓul-‚chir,"
-   "Djum‚da'l-˚la,Djum‚da'l-‚chira,Redjeb,Shaab‚n,Ramad‚n,"
-   "Schaww‚l,Dhu'l-k·ada,Dhu'l-Hiddja"/",";
+   ",Muharram,Safar,Reb√Æu'l-awwal,Reb√Æul-√¢chir,"
+   "Djum√¢da'l-√ªla,Djum√¢da'l-√¢chira,Redjeb,Shaab√¢n,Ramad√¢n,"
+   "Schaww√¢l,Dhu'l-k√°ada,Dhu'l-Hiddja"/",";
    array(string) islamic_shortmonths= // help! :)
-   ",Muharram,Safar,RebÓu'l-awwal,RebÓul-‚chir,"
-   "Djum‚da'l-˚la,Djum‚da'l-‚chira,Redjeb,Shaab‚n,Ramad‚n,"
-   "Schaww‚l,Dhu'l-k·ada,Dhu'l-Hiddja"/",";
+   ",Muharram,Safar,Reb√Æu'l-awwal,Reb√Æul-√¢chir,"
+   "Djum√¢da'l-√ªla,Djum√¢da'l-√¢chira,Redjeb,Shaab√¢n,Ramad√¢n,"
+   "Schaww√¢l,Dhu'l-k√°ada,Dhu'l-Hiddja"/",";
    mapping islamic_backmonth=0;
    array(string) islamic_shortweekdays=
    ",aha,ith,thu,arb,kha,dsc,sab"/",";
    array(string) islamic_weekdays=
-   ",ahad,ithnain,thul‚th‚,arbi‚,khamÓs,dschuma,sabt"/",";
+   ",ahad,ithnain,thul√¢th√¢,arbi√¢,kham√Æs,dschuma,sabt"/",";
    mapping islamic_backweekday=0;
 
    string islamic_month_name_from_number(int n)
@@ -325,12 +325,12 @@ protected class _ymd_base
 
    string badi_month_name_from_number(int n)
    {
-     // Ayy·m-i-H· is not a month but the period of 4-5 days before the last
+     // Ayy√°m-i-H√° is not a month but the period of 4-5 days before the last
      // month. it is here at 0 to distinguish it from regular months.
-     return ({ "Ayy·m-i-H·", "Bah·", "Jal·l", "Jam·l", "'Azamat", "N˙r",
-               "Rahmat", "Kalim·t", "Kam·l", "Asm·", "'Izzat", "MashÌyyat",
-               "'Ilm", "Qudrat", "Qawl", "Mas·'il", "Sharaf", "Sult·n", "Mulk",
-               "'Al·" })[n];
+     return ({ "Ayy√°m-i-H√°", "Bah√°", "Jal√°l", "Jam√°l", "'Azamat", "N√∫r",
+               "Rahmat", "Kalim√°t", "Kam√°l", "Asm√°", "'Izzat", "Mash√≠yyat",
+               "'Ilm", "Qudrat", "Qawl", "Mas√°'il", "Sharaf", "Sult√°n", "Mulk",
+               "'Al√°" })[n];
    }
 
    string badi_month_shortname_from_number(int n)
@@ -342,25 +342,25 @@ protected class _ymd_base
 
    int badi_month_number_from_name(string n)
    {
-     return ([ "Bah·":1,       "Baha":1,       "Bh":1,      "Bh":1,
-               "Jal·l":2,      "Jalal":2,      "Jll":2,     "Jl":2,
-               "Jam·l":3,      "Jamal":3,      "Jml":3,     "Jm":3,
+     return ([ "Bah√°":1,       "Baha":1,       "Bh":1,      "Bh":1,
+               "Jal√°l":2,      "Jalal":2,      "Jll":2,     "Jl":2,
+               "Jam√°l":3,      "Jamal":3,      "Jml":3,     "Jm":3,
                "'Azamat":4,    "Azamat":4,     "Azmt":4,    "Az":4,
-               "N˙r":5,        "Nur":5,        "Nr":5,      "Nr":5,
+               "N√∫r":5,        "Nur":5,        "Nr":5,      "Nr":5,
                "Rahmat":6,     "Rahmat":6,     "Rhmt":6,    "Rh":6,
-               "Kalim·t":7,    "Kalimat":7,    "Klmt":7,    "Kl":7,
-               "Kam·l":8,      "Kamal":8,      "Kml":8,     "Km":8,
-               "Asm·":9,       "Asma":9,       "Am":9,      "Am":9,
+               "Kalim√°t":7,    "Kalimat":7,    "Klmt":7,    "Kl":7,
+               "Kam√°l":8,      "Kamal":8,      "Kml":8,     "Km":8,
+               "Asm√°":9,       "Asma":9,       "Am":9,      "Am":9,
                "'Izzat":10,    "Izzat":10,     "Izzt":10,   "Iz":10,
-               "MashÌyyat":11, "Mashiyyat":11, "Mshyyt":11, "Msh":11,
+               "Mash√≠yyat":11, "Mashiyyat":11, "Mshyyt":11, "Msh":11,
                "'Ilm":12,      "Ilm":12,       "Ilm":12,    "Ilm":12,
                "Qudrat":13,    "Qudrat":13,    "Qdrt":13,   "Qd":13,
                "Qawl":14,      "Qawl":14,      "Qwl":14,    "Qw":14,
-               "Mas·'il":15,   "Masail":15,    "Msl":15,    "Ms":15,
+               "Mas√°'il":15,   "Masail":15,    "Msl":15,    "Ms":15,
                "Sharaf":16,    "Sharaf":16,    "Shrf":16,   "Shr":16,
-               "Sult·n":17,    "Sultan":17,    "Sltn":17,   "Sl":17,
+               "Sult√°n":17,    "Sultan":17,    "Sltn":17,   "Sl":17,
                "Mulk":18,      "Mulk":18,      "Mlk":18,    "Ml":18,
-               "'Al·":19,      "Ala":19,       "Al":19,     "Al":19,
+               "'Al√°":19,      "Ala":19,       "Al":19,     "Al":19,
              ])[n];
    }
 
@@ -372,10 +372,10 @@ protected class _ymd_base
    string badi_month_day_longname_from_number(int n)
    {
      // month day names are the same as month names
-     array names= ({ "Bah·", "Jal·l", "Jam·l", "'Azamat", "N˙r", "Rahmat",
-                     "Kalim·t", "Kam·l", "Asm·", "'Izzat", "MashÌyyat", "'Ilm",
-                     "Qudrat", "Qawl", "Mas·'il", "Sharaf", "Sult·n", "Mulk",
-                     "'Al·", "", "", "", "", "" });
+     array names= ({ "Bah√°", "Jal√°l", "Jam√°l", "'Azamat", "N√∫r", "Rahmat",
+                     "Kalim√°t", "Kam√°l", "Asm√°", "'Izzat", "Mash√≠yyat", "'Ilm",
+                     "Qudrat", "Qawl", "Mas√°'il", "Sharaf", "Sult√°n", "Mulk",
+                     "'Al√°", "", "", "", "", "" });
      // not sure if the number should be included here
      return sprintf("%d (%s)", (n>19?n-19:n), names[n-1]);
    }
@@ -390,55 +390,55 @@ protected class _ymd_base
 
    int badi_week_day_number_from_name(string n)
    {
-     return([ "Jal·l":1,    "Jalal":1,    "Jal":1, "Jl":1, "Jll":1,
-              "Jam·l":2,    "Jamal":2,    "Jam":2, "Jm":2, "Jml":2,
-              "Kam·l":3,    "Kamal":3,    "Kam":3, "Km":3, "Kml":3,
-              "Fid·l":4,    "Fidal":4,    "Fid":4, "Fd":4, "Fdl":4,
-              "'Id·l":5,    "Idal":5,     "'Id":5, "Id":5, "'Idl":5,
-              "Istijl·l":6, "Istijlal":6, "Itj":6, "Ij":6, "Istjll":6,
-              "Istiql·l":7, "Istiqlal":7, "Itq":7, "Iq":7, "Istqll":7,
+     return([ "Jal√°l":1,    "Jalal":1,    "Jal":1, "Jl":1, "Jll":1,
+              "Jam√°l":2,    "Jamal":2,    "Jam":2, "Jm":2, "Jml":2,
+              "Kam√°l":3,    "Kamal":3,    "Kam":3, "Km":3, "Kml":3,
+              "Fid√°l":4,    "Fidal":4,    "Fid":4, "Fd":4, "Fdl":4,
+              "'Id√°l":5,    "Idal":5,     "'Id":5, "Id":5, "'Idl":5,
+              "Istijl√°l":6, "Istijlal":6, "Itj":6, "Ij":6, "Istjll":6,
+              "Istiql√°l":7, "Istiqlal":7, "Itq":7, "Iq":7, "Istqll":7,
             ])[n];
    }
 
    string badi_week_day_name_from_number(int n)
    {
-     return({ 0,  "Jal·l", "Jam·l", "Kam·l", "Fid·l", "'Id·l",
-                  "Istijl·l", "Istiql·l" })[n];
+     return({ 0,  "Jal√°l", "Jam√°l", "Kam√°l", "Fid√°l", "'Id√°l",
+                  "Istijl√°l", "Istiql√°l" })[n];
    }
 
    string badi_year_name_from_number(int y)
    {
-     array vahid=({ "Alif", "B·", "Ab", "D·l", "B·b", "V·v", "Abad", "J·d",
-                    "Bah·", "Hubb", "Bahh·j", "Jav·b", "Ahad", "Vahh·b",
-                    "Vid·d", "BadÌ", "BahÌ", "Abh·", "V·hid" });
+     array vahid=({ "Alif", "B√°", "Ab", "D√°l", "B√°b", "V√°v", "Abad", "J√°d",
+                    "Bah√°", "Hubb", "Bahh√°j", "Jav√°b", "Ahad", "Vahh√°b",
+                    "Vid√°d", "Bad√≠", "Bah√≠", "Abh√°", "V√°hid" });
      if (y<1)
        return sprintf("%d BB",1-y);                // ? before Baha'i?
      return sprintf("%d BE (%s)", y, vahid[y%19-1]); // Baha'i Era
-     // V·hid is a cycle of 19years with each year having a name.
-     // there is also the period of Kull-i-Shay which is 19 cycles of V·hid
+     // V√°hid is a cycle of 19years with each year having a name.
+     // there is also the period of Kull-i-Shay which is 19 cycles of V√°hid
    }
 
    int badi_year_number_from_name(string name)
    {
       mapping vahid=([ "Alif":1,    "Alif":1,
-                       "B·":2,      "Ba":2,
+                       "B√°":2,      "Ba":2,
                        "Ab":3,      "Ab":3,
-                       "D·l":4,     "Dal":4,
-                       "B·b":5,     "Bab":5,
-                       "V·v":6,     "Vav":6,
+                       "D√°l":4,     "Dal":4,
+                       "B√°b":5,     "Bab":5,
+                       "V√°v":6,     "Vav":6,
                        "Abad":7,    "Abad":7,
-                       "J·d":8,     "Jad":8,
-                       "Bah·":9,    "Baha":9,
+                       "J√°d":8,     "Jad":8,
+                       "Bah√°":9,    "Baha":9,
                        "Hubb":10,   "Hubb":10,
-                       "Bahh·j":11, "Bahhaj":11,
-                       "Jav·b":12,  "Javab":12,
+                       "Bahh√°j":11, "Bahhaj":11,
+                       "Jav√°b":12,  "Javab":12,
                        "Ahad":13,   "Ahad":13,
-                       "Vahh·b":14, "Vahhab":14,
-                       "Vid·d":15,  "Vidad":15,
-                       "BadÌ":16,   "Badi":16,
-                       "BahÌ":17,   "Bahi":17,
-                       "Abh·":18,   "Abha":18,
-                       "V·hid":19,  "Vahid":19,
+                       "Vahh√°b":14, "Vahhab":14,
+                       "Vid√°d":15,  "Vidad":15,
+                       "Bad√≠":16,   "Badi":16,
+                       "Bah√≠":17,   "Bahi":17,
+                       "Abh√°":18,   "Abha":18,
+                       "V√°hid":19,  "Vahid":19,
                     ]);
 
       if(vahid[name])
@@ -557,66 +557,66 @@ class cSWEDISH
      "september","oktober","november","december"});
 
    protected private constant week_day_names=
-   ({"mÂndag","tisdag","onsdag","torsdag",
-     "fredag","lˆrdag","sˆndag"});
+   ({"m√•ndag","tisdag","onsdag","torsdag",
+     "fredag","l√∂rdag","s√∂ndag"});
 
    protected mapping events_translate=
    ([
-      "New Year's Day":		"NyÂrsdagen",
+      "New Year's Day":		"Ny√•rsdagen",
       "Epiphany":		"Trettondag jul",
       "King's Nameday":		"H K M Konungens namnsdag",
-      "Candlemas":		"Kyndelsm‰ssodagen",
-      "St. Valentine":		"Alla hj‰rtans dag",
+      "Candlemas":		"Kyndelsm√§ssodagen",
+      "St. Valentine":		"Alla hj√§rtans dag",
       "Int. Women's Day":	"Internationella kvinnodagen",
       "Crown Princess' Nameday":"H K M Kronprinsessans namnsdag",
-      "Waffle Day":		"VÂffeldagen",
-      "Annunciation":		"Marie bebÂdelsedag",
-      "Labor Day":		"Fˆrsta maj",
+      "Waffle Day":		"V√•ffeldagen",
+      "Annunciation":		"Marie beb√•delsedag",
+      "Labor Day":		"F√∂rsta maj",
       "Sweden's Flag Day":	"Svenska flaggans dag",
       "National Day":		"Nationaldagen",
-      "St. John the Baptist":	"Johannes Dˆpares dag",
-      "Crown Princess' Birthday":"H K M Kronprinsessans fˆdelsedag",
+      "St. John the Baptist":	"Johannes D√∂pares dag",
+      "Crown Princess' Birthday":"H K M Kronprinsessans f√∂delsedag",
       "Queen's Nameday":	"H K M Drottningens namnsdag",
       "UN Day":			"FN-dagen",
       "All saints Day":		"Allhelgonadagen",
       "King's Nameday":		"H K M Konungens namnsdag",
-      "King's Birthday":	"H K M Konungens fˆdelsedag",
+      "King's Birthday":	"H K M Konungens f√∂delsedag",
       "St. Lucy":		"Luciadagen",
-      "Queen's Birthday":	"H K M Drottningens fˆdelsedag",
+      "Queen's Birthday":	"H K M Drottningens f√∂delsedag",
       "Christmas Eve":		"Julafton",
       "Christmas Day":		"Juldagen",
       "St. Stephen":		"Annandagen",
-      "New Year's Eve":		"NyÂrsafton",
+      "New Year's Eve":		"Ny√•rsafton",
       "Midsummer's Eve":	"Midsommarafton",
       "Midsummer's Day":	"Midsommardagen",
       "All Saints Day":		"Allhelgonadagen",
 
       "Fat Tuesday":		"Fettisdagen",
-      "Palm Sunday":		"Palmsˆndagen",
-      "Good Friday":		"LÂngfredagen",
-      "Easter Eve":		"PÂskafton",
-      "Easter":			"PÂskdagen",
-      "Easter Monday":		"Annandag pÂsk",
-      "Ascension":		"Kristi himmelsf‰rd",
+      "Palm Sunday":		"Palms√∂ndagen",
+      "Good Friday":		"L√•ngfredagen",
+      "Easter Eve":		"P√•skafton",
+      "Easter":			"P√•skdagen",
+      "Easter Monday":		"Annandag p√•sk",
+      "Ascension":		"Kristi himmelsf√§rd",
       "Pentecost Eve":		"Pingstafton",
       "Pentecost":		"Pingst",
       "Pentecost Monday":	"Annandag pingst",
-      "Advent 1":		"Fˆrsta advent",
+      "Advent 1":		"F√∂rsta advent",
       "Advent 2":		"Andra advent",
       "Advent 3":		"Tredje advent",
-      "Advent 4":		"Fj‰rde advent",
+      "Advent 4":		"Fj√§rde advent",
       "Mother's Day":		"Mors dag",
       "Father's Day":		"Fars dag",
 
-      "Summer Solstice":	"SommarsolstÂnd",
-      "Winter Solstice":	"VintersolstÂnd",
-      "Spring Equinox":		"VÂrdagj‰mning",
-      "Autumn Equinox":		"Hˆstdagj‰mning",
+      "Summer Solstice":	"Sommarsolst√•nd",
+      "Winter Solstice":	"Vintersolst√•nd",
+      "Spring Equinox":		"V√•rdagj√§mning",
+      "Autumn Equinox":		"H√∂stdagj√§mning",
 
 // not translated:
 //	"Halloween"
 //	"Alla helgons dag"
-//	"Valborgsm‰ssoafton"
+//	"Valborgsm√§ssoafton"
    ]);
 
    protected void create()
@@ -653,7 +653,7 @@ class cAUSTRIAN
    inherit _ymd_base;
 
    protected private constant month_names=
-      ({"j‰nner","feber","m‰rz","april","mai","juni","juli","august",
+      ({"j√§nner","feber","m√§rz","april","mai","juni","juli","august",
         "september","oktober","november","dezember"});
 
    protected private constant week_day_names=
@@ -701,7 +701,7 @@ constant cCY=cWELSH;
 constant cCYM=cWELSH;
 
 // Spanish
-// Julio CÈsar G·zquez <jgazquez@dld.net>
+// Julio C√©sar G√°zquez <jgazquez@dld.net>
 
 class cSPANISH
 {
@@ -712,30 +712,30 @@ class cSPANISH
      "julio","agosto","septiembre","octubre","noviembre","diciembre"});
 
    protected private constant week_day_names=
-   ({"lunes","martes","miÈrcoles","jueves",
-     "viernes","s·bado","domingo"});
+   ({"lunes","martes","mi√©rcoles","jueves",
+     "viernes","s√°bado","domingo"});
 
 // contains argentina for now
    protected mapping events_translate=
    ([
-      "Epiphany":"DÌa de Reyes", // Epifania
-      "Malvinas Day":"DÌa de las Malvinas",
-      "Labor Day":"Aniversario de la RevoluciÛn",
-      "Soberany's Day":"DÌa de la soberania",
-      "Flag's Day":"DÌa de la bandera",
-      "Independence Day":"DÌa de la independencia",
-      "Assumption Day":"DÌa de la asunciÛn", // ?
-      "Gral San MartÌn decease":
+      "Epiphany":"D√≠a de Reyes", // Epifania
+      "Malvinas Day":"D√≠a de las Malvinas",
+      "Labor Day":"Aniversario de la Revoluci√≥n",
+      "Soberany's Day":"D√≠a de la soberania",
+      "Flag's Day":"D√≠a de la bandera",
+      "Independence Day":"D√≠a de la independencia",
+      "Assumption Day":"D√≠a de la asunci√≥n", // ?
+      "Gral San Mart√≠n decease":
       "Aniversario del fallecimiento del Gral. San Martin",
-      "Race's Day":"DÌa de la Raza",
-      "All Saints Day":"DÌa de todos los santos",
-      "Immaculate Conception":"Inmaculada ConcepciÛn",
-      "Christmas Day":"Natividad del SeÒor",
-      "New Year's Day":"AÒo Nuevo",
+      "Race's Day":"D√≠a de la Raza",
+      "All Saints Day":"D√≠a de todos los santos",
+      "Immaculate Conception":"Inmaculada Concepci√≥n",
+      "Christmas Day":"Natividad del Se√±or",
+      "New Year's Day":"A√±o Nuevo",
       "Holy Thursday":"Jueves Santo",
       "Good Friday":"Viernes Santo",
-      "Holy Saturday":"S„bado de gloria",
-      "Easter":"Domingo de resurrecciÛn",
+      "Holy Saturday":"S√£bado de gloria",
+      "Easter":"Domingo de resurrecci√≥n",
       "Corpus Christi":"Corpus Christi"
    ]);
 
@@ -748,7 +748,7 @@ constant cES=cSPANISH;
 constant cSPA=cSPANISH;
 
 // portugese
-// source: SÈrgio Ara˙jo <sergio@projecto-oasis.cx>
+// source: S√©rgio Ara√∫jo <sergio@projecto-oasis.cx>
 
 class cPORTUGESE
 {
@@ -758,7 +758,7 @@ class cPORTUGESE
    ({
       "Janeiro",
       "Fevereiro",
-      "MarÁo",
+      "Mar√ßo",
       "Abril",
       "Maio",
       "Junho",
@@ -773,11 +773,11 @@ class cPORTUGESE
    protected private constant week_day_names=
    ({
       "Segunda-feira", // -feira is removed for the short version
-      "TerÁa-feira",   // don't know how it's used
+      "Ter√ßa-feira",   // don't know how it's used
       "Quarta-feira",
       "Quinta-feira",
       "Sexta-feira",
-      "S·bado",
+      "S√°bado",
       "Domingo",
    });
 
@@ -790,11 +790,11 @@ class cPORTUGESE
       "Labor Day":"Dia do Trabalhador",
       "Portugal Day":"Dia de Portugal",
       "Corpus Christi":"Corpo de Deus",
-      "Assumption Day":"AssunÁ„o",
-      "Republic Day":"ImplantaÁ„o da Rep˙blica",
+      "Assumption Day":"Assun√ß√£o",
+      "Republic Day":"Implanta√ß√£o da Rep√∫blica",
       "All Saints Day":"Todos-os-Santos",
-      "Restoration of the Independence":"RestauraÁ„o da IndependÍncia",
-      "Immaculate Conception":"Imaculada ConceiÁ„o",
+      "Restoration of the Independence":"Restaura√ß√£o da Independ√™ncia",
+      "Immaculate Conception":"Imaculada Concei√ß√£o",
       "Christmas":"Natal"
    ]);
 
@@ -816,24 +816,24 @@ class cHUNGARIAN
    inherit _ymd_base;
 
    protected private constant month_names=
-   ({"Janu·r","Febru·r","M·rcius","¡prilis","M·jus","J˙nius",
-     "J˙lius","August","September","October","November","December"});
+   ({"Janu√°r","Febru√°r","M√°rcius","√Åprilis","M√°jus","J√∫nius",
+     "J√∫lius","August","September","October","November","December"});
 
    protected private constant week_day_names=
-   ({"HÈtfo","Kedd","Szerda","Cs¸tˆrtkˆk","PÈntek","Szombat","Vas·rnap"});
+   ({"H√©tfo","Kedd","Szerda","Cs√ºt√∂rtk√∂k","P√©ntek","Szombat","Vas√°rnap"});
 
 // contains argentina for now
    protected mapping events_translate=
    ([
-      "New Year's Day":"⁄b Èv ¸nnepe",
+      "New Year's Day":"√öb √©v √ºnnepe",
       "1848 Revolution Day":"Az 'Az 1848-as Forradalom Napja",
-      "Holiday of Labor":"A munka ¸nnepe",
-      "Constitution Day":"Az alkotm·ny ¸nnepe",
-      "'56 Revolution Day":"Az '56-os Forradalom ¸nnepe",
-      "Easter":"H˙svÈt",
-      "Easter monday":"H˙svÈt",
-      "Whitsunday":"P¸nkˆsd",
-      "Whitmonday":"P¸nkˆsd",
+      "Holiday of Labor":"A munka √ºnnepe",
+      "Constitution Day":"Az alkotm√°ny √ºnnepe",
+      "'56 Revolution Day":"Az '56-os Forradalom √ºnnepe",
+      "Easter":"H√∫sv√©t",
+      "Easter monday":"H√∫sv√©t",
+      "Whitsunday":"P√ºnk√∂sd",
+      "Whitmonday":"P√ºnk√∂sd",
       "Christmas":"Christmas",
    ]);
 
@@ -992,7 +992,7 @@ class cICELANDIC
       "Tridjudagur",
       "Midvikudagur",
       "Fimmtudagur",
-      "Fˆstudagur",
+      "F√∂studagur",
       "Laugardagur",
       "Sunnudagur",
    });
@@ -1089,39 +1089,39 @@ class cIRISH
 
    protected private constant month_names=
    ({
-      "Ean·ir",
+      "Ean√°ir",
       "Feabhra",
-      "M·rta",
-      "Aibre·n",
-      "MÌ na Bealtaine",
+      "M√°rta",
+      "Aibre√°n",
+      "M√≠ na Bealtaine",
       "Meith",
-      "I˙il",
-      "L˙nasa",
-      "Me·n FÛmhair",
-      "Deireadh FÛmhair",
-      "MÌ na Samhna",
-      "MÌ na Nollag",
+      "I√∫il",
+      "L√∫nasa",
+      "Me√°n F√≥mhair",
+      "Deireadh F√≥mhair",
+      "M√≠ na Samhna",
+      "M√≠ na Nollag",
    });
 
    protected private constant short_month_names=
    ({
-      "Ean","Fea","M·r","Aib","Bea","Mei","I˙i","L˙n","MFÛ","DFÛ","Sam","Nol"
+      "Ean","Fea","M√°r","Aib","Bea","Mei","I√∫i","L√∫n","MF√≥","DF√≥","Sam","Nol"
    });
 
    protected private constant week_day_names=
    ({
-      "DÈ Luain",
-      "DÈ M·irt",
-      "DÈ CÈadaoin",
-      "DÈardaoin",
-      "DÈ hAoine",
-      "DÈ Sathairn",
-      "DÈ Domhnaigh",
+      "D√© Luain",
+      "D√© M√°irt",
+      "D√© C√©adaoin",
+      "D√©ardaoin",
+      "D√© hAoine",
+      "D√© Sathairn",
+      "D√© Domhnaigh",
    });
 
    protected private constant short_week_day_names=
    ({
-      "Lua","Mai","CÈa","DÈa","Aoi","Sat", "Dom",
+      "Lua","Mai","C√©a","D√©a","Aoi","Sat", "Dom",
    });
 
    protected void create() { SETUPSTUFF2; }
@@ -1198,8 +1198,8 @@ class cNORWEGIAN
       "onsdag",
       "torsdag",
       "fredag",
-      "l¯rdag",
-      "s¯ndag",
+      "l√∏rdag",
+      "s√∏ndag",
    });
 
    protected void create() { SETUPSTUFF; }
@@ -1338,7 +1338,7 @@ class cTURKISH
       "Haziran",
       "Temmuz",
       "Agustos",
-      "Eyl¸l",
+      "Eyl√ºl",
       "Ekim",
       "Kasim",
       "Aralik",
@@ -1348,7 +1348,7 @@ class cTURKISH
    ({
       "Pazartesi",
       "Sali",              // <S><a><l><i.>
-      "«arsamba",
+      "√áarsamba",
       "Persembe",
       "Cuma",
       "Cumartesi",
@@ -1374,7 +1374,7 @@ class cTURKISH_UNICODE
       "Haziran",
       "Temmuz",
       "A\x01e5""ustos", // line over g
-      "Eyl¸l",
+      "Eyl√ºl",
       "Ekim",
       "Kas\x0131""m",   // i-no-dot
       "Aral\x0131""k",  // i-no-dot
@@ -1384,7 +1384,7 @@ class cTURKISH_UNICODE
    ({
       "Pazartesi",
       "Sal\x0131",      // <S><a><l><i.> i without dot
-      "«arsamba",
+      "√áarsamba",
       "Per\x015f""embe",// s-cedilla
       "Cuma",
       "Cumartesi",
@@ -1408,7 +1408,7 @@ class cGERMAN
    ({
       "Januar",
       "Februar",
-      "M‰rz",
+      "M√§rz",
       "April",
       "Mai",
       "Juni",
@@ -1525,8 +1525,8 @@ class cFINNISH
       "maaliskuu",
       "huhtikuu",
       "toukokuu",
-      "kes‰kuu",
-      "hein‰kuu",
+      "kes√§kuu",
+      "hein√§kuu",
       "elokuu",
       "syyskuu",
       "lokakuu",
@@ -1634,7 +1634,7 @@ class cESTONIAN
    ({
       "jaanuar",
       "veebruar",
-      "m‰rts",
+      "m√§rts",
       "aprill",
       "mai",
       "juuni",
@@ -1648,13 +1648,13 @@ class cESTONIAN
 
    protected constant week_day_names=
    ({
-      "esmasp‰ev",
-      "teisip‰ev",
-      "kolmap‰ev",
-      "neljap‰ev",
+      "esmasp√§ev",
+      "teisip√§ev",
+      "kolmap√§ev",
+      "neljap√§ev",
       "reede",
-      "laup‰ev",
-      "p¸hap‰ev",          // <p><u:><h><a><p><a:><e><v>
+      "laup√§ev",
+      "p√ºhap√§ev",          // <p><u:><h><a><p><a:><e><v>
    });
 
    protected void create() { SETUPSTUFF; }
@@ -1673,7 +1673,7 @@ class cGALICIAN
       "Marzo",
       "Abril",
       "Maio",
-      "XuÒo",
+      "Xu√±o",
       "Xullo",
       "Agosto",
       "Setembro",
@@ -1686,7 +1686,7 @@ class cGALICIAN
    ({
       "Luns",
       "Martes",
-      "MÈrcores",
+      "M√©rcores",
       "Xoves",
       "Venres",
       "Sabado",
@@ -1740,17 +1740,17 @@ class cFRENCH
    protected private constant month_names=
    ({
       "janvier",
-      "fÈvrier",
+      "f√©vrier",
       "mars",
       "avril",
       "mai",
       "juin",
       "juillet",
-      "ao˚",
+      "ao√ª",
       "septembre",
       "octobre",
       "novembre",
-      "dÈcembre",
+      "d√©cembre",
    });
 
    protected private constant week_day_names=
@@ -1791,7 +1791,7 @@ class cITALIAN
 
    protected private constant week_day_names=
    ({
-      "lunedi",    // swizz italian: "lunedÏ" - should I care?
+      "lunedi",    // swizz italian: "luned√¨" - should I care?
       "martedi",
       "mercoledi",
       "giovedi",
@@ -1813,7 +1813,7 @@ class cCATALAN
    ({
       "gener",
       "febrer",
-      "marÁ",
+      "mar√ß",
       "abril",
       "maig",
       "juny",
@@ -1918,7 +1918,7 @@ class cFAROESE
    protected private constant week_day_names=
    ({
       "manadagur",
-      "t˝sdagur",
+      "t√Ωsdagur",
       "mikudagur",
       "hosdagur",
       "friggjadagur",
@@ -1976,7 +1976,7 @@ class cROMANIAN_UNICODE
       "Miercuri",
       "Joi",
       "Vineri",
-      "SÓmb\x0103""t\x0103",                // <S><I/>><M><B><A(><T><A(>
+      "S√Æmb\x0103""t\x0103",                // <S><I/>><M><B><A(><T><A(>
       "Duminic\x0103",          // <D><U><M><I><N><I><C><A(>
    });
 
@@ -2082,31 +2082,31 @@ class cDANISH
       "onsdag",
       "torsdag",
       "fredag",
-      "l¯rdag",
-      "s¯ndag",
+      "l√∏rdag",
+      "s√∏ndag",
    });
 
    protected mapping events_translate=
    ([
       "2nd day of Christmas"		    :"2. juledag",
       "Ascension"			    :"Kristi himmelfart",
-      "Birthday of Queen Margrethe II"	    :"Dronning Margrethes f¯dselsdag",
+      "Birthday of Queen Margrethe II"	    :"Dronning Margrethes f√∏dselsdag",
       "Carnival"			    :"Fastelavn",
       "Christmas Day"			    :"1. juledag",
       "Christmas Eve"			    :"Juleaften",
       "Constitution Day"		    :"Grundlovsdag",
-      "Easter Monday"			    :"2. pÂskedag",
-      "Easter"                              :"PÂske",
+      "Easter Monday"			    :"2. p√•skedag",
+      "Easter"                              :"P√•ske",
       "Good Friday"			    :"Langfredag",
       "Great Prayer Day"		    :"Store bededag",
-      "Holy Thursday"			    :"SkÊrtorsdag",
+      "Holy Thursday"			    :"Sk√¶rtorsdag",
       "Labor Day"			    :"1. Maj",
-      "New Year's Day"			    :"NytÂrsdag",
-      "New Year's Eve"			    :"NytÂrsaften",
-      "Palm Sunday"			    :"Palme s¯ndag",
+      "New Year's Day"			    :"Nyt√•rsdag",
+      "New Year's Eve"			    :"Nyt√•rsaften",
+      "Palm Sunday"			    :"Palme s√∏ndag",
       "Pentecost Monday"		    :"2. Pinsedag",
       "Pentecost"			    :"Pinsedag",
-      "Prince Fredrik's Birthday"	    :"Kronprins Fredriks f¯dselsdag",
+      "Prince Fredrik's Birthday"	    :"Kronprins Fredriks f√∏dselsdag",
       "Epiphany"			    :"Hellig trekongers dag",
       "Epiphany Eve" 			    :"Hellig trekongers aften",
    ]);

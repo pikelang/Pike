@@ -1,17 +1,17 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! Spanish language locale
 
 inherit "abstract";
 
-constant name = "español";
+constant name = "espaÃ±ol";
 constant english_name = "spanish";
 constant iso_639_1 = "es";
 constant iso_639_2 = "spa";
 constant iso_639_2B = "spa";
 
-constant aliases = ({ "es", "esp", "spa", "spanish", "español" });
+constant aliases = ({ "es", "esp", "spa", "spanish", "espaÃ±ol" });
 
 constant months = ({
   "Enero", "Febrero", "Marzo", "Abril", "Mayo",
@@ -24,7 +24,7 @@ constant days = ({
 
 string ordered(int i)
 {
-    return i+"º";
+    return i+"Âº";
 }
 
 string date(int timestamp, string|void m)
@@ -53,7 +53,7 @@ string date(int timestamp, string|void m)
     return "ayer, "+ ctime(timestamp)[11..15];
 
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
-    return "mañana, "+ ctime(timestamp)[11..15];
+    return "maÃ±ana, "+ ctime(timestamp)[11..15];
 
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));

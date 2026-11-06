@@ -73,12 +73,6 @@ class Connection { inherit __builtin.Sql.Connection; }
 //! Base class for the result from @[Connection.big_query()] et al.
 class Result { inherit __builtin.Sql.Result; }
 
-//! The result from @[Promise].
-class FutureResult { inherit __builtin.Sql.FutureResult; }
-
-//! The result from @[Connection.promise_query()].
-class Promise { inherit __builtin.Sql.Promise; }
-
 protected program(Connection) find_dbm(string program_name)
 {
   program(Connection) p;

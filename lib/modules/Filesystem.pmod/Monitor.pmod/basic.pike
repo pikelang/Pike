@@ -4,7 +4,7 @@
 // Basic filesystem monitor.
 //
 //
-// 2009-07-09 Henrik Grubbström
+// 2009-07-09 Henrik GrubbstrÃ¶m
 //
 //! Basic filesystem monitor.
 //!

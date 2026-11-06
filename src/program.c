@@ -6856,8 +6856,31 @@ void compiler_do_inherit(node *n,
       pop_stack();
   }
 
-  if (Pike_compiler->current_annotations &&
-      (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
+  if (Pike_compiler->current_annotations) {
+    if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
+      struct inherit *inherit = Pike_compiler->new_program->inherits +
+                                inherit_offset;
+      struct multiset *old = inherit->annotations;
+      struct multiset *base = inherit->prog->inherits[0].annotations;
+      if (old) ref_push_multiset(old);
+      inherit->annotations = NULL;
+      if (old) free_multiset(old);
+      /* Keep annotations copied from the base program, but discard
+       * those attached to this inherit in the first pass. */
+      if (old && base) {
+        union msnode *node = low_multiset_first(base->msd);
+        while (node) {
+          if (TYPEOF(node->i.ind) != PIKE_T_DELETED) {
+            low_push_multiset_index(node);
+            if (multiset_lookup(old, Pike_sp-1))
+              add_program_annotation(inherit_offset, Pike_sp-1);
+            pop_stack();
+          }
+          node = low_multiset_next(node);
+        }
+      }
+      if (old) pop_stack();
+    }
     compiler_add_program_annotations(inherit_offset,
 				     Pike_compiler->current_annotations);
     free_node(Pike_compiler->current_annotations);
@@ -7024,6 +7047,8 @@ PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
       copy_pike_type(id->type, type);
       id->func.ext_ref.depth = depth;
       id->func.ext_ref.id = refno;
+      compiler_add_annotations(PTR_FROM_INT(Pike_compiler->new_program, n)->
+                               identifier_offset);
       return n;
     }
   }
@@ -7226,6 +7251,7 @@ int define_variable(struct pike_string *name,
       } else {
 	copy_pike_type(id->type, type);
       }
+      compiler_add_annotations(ref->identifier_offset);
       return n;
     }
   }

@@ -1,7 +1,7 @@
 /*
  * Line-buffered protocol handling.
  *
- * Henrik Grubbström 1998-05-27
+ * Henrik GrubbstrÃ¶m 1998-05-27
  */
 
 #pike __REAL_VERSION__

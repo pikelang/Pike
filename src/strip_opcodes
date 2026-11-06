@@ -7,6 +7,12 @@ LC_ALL=C
 
 export LANG LC_CTYPE LC_ALL
 
+# Marker characters used in the sed scripts below. They must be
+# single bytes that cannot occur in the preprocessed input. Control
+# characters are used so that this file can stay ASCII.
+M1=`printf '\001'`
+M2=`printf '\002'`
+
 # Notes about limitations in SysV sed:
 #
 #  o The *-operator only operates on single character regexps.
@@ -28,14 +34,14 @@ sed -e '
   /OPCODE[0-9]/!b keepnl
 
 # SysV sed does not support multi-character *-expressions,
-# so we use ½ instead.
-  s/ --- / ½ /g
+# so we use the single byte marker M1 instead.
+  s/ --- / '"$M1"' /g
 
 # Make sure the substitute flag is cleared.
   t loop
 
   h
-  s/^[^½]*\(OPCODE[0-9][^½]*\) ½.*$/\1¤/p
+  s/^[^'"$M1"']*\(OPCODE[0-9][^'"$M1"']*\) '"$M1"'.*$/\1'"$M2"'/p
   t more
   N
   b loop
@@ -44,7 +50,7 @@ sed -e '
 # and check for more.
 : more
   g
-  s/^[^½]*OPCODE[0-9][^½]* ½\(.*\)$/\1/
+  s/^[^'"$M1"']*OPCODE[0-9][^'"$M1"']* '"$M1"'\(.*\)$/\1/
   b loop
 
 # Keep only the newlines.
@@ -54,9 +60,9 @@ sed -e '
 
 # Remove newlines that were inserted by p.
 : loop
-  /¤$/{
+  /'"$M2"'$/{
     N
-    s/¤\n//
+    s/'"$M2"'\n//
     b loop
   }
 # Add empty lines to hold, and start the next cycle.
@@ -66,8 +72,8 @@ sed -e '
     H
     x
 # RLE encode newlines so that we can avoid overflowing hold.
-    s/\n\{16,16\}/¤/
-    s/¤\{16,16\}/½/
+    s/\n\{16,16\}/'"$M2"'/
+    s/'"$M2"'\{16,16\}/'"$M1"'/
     x
     d
   }
@@ -81,8 +87,8 @@ sed -e '
 # Print hold except for a possible initial newline.
   x
 # Unpack the RLE.
-  s/½/¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤/g
-  s/¤/\
+  s/'"$M1"'/'"$M2$M2$M2$M2$M2$M2$M2$M2$M2$M2$M2$M2$M2$M2$M2$M2"'/g
+  s/'"$M2"'/\
 \
 \
 \

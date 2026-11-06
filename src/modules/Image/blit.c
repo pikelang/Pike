@@ -372,7 +372,7 @@ void image_paste_alpha(INT32 args)
      return;
    }
 
-/* tråda här nåndag.. Ok /Per */
+/* trÃ¥da hÃ¤r nÃ¥ndag.. Ok /Per */
 
    {
      rgb_group *source = img->img;

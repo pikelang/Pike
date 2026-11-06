@@ -42,6 +42,50 @@ protected class NullArg
 }
 NullArg null_arg = NullArg();
 
+//! @ignore
+// Result cursor for the rows collected by Connection.promise_query().
+class BufferedResult
+{
+  inherit .Result;
+
+  private array(array(mixed)) rows;
+  private array(mapping(string:mixed)) columns;
+  private int affected;
+  private string command_status;
+
+  protected void create(array(array(mixed)) rows,
+                        array(mapping(string:mixed)) columns,
+                        int affected, string command_status)
+  {
+    this::rows = rows;
+    this::columns = columns;
+    this::affected = affected;
+    this::command_status = command_status;
+  }
+
+  int num_rows() { return sizeof(rows); }
+  int num_fields() { return sizeof(columns); }
+  int eof() { return index >= sizeof(rows); }
+  int affected_rows() { return affected; }
+  string status_command_complete() { return command_status; }
+  array(mapping(string:mixed)) fetch_fields() { return columns; }
+
+  array(mixed) fetch_row()
+  {
+    if (eof()) return 0;
+    return rows[index++];
+  }
+
+  void seek(int skip)
+  {
+    if (skip < 0) predef::error("Cannot seek to negative result indices.\n");
+    index += skip;
+  }
+
+  this_program|zero next_result() { return 0; }
+}
+//! @endignore
+
 string wild_to_glob(string wild)
 {
   return replace(wild,
