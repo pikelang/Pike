@@ -359,4 +359,28 @@ test_any([[
 ]], 4)
 test_eq( sizeof(get_iterator(({1,2,3,4}))), 4 )
 
+dnl - Serializer callbacks and variable hooks retain their 8.0 signatures.
+test_any_equal([[
+  class Record {
+    inherit Serializer.Serializable;
+    int number = 7;
+    protected void _serialize_variable(function cb, mixed value,
+                                       string name, mixed symbol_type) {
+      cb(value, name, symbol_type);
+    }
+    protected void _deserialize_variable(function cb, function setter,
+                                         string name, mixed symbol_type) {
+      cb(setter, name, symbol_type);
+    }
+  }
+  Record r = Record();
+  int seen;
+  Serializer.serialize(r, lambda(mixed value, string name, mixed t) {
+    seen = value;
+  });
+  Serializer.deserialize(r,
+    lambda(function setter, string name, mixed t) { setter(12); });
+  return seen == 7 && r->number == 12;
+]], 1)
+
 END_MARKER

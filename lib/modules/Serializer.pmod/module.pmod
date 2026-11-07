@@ -41,7 +41,8 @@ class Encodeable
     mapping(string:mixed) _encode()
     {
         mapping res = ([]);;
-        _serialize( this, lambda( mixed val, string name, mixed type )
+        _serialize( this, lambda( mixed val, string name, mixed type,
+                                 mixed annotations )
                           {
                               res[name] = val;
                           });
@@ -52,9 +53,10 @@ class Encodeable
     void _deserialize_variable(function deserializer,
                                function(mixed:void) setter,
                                string symbol,
-                               mixed symbol_type)
+                               mixed symbol_type,
+                               mixed symbol_annotations)
     {
-        deserializer(setter,symbol,symbol_type);
+        deserializer(setter,symbol,symbol_type,symbol_annotations);
     }
 
     //! Callback for decoding the object. Sets variables in the object
@@ -65,7 +67,8 @@ class Encodeable
     void _decode(mapping(string:mixed) m)
     {
         _deserialize( this, lambda( function(mixed:void) set,
-                                    string name, mixed type )
+                                    string name, mixed type,
+                                    mixed annotations )
                             {
                                 set( m[name] );
                             } );
