@@ -1429,6 +1429,12 @@ o Random rewrite
     add_constant( "random_string", rnd->random_string );
     add_constant( "random", rnd->random );
 
+o Serializer
+
+  Serialization and deserialization callbacks receive a fourth argument
+  containing the variable's annotations, including inherited annotations.
+  The variable hooks receive the same information as a fifth argument.
+
 o Sql
 
   - Most Sql C-modules converted to cmod.

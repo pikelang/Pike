@@ -2372,4 +2372,62 @@ test_any([[
   return map("123"/1, q)*"-";
 ]], "1ba-2ba-3ba")
 
+dnl - Serializer annotations
+test_any_equal([[
+  class Base {
+    inherit Serializer.Serializable;
+    @"field": int value = 3;
+    @"secret": protected int secret = 4;
+    int plain = 5;
+    int get_secret() { return secret; }
+  }
+  class Derived {
+    @"inherited": inherit Base;
+  }
+  object o = Derived();
+  mapping(string:mixed) seen = ([]);
+  Serializer.serialize(o,
+    lambda(mixed value, string name, mixed symbol_type,
+           mixed symbol_annotations) {
+      seen[name] = ({ value,
+                      has_index(symbol_annotations, "inherited"),
+                      name == "plain" ? sizeof(symbol_annotations) == 1
+                          : has_index(symbol_annotations,
+                                      name == "value" ? "field" : "secret") });
+    });
+  Serializer.deserialize(o,
+    lambda(function(mixed:void) setter, string name,
+           mixed symbol_type, mixed symbol_annotations) {
+      seen[name] += ({ has_index(symbol_annotations, "inherited") });
+      setter(name == "value" ? 13 : name == "secret" ? 14 : 15);
+    });
+  return ({ seen, o->value, o->get_secret(), o->plain });
+]], ({ ([ "value": ({ 3, 1, 1, 1 }),
+          "secret": ({ 4, 1, 1, 1 }),
+          "plain": ({ 5, 1, 1, 1 }) ]), 13, 14, 15 }))
+
+test_any_equal([[
+  class Plain {
+    inherit Serializer.Serializable;
+    int value = 1;
+  }
+  mixed symbol_annotations = 1;
+  Serializer.serialize(Plain(),
+    lambda(mixed value, string name, mixed symbol_type, mixed annotations) {
+      symbol_annotations = annotations;
+    });
+  return zero_type(symbol_annotations);
+]], 1)
+
+test_any_equal([[
+  class Encoded {
+    inherit Serializer.Encodeable;
+    @"field": int value = 4;
+  }
+  object o = Encoded();
+  mapping data = o->_encode();
+  o->_decode(([ "value": 8 ]));
+  return ({ data["value"], o->value });
+]], ({ 4, 8 }))
+
 END_MARKER
