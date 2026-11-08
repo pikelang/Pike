@@ -1756,7 +1756,7 @@ static void f_compilation_report(INT32 args)
  *!
  *! @note
  *!   Note that all references to @[target] and @[placeholder] should
- *!   removed if @[compile()] failes. On failure the @[placeholder]
+ *!   be removed if @[compile()] fails. On failure the @[placeholder]
  *!   object will be destructed.
  *!
  *! @seealso
@@ -2687,7 +2687,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
 /*! @decl type(mixed) apply_attribute_constant(string attr, @
  *!                                            mixed value, @
  *!                                            type arg_type, @
- *!                                            void cont_type, @
+ *!                                            type|zero cont_type, @
  *!                                            mapping state)
  *!
  *!   Handle constant arguments to attributed function argument types.
@@ -2810,6 +2810,24 @@ static void f_compilation_apply_attribute_constant(INT32 args)
 /*! @decl type(mixed) eval_type_attribute(string attribute, @
  *!                                       type t, @
  *!                                       mapping state)
+ *!
+ *!   Type attribute handler.
+ *!
+ *!   Called during type checking to resolve the attribute
+ *!   @[attribute] wrapping the type @[t], typically the result
+ *!   type of a function call that hasn't been fully resolved yet.
+ *!
+ *!   The default implementation implements the
+ *!   @expr{"sprintf_result"@} attribute, by forwarding to
+ *!   @[__handle_sprintf_format()].
+ *!
+ *! @returns
+ *!   Returns a more specific type for @[t] if it succeeded in
+ *!   resolving the attribute, and @[UNDEFINED] otherwise.
+ *!
+ *! @seealso
+ *!   @[pop_type_attribute()], @[push_type_attribute()],
+ *!   @[apply_type_attribute()]
  */
 static void f_compilation_eval_type_attribute(INT32 args)
 {
