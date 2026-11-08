@@ -4550,6 +4550,44 @@ test_any_equal([[
             o->peek_a(0) == h->a[0] });
 ]], ({ ([]), (<>), ({ 1, 2 }), 1 }))
 
+dnl Compiling should not slow down for good after many programs: after
+dnl 20,000 small programs, half of them dropped, a program of 50
+dnl functions must compile at most 1.5 times as slowly as before.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+test_any([[
+  string small(int i) {
+    return "int f(int x) { return x" + ("+ 1" * (1 + i % 40)) + "; }\n" +
+      "constant id = " + i + ";\n";
+  };
+  string big(int i) {
+    string s = "";
+    for (int j = 0; j < 50; j++)
+      s += "int f" + j + "(int x) { return x + " + j + " * " + i + "; }\n";
+    return s + "int f(int x) { return f0(x); }\n";
+  };
+  float ms_per_compile(int n, int base) {
+    int t0 = gethrtime();
+    for (int i = 0; i < n; i++)
+      compile_string(big(base + i))()->f(1);
+    return (gethrtime() - t0) / 1000.0 / n;
+  };
+  ms_per_compile(20, 0);
+  float before = ms_per_compile(100, 1000);
+  array(program) kept = ({}), dropped = ({});
+  for (int i = 0; i < 20000; i++) {
+    program p = compile_string(small(10000 + i));
+    if (i & 1) dropped += ({ p }); else kept += ({ p });
+    if (!(i & 1023)) __signal_watchdog();
+  }
+  dropped = ({});
+  float after = ms_per_compile(100, 50000);
+  kept = ({});
+  if (after > 1.5 * before)
+    return sprintf("a compile took %.2f ms, %.2f ms before", after, before);
+  return 0;
+]], 0)
+]])
+
 // Constant initializers must not overwrite declaration modifiers (#10236).
 test_any_equal([[
   array(array(string)) result = ({});
