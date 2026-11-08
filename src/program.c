@@ -1086,7 +1086,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @param context
  *!   Context in the current object to start the search from.
  *!   If @expr{UNDEFINED@} or left out, @expr{this_program::this@}
- *!   is to be be used (ie start at the current context and ignore
+ *!   is to be used (ie start at the current context and ignore
  *!   any overloaded symbols).
  *!
  *! @param access
@@ -1234,7 +1234,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!     @value "zero"
  *!   @endstring
  *!
- *!   The following five shouldn't occurr, but are here for completeness:
+ *!   The following five shouldn't occur, but are here for completeness:
  *!   @string
  *!     @value "lvalue"
  *!     @value "mapping_data"
@@ -1533,7 +1533,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
 /*! @decl mixed lfun::_random(function(int(0..):string(8bit)) random_string, @
  *!                           function(mixed:mixed) random)
  *!   Called by @[random()]. Typical use is when the object implements
- *!   a ADT, when a call to this lfun should return a random member of
+ *!   an ADT, when a call to this lfun should return a random member of
  *!   the ADT or range implied by the ADT.
  *!
  *! @param random_string
@@ -1683,7 +1683,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *!   Step an iterator backwards.
  *!
- *!   Calling this function after it or @[_iterator_next()] it has
+ *!   Calling this function after it, or @[_iterator_next()], has
  *!   returned @[UNDEFINED] will typically cause it to restart the
  *!   iteration with the last element (ie the start and end sentinel
  *!   values are the same).
@@ -1797,7 +1797,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @returns
  *!   Returns the default module, or @expr{0@} (zero).
  *!
- *!   If @expr{0@} (zero) is returned the compiler use the mapping
+ *!   If @expr{0@} (zero) is returned the compiler uses the mapping
  *!   returned by @[all_constants()] as fallback.
  *!
  *! @seealso
