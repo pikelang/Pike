@@ -1029,8 +1029,9 @@ static int signum(char *name)
   return -1;
 }
 
-/*! @decl function(int|void:void) signal(int sig, function(int|void:void) callback)
- *! @decl function(int|void:void) signal(int sig)
+/*! @decl function(int|void:void)|zero signal(int sig, @
+ *!                                           function(int|void:void)|zero callback)
+ *! @decl function(int|void:void)|zero signal(int sig)
  *!
  *! Trap signals.
  *!
@@ -1203,9 +1204,10 @@ static void f_signum(INT32 args)
   push_int(i);
 }
 
-/*! @decl string signame(int sig)
+/*! @decl string|zero signame(int sig)
  *!
- *! Returns a string describing the signal @[sig].
+ *! Returns a string describing the signal @[sig], or @expr{0@}
+ *! (zero) if @[sig] is not a known signal.
  *!
  *! @seealso
  *!   @[kill()], @[signum()], @[signal()]
@@ -2343,6 +2345,10 @@ static void f_trace_process_exit(INT32 args)
  *!   Interface to the current register contents of
  *!   a stopped process.
  *!
+ *! @note
+ *!   This class is currently disabled, and does not exist
+ *!   in any current build of Pike.
+ *!
  *! @seealso
  *!   @[TraceProcess]
  */
@@ -3003,7 +3009,7 @@ int fd_cleanup_cb(void *data, int fd)
  *!   sets current limit, max is left as it is.
  *!  @item mapping
  *!   ([ "hard":int, "soft":int ]) Both values are optional,
- *!   hard <= soft.
+ *!   soft <= hard.
  *!  @item array
  *!   ({ hard, soft }), both can be set to the string
  *!   "unlimited". A value of -1 means 'keep the old value'.
@@ -3019,7 +3025,7 @@ int fd_cleanup_cb(void *data, int fd)
  *! to worry about quoting them; pike does this for you.
  *!
  *! @param modifiers
- *! This optional mapping can can contain zero or more of the
+ *! This optional mapping can contain zero or more of the
  *! following parameters:
  *!
  *! @mapping
@@ -3063,7 +3069,7 @@ int fd_cleanup_cb(void *data, int fd)
  *! @member mapping(string:string) "env"
  *!  This mapping will become the environment variables for the
  *!  created process. Normally you will want to only add or change
- *!  variables which can be achived by getting the environment mapping
+ *!  variables which can be achieved by getting the environment mapping
  *!  for this process with @[getenv]. See the examples section.
  *!
  *! @member int|string "uid"
@@ -3073,7 +3079,7 @@ int fd_cleanup_cb(void *data, int fd)
  *!  string containing the login name of that user.
  *!
  *!  The "gid" and "groups" for the new process will be set to the
- *!  right values for that user unless overriden by options below.
+ *!  right values for that user unless overridden by options below.
  *!
  *!  (See @[setuid] and @[getpwuid] for more info.)
  *!
@@ -3101,7 +3107,7 @@ int fd_cleanup_cb(void *data, int fd)
  *!  This parameter overrides a behaviour of the "uid" parameter. If
  *!  this parameter is used, the gid and groups of the new process
  *!  will be inherited from the current process rather than changed to
- *!  the approperiate values for that uid.
+ *!  the appropriate values for that uid.
  *!
  *! @member string "priority"
  *!  This sets the priority of the new process, see
@@ -4770,13 +4776,14 @@ void f_create_process(INT32 args)
 }
 
 #ifdef HAVE_FORK
-/*! @decl object fork()
+/*! @decl object(Process.create_process)|zero fork()
  *!
  *! Fork the process in two.
  *!
- *! Fork splits the process in two, and for the parent it returns a
- *! pid object for the child. Refer to your Unix manual for further
- *! details.
+ *! Fork splits the process in two. The parent receives a
+ *! @[Process.create_process] object for the child, and the child
+ *! receives @expr{0@} (zero). Refer to
+ *! your Unix manual for further details.
  *!
  *! @note
  *!   This function can cause endless bugs if used without proper care.
@@ -4904,9 +4911,16 @@ void Pike_f_fork(INT32 args)
 
 
 #ifdef HAVE_KILL
-/*! @decl int(0..1) kill(int pid, int signal)
+/*! @decl int(0..1) kill(int|object(Process.create_process) pid, @
+ *!                       int signal)
  *!
  *! Send a signal to another process.
+ *!
+ *! @param pid
+ *!   Process ID of the process to signal, or a
+ *!   @[Process.create_process] (or subclass thereof, such as
+ *!   @[Process.Process] or @[Process.TraceProcess]) object
+ *!   representing it.
  *!
  *! Some signals and their supposed purpose:
  *! @int
@@ -5015,10 +5029,20 @@ static void f_kill(INT32 args)
     pid = Pike_sp[-args].u.integer;
     break;
 
-    /* FIXME: What about if it's an object? */
+  case T_OBJECT:
+    {
+      struct pid_status *p;
+      if((p=get_storage(Pike_sp[-args].u.object,
+                        pid_status_program)))
+      {
+        pid = p->pid;
+        break;
+      }
+    }
+    /* FALLTHRU */
 
   default:
-    SIMPLE_ARG_TYPE_ERROR("kill", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("kill", 1, "int|object(Process.create_process)");
   }
 
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
@@ -5590,16 +5614,18 @@ void init_signals(void)
 
 #ifdef HAVE_KILL
 /* function(int|object,int:int) */
-  ADD_EFUN("kill", f_kill, tFunc(tOr(tInt,tObj) tInt,tInt01), OPT_SIDE_EFFECT);
+  ADD_EFUN("kill", f_kill,
+           tFunc(tOr(tInt,tObjImpl_PROCESS) tInt,tInt01), OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_FORK
-/* function(void:object) */
-  ADD_EFUN("fork",Pike_f_fork,tFunc(tVoid,tObj),OPT_SIDE_EFFECT);
+/* function(void:object(Process.create_process)|zero) */
+  ADD_EFUN("fork",Pike_f_fork,
+           tFunc(tVoid,tOr(tObjImpl_PROCESS,tZero)),OPT_SIDE_EFFECT);
 #endif
 
-/* function(int:string) */
-  ADD_EFUN("signame",f_signame,tFunc(tInt,tStr),0);
+/* function(int:string|zero) */
+  ADD_EFUN("signame",f_signame,tFunc(tInt,tOr(tStr,tZero)),0);
 
 /* function(string:int) */
   ADD_EFUN("signum",f_signum,tFunc(tStr,tInt),0);
