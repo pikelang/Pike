@@ -120,4 +120,30 @@ test_any([[
 ]])
 cond_end
 cond_end
+dnl Resolving each installed typelib's namespace in GI.repository should
+dnl not crash, also for a GObject constant that is a magic pointer, not
+dnl an object (Gdk-2.0's GDK_NO_BG).
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond([[master()->resolv("GI")]], [[
+test_any_equal([[
+  multiset(string) namespaces = (<>);
+  foreach (({ "/usr/lib/x86_64-linux-gnu/girepository-1.0",
+              "/usr/lib/girepository-1.0", "/usr/lib64/girepository-1.0" }),
+           string d)
+    foreach (get_dir(d) || ({}), string f)
+      if (has_suffix(f, ".typelib")) {
+        string ns = (f / "-")[0];
+        namespaces[ns] = 1;
+      }
+  array(string) crashed = ({});
+  foreach (sort(indices(namespaces)), string ns) {
+    mapping r = Process.run(RUNPIKE_ARRAY +
+                            ({ "-e", sprintf("mixed m = GI.repository[%O];", ns) }));
+    if (r->exitcode < 0 || r->exitcode > 127) crashed += ({ ns });
+  }
+  return crashed;
+]], ({}))
+]])
+]])
+
 END_MARKER
