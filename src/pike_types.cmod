@@ -3543,6 +3543,9 @@ static void low_or_pike_types(struct pike_type *t1,
       push_type(T_VOID);
       push_type(T_OR);
     }
+#if 0 /* This breaks eg:
+       *   __deprecated__(function(int:void)) | function(float:void)
+       */
   } else if ((t1->type == PIKE_T_ATTRIBUTE) &&
              (t2->type != PIKE_T_ATTRIBUTE) &&
              (!t1->cdr || (t1->cdr->type == t2->type))) {
@@ -3553,6 +3556,7 @@ static void low_or_pike_types(struct pike_type *t1,
              (!t2->cdr || (t2->cdr->type == t1->type))) {
     /* Pop the attribute. */
     low_or_pike_types(t1, t2->cdr, zero_implied);
+#endif
   }
   else if ((t1->type == T_OR) || (t2->type == T_OR)) {
     int on_stack = 0;

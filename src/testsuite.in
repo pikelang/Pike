@@ -16294,6 +16294,20 @@ test_compile_any(
 test_compile_warning(
   class A { int foo(__deprecated__(int)|void x) { return x; } };
 )
+// Union normalization must retain attributes on individual alternatives.
+test_any([[
+  #pragma no_deprecation_warnings
+  class A { typedef __deprecated__(function(int:void))|function(float:void) Callback; }
+  return has_value(sprintf("%O", A.Callback),
+                   "__deprecated__(function(int : void))");
+]], 1)
+test_any([[
+  #pragma no_deprecation_warnings
+  class A { typedef function(float:void)|__deprecated__(function(int:void)) Callback; }
+  return has_value(sprintf("%O", A.Callback),
+                   "__deprecated__(function(int : void))");
+]], 1)
+
 test_compile_any(
   class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
 )
