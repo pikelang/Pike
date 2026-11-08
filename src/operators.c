@@ -1647,12 +1647,12 @@ static int pair_add()
  *!   arguments leading up to it, and @[`+()] is then called
  *!   recursively with the result and the rest of the arguments.
  *!
- *!   Otherwise, if @[arg] is @[UNDEFINED] and the other arguments are
- *!   either arrays, mappings or multisets, the first argument is
- *!   ignored and the remaining are added together as described below.
- *!   This is useful primarily when appending to mapping values since
- *!   @expr{m[x] += ({foo})@} will work even if @expr{m[x]@} doesn't
- *!   exist yet.
+ *!   Otherwise, if the arguments are a mix of @[UNDEFINED] and either
+ *!   arrays, mappings or multisets, every @[UNDEFINED] argument
+ *!   (regardless of its position) is ignored and the remaining are
+ *!   added together as described below. This is useful primarily
+ *!   when appending to mapping values since @expr{m[x] += ({foo})@}
+ *!   will work even if @expr{m[x]@} doesn't exist yet.
  *!
  *!   Otherwise the result depends on the argument types:
  *!   @mixed
@@ -4258,7 +4258,7 @@ PMOD_EXPORT void o_divide(void)
  *!   	@type string
  *!   	  @mixed arg2
  *!   	    @type int|float
- *!   	      The result will be and array of @[arg1] split in segments
+ *!   	      The result will be an array of @[arg1] split in segments
  *!   	      of length @[arg2]. If @[arg2] is negative the splitting
  *!   	      will start from the end of @[arg1].
  *!   	    @type string
@@ -4269,7 +4269,7 @@ PMOD_EXPORT void o_divide(void)
  *!   	@type array
  *!   	  @mixed arg2
  *!   	    @type int|float
- *!   	      The result will be and array of @[arg1] split in segments
+ *!   	      The result will be an array of @[arg1] split in segments
  *!   	      of length @[arg2]. If @[arg2] is negative the splitting
  *!   	      will start from the end of @[arg1].
  *!   	    @type array
@@ -4472,7 +4472,7 @@ do_lfun_modulo:
  *!   that function will be called with @[arg2] as the single argument.
  *!
  *!   If @[arg2] is an object that implements @[lfun::``%()] then
- *!   that function will be called with @[arg2] as the single argument.
+ *!   that function will be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
  *!   @mixed arg1
@@ -5393,7 +5393,7 @@ PMOD_EXPORT void f_index(INT32 args)
  *!
  *!   Every non-lvalue expression with the @expr{->@} operator becomes
  *!   a call to this function. @expr{a->b@} is the same as
- *!   @expr{predef::`^(a,"b")@} where @expr{"b"@} is the symbol
+ *!   @expr{predef::`->(a,"b")@} where @expr{"b"@} is the symbol
  *!   @expr{b@} in string form.
  *!
  *!   This function behaves like @[`[]], except that the index is

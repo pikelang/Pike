@@ -240,7 +240,7 @@ PIKECLASS TM
 
     /*! @decl int(0..60) sec;
      *! @decl int(0..59) min;
-     *! @decl int(0..59) hour;
+     *! @decl int(0..23) hour;
      *! @decl int(1..31) mday;
      *! @decl int(0..11) mon;
      *! @decl int year;
@@ -593,7 +593,7 @@ PIKECLASS TM
  *!   symbols might be added.
  */
 PMOD_EXPORT
-PIKEFUN array(array(7..:int|string)) _describe_program(mixed x)
+PIKEFUN array(array(7..:int|string|type)) _describe_program(mixed x)
      efun;
 {
   struct program *p;
@@ -728,7 +728,7 @@ PIKEFUN int siphash24(string s, void|int key)
   push_bignum(ret);
 }
 
-/*! @decl string int2char(int x)
+/*! @decl string int2char(int|object x)
  *! @appears String.int2char
  *!
  *! Same as sprintf("%c",x);
@@ -781,7 +781,7 @@ PIKEFUN string int2char(int|object x)
   }
 }
 
-/*! @decl string int2hex(int x)
+/*! @decl string int2hex(int|object x)
  *! @appears String.int2hex
  *!
  *! Same as @expr{sprintf("%x",x);@}, i.e. returns the integer @[x] in
@@ -1148,7 +1148,7 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
   RETURN old_level;
 }
 
-/*! @decl mapping(string:float) gc_parameters (void|mapping(string:mixed) params)
+/*! @decl mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
  *! @belongs Pike
  *!
  *! Set and get various parameters that control the operation of the
@@ -1754,7 +1754,7 @@ PIKEFUN int program_inherits(program|object child, program parent)
   RETURN low_get_storage(p, parent) != -1;
 }
 
-/*! @decl string defined(program p)
+/*! @decl string|zero defined(program p)
  *! @belongs Program
  *!
  *! Returns a string with filename and linenumber describing where
@@ -2039,7 +2039,7 @@ static void f_proxy__sprintf(INT32 args)
 }
 
 static struct mapping *proxy_lookup = NULL;
-/*! @decl program ProxyFactory(program p)
+/*! @decl program|zero ProxyFactory(program p)
  *! @belongs Pike
  *!
  *! Create a class that acts as a proxy for the specified program.
@@ -2747,7 +2747,7 @@ static struct pike_string *delambda(struct pike_string *str)
   return make_shared_binary_pcharp(pcharp, len);
 }
 
-/*! @decl string function_name(function|program f)
+/*! @decl string|zero function_name(function|program f)
  *!
  *! Return the name of the function or program @[f].
  *!
@@ -2836,7 +2836,7 @@ PIKEFUN string|zero function_name(program|function func)
   push_int(0);
 }
 
-/*! @decl object function_object(function f)
+/*! @decl object|zero function_object(function|program f)
  *!
  *!   Return the object the function @[f] is in.
  *!
@@ -2883,7 +2883,7 @@ PIKEFUN object|zero function_object(function|program func)
   push_int(0);
 }
 
-/*! @decl program function_program(function|program f)
+/*! @decl program|zero function_program(function|program f)
  *!
  *!   Return the program the function @[f] is in.
  *!
@@ -3095,7 +3095,7 @@ PIKECLASS RandomInterface
    *!   @elem mixed 0
    *!     The index of the mapping entry.
    *!   @elem mixed 1
-   *!     The value f  the mapping entry.
+   *!     The value of the mapping entry.
    *! @endarray
    *!
    *! @throws
@@ -3809,7 +3809,7 @@ PIKECLASS backtrace_frame
     push_int(THIS->lineno);
   }
 
-  /*! @decl string _sprintf(int c, mapping|void opts)
+  /*! @decl string|zero _sprintf(int c, mapping|void opts)
    */
   PIKEFUN string|zero _sprintf(int c, mapping|void opts)
     flags ID_PROTECTED;
@@ -4463,6 +4463,12 @@ PIKECLASS LiveBacktraceFrame
  *!     @member int(1..1) "auto_bignum"
  *!       Integers larger than the native size are now always
  *!       automatically converted into bignums.
+ *!     @member string "cpu_time_method"
+ *!       A string describing the method used by @[gethrvtime()] to
+ *!       measure CPU time.
+ *!     @member string "real_time_method"
+ *!       A string describing the method used by @[gethrtime()] to
+ *!       measure real time.
  *!     @member int(1..1) "cleanup_on_exit"
  *!       The runtime has been compiled @tt{--with-cleanup-on-exit@} or equivalent.
  *!       The runtime destructs all objects on @[exit()].
@@ -5784,7 +5790,7 @@ PIKECLASS bootstring
 
   /*! @decl string encode(string s)
    *!
-   *! Encodes a string using Bootstring encoding into a string constisting
+   *! Encodes a string using Bootstring encoding into a string consisting
    *! only of "basic" code points (< initial_n).
    */
   PIKEFUN string encode(string s)
@@ -6864,7 +6870,7 @@ PIKECLASS Serializable
    *!   Dispatch function for deserialization.
    *!
    *! @param o
-   *!   Object to serialize. Always a context of the current object.
+   *!   Object to deserialize. Always a context of the current object.
    *!
    *! @param deserializer
    *!   Function to typically be called once for every variable
@@ -6905,7 +6911,7 @@ PIKECLASS Serializable
                             tVoid)), tVoid);
   {
     if (o != Pike_fp->current_object) {
-      SIMPLE_ARG_TYPE_ERROR("_serialize", 1, "this");
+      SIMPLE_ARG_TYPE_ERROR("_deserialize", 1, "this");
     }
     low_serialize(SUBTYPEOF(Pike_sp[-args]), deserializer, 1,
 		  f_Serializable_cq__deserialize_variable_fun_num);
@@ -8073,7 +8079,7 @@ PIKECLASS List
      *!   Delete the current node.
      *!
      *!   The current position will advance to the next node.
-     *!   This function thus performes the reverse operation
+     *!   This function thus performs the reverse operation
      *!   of @[insert()].
      *!
      *! @seealso
@@ -8449,8 +8455,9 @@ PIKECLASS Stack
   PIKEFUN string|zero _sprintf(int t)
     flags ID_PROTECTED;
   {
-    if (t != '0') {
+    if (t != 'O') {
       push_undefined();
+      return;
     }
 
     push_constant_text("%O%O");

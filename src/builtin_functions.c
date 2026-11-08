@@ -530,7 +530,7 @@ void f_hash_value(INT32 args)
  *!   multisets, arrays and mappings) the copied value will not be changed.
  *!
  *!   The resulting value will always be equal to the copied (as tested with
- *!   the function @[equal()]), but they may not the the same value (as tested
+ *!   the function @[equal()]), but they may not be the same value (as tested
  *!   with @[`==()]).
  *!
  *! @seealso
@@ -880,7 +880,9 @@ PMOD_EXPORT void f_upper_case(INT32 args)
 
 /*! @decl void random_seed(int seed)
  *!
- *!   This function sets the initial value for the random generator.
+ *!   This function used to set the initial value for the random
+ *!   generator, but is currently a no-op; @[seed] is ignored and
+ *!   @[random()] is not affected in any way.
  *!
  *! @seealso
  *!   @[random()]
@@ -1585,7 +1587,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
  *!   called can access @[value] by the name @[name].
  *!
  *!   If there is a constant called @[name] already, it will be replaced by
- *!   by the new definition. This will not affect already compiled programs.
+ *!   the new definition. This will not affect already compiled programs.
  *!
  *!   Calling @[add_constant()] without a value will remove that name from
  *!   the list of constants. As with replacing, this will not affect already
@@ -2202,7 +2204,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
  *! @note
  *!   This will replace characters outside the ranges
  *!   @expr{0x00000000-0x0000d7ff@} and @expr{0x0000e000-0x0010ffff@}
- *!   with 0xffea (the replacement character).
+ *!   with 0xfffd (the replacement character).
  *!
  *! @seealso
  *!   @[Charset.encoder()], @[string_to_unicode()],
@@ -3468,7 +3470,7 @@ static int generate_this_object(node *n)
  *!   If no @[catch] is waiting the global error handling will send the
  *!   value to @[master()->handle_error()].
  *!
- *!   If you throw an array with where the first index contains an error
+ *!   If you throw an array where the first index contains an error
  *!   message and the second index is a backtrace, (the output from
  *!   @[backtrace()]) then it will be treated exactly like a real error
  *!   by overlying functions.
@@ -3818,7 +3820,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
   destruct_objects_to_destruct();
 }
 
-/*! @decl array indices(string|array|mapping|multiset|object x)
+/*! @decl array indices(string|array|mapping|multiset|object|program x)
  *!
  *!   Return an array of all valid indices for the value @[x].
  *!
@@ -3839,6 +3841,11 @@ PMOD_EXPORT void f_destruct(INT32 args)
  *!
  *!       For other objects an array with the names of all non-protected
  *!       symbols is returned.
+ *!
+ *!     @type program
+ *!       For programs an array with the names of all non-protected
+ *!       @tt{constant@} identifiers (but not methods or variables)
+ *!       is returned.
  *!  @endmixed
  *!
  *! @seealso
@@ -3906,7 +3913,7 @@ PMOD_EXPORT void f_indices(INT32 args)
   push_array(a);
 }
 
-/*! @decl array values(string|array|mapping|multiset|object x)
+/*! @decl array values(string|array|mapping|multiset|object|program x)
  *!
  *!   Return an array of all possible values from indexing the value
  *!   @[x].
@@ -3933,6 +3940,11 @@ PMOD_EXPORT void f_indices(INT32 args)
  *!
  *!       For other objects an array with the values of all non-protected
  *!       symbols is returned.
+ *!
+ *!     @type program
+ *!       For programs an array with the values of all non-protected
+ *!       @tt{constant@} identifiers (but not methods or variables)
+ *!       is returned.
  *!  @endmixed
  *!
  *! @seealso
@@ -4016,8 +4028,13 @@ PMOD_EXPORT void f_values(INT32 args)
  *!       For objects which define @[lfun::_types()] that return value
  *!       is used.
  *!
- *!       For other objects an array with type types for all non-protected
+ *!       For other objects an array with the types for all non-protected
  *!       symbols is returned.
+ *!
+ *!     @type program
+ *!       For programs an array with the types of all non-protected
+ *!       @tt{constant@} identifiers (but not methods or variables)
+ *!       is returned.
  *!   @endmixed
  *!
  *! @note
@@ -4180,7 +4197,7 @@ PMOD_EXPORT void f_annotations(INT32 args)
  *!   Do not include annotations recursively added via inherits.
  *!
  *! @returns
- *!       Returns an multiset with annotations added directly to this program.
+ *!       Returns a multiset with annotations added directly to this program.
  *!   
  *!
  *! @note
@@ -4875,7 +4892,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!   Instead of the arrays @[from] and @[to] a mapping equivalent to
  *!   @expr{@[mkmapping](@[from], @[to])@} can be used.
  *!
- *!   Replaces all occurrances of @[from] in @[s] with the corresponding @[to].
+ *!   Replaces all occurrences of @[from] in @[s] with the corresponding @[to].
  *!
  *!   If all the arguments are strings, a copy of @[s] with every
  *!   occurrence of @[from] replaced with @[to] will be returned.
@@ -4883,7 +4900,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!   @[s] if @[from] is the empty string.
  *!
  *!   If the first argument is a string, and the others array(string), a string
- *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
+ *!   with every occurrence of @[from][@i{i@}] in @[s] replaced with
  *!   @[to][@i{i@}] will be returned.
  */
 /*! @decl array replace(array a, mixed from, mixed to)
@@ -6682,7 +6699,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *! @section Modifiers:
  *!   @string
  *!     @value "%#"
- *!       Modifier: Inhibit 0-padding and use alternative formet. (MS)
+ *!       Modifier: Inhibit 0-padding and use alternative format. (MS)
  *!
  *!     @value "%!"
  *!       Modifier: Inhibit 0-padding. (Roxen)
@@ -6830,7 +6847,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *!     @value "%W"
  *!       The week number of year as a decimal number (range 00 to 53),
- *!       with Monday as the the first day of week 1.
+ *!       with Monday as the first day of week 1.
  *!
  *!     @value "%x"
  *!       Date in locale preferred format.
@@ -8663,7 +8680,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
 /*! @decl int size_object(object o)
  *! @belongs Debug
  *!
- *!  Return the aproximate size of the object, in bytes.
+ *!  Return the approximate size of the object, in bytes.
  *!  This might not work very well for native objects
  *!
  *!
@@ -9301,7 +9318,7 @@ PMOD_EXPORT void f_splice(INT32 args)
  *!
  *!   Return an array with every @[n]:th element of the array @[a].
  *!
- *!   If @[n] is zero every other element will be returned.
+ *!   If @[n] is omitted every other element will be returned.
  *!
  *! @seealso
  *!   @[splice()], @[`/()]
@@ -9331,7 +9348,7 @@ PMOD_EXPORT void f_everynth(INT32 args)
       n=Pike_sp[1-args].u.integer;
       if(n<1)
         bad_arg_error("everynth", args, 2, "int", Pike_sp+1-args,
-		      "Argument negative.\n");
+                      "Argument must be positive.\n");
      /* FALLTHRU */
     case 1:
       ina=Pike_sp[-args].u.array;
@@ -10465,7 +10482,8 @@ void init_builtin_efuns(void)
   start_new_program();
   /*! @decl void _main(array(string) argv, array(string) env) */
   ADD_PROTOTYPE("_main", tFunc(tArr(tStr) tArr(tStr),tVoid), 0);
-  /*! @decl object cast_to_object(string oname, string current_file) */
+  /*! @decl object cast_to_object(string oname, string current_file, @
+   *!                             object|void handler) */
   ADD_PROTOTYPE("cast_to_object", tFunc(tStr tStr tOr(tVoid, tObj), tObj), 0);
   /*! @decl program cast_to_program(string pname, string current_file, object|void handler) */
   ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg(tObj)), 0);
@@ -10486,9 +10504,9 @@ void init_builtin_efuns(void)
   ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt01, tStr), 0);
   /*! @decl program handle_inherit(string pname, string current_file, object|void handler) */
   ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
-  /*! @decl void write(string fmt, mixed ... args) */
+  /*! @decl int write(string fmt, mixed ... args) */
   ADD_PROTOTYPE("write", tFuncV(tStr, tOr(tVoid,tMix), tInt), OPT_SIDE_EFFECT);
-  /*! @decl void werror(string fmt, mixed ... args) */
+  /*! @decl int werror(string fmt, mixed ... args) */
   ADD_PROTOTYPE("werror", tFuncV(tStr, tOr(tVoid,tMix), tInt), OPT_SIDE_EFFECT);
   /*! @decl string read_include(string path) */
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
