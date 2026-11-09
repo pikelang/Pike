@@ -372,6 +372,31 @@ test_any([[
   return s->size == -0x100000000;
 ]], 1)
 
+dnl Stdio.Stat()->create() used to destroy the source object/mapping/program
+dnl after copying the very first field, causing all subsequent fields to be
+dnl looked up in whatever the previous field's value happened to be instead.
+test_any([[
+  Stdio.Stat orig = file_stat(".");
+  mapping m = (mapping) orig;
+  Stdio.Stat copy = Stdio.Stat(m);
+  return copy->mode == orig->mode && copy->size == orig->size &&
+    copy->type == orig->type && copy->isdir == orig->isdir;
+]], 1)
+
+test_equal([[
+lambda()
+{
+  Stdio.Stat s = Stdio.Stat((["mode":0100644, "size":42]));
+  return ({ s->mode, s->size });
+}()
+]], ({ 0100644, 42 }))
+
+test_any([[
+  // Passing a program (rather than an object or mapping) must not crash.
+  Stdio.Stat s = Stdio.Stat(Stdio.Stat);
+  return objectp(s);
+]], 1)
+
 test_any([[
   Stdio.File f = Stdio.File();
   return f->query_backend() == Pike.DefaultBackend;

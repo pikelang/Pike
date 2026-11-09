@@ -306,17 +306,22 @@ static void stat_init (struct object *UNUSED(o))
   memset (&THIS_STAT->s, 0, sizeof (THIS_STAT->s));
 }
 
-/*! @decl void create (void|object|array stat);
+/*! @decl void create (void|object|program|mapping|array stat);
  *!
- *! A new @[Stdio.Stat] object can be initialized in two ways:
+ *! A new @[Stdio.Stat] object can be initialized in several ways:
  *!
  *! @ul
  *!   @item
- *!     @[stat] is an object, typically another @[Stdio.Stat]. The
- *!     stat info is copied from the object by getting the values of
- *!     @expr{mode@}, @expr{size@}, @expr{atime@}, @expr{mtime@},
- *!     @expr{ctime@}, @expr{uid@}, @expr{gid@}, @expr{dev@}, @expr{ino@},
- *!     @expr{nlink@}, and @expr{rdev@}.
+ *!     @[stat] is an object (typically another @[Stdio.Stat]), a
+ *!     program, or a mapping. The stat info is copied by getting the
+ *!     value of each of the items in the first @tt{struct stat@} list
+ *!     in the class doc above (@expr{mode@}, @expr{size@},
+ *!     @expr{uid@}, @expr{gid@}, @expr{atime@}, @expr{mtime@},
+ *!     @expr{ctime@}, @expr{ino@}, @expr{nlink@}, @expr{dev@},
+ *!     @expr{rdev@}, etc) that is defined in @[stat]. The derived
+ *!     items (@expr{isreg@}, @expr{isdir@}, @expr{type@},
+ *!     @expr{mode_string@}, etc) are not copied this way, since
+ *!     @expr{mode@} already determines them.
  *!   @item
  *!     @[stat] is a seven element array on the 'traditional' LPC
  *!     stat-array form (see the class doc).
@@ -785,7 +790,7 @@ static void stat_index_set (INT32 args)
 static void stat_indices(INT32 args);
 static void stat_values(INT32 args);
 
-/*! @decl mapping(string:int)|array cast (string to);
+/*! @decl mapping(string:int|string)|array(int) cast (string to);
  *!
  *! Convert the stat object to a mapping or array.
  */
@@ -926,8 +931,17 @@ static void stat_create (INT32 args)
     {
       struct keypair *k;
       int e;
+      struct svalue *src = sp - 1;
       NEW_MAPPING_LOOP( stat_map->data )
       {
+        /* STAT_ISLNK .. STAT_MODE_STRING are mutually exclusive,
+         * derived views of the S_IFMT bits in "mode". Copying them
+         * independently of each other (in indeterminate order) would
+         * make the false ones clobber the S_IFMT bits set by "mode"
+         * or by whichever of them happens to be true.
+         */
+        if (k->val.u.integer >= STAT_ISLNK) continue;
+        push_svalue(src);
         push_svalue(&k->ind);
         SET_SVAL_SUBTYPE(sp[-1],1);
         o_index();
