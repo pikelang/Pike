@@ -25,6 +25,14 @@ case /$0 in
   ;;
 esac
 
+# Select WSL when running there unless the caller selected a transport.
+if [ -z "${REMOTE_METHOD+x}" ]; then
+  if [ -n "${WSL_DISTRO_NAME-}" ] ||
+     grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then
+    REMOTE_METHOD=wsl
+  fi
+fi
+
 # Support local settings.
 INIT_NTRC=${INIT_NTRC-"$HOME/.init_ntrc"}
 if [ -f "$INIT_NTRC" ]; then
@@ -32,7 +40,7 @@ if [ -f "$INIT_NTRC" ]; then
   . "$INIT_NTRC"
 fi
 
-#This can be 'sprsh', 'wine' or 'cygwin'
+# This can be 'sprsh', 'wine', 'wsl' or 'cygwin'.
 REMOTE_METHOD=${REMOTE_METHOD-sprsh}
 
 # Choose 'rntcc' for Watcom or 'rntcl' for Microsoft VC++
@@ -53,6 +61,31 @@ if [ "x$REMOTE_METHOD" = "xwine" ]; then
     NTDRIVE=${NTDRIVE-z:}
     NTMOUNT=${NTMOUNT-/}
     NTHOST="`hostname`-wine"
+elif [ "x$REMOTE_METHOD" = "xwsl" ]; then
+    NTDRIVE=${NTDRIVE-c:}
+    if [ -z "${NTMOUNT+x}" ]; then
+        NTMOUNT=$(wslpath -u "${NTDRIVE}\\") || exit 1
+        NTMOUNT=${NTMOUNT%/}
+    fi
+    NTHOST="`hostname`-wsl"
+    # Developer command prompts set these on the Windows side. WSL does
+    # not import them unless WSLENV was configured before WSL started.
+    if [ -z "${INCLUDE-}" ]; then
+        INCLUDE=$(cmd.exe /C 'set INCLUDE' 2>/dev/null |
+          sed -n 's/^INCLUDE=//p' | tr -d '\r')
+    fi
+    if [ -z "${LIB-}" ]; then
+        LIB=$(cmd.exe /C 'set LIB' 2>/dev/null |
+          sed -n 's/^LIB=//p' | tr -d '\r')
+    fi
+    if [ -z "${LIBPATH-}" ]; then
+        LIBPATH=$(cmd.exe /C 'set LIBPATH' 2>/dev/null |
+          sed -n 's/^LIBPATH=//p' | tr -d '\r')
+    fi
+    if [ -n "$INCLUDE" ]; then WSLENV="${WSLENV:+$WSLENV:}INCLUDE/w"; fi
+    if [ -n "$LIB" ]; then WSLENV="${WSLENV:+$WSLENV:}LIB/w"; fi
+    if [ -n "$LIBPATH" ]; then WSLENV="${WSLENV:+$WSLENV:}LIBPATH/w"; fi
+    export WSLENV LIB LIBPATH
 else
     # Edit
     NTHOST=${NTHOST-10.0.5.13}
@@ -80,9 +113,11 @@ USE_SPRSH=yes
 # Port for sprsh
 NTPORT=${NTPORT-4711}
 
-#These are only used if you use wine
+# Default include path for the old Watcom setup.
 watcom=D:\\CDROM
-INCLUDE="$watcom\\H;$watcom\\H\\NT"
+if [ "x$REMOTE_METHOD" != "xwsl" ]; then
+  INCLUDE=${INCLUDE-"$watcom\\H;$watcom\\H\\NT"}
+fi
 
 # Used for IA64 cross-compiling.
 IA64SDK=${IA64SDK-'C:\ia64sdk17'}

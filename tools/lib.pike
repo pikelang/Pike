@@ -106,6 +106,25 @@ string follow_symlinks(string s)
   return s;
 }
 
+mapping(string:string) wsl_path_cache = ([]);
+
+string wsl_fixpath(string s)
+{
+  if (wsl_path_cache[s]) return wsl_path_cache[s];
+
+  object(Stdio.File) f = Stdio.File();
+  object(Stdio.File) o = f->pipe(Stdio.PROP_IPC);
+  object proc = Process.create_process(({"wslpath", "-w", s}),
+                                       (["stdout":o]));
+  destruct(o);
+  string path = ((f->read() || "")/"\n")[0];
+  destruct(f);
+  if (proc->wait() || !sizeof(path))
+    error("wslpath failed for %O.\n", s);
+  if (has_suffix(path, "\r")) path = path[..<1];
+  return wsl_path_cache[s] = path;
+}
+
 // Allow several mappings of unix paths to NT drives using
 // NTMOUNT/NTDRIVE, NTMOUNT1/NTDRIVE1, NTMOUNT2/NTDRIVE2, etc. The
 // replace code is naive, so you better have the longest NTMOUNTn
@@ -146,6 +165,9 @@ string fixpath(string s)
   PATH_MAP_MSG ("fixpath: %O -> ", s);
   s=follow_symlinks(s);
   PATH_MAP_MSG ("%O -> ", s);
+  if (lower_case(getenv("REMOTE_METHOD") || "") == "wsl" &&
+      has_prefix(s, "/"))
+    return wsl_fixpath(s);
   foreach (get_pathmap(), [string mnt, string drv]) {
     if (mnt == "/") {
       // Special case for whole filesystem.
@@ -165,6 +187,14 @@ string fixpath(string s)
 
 void fix_paths_in_arglist (array(string) args)
 {
+  if (lower_case(getenv("REMOTE_METHOD") || "") == "wsl") {
+    // Keep the executable as a Linux path for WSL interop.
+    foreach (args; int e; string arg)
+      if (e && has_prefix(arg, "/") && search(arg[1..], "/") >= 0 &&
+          (file_stat(arg) || file_stat(dirname(arg))))
+        args[e] = fixpath(arg);
+    return;
+  }
   get_pathmap();
   foreach (args; int e; string arg)
     foreach (pathmap, [string mnt, string drv]) {
@@ -281,6 +311,36 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 	  ret+=s;
 	}
 	if(filter) filter(ret);
+	destruct(f);
+	return proc->wait();
+      }
+
+    case "wsl":
+    case "WSL":
+      {
+	if (cmd[0] == "getenv") {
+	  string value = getenv(cmd[1]) || getenv(lower_case(cmd[1])) || "";
+	  if (filter) filter(value);
+	  if (!silent) write(value + "\n");
+	  return 0;
+	}
+	if (!no_fixpath) fix_paths_in_arglist(cmd);
+	if (has_suffix(lower_case(cmd[0]), ".bat") ||
+	    has_suffix(lower_case(cmd[0]), ".cmd"))
+	  error("Run batch files through cmd.exe /c in WSL mode.\n");
+	if (!has_suffix(lower_case(cmd[0]), ".exe")) cmd[0] += ".exe";
+
+	object o = f->pipe(Stdio.PROP_BIDIRECTIONAL | Stdio.PROP_IPC);
+	object proc = Process.create_process(cmd, (["stdout":o]));
+	destruct(o);
+	while (1) {
+	  string s = f->read(8192, 1);
+	  if (!s || !sizeof(s)) break;
+	  s = replace(s, "\r\n", "\n");
+	  if (!silent) write(s);
+	  ret += s;
+	}
+	if (filter) filter(ret);
 	destruct(f);
 	return proc->wait();
       }
@@ -641,6 +701,8 @@ string getntenv(string var)
 
     case "wine":
     case "WINE":
+    case "wsl":
+    case "WSL":
       return getenv(var) || getenv(lower_case(var));
 
     case 0:
