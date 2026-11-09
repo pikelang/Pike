@@ -180,8 +180,8 @@ FILE_FUNC("tcgetattr",file_tcgetattr, tFunc(tNone, tMap(tStr7, tInt)))
 /* function(mapping, void|string: int(0..1)) */
 FILE_FUNC("tcsetattr", file_tcsetattr,
           tFunc(tMap(tStr7, tInt) tOr(tVoid, tStr7), tInt01))
-/* function(int: int(0..1)) */
-FILE_FUNC("tcsendbreak", file_tcsendbreak, tFunc(tInt, tInt01))
+/* function(void|int: int(0..1)) */
+FILE_FUNC("tcsendbreak", file_tcsendbreak, tFunc(tOr(tVoid, tInt), tInt01))
 /* function(void|string: int(0..1)) */
 FILE_FUNC("tcflush", file_tcflush, tFunc(tOr(tVoid, tStr7), tInt01))
 FILE_FUNC("tcdrain", file_tcdrain, tFunc(tNone, tInt01))

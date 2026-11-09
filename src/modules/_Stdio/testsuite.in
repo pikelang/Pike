@@ -430,6 +430,22 @@ cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_OOB_F
   run_sub_test(({"SRCDIR/kqueue_oobtest.pike", "1"}))
 cond_end
 
+dnl termios
+
+dnl tcsendbreak() used to statically require its duration argument, and
+dnl when called with none anyway popped one value too many off the Pike
+dnl stack. The call itself is expected to fail at the OS level here
+dnl (there's no open terminal fd), but it must not throw a Pike-level
+dnl error or corrupt the stack.
+cond_begin([[ Stdio.File()->tcsendbreak ]])
+  test_any([[
+    return Stdio.File()->tcsendbreak();
+  ]], 0)
+  test_any([[
+    return Stdio.File()->tcsendbreak(100);
+  ]], 0)
+cond_end
+
 dnl Buffer
 
 test_equal([[Stdio.Buffer("hej")->read(1)]], "h")

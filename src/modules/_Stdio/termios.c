@@ -471,7 +471,7 @@ void file_tcsendbreak(INT32 args)
   INT_TYPE len=0;
 
   get_all_args(NULL, args, ".%i", &len);
-  pop_stack();
+  pop_n_elems(args);
   push_int(!tcsendbreak(FD, len));
 }
 
