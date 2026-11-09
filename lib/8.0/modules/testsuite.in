@@ -383,4 +383,55 @@ test_any_equal([[
   return seen == 7 && r->number == 12;
 ]], 1)
 
+test_any_equal([[
+  class Record {
+    inherit Serializer.Serializable;
+    int number = 3;
+    array save() {
+      array fields = ({});
+      _serialize(this, lambda(mixed value, string name, mixed t) {
+        fields += ({ ({ name, value }) });
+      });
+      return fields;
+    }
+    void restore() {
+      _deserialize(this, lambda(function setter, string name, mixed t) {
+        setter(9);
+      });
+    }
+  }
+  object o = Record();
+  array saved = o->save();
+  o->restore();
+  return ({ saved, o->number });
+]], ({ ({ ({ "number", 3 }) }), 9 }))
+
+test_any_equal([[
+  class Empty { inherit Serializer.Serializable; }
+  int calls;
+  Serializer.serialize(Empty(), lambda(mixed v, string n, mixed t) {
+    calls++;
+  });
+  Serializer.deserialize(Empty(), lambda(function set, string n, mixed t) {
+    calls++;
+  });
+  return calls;
+]], 0)
+
+test_any_equal([[
+  class Modern {
+    inherit 9.0::Serializer.Serializable;
+    int number = 5;
+  }
+  object o = Modern();
+  array fields = ({});
+  Serializer.serialize(o, lambda(mixed value, string name, mixed t) {
+    fields += ({ ({ name, value }) });
+  });
+  Serializer.deserialize(o, lambda(function setter, string name, mixed t) {
+    setter(11);
+  });
+  return ({ fields, o->number });
+]], ({ ({ ({ "number", 5 }) }), 11 }))
+
 END_MARKER

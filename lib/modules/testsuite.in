@@ -2372,9 +2372,10 @@ test_any([[
   return map("123"/1, q)*"-";
 ]], "1ba-2ba-3ba")
 
-dnl - Serializer annotations
+dnl - Serializer boundaries and separate annotations.
 test_any_equal([[
   class Base {
+    @"base";
     inherit Serializer.Serializable;
     @"field": int value = 3;
     @"secret": protected int secret = 4;
@@ -2382,42 +2383,88 @@ test_any_equal([[
     int get_secret() { return secret; }
   }
   class Derived {
+    @"derived";
     @"inherited": inherit Base;
   }
   object o = Derived();
   mapping(string:mixed) seen = ([]);
+  array(string) events = ({});
+  function boundary = lambda(mixed value, string name, mixed t,
+                             mixed direct, mixed inherited) {
+    if (name != "\0begin" && name != "\0end") return 0;
+    if (value != o || t != _typeof(o) ||
+        !equal(direct, (< "derived" >)) || !undefinedp(inherited))
+      error("Invalid object boundary.\n");
+    return 1;
+  };
   Serializer.serialize(o,
-    lambda(mixed value, string name, mixed symbol_type,
-           mixed symbol_annotations) {
+    lambda(mixed value, string name, mixed t, mixed direct, mixed inherited) {
+      events += ({ name });
+      if (boundary(value, name, t, direct, inherited)) return;
       seen[name] = ({ value,
-                      has_index(symbol_annotations, "inherited"),
-                      name == "plain" ? sizeof(symbol_annotations) == 1
-                          : has_index(symbol_annotations,
-                                      name == "value" ? "field" : "secret") });
+        equal(direct, name == "plain" ? UNDEFINED :
+                       (< name == "value" ? "field" : "secret" >)),
+        equal(inherited, (< "derived", "base", "inherited" >)) });
     });
   Serializer.deserialize(o,
-    lambda(function(mixed:void) setter, string name,
-           mixed symbol_type, mixed symbol_annotations) {
-      seen[name] += ({ has_index(symbol_annotations, "inherited") });
+    lambda(mixed setter, string name, mixed t, mixed direct, mixed inherited) {
+      events += ({ name });
+      if (boundary(setter, name, t, direct, inherited)) return;
+      seen[name] += ({ equal(direct, name == "plain" ? UNDEFINED :
+                                      (< name == "value" ? "field" : "secret" >)),
+                       equal(inherited,
+                             (< "derived", "base", "inherited" >)) });
       setter(name == "value" ? 13 : name == "secret" ? 14 : 15);
     });
-  return ({ seen, o->value, o->get_secret(), o->plain });
-]], ({ ([ "value": ({ 3, 1, 1, 1 }),
-          "secret": ({ 4, 1, 1, 1 }),
-          "plain": ({ 5, 1, 1, 1 }) ]), 13, 14, 15 }))
+  return ({ seen, o->value, o->get_secret(), o->plain, events });
+]], ({ ([ "value": ({ 3, 1, 1, 1, 1 }),
+          "secret": ({ 4, 1, 1, 1, 1 }),
+          "plain": ({ 5, 1, 1, 1, 1 }) ]), 13, 14, 15,
+       ({ "\0begin", "value", "secret", "plain", "\0end",
+          "\0begin", "value", "secret", "plain", "\0end" }) }))
+
+test_any_equal([[
+  class Empty { inherit Serializer.Serializable; }
+  object o = Empty();
+  array(string) events = ({});
+  function cb = lambda(mixed value, string name, mixed t,
+                       mixed direct, mixed inherited) {
+    if (value != o || t != _typeof(o) ||
+        !undefinedp(direct) || !undefinedp(inherited))
+      error("Invalid empty-object boundary.\n");
+    events += ({ name });
+  };
+  Serializer.serialize(o, cb);
+  Serializer.deserialize(o, cb);
+  return events;
+]], ({ "\0begin", "\0end", "\0begin", "\0end" }))
 
 test_any_equal([[
   class Plain {
     inherit Serializer.Serializable;
     int value = 1;
   }
-  mixed symbol_annotations = 1;
-  Serializer.serialize(Plain(),
-    lambda(mixed value, string name, mixed symbol_type, mixed annotations) {
-      symbol_annotations = annotations;
-    });
-  return zero_type(symbol_annotations);
-]], 1)
+  array result = ({});
+  foreach (({ Serializer.serialize, Serializer.deserialize }), function visit) {
+    foreach (({ "\0begin", "value", "\0end" }), string fail_at) {
+      array(string) events = ({});
+      mixed err = catch {
+        visit(Plain(), lambda(mixed value, string name, mixed t,
+                              mixed direct, mixed inherited) {
+          events += ({ name });
+          if (!undefinedp(direct) || !undefinedp(inherited))
+            error("Unexpected annotations.\n");
+          if (name == fail_at) error("Stop traversal.\n");
+        });
+      };
+      result += ({ !!err, events });
+    }
+  }
+  return result;
+]], ({ 1, ({ "\0begin" }), 1, ({ "\0begin", "value" }),
+       1, ({ "\0begin", "value", "\0end" }),
+       1, ({ "\0begin" }), 1, ({ "\0begin", "value" }),
+       1, ({ "\0begin", "value", "\0end" }) }))
 
 test_any_equal([[
   class Encoded {
@@ -2427,7 +2474,87 @@ test_any_equal([[
   object o = Encoded();
   mapping data = o->_encode();
   o->_decode(([ "value": 8 ]));
-  return ({ data["value"], o->value });
-]], ({ 4, 8 }))
+  return ({ data, o->value });
+]], ({ ([ "value": 4 ]), 8 }))
+
+test_any_equal([[
+  class Record {
+    constant hooks = ([]);
+    @"object";
+    inherit Serializer.Serializable;
+    @"field": int value = 1;
+    protected void _serialize_variable(function cb, mixed value, string name,
+                                       mixed t, mixed direct, mixed inherited) {
+      hooks[name]++;
+      ::_serialize_variable(cb, value, name, t, direct, inherited);
+    }
+    protected void _deserialize_variable(function cb, function setter,
+                                         string name, mixed t, mixed direct,
+                                         mixed inherited) {
+      hooks[name]++;
+      ::_deserialize_variable(cb, setter, name, t, direct, inherited);
+    }
+  }
+  object o = Record();
+  Serializer.serialize(o, lambda(mixed value, string name, mixed t,
+                                 mixed direct, mixed inherited) {
+    if (name == "value" && (!equal(direct, (< "field" >)) ||
+                           !equal(inherited, (< "object" >))))
+      error("Hook lost annotations.\n");
+  });
+  Serializer.deserialize(o, lambda(mixed setter, string name, mixed t,
+                                   mixed direct, mixed inherited) {
+    if (name == "value") setter(9);
+  });
+  return ({ o->hooks, o->value });
+]], ({ ([ "value": 2 ]), 9 }))
+
+test_any_equal([[
+  class Parent {
+    inherit Serializer.Serializable;
+    class Child { inherit Serializer.Serializable; int number; }
+    Child child;
+  }
+  object o = Parent();
+  array(string) events = ({});
+  array(object) objects = ({});
+  Serializer.deserialize(o, lambda(mixed value, string name, mixed t,
+                                   mixed direct, mixed inherited) {
+    events += ({ name });
+    if (name == "\0begin" || name == "\0end") objects += ({ value });
+    else value(17);
+  });
+  return ({ events, equal(objects, ({ o, o->child, o->child, o })),
+            o->child->number });
+]], ({ ({ "\0begin", "\0begin", "number", "\0end", "\0end" }), 1, 17 }))
+
+test_any_equal([[
+  class Base {
+    @"base";
+    inherit Serializer.Serializable;
+    int value = 3;
+  }
+  class Derived {
+    @"derived";
+    @"inherited": inherit Base;
+    int other = 4;
+    object context() { return Base::this; }
+  }
+  object o = Derived();
+  object context = o->context();
+  array(string) names = ({});
+  Serializer.serialize(context,
+    lambda(mixed value, string name, mixed t, mixed direct, mixed inherited) {
+      names += ({ name });
+      if (name == "value") {
+        if (value != 3 || !undefinedp(direct) ||
+            !equal(inherited, (< "base" >))) error("Invalid field.\n");
+      } else if (value != context || t != _typeof(context) ||
+                 !equal(direct, (< "base" >)) || !undefinedp(inherited)) {
+        error("Invalid inherited boundary.\n");
+      }
+    });
+  return names;
+]], ({ "\0begin", "value", "\0end" }))
 
 END_MARKER

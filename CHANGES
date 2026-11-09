@@ -1431,9 +1431,17 @@ o Random rewrite
 
 o Serializer
 
-  Serialization and deserialization callbacks receive a fourth argument
-  containing the variable's annotations, including inherited annotations.
-  The variable hooks receive the same information as a fifth argument.
+  Serialization and deserialization callbacks receive variable annotations
+  and effective inherit-path annotations as separate fourth and fifth
+  arguments. The variable hooks receive them as fifth and sixth arguments.
+
+  Callbacks receive object entry and exit events with reserved field names
+  "\0begin" and "\0end", including for empty objects. These events pass
+  the object, its type and its own annotations, and bypass variable hooks.
+  Exit is emitted only after successful traversal. Serializer.Encodeable
+  handles these events without adding them to its encoded mapping.
+  The Pike 8.0 compatibility wrapper hides the boundary events and keeps
+  three-argument field callbacks.
 
 o Sql
 
