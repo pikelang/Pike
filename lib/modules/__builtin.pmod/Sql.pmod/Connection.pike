@@ -376,6 +376,24 @@ string get_charset()
 
 // FIXME: _sprintf().
 
+//! Convert a @[Result] object to an array of mappings from
+//! field names to their corresponding values.
+//!
+//! @param res_obj
+//!   @[Result] object to convert.
+//!
+//! @param fields
+//!   An optional array with the field names of interest.
+//!
+//! @returns
+//!   Returns an array of rows with each row being represented
+//!   by a mapping.
+//!
+//! This is the function used internally by @[query()] to
+//! generate its result.
+//!
+//! @seealso
+//!   @[query()]
 array(mapping(string:mixed))
  res_obj_to_array(array(mixed)|.Result res_obj, void|array(mapping) fields)
 {
