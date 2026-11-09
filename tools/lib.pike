@@ -146,11 +146,19 @@ string fixpath(string s)
   PATH_MAP_MSG ("fixpath: %O -> ", s);
   s=follow_symlinks(s);
   PATH_MAP_MSG ("%O -> ", s);
-  foreach (get_pathmap(), [string mnt, string drv])
+  foreach (get_pathmap(), [string mnt, string drv]) {
+    if (mnt == "/") {
+      // Special case for whole filesystem.
+      if (has_prefix(s, mnt)) {
+	s = drv + replace(s, "/", "\\");
+      }
+      break;
+    }
     if (s == mnt || has_prefix (s, mnt) && s[sizeof (mnt)] == '/') {
       s = drv + replace (s[sizeof (mnt)..], "/", "\\");
       break;
     }
+  }
   PATH_MAP_MSG ("%O\n", s);
   return s;
 }
@@ -187,6 +195,32 @@ protected void watchdog(int|void sig)
   alarm(1);
 }
 
+// ssh passes a single command string to the remote Windows shell.
+// Preserve argument boundaries when the shell starts the Windows program.
+string quote_ssh_arg(string arg)
+{
+  if (!sizeof(arg)) return "\"\"";
+  if (search(arg, " ") < 0 && search(arg, "\t") < 0 &&
+      search(arg, "\"") < 0 && search(arg, "&") < 0 &&
+      search(arg, "|") < 0 && search(arg, "<") < 0 &&
+      search(arg, ">") < 0 && search(arg, "^") < 0)
+    return arg;
+
+  string quoted = "\"";
+  int backslashes = 0;
+  foreach(arg; int i; int c) {
+    if (c == '\\') {
+      backslashes++;
+    } else {
+      quoted += "\\" * (backslashes * (c == '"' ? 2 : 1));
+      if (c == '"') quoted += "\\";
+      quoted += sprintf("%c", c);
+      backslashes = 0;
+    }
+  }
+  return quoted + "\\" * (backslashes * 2) + "\"";
+}
+
 int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 		  void|int no_fixpath)
 {
@@ -221,15 +255,59 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
       else
 #endif
       {
+	// Some special cases that are builtin into sprshd.
+	switch(cmd[0]) {
+	case "getenv":
+	  cmd = ({ "cmd", "/c", "echo", "%" + cmd[1] + "%" });
+	  break;
+	}
 	object o=f->pipe(Stdio.PROP_BIDIRECTIONAL | Stdio.PROP_IPC);
-	cmd=({"wine",
-	      "-winver","win95",
-	      "-debugmsg","fixme-all",
-	      "-debugmsg","trace+all",
-	      "-debugmsg","+relay",
-	      cmd*" "});
+	cmd=({ "wine" }) + cmd;
 //	werror("WINE %O\n",cmd);
-	object proc=Process.create_process(cmd, (["stdout":o]) );
+	object proc=Process.create_process(cmd,
+					   ([
+					     "stdout":o,
+					     "env":getenv() + ([
+					       "WINEDEBUG":"-all",
+					     ]),
+					   ]) );
+	destruct(o);
+	while(1)
+	{
+	  string s=f->read(8192,1);
+	  if(!s || !strlen(s)) break;
+	  s=replace(s,"\r\n","\n");
+	  if(!silent) write(s);
+	  ret+=s;
+	}
+	if(filter) filter(ret);
+	destruct(f);
+	return proc->wait();
+      }
+
+    case "ssh":
+#if 0
+      if(!silent && !filter)
+      {
+	return Process.create_process(({"ssh", getenv("NTHOST"), cmd*" "}))->wait();
+      }
+      else
+#endif
+      {
+	// Some special cases that are builtin into sprshd.
+	switch(cmd[0]) {
+	case "getenv":
+	  cmd = ({ "cmd", "/c", "echo", "%" + cmd[1] + "%" });
+	  break;
+	}
+	object o=f->pipe(Stdio.PROP_BIDIRECTIONAL | Stdio.PROP_IPC);
+	cmd=({ "ssh", getenv("NTHOST"), map(cmd, quote_ssh_arg) * " " });
+	object proc=Process.create_process(cmd,
+					   ([
+					     "stdout":o,
+					     "env":getenv() + ([
+					     ]),
+					   ]) );
 	destruct(o);
 	while(1)
 	{

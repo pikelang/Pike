@@ -436,9 +436,10 @@ int main(int argc, array(string) argv)
   {
     case "exe":
       if(!output) output="a.out";
-      cflags+=({"-Fe"+fixpath(output)+".exe","BINMODE.OBJ"});
+      wantfile = output + ".exe";
+      //if (!has_suffix(wantfile, ".exe")) wantfile += ".exe";	// DWIM
+      cflags+=({"-Fe"+fixpath(wantfile),"BINMODE.OBJ"});
 //      cflags+=({"-MT" + (debug?"d":"") });
-      wantfile=output+".exe";
       break;
 
     case "obj":

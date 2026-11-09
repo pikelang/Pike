@@ -44,20 +44,32 @@ CXX=${CXX-rntcl}
 # Please be sure that you have the line 'veto oplock files = /*/' in your
 # smb.conf if NTDRIVE is a samba file system.
 
-# Edit
-NTHOST=${NTHOST-10.0.5.13}
-NTDRIVE=${NTDRIVE-k:}
+if [ "x$REMOTE_METHOD" = "xwine" ]; then
+    if ! command -v wine >/dev/null 2>&1; then
+        echo 'init_nt: REMOTE_METHOD=wine requires wine in PATH.' >&2
+        exit 1
+    fi
+    # Default to using the default wine filesystem mapping.
+    NTDRIVE=${NTDRIVE-z:}
+    NTMOUNT=${NTMOUNT-/}
+    NTHOST="`hostname`-wine"
+else
+    # Edit
+    NTHOST=${NTHOST-10.0.5.13}
+    NTDRIVE=${NTDRIVE-k:}
 
-# Edit
-#NTHOST=10.0.5.10
-#NTDRIVE='k:'
+    # Edit
+    #NTHOST=10.0.5.10
+    #NTDRIVE='k:'
 
-#NTHOST=localhost
-#NTDRIVE='d:'
+    #NTHOST=localhost
+    #NTDRIVE='d:'
 
-# What dir on the UNIX machine is on $NTDRIVE ?
-# This variable MUST NOT end with a slash.
-NTMOUNT=${NTMOUNT-}
+    # What dir on the UNIX machine is on $NTDRIVE ?
+    # This variable MUST NOT end with a slash.
+    # NB: Special case for the root.
+    NTMOUNT=${NTMOUNT-}
+fi
 
 # Where on the UNIX machine are the NT libraries available?
 NTLD_LIBRARY_PATH=${NTLD_LIBRARY_PATH-}
@@ -166,9 +178,14 @@ while [ x"$num" = x -o x"$num" = x1 -o x"`eval echo \\$NTMOUNT$num`" != x ]; do
     drive="`eval echo \\$NTDRIVE$num`"
     eval export NTMOUNT$num
     eval export NTDRIVE$num
-    MNTREPLACE="${MNTREPLACE}s@$mount@@g
+    if [ "$mount" = / ]; then
+      # Keep the leading separator for paths on the root drive.
+      PIKE_PATH_TRANSLATE="$PIKE_PATH_TRANSLATE${PIKE_PATH_TRANSLATE+;}s!^/!$drive/!"
+    else
+      MNTREPLACE="${MNTREPLACE}s@$mount@@g
   "
-    PIKE_PATH_TRANSLATE="$PIKE_PATH_TRANSLATE${PIKE_PATH_TRANSLATE+;}s!^$mount!$drive!"
+      PIKE_PATH_TRANSLATE="$PIKE_PATH_TRANSLATE${PIKE_PATH_TRANSLATE+;}s!^$mount!$drive!"
+    fi
   fi
   if [ x$num = x ]; then num=1; else num=`expr $num + 1`; fi
 done

@@ -17,7 +17,7 @@ getntenv() {
   if [ $USE_SPRSH = yes ]; then
      sprsh getenv $1
    else
-     rsh $NTHOST set $1 | egrep "^$1=" | sed 's/^.*=//
+     ssh $NTHOST set $1 | egrep "^$1=" | sed 's/^.*=//
 s///g'
    fi
 }
@@ -37,7 +37,7 @@ silent_do_cmd() {
     echo >>$BATFILE "$NTDRIVE"
     echo >>$BATFILE "cd $RPWD"
     echo >>$BATFILE "$@"
-    rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
+    ssh $NTHOST $NTDRIVE$RPWD\\$BATFILE
     if [ x$CLEANUP = xyes ]; then
       rm $BATFILE || :
     fi

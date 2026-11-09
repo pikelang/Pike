@@ -83,6 +83,7 @@ Thread.Mutex outlock=Thread.Mutex();
 
 void myproxy(object pi, object io, int channel, Process.Process p)
 {
+  int wfail;
   while(1)
   {
     string s=pi->read(1000,1); // Don't read more than 2<<24 :)
@@ -110,8 +111,15 @@ void myproxy(object pi, object io, int channel, Process.Process p)
 #ifdef DEBUG
     werror ("Process %O: Channel %d: %O\n", p->pid(), channel, s);
 #endif
-    if (io->write(sprintf("%c%3c%s",channel,strlen(s),s)) != 4 + sizeof (s))
-      werror ("Write on %O failed: %d\n", io, io->errno());
+    if (io->write(sprintf("%c%3c%s",channel,strlen(s),s)) != 4 + sizeof (s)) {
+      if (!wfail) {
+#ifndef DEBUG
+        werror ("Process %O: Channel %d: %O\n", p->pid(), channel, s);
+#endif
+        werror ("Write on %O failed: %d\n", io, io->errno());
+        wfail = 1;
+      }
+    }
     destruct(key);
   }
 }
