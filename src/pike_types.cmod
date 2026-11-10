@@ -9840,8 +9840,9 @@ static struct pike_type *low_index_type(struct pike_type *t,
 
   case T_STRING: /* always int */
     {
-      if (!t->car || (t->car->type == T_ZERO)) {
-	yywarning("Indexing the empty string.");
+      /* Type queries by sscanf/sprintf do not index an actual character. */
+      if (n && (!t->car || (t->car->type == T_ZERO))) {
+        yywarning("Indexing the empty string.");
       }
       if (t->cdr) {
 	add_ref(t->cdr);
@@ -9902,7 +9903,8 @@ static struct pike_type *low_index_type(struct pike_type *t,
  * Returns the type resulting from indexing type with index_type.
  *
  * The node n is used to determine whether the indexing method
- * is `[]() (the default) or `->().
+ * is `[]() (the default) or `->(). It also provides the context for
+ * indexing diagnostics; pass NULL when only querying the element type.
  *
  * See also key_type().
  */
