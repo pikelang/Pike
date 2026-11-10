@@ -96,14 +96,15 @@ define(test_ssl, [[
     SSL.sslfile client = SSL.sslfile(client_con, client_ctx, 1, 0, $1, $2);
 
     int state;
+    int server_alerts;
+    int client_alerts;
 
-    int trigged = 10;
+    int deadline = time() + 10;
 
     string server_buf = "";
     int server_received;
     void server_send_data()
     {
-      trigged = 2;
       if (sizeof(server_buf)) {
         int bytes = server->write (server_buf);
         server_buf = server_buf[bytes..];
@@ -117,18 +118,16 @@ define(test_ssl, [[
     };
     void server_got_data(mixed ignored, string data)
     {
-      trigged = 2;
       if (!sizeof(server_buf)) server->set_write_callback(server_send_data);
       server_received += sizeof(data);
       server_buf += data;
     };
     void server_got_close()
     {
-      trigged = 2;
     };
     void server_alert(mixed ... ignored)
     {
-      trigged = 0;
+      server_alerts++;
       // server->close();
     };
 
@@ -136,12 +135,10 @@ define(test_ssl, [[
     string client_send_buf = client_msg;
     void client_got_data(mixed ignored, string data)
     {
-      trigged = 2;
       client_recv_buf += data;
     };
     void client_send_data()
     {
-      trigged = 2;
       int bytes = client->write(client_send_buf[..4095]);
       client_send_buf = client_send_buf[bytes..];
       if (!sizeof(client_send_buf)) {
@@ -151,13 +148,12 @@ define(test_ssl, [[
     };
     void client_got_close()
     {
-      trigged = 2;
       state |= 4;
       client->close();
     };
     void client_alert(mixed ... ignored)
     {
-      trigged = 0;
+      client_alerts++;
       // client->close();
     };
 
@@ -167,9 +163,23 @@ define(test_ssl, [[
                             client_got_close);
     client->set_alert_callback(client_alert);
 
-    // We loop the backend while something happens...
-    while (trigged--) {
+    // Allow slow handshakes, but stop promptly on completion or an alert.
+    while (time() < deadline &&
+           !server_alerts && !client_alerts &&
+           state != 4 &&
+           (state != 7 || sizeof(client_recv_buf) != sizeof(client_msg))) {
       Pike.DefaultBackend(0.1);
+    }
+
+    if (!state) {
+      object client_conn = client->query_connection();
+      object server_conn = server->query_connection();
+      log_status("SSL state 0: hs c/s=%d/%d alerts c/s=%d/%d write c/s=%d/%d",
+                 client_conn && client_conn->handshake_finished,
+                 server_conn && server_conn->handshake_finished,
+                 client_alerts, server_alerts,
+                 !!client_con->query_write_callback(),
+                 !!server_con->query_write_callback());
     }
 
     return (state == 7) ? client_recv_buf : state;
