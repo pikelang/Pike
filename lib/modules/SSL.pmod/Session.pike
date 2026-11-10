@@ -714,36 +714,58 @@ array(State) new_server_states(.Connection con,
 				string(8bit) server_random,
 				ProtocolVersion version)
 {
+  // NB: The clone calls below trigger a spurious "Type mismatch in
+  //     argument 1 to clone call" warning under strict_types: State
+  //     and Session have a circular type dependency (a State has a
+  //     Session, and Session creates States), so when this file is
+  //     checked, State's create(Connection) signature hasn't been
+  //     fully resolved yet and the clone call is seen as accepting
+  //     unconstrained varargs instead. Confirmed harmless; fixing it
+  //     properly would require either a deeper compiler fix to how
+  //     clone calls on program constants are argument-checked, or
+  //     migrating State.pike to strict_types (which on its own
+  //     cascades into 60+ unrelated warnings there).
   State write_state = State(con);
   State read_state = State(con);
   array(string) keys = generate_keys(client_random, server_random, version);
 
-  if (cipher_spec->mac_algorithm)
+  object(Cipher.CipherSpec)|zero spec = cipher_spec;
+  if (!spec) error("Cipher spec not set.\n");
+
+  if (spec->mac_algorithm)
   {
-    SSL3_DEBUG_CRYPT_MSG("MAC algorithm: %O\n", cipher_spec->mac_algorithm);
-    read_state->mac = cipher_spec->mac_algorithm(keys[0]);
-    write_state->mac = cipher_spec->mac_algorithm(keys[1]);
+    SSL3_DEBUG_CRYPT_MSG("MAC algorithm: %O\n", spec->mac_algorithm);
+    read_state->mac = spec->mac_algorithm(keys[0]);
+    write_state->mac = spec->mac_algorithm(keys[1]);
   }
-  if (cipher_spec->bulk_cipher_algorithm)
+  if (spec->bulk_cipher_algorithm)
   {
     SSL3_DEBUG_CRYPT_MSG("Bulk cipher algorithm: %O\n",
-			 cipher_spec->bulk_cipher_algorithm);
-    read_state->crypt = cipher_spec->bulk_cipher_algorithm();
-    read_state->crypt->set_decrypt_key(keys[2]);
-    write_state->crypt = cipher_spec->bulk_cipher_algorithm();
-    write_state->crypt->set_encrypt_key(keys[3]);
-    if (cipher_spec->cipher_type == CIPHER_aead) {
+                         spec->bulk_cipher_algorithm);
+    // NB: State and Session have a circular type dependency (a State
+    //     has a Session, and Session creates States), which means the
+    //     type checker can't always fully resolve State's members
+    //     (such as crypt) from in here. Keep concretely-typed local
+    //     copies around instead of reading eg read_state->crypt back
+    //     out, to avoid spurious "Indexing mixed" warnings below.
+    Cipher.CipherAlgorithm read_crypt = spec->bulk_cipher_algorithm();
+    Cipher.CipherAlgorithm write_crypt = spec->bulk_cipher_algorithm();
+    read_state->crypt = read_crypt;
+    read_crypt->set_decrypt_key(keys[2]);
+    write_state->crypt = write_crypt;
+    write_crypt->set_encrypt_key(keys[3]);
+    if (spec->cipher_type == CIPHER_aead) {
       // AEAD algorithms use other iv methods.
       read_state->tls_iv = write_state->tls_iv = 0;
       read_state->salt = keys[4] || "";
       write_state->salt = keys[5] || "";
-    } else if (cipher_spec->iv_size) {
+    } else if (spec->iv_size) {
       if (version >= PROTOCOL_TLS_1_1) {
-	// TLS 1.1 and later have an explicit IV.
-	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+        // TLS 1.1 and later have an explicit IV.
+        read_state->tls_iv = write_state->tls_iv = spec->iv_size;
       }
-      read_state->crypt->set_iv(keys[4]);
-      write_state->crypt->set_iv(keys[5]);
+      read_crypt->set_iv(keys[4]);
+      write_crypt->set_iv(keys[5]);
     }
   }
 
@@ -784,33 +806,45 @@ array(State) new_client_states(.Connection con,
 				string(8bit) server_random,
 				ProtocolVersion version)
 {
+  // NB: See the note in new_server_states() above about the spurious
+  //     "Type mismatch in argument 1 to clone call" warning here.
   State write_state = State(con);
   State read_state = State(con);
   array(string) keys = generate_keys(client_random, server_random, version);
 
-  if (cipher_spec->mac_algorithm)
+  object(Cipher.CipherSpec)|zero spec = cipher_spec;
+  if (!spec) error("Cipher spec not set.\n");
+
+  if (spec->mac_algorithm)
   {
-    read_state->mac = cipher_spec->mac_algorithm(keys[1]);
-    write_state->mac = cipher_spec->mac_algorithm(keys[0]);
+    read_state->mac = spec->mac_algorithm(keys[1]);
+    write_state->mac = spec->mac_algorithm(keys[0]);
   }
-  if (cipher_spec->bulk_cipher_algorithm)
+  if (spec->bulk_cipher_algorithm)
   {
-    read_state->crypt = cipher_spec->bulk_cipher_algorithm();
-    read_state->crypt->set_decrypt_key(keys[3]);
-    write_state->crypt = cipher_spec->bulk_cipher_algorithm();
-    write_state->crypt->set_encrypt_key(keys[2]);
-    if (cipher_spec->cipher_type == CIPHER_aead) {
+    // NB: See the note in new_server_states() above: State and
+    //     Session have a circular type dependency, so keep
+    //     concretely-typed local copies instead of reading back
+    //     eg read_state->crypt, to avoid spurious "Indexing mixed"
+    //     warnings below.
+    Cipher.CipherAlgorithm read_crypt = spec->bulk_cipher_algorithm();
+    Cipher.CipherAlgorithm write_crypt = spec->bulk_cipher_algorithm();
+    read_state->crypt = read_crypt;
+    read_crypt->set_decrypt_key(keys[3]);
+    write_state->crypt = write_crypt;
+    write_crypt->set_encrypt_key(keys[2]);
+    if (spec->cipher_type == CIPHER_aead) {
       // AEAD algorithms use other iv methods.
       read_state->tls_iv = write_state->tls_iv = 0;
       read_state->salt = keys[5] || "";
       write_state->salt = keys[4] || "";
-    } else if (cipher_spec->iv_size) {
+    } else if (spec->iv_size) {
       if (version >= PROTOCOL_TLS_1_1) {
-	// TLS 1.1 and later have an explicit IV.
-	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
+        // TLS 1.1 and later have an explicit IV.
+        read_state->tls_iv = write_state->tls_iv = spec->iv_size;
       }
-      read_state->crypt->set_iv(keys[5]);
-      write_state->crypt->set_iv(keys[4]);
+      read_crypt->set_iv(keys[5]);
+      write_crypt->set_iv(keys[4]);
     }
   }
 
