@@ -2175,9 +2175,12 @@ static void file_write(INT32 args)
       push_int(0);
       return;
     } else {
+      ONERROR eiov;
       struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
       struct iovec *iov = iovbase;
       int iovcnt = a->size;
+
+      SET_ONERROR(eiov, free, iovbase);
 
       if (!(THIS->open_mode & FILE_NONBLOCKING))
 	INVALIDATE_CURRENT_TIME();
@@ -2296,7 +2299,7 @@ static void file_write(INT32 args)
 	}
       }
 
-      free(iovbase);
+      CALL_AND_UNSET_ONERROR(eiov);
 
       /* Minor race - see below. */
       THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);

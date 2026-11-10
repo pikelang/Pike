@@ -22,6 +22,7 @@ o Runtime
     cloned from a program that inherited Pike.DestructImmediate and
     had an lfun::destroy().
 
+
 Changes since Pike 8.0.1738 (release 15)
 ----------------------------------------------------------------------
 
@@ -586,6 +587,7 @@ o Use updated FFI API in Java module, to better support recent libffi.
 o Fix testsuite generation for BSD m4 users; POSIX systems must continue
   to use GNU m4 (gm4).
 
+
 Changes since Pike 8.0.702 (release 13)
 ----------------------------------------------------------------------
 
@@ -1033,6 +1035,7 @@ o Silence GL deprecation warning and fix a missing definition error on
   Darwin for newer versions of MacOS.
 
 o Fix check for my_bool and compilation errors related to MySQL 8.
+
 
 Changes since Pike 8.0.610 (release 12)
 ----------------------------------------------------------------------
