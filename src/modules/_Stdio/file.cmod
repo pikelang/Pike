@@ -954,11 +954,13 @@ static struct pike_string *do_read(int fd,
 				   unsigned int mode,
                                    INT_TYPE *errnop)
 {
-  ONERROR err;
+  ONERROR err, ebuf;
+  struct pike_string *result;
   struct file_busy_context busy;
   struct byte_buffer buf = BUFFER_INIT();
   int e = 0;
 
+  SET_ONERROR(ebuf, buffer_free, &buf);
   enter_file_busy(&busy, THIS);
   SET_ONERROR(err, leave_file_busy, &busy);
 
@@ -1025,7 +1027,7 @@ static struct pike_string *do_read(int fd,
   CALL_AND_UNSET_ONERROR(err);
 
   if (e && !buffer_content_length(&buf)) {
-    buffer_free(&buf);
+    CALL_AND_UNSET_ONERROR(ebuf);
     *errnop = e;
     return NULL;
   }
@@ -1033,7 +1035,9 @@ static struct pike_string *do_read(int fd,
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
-  return buffer_finish_pike_string(&buf);
+  result = buffer_finish_pike_string(&buf);
+  UNSET_ONERROR(ebuf);
+  return result;
 }
 
 static ptrdiff_t do_read_into_buffer(int fd,
@@ -1245,7 +1249,8 @@ static void check_message(struct msghdr *msg)
 
 static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode, INT_TYPE *errnop)
 {
-  ONERROR err;
+  ONERROR err, ebuf;
+  struct pike_string *result;
   struct file_busy_context busy;
   struct {
     struct msghdr msg;
@@ -1265,6 +1270,7 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
   message.msg.msg_flags = 0;
 #endif
 
+  SET_ONERROR(ebuf, buffer_free, &buf);
   enter_file_busy(&busy, THIS);
   SET_ONERROR(err, leave_file_busy, &busy);
 
@@ -1354,10 +1360,7 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
         message.msg.msg_accrightslen
 #endif
         )) {
-      ONERROR ebuf;
-      SET_ONERROR(ebuf, buffer_free, &buf);
       check_message(&message.msg);
-      UNSET_ONERROR(ebuf);
       if (bytes_read && !(mode & PIKE_READ_ONCE)) continue;
     }
     break;
@@ -1372,12 +1375,14 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
     *errnop = e;
 
     if (!buffer_content_length(&buf)) {
-      buffer_free(&buf);
+      CALL_AND_UNSET_ONERROR(ebuf);
       return NULL;
     }
   }
 
-  return buffer_finish_pike_string(&buf);
+  result = buffer_finish_pike_string(&buf);
+  UNSET_ONERROR(ebuf);
+  return result;
 }
 
 /* Send a set of iovecs and fds over an fd. */
@@ -2399,7 +2404,7 @@ static void file__disable_callbacks(INT32 UNUSED(args))
 #ifdef HAVE_WRITEV
 static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 {
-  ONERROR err;
+  ONERROR err, eiov;
   struct file_busy_context busy;
   ptrdiff_t written, i;
   struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
@@ -2407,12 +2412,13 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
   int iovcnt = a->size;
   int e = 0;
 
+  SET_ONERROR(eiov, free, iovbase);
+
   i = a->size;
   while(i--) {
     struct pike_string *s = a->item[i].u.string;
 
     if (s->size_shift) {
-      free(iovbase);
       Pike_error("Bad argument 1 to file->write().\n"
                  "Element %ld is a wide string.\n",
                  (long)i);
@@ -2531,7 +2537,7 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 
   CALL_AND_UNSET_ONERROR(err);
 
-  free(iovbase);
+  CALL_AND_UNSET_ONERROR(eiov);
 
   file->my_errno = e;
 

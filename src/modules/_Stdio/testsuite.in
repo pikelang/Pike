@@ -1048,15 +1048,30 @@ test_any( [[
 
 cond([[all_constants()->thread_create]], [[
 test_any([[
+  class ReceivingFile {
+    inherit Stdio.File;
+    void receive_fd(object fd) { fd->close(); }
+  };
+  int operations = 5;
+#if constant(_Stdio.__HAVE_SEND_FD__)
+  operations = 8;
+#endif
   foreach (({ 0, 1 }), int kill) {
-    for (int operation = 0; operation < 5; operation++) {
+    for (int operation = 0; operation < operations; operation++) {
       Stdio.File reader = Stdio.File();
-      Stdio.File writer = reader->pipe();
+      Stdio.File writer;
+#if constant(_Stdio.__HAVE_SEND_FD__)
+      if (operation >= 5) {
+        reader = ReceivingFile();
+        writer = reader->pipe(Stdio.PROP_IPC | Stdio.PROP_SEND_FD);
+      } else
+#endif
+        writer = reader->pipe();
       Thread.Queue ready = Thread.Queue();
       Thread.Thread worker = Thread.Thread(lambda() {
         mixed failure = catch {
           ready->write(1);
-          switch (operation) {
+          switch (operation % 5) {
           case 0: reader->read(1); break;
           case 1: reader->read(); break;
           case 2: reader->read(1000000); break;
