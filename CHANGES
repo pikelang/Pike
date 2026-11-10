@@ -4,6 +4,12 @@ Changes since Pike 8.0.1956 (release 16)
 Bug Fixes
 ---------
 
+o Stdio.File
+
+  Fixed a fatal error when interrupting or killing a thread blocked in
+  file I/O. Busy-thread cleanup now handles exceptions from interrupt
+  checks without unlinking the thread twice.
+
 o Concurrent.Future
 
   delay() now preserves an explicitly assigned backend throughout its
