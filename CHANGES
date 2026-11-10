@@ -795,6 +795,11 @@ o Regexp.PCRE
   have some syntax differences. Use Regexp.PCRE1 or Regexp.PCRE2
   explicitly when a particular implementation is required.
 
+o Serializer
+
+  The serialization API has changed in several ways.
+  See "New modules and functions"/"Serializer" below.
+
 o Sql.Sql is no longer a wrapper class, but a function.
 
   The wrapper class has been obsoleted by introduction of the
@@ -1431,17 +1436,19 @@ o Random rewrite
 
 o Serializer
 
-  Serialization and deserialization callbacks receive variable annotations
-  and effective inherit-path annotations as separate fourth and fifth
-  arguments. The variable hooks receive them as fifth and sixth arguments.
+  - Serialization and deserialization callbacks receive variable annotations
+    and effective inherit-path annotations as separate fourth and fifth
+    arguments. The variable hooks receive them as fifth and sixth arguments.
 
-  Callbacks receive object entry and exit events with reserved field names
-  "\0begin" and "\0end", including for empty objects. These events pass
-  the object, its type and its own annotations, and bypass variable hooks.
-  Exit is emitted only after successful traversal. Serializer.Encodeable
-  handles these events without adding them to its encoded mapping.
-  The Pike 8.0 compatibility wrapper hides the boundary events and keeps
-  three-argument field callbacks.
+  - Callbacks receive object entry and exit events with reserved field names
+    "\0begin" and "\0end", including for empty objects. These events pass
+    the object, its type and its own annotations, and bypass variable hooks.
+    Exit is emitted only after successful traversal. Serializer.Encodeable
+    handles these events without adding them to its encoded mapping.
+
+  - Serializer.deserialize() passes object field setters directly to its
+    callback by default. The old recursive mode may be achieved by calling
+    deserialize() with a 1 as the 3rd argument.
 
 o Sql
 

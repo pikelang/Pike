@@ -2523,10 +2523,45 @@ test_any_equal([[
     events += ({ name });
     if (name == "\0begin" || name == "\0end") objects += ({ value });
     else value(17);
-  });
+  }, 1);
   return ({ events, equal(objects, ({ o, o->child, o->child, o })),
             o->child->number });
 ]], ({ ({ "\0begin", "\0begin", "number", "\0end", "\0end" }), 1, 17 }))
+
+test_any_equal([[
+  class Child { inherit Serializer.Serializable; int number; }
+  class Parent {
+    inherit Serializer.Serializable;
+    Child child;
+  }
+  object o = Parent();
+  array(string) events = ({});
+  Serializer.deserialize(o, lambda(mixed setter, string name, mixed t,
+                                   mixed direct, mixed inherited) {
+    events += ({ name });
+    if (name == "child") {
+      object child = Child();
+      child->number = 17;
+      setter(child);
+    }
+  });
+  return ({ events, o->child->number });
+]], ({ ({ "\0begin", "child", "\0end" }), 17 }))
+
+test_any_equal([[
+  class Leaf { inherit Serializer.Serializable; int value; }
+  class Child { inherit Serializer.Serializable; Leaf leaf; }
+  class Parent { inherit Serializer.Serializable; Child child; }
+  object o = Parent();
+  array(string) events = ({});
+  Serializer.deserialize(o, lambda(mixed setter, string name, mixed t,
+                                   mixed direct, mixed inherited) {
+    events += ({ name });
+    if (name == "value") setter(23);
+  }, 1);
+  return ({ events, o->child->leaf->value });
+]], ({ ({ "\0begin", "\0begin", "\0begin", "value", "\0end",
+          "\0end", "\0end" }), 23 }))
 
 test_any_equal([[
   class Base {

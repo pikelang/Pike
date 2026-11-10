@@ -41,7 +41,7 @@ class Serializable
                                        string name, mixed symbol_type)
   {
     ::_deserialize_variable(deserializer, setter, name, symbol_type,
-                           UNDEFINED, UNDEFINED);
+                           UNDEFINED, UNDEFINED, 1);
   }
 }
 

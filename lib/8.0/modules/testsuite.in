@@ -434,4 +434,17 @@ test_any_equal([[
   return ({ fields, o->number });
 ]], ({ ({ ({ "number", 5 }) }), 11 }))
 
+test_any_equal([[
+  class Leaf { inherit Serializer.Serializable; int number; }
+  class Child { inherit Serializer.Serializable; Leaf leaf; }
+  class Parent { inherit Serializer.Serializable; Child child; }
+  object o = Parent();
+  array(string) names = ({});
+  Serializer.deserialize(o, lambda(function setter, string name, mixed t) {
+    names += ({ name });
+    if (name == "number") setter(23);
+  });
+  return ({ names, o->child->leaf->number });
+]], ({ ({ "number" }), 23 }))
+
 END_MARKER
