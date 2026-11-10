@@ -6602,20 +6602,46 @@ PIKEFUN int levenshtein_distance(string a, string b)
  */
 PIKECLASS Serializable
 {
+  /* Emit boundaries directly: variable hooks only handle actual fields. */
+  static void serialize_boundary(struct svalue *fun, int context,
+                                 struct program *p, int end)
+  {
+    ref_push_object_inherit(Pike_fp->current_object, context);
+    if (end) {
+      push_constant_text("\0end");
+    } else {
+      push_constant_text("\0begin");
+    }
+    type_stack_mark();
+    push_object_type(1, p->id);
+    push_type_value(pop_unfinished_type());
+    if (p->inherits[0].annotations) {
+      ref_push_multiset(p->inherits[0].annotations);
+    } else {
+      push_undefined();
+    }
+    push_undefined();
+    apply_svalue(fun, 5);
+    pop_stack();
+  }
+
   /* Loop over all true variables, and call fun_num in the current object. */
   static void low_serialize(int i, struct svalue *fun,
-			    int use_setter, int fun_num)
+                            int use_setter, int fun_num,
+                            int recurse)
   {
     struct inherit *inh;
     struct program *p = Pike_fp->current_object->prog;
     struct svalue *save_sp;
     struct array *inherit_annotations;
+    int context = i;
 
     inh = p->inherits + i;
     p = inh->prog;
     inherit_annotations = program_inherit_annotations(p);
     if (inherit_annotations) push_array(inherit_annotations);
     save_sp = Pike_sp;
+    serialize_boundary(fun, context, p, 0);
 
     for (i = 0; i < p->num_identifier_references; i++) {
       struct reference *ref = PTR_FROM_INT(p, i);
@@ -6642,35 +6668,38 @@ PIKECLASS Serializable
       }
       ref_push_string(id->name);
       ref_push_type_value(id->type);
+      if ((ref->identifier_offset < PROG_FROM_PTR(p, ref)->num_annotations) &&
+          PROG_FROM_PTR(p, ref)->annotations[ref->identifier_offset]) {
+        ref_push_multiset(
+          PROG_FROM_PTR(p, ref)->annotations[ref->identifier_offset]);
+      } else {
+        push_undefined();
+      }
       if (inherit_annotations) {
         push_svalue(ITEM(inherit_annotations) + ref->inherit_offset);
       } else {
         push_undefined();
       }
-      if (ref->identifier_offset < PROG_FROM_PTR(p, ref)->num_annotations) {
-        struct multiset *annotations =
-          PROG_FROM_PTR(p, ref)->annotations[ref->identifier_offset];
-        if (annotations) {
-          ref_push_multiset(annotations);
-          f_add(2);
-        }
-      }
-      apply_current(fun_num, 5);
+      if (use_setter && recurse) push_int(1);
+      apply_current(fun_num, 6 + !!(use_setter && recurse));
       pop_stack();
     }
     if (Pike_sp != save_sp) {
       /* Not likely, but... */
       pop_n_elems(Pike_sp - save_sp);
     }
+    serialize_boundary(fun, context, p, 1);
     if (inherit_annotations) pop_stack();
   }
 
   /*! @decl protected void _serialize_variable( @
-   *!			function(mixed, string, type, mixed:void) serializer, @
+   *!			function(mixed, string, type, @
+   *!                            multiset|zero, multiset|zero:void) serializer, @
    *!			mixed value, @
    *!			string symbol, @
    *!			type symbol_type, @
-   *!			multiset|zero symbol_annotations)
+   *!			multiset|zero symbol_annotations, @
+   *!                         multiset|zero inherited_annotations)
    *!
    *!   Default serialization function for variables.
    *!
@@ -6687,12 +6716,15 @@ PIKECLASS Serializable
    *!   Type of the variable.
    *!
    *! @param symbol_annotations
-   *!   Annotations of the variable, including annotations inherited
-   *!   from the class.
+   *!   Annotations directly on the variable.
+   *!
+   *! @param inherited_annotations
+   *!   Effective annotations along the variable's inherit path.
    *!
    *! This function is typically called from @[_serialize()], and just does
    *!   @code
-   *!     serializer(value, symbol, symbol_type, symbol_annotations);
+   *!     serializer(value, symbol, symbol_type,
+   *!                symbol_annotations, inherited_annotations);
    *!   @endcode
    *!
    *! It is provided for overloading for eg filtering or validation purposes.
@@ -6700,25 +6732,26 @@ PIKECLASS Serializable
    *! @seealso
    *!   @[_serialize()], @[_deserialize_variable()]
    */
-  PIKEFUN void _serialize_variable(function(mixed, string, type, mixed:void)
+  PIKEFUN void _serialize_variable(function(mixed, string, type,
+                                   multiset|int(0..0),
+                                   multiset|int(0..0):void)
                                    serializer, mixed value,
                                    string symbol, type symbol_type,
-                                   multiset|int(0..0) symbol_annotations)
+                                   multiset|int(0..0) symbol_annotations,
+                                   multiset|int(0..0) inherited_annotations)
     flags ID_PROTECTED;
-  rawtype tFunc(tOr(tFunc(tMix tStr tType(tMix), tVoid),
-                  tFunc(tMix tStr tType(tMix) tMix, tVoid))
-                tMix tStr tType(tMix) tMix, tVoid);
   {
     f_call_function(args);
   }
 
   /*! @decl protected void _serialize(object o, @
-   *!			function(mixed, string, type, mixed:void) serializer)
+   *!			function(mixed, string, type, @
+   *!                            multiset|zero, multiset|zero:void) serializer)
    *!
    *!   Dispatch function for serialization.
    *!
    *! @param o
-   *!   Object to serialize. Always a context of the current object.
+   *!   Object to visit. Always a context of the current object.
    *!
    *! @param serializer
    *!   Function to typically be called once for every variable
@@ -6735,8 +6768,19 @@ PIKECLASS Serializable
    *!   @item Argument 3
    *!     The declared type of the variable.
    *!   @item Argument 4
-   *!     The annotations of the variable.
+   *!     The annotations directly on the variable.
+   *!   @item Argument 5
+   *!     The effective annotations along the variable's inherit path.
    *! @enddl
+   *!
+   *! Before visiting fields, the callback receives the object with the
+   *! reserved name @expr{"\0begin"@}; after successful completion it
+   *! receives @expr{"\0end"@}. For both events, argument 1 is the object
+   *! in the selected context, argument 3 is its object type, argument 4
+   *! contains that context's own annotations, and argument 5 is
+   *! @expr{UNDEFINED@}. These events bypass the variable hook, and are
+   *! emitted even for objects without fields. Errors abort the sequence
+   *! without emitting an exit event.
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -6750,16 +6794,16 @@ PIKECLASS Serializable
    *!   @[_deserialize()]
    */
   PIKEFUN void _serialize(object o,
-                          function(mixed, string, type, mixed:void) serializer)
+                          function(mixed, string, type,
+                                   multiset|int(0..0),
+                                   multiset|int(0..0):void) serializer)
     flags ID_PROTECTED;
-    rawtype tFunc(tObj tOr(tFunc(tMix tStr tType(tMix), tVoid),
-                         tFunc(tMix tStr tType(tMix) tMix, tVoid)), tVoid);
   {
     if (o != Pike_fp->current_object) {
       SIMPLE_ARG_TYPE_ERROR("_serialize", 1, "this");
     }
     low_serialize(SUBTYPEOF(Pike_sp[-args]), serializer, 0,
-		  f_Serializable_cq__serialize_variable_fun_num);
+                  f_Serializable_cq__serialize_variable_fun_num, 0);
   }
 
   static void *find_program_from_object_type_cb(struct pike_type *t)
@@ -6775,12 +6819,14 @@ PIKECLASS Serializable
   DEFAULT_CMOD_STORAGE void f_deserialize(INT32 args);
 
   /*! @decl protected void _deserialize_variable( @
-   *!			function(function(mixed:void), @
-   *!			         string, type, mixed: void) deserializer, @
+   *!			function(mixed, string, type, @
+   *!                            multiset|zero, multiset|zero: void) deserializer, @
    *!			function(mixed:void) setter, @
    *!			string symbol, @
    *!			type symbol_type, @
-   *!			multiset|int(0..0) symbol_annotations)
+   *!			multiset|zero symbol_annotations, @
+   *!                   multiset|zero inherited_annotations, @
+   *!                   int|void recurse)
    *!
    *!   Default deserialization function for variables.
    *!
@@ -6797,13 +6843,18 @@ PIKECLASS Serializable
    *!   Type of the variable.
    *!
    *! @param symbol_annotations
-   *!   Annotations of the variable, including annotations inherited
-   *!   from the class.
+   *!   Annotations directly on the variable.
+   *!
+   *! @param inherited_annotations
+   *!   Effective annotations along the variable's inherit path.
+   *!
+   *! @param recurse
+   *!   Construct and visit object variables before calling @[deserializer].
    *!
    *! This function is typically called from @[_deserialize()], and does
    *! something like:
    *!   @code
-   *!     if (object_typep(symbol_type)) {
+   *!     if (recurse && object_typep(symbol_type)) {
    *!       program p = program_from_type(symbol_type);
    *!       if (p && !needs_parent(p) && is_deserializable(p)) {
    *!         object value = p();
@@ -6812,7 +6863,8 @@ PIKECLASS Serializable
    *!         return;
    *!       }
    *!     }
-   *!     deserializer(setter, symbol, symbol_type, symbol_annotations);
+   *!     deserializer(setter, symbol, symbol_type,
+   *!                  symbol_annotations, inherited_annotations);
    *!   @endcode
    *!
    *! @note
@@ -6833,48 +6885,59 @@ PIKECLASS Serializable
    *!   @endul
    *!
    *!   These issues can all be solved by overloading this function.
+   *!   A true @[recurse] restores the recursive object traversal used
+   *!   by the Pike 8.0 API. By default, all field setters are passed
+   *!   directly to @[deserializer].
    *!
    *! @seealso
    *!   @[_deserialize()], @[_serialize_variable()], @[Builtin.Setter]
    */
-  PIKEFUN void _deserialize_variable(function(function(mixed:void),
-                                              string, type, mixed: void)
+  PIKEFUN void _deserialize_variable(function(mixed, string, type,
+                                   multiset|int(0..0),
+                                   multiset|int(0..0):void)
                                      deserializer, function(mixed:void) setter,
                                      string symbol,
                                      type symbol_type,
-                                     multiset|int(0..0) symbol_annotations)
+                                     multiset|int(0..0) symbol_annotations,
+                                     multiset|int(0..0) inherited_annotations,
+                                     int|void recurse)
     flags ID_PROTECTED;
-  rawtype tFunc(tOr(tFunc(tFunc(tMix, tVoid) tStr tType(tMix), tVoid),
-                  tFunc(tFunc(tMix, tVoid) tStr tType(tMix) tMix, tVoid))
-                tFunc(tMix, tVoid) tStr tType(tMix) tMix, tVoid);
   {
-    struct program *p = find_type(symbol_type,
-				  find_program_from_object_type_cb);
-    if (p) {
-      struct object *o = clone_object(p, 0);
-      push_object(o);	/* Protection against errors and arg to deserialize. */
-      ref_push_object(o);
-      apply_svalue(setter, 1);
-      pop_stack();
-      push_svalue(deserializer);
-      f_deserialize(2);
-      return;
+    struct program *p;
+    if (recurse && recurse->u.integer) {
+      p = find_type(symbol_type, find_program_from_object_type_cb);
+      if (p) {
+        struct object *o = clone_object(p, 0);
+        push_object(o);  /* Protection against errors and arg to deserialize. */
+        ref_push_object(o);
+        apply_svalue(setter, 1);
+        pop_stack();
+        push_svalue(deserializer);
+        push_int(1);
+        f_deserialize(3);
+        return;
+      }
     }
+    if (recurse) { pop_stack(); args--; }
     f_call_function(args);
   }
 
   /*! @decl protected void _deserialize(object o, @
-   *!			function(function(mixed:void), @
-   *!			         string, type, mixed: void) deserializer)
+   *!		function(mixed, string, type, @
+   *!		         multiset|zero, multiset|zero: void) deserializer, @
+   *!                                   int|void recurse)
    *!
    *!   Dispatch function for deserialization.
    *!
    *! @param o
-   *!   Object to deserialize. Always a context of the current object.
+   *!   Object to visit. Always a context of the current object.
    *!
    *! @param deserializer
    *!   Function to typically be called once for every variable
    *!   in the inheriting class.
+   *!
+   *! @param recurse
+   *!   Forwarded to the default variable hook.
    *!
    *! This function calls @[_deserialize_variable()] once
    *! for every variable in the inheriting class, which
@@ -6887,8 +6950,19 @@ PIKECLASS Serializable
    *!   @item Argument 3
    *!     The declared type of the variable.
    *!   @item Argument 4
-   *!     The annotations of the variable.
+   *!     The annotations directly on the variable.
+   *!   @item Argument 5
+   *!     The effective annotations along the variable's inherit path.
    *! @enddl
+   *!
+   *! Before visiting fields, the callback receives the object with the
+   *! reserved name @expr{"\0begin"@}; after successful completion it
+   *! receives @expr{"\0end"@}. For both events, argument 1 is the object
+   *! in the selected context, argument 3 is its object type, argument 4
+   *! contains that context's own annotations, and argument 5 is
+   *! @expr{UNDEFINED@}. These events bypass the variable hook, and are
+   *! emitted even for objects without fields. Errors abort the sequence
+   *! without emitting an exit event.
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -6902,26 +6976,26 @@ PIKECLASS Serializable
    *!   @[_serialize()], @[Builtin.Setter]
    */
   PIKEFUN void _deserialize(object o,
-                            function(function(mixed:void),
-                                     string, type, mixed: void) deserializer)
+                            function(mixed, string, type,
+                                   multiset|int(0..0),
+                                   multiset|int(0..0):void) deserializer,
+                            int|void recurse)
     flags ID_PROTECTED;
-    rawtype tFunc(tObj
-                  tOr(tFunc(tFunc(tMix, tVoid) tStr tType(tMix), tVoid),
-                      tFunc(tFunc(tMix, tVoid) tStr tType(tMix) tMix,
-                            tVoid)), tVoid);
   {
     if (o != Pike_fp->current_object) {
       SIMPLE_ARG_TYPE_ERROR("_deserialize", 1, "this");
     }
     low_serialize(SUBTYPEOF(Pike_sp[-args]), deserializer, 1,
-		  f_Serializable_cq__deserialize_variable_fun_num);
+                  f_Serializable_cq__deserialize_variable_fun_num,
+                  recurse && recurse->u.integer);
   }
 }
 /*! @endclass
  */
 
 /*! @decl void serialize(object o, @
- *!                      function(mixed, string, type, mixed:void) serializer)
+ *!                      function(mixed, string, type, @
+ *!                               multiset|zero, multiset|zero:void) serializer)
  *!
  *!   Call @[lfun::_serialize()] in @[o].
  *!
@@ -6930,9 +7004,9 @@ PIKECLASS Serializable
  *!   @[Serializable()->_serialize()]
  */
 PIKEFUN void serialize(object o,
-                       function(mixed, string, type, mixed:void) serializer)
-  rawtype tFunc(tObj tOr(tFunc(tMix tStr tType(tMix), tVoid),
-                      tFunc(tMix tStr tType(tMix) tMix, tVoid)), tVoid);
+                       function(mixed, string, type,
+                                   multiset|int(0..0),
+                                   multiset|int(0..0):void) serializer)
 {
   struct inherit *inh;
   struct program *p;
@@ -6949,22 +7023,25 @@ PIKEFUN void serialize(object o,
 }
 
 /*! @decl void deserialize(object o, @
- *!                        function(function(mixed:void), @
- *!                                 string, type, mixed: void) deserializer)
+ *!                        function(mixed, string, type, @
+ *!                                 multiset|zero, @
+ *!                                 multiset|zero:void) deserializer, @
+ *!                        int|void recurse)
  *!
  *!   Call @[lfun::_deserialize()] in @[o].
+ *!   By default, object field setters are passed directly to
+ *!   @[deserializer]. When @[recurse] is true, the default Serializable
+ *!   hook constructs and visits declared object types recursively.
  *!
  *! @seealso
  *!   @[serialize()], @[lfun::_deserialize()],
  *!   @[Serializable()->_deserialize()]
  */
 PIKEFUN void deserialize(object o,
-                         function(function(mixed:void),
-                                  string, type, mixed:void) deserializer)
-  rawtype tFunc(tObj
-                tOr(tFunc(tFunc(tMix, tVoid) tStr tType(tMix), tVoid),
-                    tFunc(tFunc(tMix, tVoid) tStr tType(tMix) tMix,
-                          tVoid)), tVoid);
+                         function(mixed, string, type,
+                                   multiset|int(0..0),
+                                   multiset|int(0..0):void) deserializer,
+                         int|void recurse)
 {
   struct inherit *inh;
   struct program *p;

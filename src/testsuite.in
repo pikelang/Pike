@@ -1771,6 +1771,26 @@ test_compile_error([[ int b=17; float c=42.0; b-=c; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
 
+// Runtime return-type inspection must not invoke compiler attribute handlers.
+// Regression for LysLysKOM 27662525.
+test_any_equal([[
+  // Give every possible compiler callback slot a detectable runtime method.
+  string source = "int calls;\n";
+  for (int i = 0; i < 20; i++) {
+    source += sprintf("mixed pad%d(mixed ... args) { calls++; return 0; }\n", i);
+  }
+  source += "__factory__ int marked() { return 17; }\n"
+            "mixed inspect(mixed t) { return __get_return_type(t); }\n"
+            "__factory__ int choose(int x) { return 17; }\n"
+            "variant __factory__ int choose(string x) { return 19; }\n";
+  object o = compile_string(source)();
+  mixed result = o->inspect(_typeof(o->marked));
+  array values = ({ o->choose(0), o->choose("s") });
+  mixed err = catch { o->choose(([])); };
+  return ({ o->calls, has_value(sprintf("%O", result), "factory"),
+            values, !!err });
+]], ({ 0, 1, ({ 17, 19 }), 1 }))
+
 // Transitive operator types must handle attributes on continuations.
 // Regression for https://github.com/pikelang/Pike/issues/71.
 test_compile_error_any([[

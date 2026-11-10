@@ -12312,7 +12312,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
   free_type(res);
 
-  for (tmp = peek_type_stack();
+  for (tmp = (c ? peek_type_stack() : NULL);
        tmp && ((tmp->type == PIKE_T_NAME) || (tmp->type == PIKE_T_ATTRIBUTE));
        tmp = tmp->cdr) {
   redo:

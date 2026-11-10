@@ -2,7 +2,11 @@
 
 //! Pike 8.0 serialization interface without object boundary events.
 
+//! @decl inherit Serializer : pre
+
+//! @ignore
 inherit Serializer.module : pre;
+//! @endignore
 
 protected function field_callback(function callback)
 {
@@ -37,7 +41,7 @@ class Serializable
                                        string name, mixed symbol_type)
   {
     ::_deserialize_variable(deserializer, setter, name, symbol_type,
-                           UNDEFINED, UNDEFINED);
+                           UNDEFINED, UNDEFINED, 1);
   }
 }
 
