@@ -318,8 +318,9 @@ static void worker(void *this_)
  * Functions callable from Pike code
  */
 
-/*! @decl void create(array(string) headers, object from, int offset, int len, @
- *!             array(string) trailers, object to, @
+/*! @decl void create(array(string)|zero headers, object|zero from, @
+ *!             int offset, int len, @
+ *!             array(string)|zero trailers, object to, @
  *!             function callback, mixed ... args)
  *!
  *! Low-level implementation of @[Stdio.sendfile()].
