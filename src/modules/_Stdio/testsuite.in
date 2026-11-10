@@ -1046,4 +1046,43 @@ test_any( [[
   return 0;
 ]], 0)
 
+cond([[all_constants()->thread_create]], [[
+test_any([[
+  foreach (({ 0, 1 }), int kill) {
+    for (int operation = 0; operation < 5; operation++) {
+      Stdio.File reader = Stdio.File();
+      Stdio.File writer = reader->pipe();
+      Thread.Queue ready = Thread.Queue();
+      Thread.Thread worker = Thread.Thread(lambda() {
+        mixed failure = catch {
+          ready->write(1);
+          switch (operation) {
+          case 0: reader->read(1); break;
+          case 1: reader->read(); break;
+          case 2: reader->read(1000000); break;
+          case 3: writer->write("x" * 1000000); break;
+          case 4: writer->write(({ "x" * 1000000,
+                                   "y" * 1000000 })); break;
+          }
+        };
+        return !!failure;
+      });
+      ready->read();
+      sleep(0.05);
+      if (kill) worker->kill();
+      else worker->interrupt();
+      mixed result;
+      mixed failed = catch { result = worker->wait(); };
+      // Pike 9.0 rethrows a killed thread's result from wait().
+      if (kill) {
+        if (failed && failed != -1) throw(failed);
+      } else if (failed || result != 1) return operation + 1;
+      reader->close();
+      writer->close();
+    }
+  }
+  return 0;
+]], 0)
+]])
+
 END_MARKER
