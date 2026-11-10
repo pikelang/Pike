@@ -430,6 +430,28 @@ cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_OOB_F
   run_sub_test(({"SRCDIR/kqueue_oobtest.pike", "1"}))
 cond_end
 
+dnl UDP
+
+dnl Stdio.UDP()->dup() used to leave an extra reference to the new
+dnl object on the Pike stack after a successful duplication (it was
+dnl pushed once by push_new_udp_object()'s internal apply_current(),
+dnl and then again explicitly at the end of udp_dup()). This silently
+dnl corrupted the interpreter stack depth for the rest of the calling
+dnl frame, with no immediately visible symptom beyond dup() itself
+dnl returning a stale/wrong value -- a later statement in the same
+dnl frame (such as a caught error) could then crash arbitrarily.
+test_any([[
+  Stdio.UDP u = Stdio.UDP();
+  u->bind(0);
+  Stdio.UDP d = u->dup();
+  if (!objectp(d)) return 0;
+  if (d->query_fd() == u->query_fd()) return 0;
+  // This must not crash or misbehave due to a corrupted stack left
+  // behind by dup() above.
+  mixed e = catch { u->connect("not-an-address!!", 0); };
+  return arrayp(e);
+]], 1)
+
 dnl termios
 
 dnl tcsendbreak() used to statically require its duration argument, and

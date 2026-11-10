@@ -276,8 +276,11 @@ static void udp_dup(INT32 args)
   THIS->my_errno = 0;
   low_dup_udp(udp, THIS);
 
-  /* Return the top-level object. */
-  push_object(o);
+  /* The top-level object is already on the stack courtesy of
+   * push_new_udp_object() (via apply_current()); pushing it again
+   * here would leave an extra reference on the stack and corrupt
+   * the interpreter stack depth for the rest of the calling frame.
+   */
 }
 
 /*! @decl int(0..1) close()
