@@ -241,9 +241,13 @@ static void low_dup_udp(struct udp_storage *to,
   assign_svalue (&to->write_callback, &from->write_callback);
 }
 
-/*! @decl Stdio.UDP dup()
+/*! @decl Stdio.UDP|zero dup()
  *!
  *!   Duplicate the udp socket.
+ *!
+ *! @returns
+ *!   Returns the new object on success, and @expr{0@} (zero) on
+ *!   failure, setting @[errno()].
  *!
  *! @seealso
  *!   @[fd_factory()]
@@ -291,8 +295,8 @@ static void udp_close(INT32 args)
   push_int( ret==0 );
 }
 
-/*! @decl UDP bind(int|string port, string|void address,@
- *!string|int(0..1) no_reuseaddr)
+/*! @decl UDP bind(int|string port, string|void address, @
+ *!                void|int(0..1) no_reuseaddr)
  *!
  *! Binds a port for receiving or transmitting UDP.
  *!
@@ -512,7 +516,7 @@ void udp_enable_broadcast(INT32 args)
 #ifdef SO_BROADCAST
   int o = 1;
   pop_n_elems(args);
-  push_int(fd_setsockopt(FD, SOL_SOCKET, SO_BROADCAST, (char *)&o, sizeof(int)));
+  push_int(!fd_setsockopt(FD, SOL_SOCKET, SO_BROADCAST, (char *)&o, sizeof(int)));
   THIS->my_errno=errno;
 #else /* SO_BROADCAST */
   pop_n_elems(args);
@@ -552,7 +556,7 @@ void udp_enable_multicast(INT32 args)
 			   (char *)&reply.ipv6.sin6_addr,
 			   sizeof(reply.ipv6.sin6_addr));
     pop_n_elems(args);
-    push_int(result);
+    push_int(!result);
     return;
   }
 #endif
@@ -563,7 +567,7 @@ void udp_enable_multicast(INT32 args)
 			 (char *)&reply.ipv4.sin_addr,
 			 sizeof(reply.ipv4.sin_addr));
   pop_n_elems(args);
-  push_int(result);
+  push_int(!result);
 }
 
 /*! @decl int set_multicast_ttl(int ttl)
@@ -875,20 +879,23 @@ void udp_wait(INT32 args)
 
 #define UDP_BUFFSIZE 65536
 
-/*! @decl mapping(string:int|string) read()
- *! @decl mapping(string:int|string) read(int flag)
+/*! @decl mapping(string:int|string)|zero read()
+ *! @decl mapping(string:int|string)|zero read(int flag)
  *!
  *! Read from the UDP socket.
  *!
  *! Flag @[flag] is a bitfield, 1 for out of band data and 2 for peek
  *!
  *! @returns
- *!  mapping(string:int|string) in the form
+ *!  On success a mapping(string:int|string) in the form
  *!	([
  *!	   "data" : string received data
  *!	   "ip" : string   received from this ip
  *!	   "port" : int    ...and this port
  *!	])
+ *!
+ *!  Returns @expr{0@} (zero) if no data was available to read on a
+ *!  nonblocking socket.
  *!
  *! @seealso
  *!   @[Stdio.UDP()->set_read_callback()], @[MSG_OOB], @[MSG_PEEK]
@@ -1020,7 +1027,7 @@ void udp_read(INT32 args)
  *!   The recipient port number. For @[connect()]ed objects specifying
  *!   port number @expr{0@} casues the default recipient port to be used.
  *!
- *! @param flag
+ *! @param flags
  *!   A flag bitfield with @expr{1@} for out of band data and
  *!   @expr{2@} for don't route flag.
  *!
@@ -1304,7 +1311,7 @@ static void udp_set_blocking(INT32 args)
   ref_push_object(THISOBJ);
 }
 
-/*! @decl int(0..1) connect(string address, int|string port)
+/*! @decl int(1..1) connect(string address, int|string port)
  *!
  *!   Establish an UDP connection.
  *!
@@ -1313,7 +1320,11 @@ static void udp_set_blocking(INT32 args)
  *!   number for the remote machine.
  *!
  *! @returns
- *!   Returns @expr{1@} on success, @expr{0@} (zero) otherwise.
+ *!   Returns @expr{1@} on success.
+ *!
+ *! @throws
+ *!   Throws an error on failure. @[errno()] provides further
+ *!   details about the error.
  *!
  *! @note
  *!   If the socket is in nonblocking mode, you have to wait
@@ -1387,7 +1398,7 @@ static void udp_connect(INT32 args)
   }
 }
 
-/*! @decl string query_address()
+/*! @decl string|zero query_address()
  *!
  *! Returns the local address of a socket on the form "x.x.x.x port".
  *! If this file is not a socket, not connected or some other error occurs,
@@ -1742,7 +1753,7 @@ void init_stdio_udp(void)
   ADD_FUNCTION("query_fd",udp_query_fd,
          tFunc(tVoid,tInt),0);
 
-  ADD_FUNCTION("dup", udp_dup, tFunc(tNone, tObjImpl_STDIO_UDP), 0);
+  ADD_FUNCTION("dup", udp_dup, tFunc(tNone, tOr(tObjImpl_STDIO_UDP,tZero)), 0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tInt01), 0);
@@ -1762,7 +1773,7 @@ void init_stdio_udp(void)
   ADD_FUNCTION("wait", udp_wait, tFunc(tOr(tInt, tFloat), tInt), 0);
 
   ADD_FUNCTION("read",udp_read,
-	       tFunc(tOr(tInt,tVoid),tMap(tStr,tOr(tInt,tStr))),0);
+               tFunc(tOr(tInt,tVoid),tOr(tMap(tStr,tOr(tInt,tStr)),tZero)),0);
 
   add_integer_constant("MSG_OOB", 1, 0);
 #ifdef MSG_PEEK
@@ -1784,7 +1795,7 @@ void init_stdio_udp(void)
 	       tFunc(tFunc(tVoid, tInt_10), tObj), 0 );
 
   ADD_FUNCTION("set_blocking",udp_set_blocking,tFunc(tVoid,tObj), 0 );
-  ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tOr(tStr,tZero)),0);
 #ifdef IP_MTU
   ADD_FUNCTION("query_mtu", udp_query_mtu, tFunc(tNone,tInt), 0);
 #endif
