@@ -929,6 +929,24 @@ o predef::tzname()
 
   Returns an array with the names of the non-dst and dst timezones.
 
+o annotations(), lfun::_annotations() and ::_annotations()
+
+  Inspect annotations on symbols, in the same order as indices(). Each
+  entry is an array of annotation values or zero. Declaration order and
+  repeated values are preserved. Optional recursive collection includes
+  annotations from enclosing inherits. Objects can overload _annotations();
+  ::_annotations() provides access to the built-in implementation.
+
+o Program.annotations()
+
+  Returns class annotations as an array, or zero if there are none.
+  An optional flag excludes annotations added through inherits.
+
+o Program.inherit_annotations()
+
+  Returns the annotations on each direct inherit, in the order used by
+  Program.inherit_list().
+
 o ADT.Scheduler & ADT.TreeScheduler
 
   These are variants of ADT.Heap where elements typically aren't
@@ -1006,9 +1024,23 @@ o Parser.Typelib
 
   This module parses GObject-Introspection-style typelib files.
 
+o Pike.Annotation
+
+  Describes the compiler callback API for annotation objects. Annotations
+  attach constant values to declarations using @value: syntax; standalone
+  @value; annotations attach to the enclosing class.
+
 o Pike.Annotations
 
-  Multiple common annotations are available.
+  Common compiler annotations:
+
+  - Implements checks that a class implements a specified API.
+  - Inherited marks class annotations for propagation to derived classes.
+  - Override checks that an annotated symbol overrides an inherited symbol.
+  - AutoCodec generates _encode() from the class's create() arguments.
+
+  InheritedClass, OverrideClass and AutoCodecClass implement the
+  corresponding singleton annotations.
 
 o Pike.DestructImmediate
 

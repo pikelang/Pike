@@ -2720,9 +2720,9 @@ PMOD_EXPORT struct array *object_annotations(struct object *o,
 	push_undefined();
       }
       if (ref->identifier_offset < pp->num_annotations) {
-	struct multiset *vals = pp->annotations[ref->identifier_offset];
+        struct array *vals = pp->annotations[ref->identifier_offset];
 	if (vals) {
-	  ref_push_multiset(vals);
+          push_array(copy_array(vals));
 	  f_add(2);
 	}
       }
@@ -3911,6 +3911,10 @@ static void f_magic_types (INT32 args)
  *! @param recursive
  *!   Include nested annotations from the inherits.
  *!
+ *! @returns
+ *!   One array or zero per symbol, in the order returned by @[indices()].
+ *!   Each annotation array preserves declaration order and repeated values.
+ *!
  *! Builtin function to list the annotations (if any) of the identifiers
  *! of an object. This is useful when @[lfun::_annotations] has been overloaded.
  *!
@@ -4002,9 +4006,9 @@ static void f_magic_annotations(INT32 args)
 	push_undefined();
       }
       if (ref->identifier_offset < id_prog->num_annotations) {
-	struct multiset *vals = id_prog->annotations[ref->identifier_offset];
+        struct array *vals = id_prog->annotations[ref->identifier_offset];
 	if (vals) {
-	  ref_push_multiset(vals);
+          push_array(copy_array(vals));
 	  f_add(2);
 	}
       }
@@ -4032,9 +4036,9 @@ static void f_magic_annotations(INT32 args)
       push_undefined();
     }
     if (ref->identifier_offset < id_prog->num_annotations) {
-      struct multiset *vals = id_prog->annotations[ref->identifier_offset];
+      struct array *vals = id_prog->annotations[ref->identifier_offset];
       if (vals) {
-	ref_push_multiset(vals);
+        push_array(copy_array(vals));
 	f_add(2);
       }
     }

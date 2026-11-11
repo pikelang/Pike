@@ -4093,7 +4093,7 @@ PMOD_EXPORT void f_types(INT32 args)
   push_array(a);
 }
 
-/*! @decl array(multiset(Pike.Annotation)) annotations(object|program|function x, @
+/*! @decl array(array(Pike.Annotation)) annotations(object|program|function x, @
  *!                                                    int(0..1)|void recurse)
  *!
  *!   Return an array with the annotations for all symbols in @[x].
@@ -4166,11 +4166,11 @@ PMOD_EXPORT void f_annotations(INT32 args)
 }
 
 
-/*! @decl multiset(Pike.Annotation) annotations(program x, @
+/*! @decl array|zero annotations(program x, @
  *!                                                    int(0..1)|void no_recurse)
  *! @appears Program.annotations
  *!
- *!   Return a multiset with the annotations for all symbols in @[x] attached
+ *!   Return an array with the annotations for all symbols in @[x] attached
  *!   to this program.
  *!
  *! @param x
@@ -4180,7 +4180,7 @@ PMOD_EXPORT void f_annotations(INT32 args)
  *!   Do not include annotations recursively added via inherits.
  *!
  *! @returns
- *!       Returns an multiset with annotations added directly to this program.
+ *!       Returns an array with annotations added directly to this program.
  *!   
  *!
  *! @note
@@ -4195,7 +4195,7 @@ PMOD_EXPORT void f_direct_program_annotations(INT32 args)
   struct array *m = NULL;
   struct pike_type *default_type = mixed_type_string;
   struct svalue *arg = NULL;
-  int flag;
+  ptrdiff_t flag = 0;
   int found = 0;
   
   get_all_args("direct_program_annotations", args, "%*.%i", &arg, &flag);
@@ -4216,22 +4216,23 @@ PMOD_EXPORT void f_direct_program_annotations(INT32 args)
  
    if(m != NULL && m->size > 0)
    {
-     struct multiset * set;
-	 if(!(flag & 1) && TYPEOF(ITEM(m)[(m->size -1)]) == PIKE_T_MULTISET) {
+     struct array * set;
+         if(!(flag & 1) && TYPEOF(ITEM(m)[(m->size -1)]) == PIKE_T_ARRAY) {
 	  found = 1;
-	  set = ITEM(m)[(m->size -1)].u.multiset;
-     ref_push_multiset(set);
+          set = ITEM(m)[(m->size -1)].u.array;
+     push_array(copy_array(set));
  	}
-    else if((flag & 1) && TYPEOF(ITEM(m)[0]) == PIKE_T_MULTISET) {
+    else if((flag & 1) && TYPEOF(ITEM(m)[0]) == PIKE_T_ARRAY) {
   	  found = 1;
-  	  set = ITEM(m)[0].u.multiset;
-       ref_push_multiset(set);    	
+          set = ITEM(m)[0].u.array;
+       push_array(copy_array(set));
     }
 
    }
    if(!found){
     push_int(0);
   }
+  do_free_array(m);
 }
 
 
@@ -10178,6 +10179,37 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
   push_int(0);
 }
 
+/*! @decl array(array|zero) inherit_annotations(program p)
+ *! @appears Program.inherit_annotations
+ *!
+ *! Return the annotations on each direct inherit in @[p], in the same
+ *! order as @[Program.inherit_list()]. An entry is zero if that inherit
+ *! has no annotations. Annotations from enclosing inherits are excluded.
+ *!
+ *! @seealso
+ *!   @[Program.annotations()], @[Program.inherit_list()]
+ */
+static void f_inherit_annotations(INT32 args)
+{
+  struct svalue *arg;
+  struct program *p;
+  int i, count = 0;
+
+  get_all_args("inherit_annotations", args, "%*", &arg);
+  p = program_from_svalue(arg);
+  if (!p) SIMPLE_ARG_TYPE_ERROR("inherit_annotations", 1, "program");
+  check_stack(p->num_inherits);
+  for (i = 0; i < p->num_inherits; i++) {
+    struct inherit *inh = p->inherits + i;
+    if (inh->inherit_level != 1) continue;
+    if (inh->annotations) push_array(copy_array(inh->annotations));
+    else push_int(0);
+    count++;
+  }
+  f_aggregate(count);
+  stack_pop_n_elems_keep_top(args);
+}
+
 /*! @decl array(program) inherit_list(program p)
  *!
  *!   Returns an array with the programs that @[p] has inherited.
@@ -10778,12 +10810,12 @@ void init_builtin_efuns(void)
 		 tFunc(tMultiset, tArr(tType(tInt1))),
 		 tFunc(tOr(tObj,tPrg(tObj)), tArr(tType(tMix)))),0,NULL,0);
 
-  /* function(object|program, int(0..1)|void:array(multiset)) */
+  /* function(object|program, int(0..1)|void:array(array|zero)) */
   ADD_EFUN2("annotations", f_annotations,
-	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tArr(tSet(tMix))),0,NULL,0);
+            tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tArr(tOr(tArr(tMix), tZero))),0,NULL,0);
 		
   ADD_FUNCTION2("direct_program_annotations", f_direct_program_annotations,
-	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tSet(tMix)),0,OPT_TRY_OPTIMIZE);
+            tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tOr(tArr(tMix), tZero)),0,OPT_TRY_OPTIMIZE);
   /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);
 
@@ -11063,6 +11095,10 @@ void init_builtin_efuns(void)
 
   ADD_FUNCTION2("inherit_list", f_inherit_list,
 		tFunc(tOr(tObj,tPrg(tObj)),tArr(tPrg(tObj))), 0,
+                OPT_TRY_OPTIMIZE);
+
+  ADD_FUNCTION2("inherit_annotations", f_inherit_annotations,
+                tFunc(tPrg(tObj), tArr(tOr(tArr(tMix), tZero))), 0,
                 OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION2("program_identifier_defined", f_program_identifier_defined,

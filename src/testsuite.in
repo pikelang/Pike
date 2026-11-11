@@ -12934,35 +12934,35 @@ test_any_equal([[
   });
 ]], [[
   ({
-    ([ "foo": (< "constant_foo" >), ]),
-    ([ "foo": (< "class_A", "constant_foo" >), ]),
-    ([ "foo": (< "constant_foo" >),
-       "bar": (< "function_bar" >),
-       "baz": (< "variable_baz" >),
+    ([ "foo": ({ "constant_foo" }), ]),
+    ([ "foo": ({ "class_A", "constant_foo" }), ]),
+    ([ "foo": ({ "constant_foo" }),
+       "bar": ({ "function_bar" }),
+       "baz": ({ "variable_baz" }),
        "a_none": 0,
-       "b_none": (< "variable_b_none" >),
+       "b_none": ({ "variable_b_none" }),
     ]),
-    ([ "foo": (< "class_A", "constant_foo" >),
-       "bar": (< "class_A", "function_bar" >),
-       "baz": (< "class_A", "variable_baz" >),
-       "a_none": (< "class_A" >),
-       "b_none": (< "class_A", "variable_b_none" >),
+    ([ "foo": ({ "class_A", "constant_foo" }),
+       "bar": ({ "class_A", "function_bar" }),
+       "baz": ({ "class_A", "variable_baz" }),
+       "a_none": ({ "class_A" }),
+       "b_none": ({ "class_A", "variable_b_none" }),
     ]),
-    ([ "foo": (< "constant_foo" >), ]),
-    ([ "foo": (< "class_B", "class_A", "inherit_A", "constant_foo" >), ]),
-    ([ "foo": (< "constant_foo" >),
-       "bar": (< "function_bar" >),
-       "baz": (< "variable_baz" >),
-       "buz": (< "variable_buz" >),
-       "a_none": (< "variable_a_none" >),
+    ([ "foo": ({ "constant_foo" }), ]),
+    ([ "foo": ({ "class_B", "class_A", "inherit_A", "constant_foo" }), ]),
+    ([ "foo": ({ "constant_foo" }),
+       "bar": ({ "function_bar" }),
+       "baz": ({ "variable_baz" }),
+       "buz": ({ "variable_buz" }),
+       "a_none": ({ "variable_a_none" }),
        "b_none": 0,
     ]),
-    ([ "foo": (< "class_B", "class_A", "inherit_A", "constant_foo" >),
-       "bar": (< "class_B", "class_A", "inherit_A", "function_bar" >),
-       "baz": (< "class_B", "class_A", "inherit_A", "variable_baz" >),
-       "buz": (< "class_B", "variable_buz" >),
-       "a_none": (< "class_B", "variable_a_none" >),
-       "b_none": (< "class_B" >),
+    ([ "foo": ({ "class_B", "class_A", "inherit_A", "constant_foo" }),
+       "bar": ({ "class_B", "class_A", "inherit_A", "function_bar" }),
+       "baz": ({ "class_B", "class_A", "inherit_A", "variable_baz" }),
+       "buz": ({ "class_B", "variable_buz" }),
+       "a_none": ({ "class_B", "variable_a_none" }),
+       "b_none": ({ "class_B" }),
     ]),
   })
 ]])
@@ -12977,8 +12977,8 @@ test_any_equal([[
   A a = A();
   return mkmapping(indices(a), annotations(a));
 ]], [[
-  ([ "syncfunc":(< "sync" >), "asyncfunc": (< "async" >),
-     "genfunc":(< "gen" >), "asyncgenfunc": (< "asyncgen" >) ])
+  ([ "syncfunc":({ "sync" }), "asyncfunc": ({ "async" }),
+     "genfunc":({ "gen" }), "asyncgenfunc": ({ "asyncgen" }) ])
 ]])
 
 test_any_equal([[
@@ -12999,10 +12999,50 @@ test_any_equal([[
   mapping vars = mkmapping(indices(data), annotations(data));
   Derived derived = Derived();
   mapping fields = mkmapping(indices(derived), annotations(derived, 1));
-  return ({ indices(vars->number)[0]->get_label(),
-            indices(fields->field)[0]->get_label(),
-            indices(fields->base_field)[0]->get_label() });
+  return ({ vars->number[0]->get_label(),
+            fields->field[0]->get_label(),
+            fields->base_field[0]->get_label() });
 ]], [[ ({ "variable", "alias", "inherit" }) ]])
+
+test_any_equal([[
+  class A { @"z": @"a": @"z": int value; }
+  class B { @"p": @"p": inherit A; }
+  object o = B();
+  array direct = mkmapping(indices(o), annotations(o))->value;
+  array effective = mkmapping(indices(o), annotations(o, 1))->value;
+  array inherited = Program.inherit_annotations(B)[0];
+  if (!equal(direct, ({ "z", "a", "z" })) ||
+      !equal(effective, ({ "p", "p", "z", "a", "z" })) ||
+      !equal(inherited, ({ "p", "p" }))) return 0;
+  direct[0] = effective[0] = inherited[0] = "changed";
+  return equal(mkmapping(indices(o), annotations(o))->value,
+               ({ "z", "a", "z" })) &&
+         equal(Program.inherit_annotations(B)[0], ({ "p", "p" }));
+]], 1)
+
+test_any_equal([[
+  class Marker {
+    inherit Pike.Annotation;
+    @Pike.Annotations.Inherited;
+    @constant;
+  }
+  class A {
+    constant marker = Marker();
+    @marker; @marker;
+  }
+  class B { inherit A; }
+  array expected = Program.annotations(A, 1);
+  return sizeof(expected) == 2 && expected[0] == expected[1] &&
+         equal(Program.annotations(B, 1), expected);
+]], 1)
+
+test_any_equal([[
+  class A { @"z"; @"a"; @"z"; }
+  array first = Program.annotations(A, 1);
+  if (!equal(first, ({ "z", "a", "z" }))) return 0;
+  first[0] = "changed";
+  return equal(Program.annotations(A, 1), ({ "z", "a", "z" }));
+]], 1)
 
 // foop
 define(do_test_foop,[[
