@@ -2248,7 +2248,7 @@ static void file_write(INT32 args)
 	  switch(e)
 	  {
 	  default:
-	    free(iovbase);
+            CALL_AND_UNSET_ONERROR(eiov);
 	    ERRNO=errno=e;
 	    pop_n_elems(args);
 

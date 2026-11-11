@@ -58,6 +58,16 @@ test_eq(file_stat(testfile),0)
 dnl - file->write
 test_any(int e; object o=Stdio.File(); if(!o->open(testfile,"wct")) return "open"+o->errno(); e=o->write("sune"); if(!o->close()) return "close"+o->errno(); return e,4)
 
+dnl A failed scatter/gather write must unwind both cleanup handlers.
+test_any_equal([[
+  Stdio.File file = Stdio.File(testfile, "r");
+  int written = file->write(({ "first", "second" }));
+  int err = file->errno();
+  string contents = file->read();
+  file->close();
+  return ({ written, !!err, contents });
+]], ({ -1, 1, "sune" }))
+
 dnl - file->read
 test_any(string s; object o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); s=o->read(4); if(!o->close()) return "close"+o->errno(); return s,"sune")
 

@@ -10,6 +10,9 @@ o Stdio.File
   file I/O. Busy-thread cleanup now handles exceptions from interrupt
   checks without unlinking the thread twice.
 
+  Fixed cleanup of scatter/gather write buffers on write errors, which
+  could cause a fatal cleanup-stack mismatch in debug builds.
+
 o Concurrent.Future
 
   delay() now preserves an explicitly assigned backend throughout its
