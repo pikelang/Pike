@@ -1046,7 +1046,7 @@ test_any( [[
   return 0;
 ]], 0)
 
-cond([[all_constants()->thread_create]], [[
+cond([[Thread["THREAD_SUPPORTS_IO_INTERRUPTS"]]], [[
 test_any([[
   class ReceivingFile {
     inherit Stdio.File;

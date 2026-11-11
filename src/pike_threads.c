@@ -4259,6 +4259,9 @@ static void check_thread_interrupt(struct callback *foo,
  *! @note
  *!   Due to the asynchronous nature of interrupts, it may take
  *!   some time before the thread reacts to the interrupt.
+ *!   Interrupting blocking I/O requires
+ *!   @[Thread.THREAD_SUPPORTS_IO_INTERRUPTS]. Otherwise the interrupt is
+ *!   handled when the thread resumes executing Pike code.
  *!
  *! @seealso
  *!   @[kill()]
@@ -4310,6 +4313,9 @@ static void low_thread_kill (struct thread_state *th)
  *! @note
  *!   Due to the asynchronous nature of interrupts, it may take
  *!   some time before the thread reacts to the interrupt.
+ *!   Interrupting blocking I/O requires
+ *!   @[Thread.THREAD_SUPPORTS_IO_INTERRUPTS]. Otherwise the interrupt is
+ *!   handled when the thread resumes executing Pike code.
  *!
  *! @note
  *!   Killing the backend thread (aka the main thread) is
@@ -4932,6 +4938,12 @@ void th_init(void)
   add_integer_constant("THREAD_RUNNING", THREAD_RUNNING, 0);
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
   add_integer_constant("THREAD_ABORTED", THREAD_ABORTED, 0);
+
+#ifdef HAVE_TH_KILL
+  add_integer_constant("THREAD_SUPPORTS_IO_INTERRUPTS", 1, 0);
+#else
+  add_integer_constant("THREAD_SUPPORTS_IO_INTERRUPTS", 0, 0);
+#endif
 
   add_integer_constant("MUTEX_SUPPORTS_SHARED_LOCKS", 1, 0);
 

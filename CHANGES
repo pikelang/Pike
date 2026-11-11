@@ -1112,6 +1112,13 @@ o System
 
   Added set_file_atime() and set_file_mtime() as per documentation.
 
+o Thread.THREAD_SUPPORTS_IO_INTERRUPTS
+
+  Recognition constant for thread implementations that can signal a thread
+  blocked in interruptible I/O. Thread.Thread()->interrupt() and
+  Thread.Thread()->kill() can then wake such operations instead of waiting
+  for I/O to complete.
+
 o Thread.Mutex
 
   - Implemented support for multiple readers / single writer

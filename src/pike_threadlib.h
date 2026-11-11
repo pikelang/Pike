@@ -258,6 +258,7 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #define th_getspecific pthread_getspecific
 
 #ifdef HAVE_PTHREAD_KILL
+#define HAVE_TH_KILL 1
 #define th_kill(ID,sig) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_kill((ID),(sig)))
 #else /* !HAVE_PTHREAD_KILL */
 /* MacOS X (aka Darwin) prior to 10.2 doesn't have pthread_kill. */
@@ -311,6 +312,7 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #define th_create_small(ID,fun,arg) thr_create(NULL,8192*sizeof(char *),fun,arg,THR_DAEMON|THR_DETACHED,ID)
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
+#define HAVE_TH_KILL 1
 #define th_kill(ID,sig) thr_kill((ID),(sig))
 #define low_th_yield() thr_yield()
 
