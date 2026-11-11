@@ -251,6 +251,21 @@ string quote_ssh_arg(string arg)
   return quoted + "\\" * (backslashes * 2) + "\"";
 }
 
+// A short blocking read means the reply was truncated or the socket failed.
+// In particular, a missing exit status must never be treated as success.
+protected string read_sprsh_reply(object socket, int length, string part)
+{
+  string data = socket->read(length);
+  if (!data || sizeof(data) != length) {
+    int err = socket->errno();
+    werror("sprsh: Incomplete %s (%d of %d bytes): %s.\n",
+           part, data ? sizeof(data) : 0, length,
+           err ? strerror(err) : "connection closed");
+    exit(1);
+  }
+  return data;
+}
+
 int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 		  void|int no_fixpath)
 {
@@ -450,6 +465,11 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
     case 0:
     case "sprsh":
     case "SPRSH":
+      // These sprshd builtins never read stdin or handle its OOB EOF.
+      // Sending input to them can reset the Windows connection at close,
+      // losing the last part of the reply (notably the exit status).
+      int forward_stdin = !has_value(({ "copy", "mkdir", "getenv",
+                                        "sprshd-ping" }), lower_case(cmd[0]));
       array vars=({"__handles_stderr=1"});
 
 	/* This is somewhat experimental - Hubbe */
@@ -587,6 +607,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 //	f->proxy(Stdio.File("stdin"));
 //      else
 //      werror("FNORD\n");
+        if (forward_stdin)
 	thread_create(lambda(object f)
 		      {
 			int killed;
@@ -630,14 +651,10 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
       string sout = "", serr = "";
       while(1)
       {
-	string s = f->read(4);
-	if (!s || !sizeof (s)) {
-	  werror("Connection closed!\n");
-	  exit(1);
-	}
+        string s = read_sprsh_reply(f, 4, "output header");
 	sscanf(s,"%c%3c",int channel, int len);
 	if(!len) break;
-	s=f->read(len);
+        s = read_sprsh_reply(f, len, "output data");
 	s=replace(s,"\r\n","\n");
 	if(!silent)
 	{
@@ -665,7 +682,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 	if (sout != "") filter(sout, 1);
 	if (serr != "") filter(serr, 2);
       }
-      sscanf(f->read(4),"%4c",int code);
+      sscanf(read_sprsh_reply(f, 4, "exit status"), "%4c", int code);
       f->close("r");
 //      f->close("w");
 //      werror("Closing stdout.\n");

@@ -1,0 +1,103 @@
+#!/usr/bin/env pike
+// Run with: pike tools/sprsh.test
+// A local protocol peer checks stdin forwarding and truncated replies.
+
+string packet(int channel, string data)
+{
+  return sprintf("%c%3c%s", channel, sizeof(data), data);
+}
+
+int main(int argc, array(string) argv)
+{
+  string library = argc > 1 && argv[1] != "--client" ? argv[1] :
+                   combine_path(dirname(__FILE__), "lib.pike");
+  if (argc > 1 && argv[1] == "--client") {
+    object client = compile_file(argv[2])();
+    return client->silent_do_cmd(({ argv[3] }),
+      lambda(string data, int|void channel) {
+        if (channel == 2) werror("%s", data);
+        else write("%s", data);
+      }, 1, 1);
+  }
+
+  int tests;
+  void check(string command, string response, int expected_code,
+             string expected_out, string expected_err,
+             int input_mode, int fragmented) {
+    Stdio.Port listener = Stdio.Port();
+    if (!listener->bind(0, 0, "127.0.0.1")) error("Bind failed.\n");
+    string address = listener->query_address();
+    string port = (address / " ")[-1];
+    mixed peer_error;
+    Thread.Thread server = Thread.Thread(lambda() {
+      object peer = listener->accept();
+      peer_error = catch {
+        int count;
+        if (sscanf(peer->read(4), "%4c", count) != 1)
+          error("Missing command.\n");
+        for (int i = 0; i < count; i++) {
+          int length;
+          sscanf(peer->read(4), "%4c", length);
+          peer->read(length);
+        }
+        if (input_mode == 1 || input_mode == 3) {
+          // The client has ready stdin, but builtins must not forward it.
+          sleep(0.1);
+          peer->set_nonblocking();
+          string data = peer->read(1024, 1);
+          string oob;
+          catch { oob = peer->read_oob(1, 1); };
+          peer->set_blocking();
+          if ((data && sizeof(data)) || (oob && sizeof(oob))) {
+            // Model a reply lost at connection teardown.
+            peer->write(sprintf("%4c", 0));
+            error("Unexpected stdin or OOB EOF for builtin %s.\n", command);
+          }
+        } else if (input_mode == 2) {
+          if (peer->read(5) != "input")
+            error("Subprocess stdin was not forwarded.\n");
+        }
+        if (fragmented) {
+          foreach (response; int i; int byte) {
+            peer->write(sprintf("%c", byte));
+            sleep(0.002);
+          }
+        } else peer->write(response);
+      };
+      destruct(peer);
+    });
+    mapping result = Process.run(({ master()->_pike_file_name, __FILE__,
+                                    "--client", library, command }),
+      ([ "stdin": input_mode == 3 ? "" : "input", "env": getenv() +
+         ([ "REMOTE_METHOD": "sprsh", "NTHOST": "127.0.0.1",
+            "NTPORT": port ]) ]));
+    server->wait();
+    destruct(listener);
+    if (peer_error) throw(peer_error);
+    if (result->exitcode != expected_code || result->stdout != expected_out ||
+        (expected_err != "" && search(result->stderr, expected_err) < 0) ||
+        (expected_err == "" && result->stderr != ""))
+      error("%s: Unexpected client result: %O\n", command, result);
+    tests++;
+  };
+
+  string ok = sprintf("%4c%4c", 0, 0);
+  foreach (({ "copy", "mkdir", "getenv", "sprshd-ping", "COPY" }),
+           string command) {
+    check(command, ok, 0, "", "", 1, 0);
+    check(command, ok, 0, "", "", 3, 0);
+  }
+  check("external.exe", ok, 0, "", "", 2, 0);
+  check("copy", packet(1, "out\r\n") + packet(2, "err\r\n") +
+        packet(3, "ignored") + sprintf("%4c%4c", 0, 23),
+        23, "out\n", "err\n", 0, 1);
+  check("copy", packet(0, "legacy\n") + ok, 0, "legacy\n", "", 0, 0);
+  check("copy", "\0\0", 1, "", "Incomplete output header", 0, 0);
+  check("copy", packet(1, "four")[..5], 1, "", "Incomplete output data",
+        0, 0);
+  check("copy", sprintf("%4c", 0), 1, "", "Incomplete exit status", 0, 0);
+  check("copy", sprintf("%4c%2c", 0, 0),
+        1, "", "Incomplete exit status", 0, 0);
+  write("%d sprsh protocol tests passed.\n", tests);
+  return 0;
+}

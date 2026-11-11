@@ -1,0 +1,112 @@
+#!/usr/bin/env pike
+// Run with Pike 8.0 or later: pike tools/sprshd.test [path/to/sprshd]
+// Exercise the real daemon with both current and legacy wire clients.
+
+#if !constant(zero)
+typedef int(0..0) zero;
+#endif
+
+int main(int argc, array(string) argv)
+{
+  string filename = argc > 1 ? argv[1] :
+                    combine_path(dirname(__FILE__), "sprshd");
+  object daemon = compile_file(filename)();
+  string directory = combine_path(getenv("TMPDIR") || getenv("TEMP") || ".",
+    sprintf("sprshd-test-%d-%d", getpid(), random(1000000000)));
+  if (!mkdir(directory)) error("Cannot create test directory.\n");
+  directory = combine_path(getcwd(), directory);
+  string source = combine_path(directory, "source");
+  string target = combine_path(directory, "target");
+  Stdio.write_file(source, "archive contents\0" * 256);
+  int tests;
+
+  void check(array(string) command, int mode, int expected_status,
+             string|zero expected_output) {
+    object listener = Stdio.Port();
+    if (!listener->bind(0, 0, "127.0.0.1")) error("Bind failed.\n");
+    int port = (int)(listener->query_address() / " ")[-1];
+    Thread.Queue finished = Thread.Queue();
+    object server = Thread.Thread(lambda() {
+      mixed err = catch {
+        daemon->handle_incoming_connection(listener->accept());
+      };
+      finished->write(1);
+      return err;
+    });
+    object client = Stdio.File();
+    mixed err = catch {
+      if (!client->connect("127.0.0.1", port)) error("Connect failed.\n");
+      array(string) request = ({ directory, "SPRSHD_COMPAT_TEST=value" }) +
+                              command;
+      client->write(sprintf("%4c", sizeof(request)));
+      foreach (request, string arg)
+        client->write(sprintf("%4c%s", sizeof(arg), arg));
+      if (mode == 1 || mode == 3) {
+        client->write("legacy stdin\n" * 1024);
+        if (client->write_oob && mode == 1) client->write_oob("\4");
+      }
+      if (mode == 3) client->close("w");
+      string output = "";
+      while (1) {
+        string header = client->read(4);
+        if (!header || sizeof(header) != 4)
+          error("Truncated output header: %O\n", header);
+        int channel, length;
+        sscanf(header, "%c%3c", channel, length);
+        if (!length) break;
+        string data = client->read(length);
+        if (!data || sizeof(data) != length) error("Truncated output.\n");
+        output += data;
+      }
+      // Legacy EOF may arrive between the output terminator and status.
+      if (mode == 2 && client->write_oob) client->write_oob("\4");
+      string status = client->read(4);
+      int code;
+      if (!status || sizeof(status) != 4) error("Missing exit status.\n");
+      sscanf(status, "%4c", code);
+      if (code != expected_status ||
+          (expected_output && output != expected_output) ||
+          (!expected_output && !sizeof(output)))
+        error("Unexpected reply: status %d, output %O.\n", code, output);
+      if (mode != 3) {
+        // The daemon sends FIN, but keeps receiving until this client closes.
+        // Do not assume that reading the exit status acknowledges late stdin.
+        string eof = client->read(1);
+        if (eof != "") error("Expected graceful send shutdown: %O\n", eof);
+        if (finished->try_read()) error("Daemon closed before client.\n");
+        if (mode == 2) {
+          if (client->write("late stdin\n") != 11)
+            error("Late stdin was rejected.\n");
+          if (client->write_oob) client->write_oob("\4");
+        }
+        client->close("w");
+      }
+    };
+    destruct(client);
+    mixed server_error = server->wait();
+    destruct(listener);
+    if (err) throw(err);
+    if (server_error) throw(server_error);
+    tests++;
+  };
+
+  mixed failure = catch {
+    for (int mode = 0; mode < 4; mode++) {
+      check(({ "sprshd-ping" }), mode, 0, "sprshd is alive.\n");
+      check(({ "getenv", "SPRSHD_COMPAT_TEST" }), mode, 0, "value\n");
+      check(({ "mkdir", "child" }), mode, 0, "");
+      check(({ "copy", source, target }), mode, 0, "");
+      check(({ "copy", "missing-source", target }), mode, 1, 0);
+      check(({ "mkdir", "missing-parent/child" }), mode, 1, 0);
+      if (Stdio.read_file(target) != Stdio.read_file(source))
+        error("Copied contents differ.\n");
+    }
+  };
+  rm(target);
+  rm(source);
+  rm(combine_path(directory, "child"));
+  rm(directory);
+  if (failure) throw(failure);
+  write("%d daemon compatibility tests passed under %s.\n", tests, version());
+  return 0;
+}

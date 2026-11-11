@@ -124,6 +124,32 @@ void myproxy(object pi, object io, int channel, Process.Process p)
   }
 }
 
+// Old clients forward stdin and send an OOB EOF even for builtins.
+// Half-close only after the reply, then consume input until the client
+// closes. Closing immediately with unread input can reset a Windows socket
+// and discard the final reply bytes. Do not wait for an OOB EOF: newer
+// clients send no input at all for builtins.
+void finish_builtin_reply(object(Stdio.File) io)
+{
+  Pike.Backend backend = Pike.Backend();
+  int closed;
+  function discard = lambda(mixed id, string data) {};
+  function timeout = lambda() { closed = 1; };
+  io->set_backend(backend);
+  io->set_nonblocking(discard, 0, lambda(mixed id) {
+    // A FIN and an urgent byte can become ready in the same backend pass.
+    // Ensure that an unread urgent byte is not left at final close.
+    if (io->read_oob) catch { io->read_oob(1, 1); };
+    closed = 1;
+  }, discard, 0);
+  io->close("w");
+  // Bound cleanup for a broken client that never closes its send side.
+  backend->call_out(timeout, 30);
+  while (!closed) backend(1.0);
+  backend->remove_call_out(timeout);
+  io->set_blocking();
+}
+
 void handle_incoming_connection(object(Stdio.File) io)
 {
   object p;
@@ -180,6 +206,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 
   write("Doing %s in %s\n",cmd*" ",dir);
 
+  int builtin = 1;
   switch(lower_case(cmd[0]))
   {
     case "mkdir":
@@ -260,6 +287,7 @@ void handle_incoming_connection(object(Stdio.File) io)
     }
 
     default:
+      builtin = 0;
 
       // Pipes:
       //
@@ -409,11 +437,14 @@ void handle_incoming_connection(object(Stdio.File) io)
       }
   }
 
+  if (builtin) finish_builtin_reply(io);
+  else {
 #ifdef WINE
-  io->close("rw");
+    io->close("rw");
 #else
-  io->close("w");
+    io->close("w");
 #endif
+  }
   destruct(io);
 }
 
