@@ -1,0 +1,43 @@
+#!/usr/bin/env pike
+// Run with: pike tools/rntcl.test
+// Check compiler diagnostics without requiring Windows or Wine.
+
+int main(int argc, array(string) argv)
+{
+  string compiler = argc > 1 ? argv[1] :
+                    combine_path(dirname(__FILE__), "rntcl");
+  string directory = combine_path(getenv("TMPDIR") || ".",
+    sprintf("rntcl-test-%d-%d", getpid(), random(1000000000)));
+  if (!mkdir(directory)) error("Cannot create temporary directory.\n");
+  directory = combine_path(getcwd(), directory);
+  string wine = combine_path(directory, "wine");
+  Stdio.write_file(wine, "#!/bin/sh\nprintf '%s\\n' \"$RNTCL_TEST_OUTPUT\"\n");
+  chmod(wine, 0700);
+  int tests;
+  mixed failure = catch {
+    foreach (({ "D9021 : no action performed", "D9002 : ignoring option",
+                "D4002 : ignoring unknown option", "" }), string warning) {
+      string output = sizeof(warning) ? "cl : Command line warning " + warning :
+                                       "int preprocessed;";
+      mapping result = Process.run(
+        ({ master()->_pike_file_name, compiler, "-E", "conftest.c" }),
+        ([ "cwd": directory,
+           "env": getenv() + ([ "REMOTE_METHOD": "wine",
+             "PATH": directory + ":" + getenv("PATH"),
+             "RNTCL_TEST_OUTPUT": output ]) ]));
+      if (sizeof(warning)) {
+        if (!result->exitcode ||
+            search(result->stdout + result->stderr,
+                   warning + " (rntcl: converted to error)") < 0)
+          error("Warning was not rejected: %O\n", result);
+      } else if (result->exitcode || result->stdout != output + "\n")
+        error("Preprocessor output was not preserved: %O\n", result);
+      tests++;
+    }
+  };
+  rm(wine);
+  rm(directory);
+  if (failure) throw(failure);
+  write("%d compiler diagnostic tests passed.\n", tests);
+  return 0;
+}

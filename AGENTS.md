@@ -20,6 +20,8 @@ Run from the repository root:
 - `pike tools/sprsh.test`: run client framing and stdin-forwarding tests.
 - `pike tools/sprshd.test`: run daemon compatibility tests with local sockets
   and temporary files.
+- `pike tools/rntas.test`: check GNU assembler arguments, output aliases,
+  compiler dispatch, and error handling without Windows tools.
 - `git diff --check` and `git diff --cached --check`: check whitespace.
 
 Run daemon tests with both Pike 8.0 and a current Pike interpreter. For compiler
@@ -27,6 +29,9 @@ wrapper changes, also compile, link, and execute a small C program using the
 relevant transport. From a Pike source or build directory, invoke
 `/path/to/nt-tools/init_nt make`. Use serial builds with older Microsoft
 compilers that share a PDB database.
+
+For GNU assembly configuration and library compatibility fixes, see
+`HOWTO-PORTING.txt`. It covers GMP, Nettle/Hogweed and zlib with MSVC under Wine.
 
 ## Style and Compatibility
 

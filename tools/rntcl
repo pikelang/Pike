@@ -104,8 +104,8 @@ array|object paranoia_stat(string f)
 {
   string dname;
   string fname;
-  // Let the client have 10 seconds to flush the data...
-  for (int i=0; i < 100; i++) {
+  // Let the client have 60 seconds to flush the data...
+  for (int i=0; i < 600; i++) {
     array|object st = file_stat(f);
     if (st) return st;
     if (!dname) {
@@ -113,8 +113,7 @@ array|object paranoia_stat(string f)
       if (dname == "") dname = ".";
       fname = basename(f);
     }
-    // NB: opendir/closedir on the containing directory invalidates
-    //     the NFS cache on Linux.
+    // NB: opendir/closedir on the directory invalidates the NFS cache.
     array(string) files = get_dir(dname);
     if ((i & 0x0f) == 0x0f) {
       // Flush the filesystem buffers hard.
@@ -151,6 +150,20 @@ void safe_hardlink (string from, string to)
 
 int main(int argc, array(string) argv)
 {
+  // GNU assembler support is opt-in; C compilation still uses MSVC.
+  if (getenv("RNTCL_AS") && has_value(argv[1..], "-c")) {
+    for (int i = 1; i < argc; i++) {
+      string arg = argv[i];
+      if (has_value(({ "-o", "-I", "-D", "-U", "-L", "-l" }), arg)) {
+        i++;
+        continue;
+      }
+      if (!has_prefix(arg, "-") && has_suffix(arg, ".s"))
+        return Process.create_process(
+          ({ master()->_pike_file_name,
+             combine_path(dirname(__FILE__), "rntas") }) + argv[1..])->wait();
+    }
+  }
   //werror("%O\n",argv);
   array(string) ldopts = ({});
   array(string) cflags=default_cflags;
@@ -571,7 +584,8 @@ int main(int argc, array(string) argv)
     // cl.exe and ecl.exe echo the file name of the file we are compiling
     // first, we need to get rid of that to make configure behave.
     // CL: We also convert warnings D4002 and D9002 (both are "ignoring
-    //     unknown option") into errors.
+    //     unknown option") into errors. D9021 ("no action performed")
+    //     is also an error: ignored inputs did not produce an object.
     //     We hide warning LNK4099 "PDB 'xxx.pdb' not found", as it is
     //     unmaskable with cl prior to 2013.
     //     We hide warning LNK4204 "'xxx.pdb' is missing debugging
@@ -638,7 +652,8 @@ int main(int argc, array(string) argv)
                               continue next_line;
                             }
                           }
-			  foreach (({"D4002", "D9002"}), string warn_num) {
+                          foreach (({"D4002", "D9002", "D9021"}),
+                                   string warn_num) {
 			    if (has_value (lines[i], "Command line warning " +
 					   warn_num)) {
 			      forced_error=1;

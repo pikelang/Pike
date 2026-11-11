@@ -1,0 +1,81 @@
+#!/usr/bin/env pike
+// GNU assembler driver for MSVC builds. Runs locally on the Unix build host.
+// Set RNTCL_AS to a Windows-target GNU as executable and PIKE_BUILD_ARCH to
+// i386 or x86_64. Use CCAS=rntas, or RNTCL_AS to enable rntcl .s dispatch.
+// Input must already be preprocessed; .S and m4 input are not supported.
+
+int main(int argc, array(string) argv)
+{
+  string assembler = getenv("RNTCL_AS");
+  string arch = getenv("PIKE_BUILD_ARCH") || "i386";
+  string output;
+  array(string) inputs = ({});
+  array(string) flags = ({});
+  if (!assembler || !sizeof(assembler)) {
+    werror("rntas: Set RNTCL_AS to a Windows-target GNU assembler.\n");
+    return 1;
+  }
+  switch (arch) {
+    case "i386": case "i486": case "i586": case "i686": case "x86":
+      flags += ({ "--32" });
+      break;
+    case "x86_64": case "amd64":
+      flags += ({ "--64" });
+      break;
+    default:
+      werror("rntas: Unsupported architecture %O.\n", arch);
+      return 1;
+  }
+  for (int i = 1; i < argc; i++) {
+    string arg = argv[i];
+    if (arg == "-o" || arg == "-I" || arg == "-D" || arg == "-U") {
+      if (++i == argc) {
+        werror("rntas: Missing argument to %s.\n", arg);
+        return 1;
+      }
+      if (arg == "-o") output = argv[i];
+      else if (arg == "-I") flags += ({ arg, argv[i] });
+      // Preprocessor definitions have already been handled by m4/cpp.
+    } else if (has_prefix(arg, "-o")) output = arg[2..];
+    else if (has_prefix(arg, "-I")) flags += ({ arg });
+    else if (has_prefix(arg, "-Wa,")) flags += arg[4..] / ",";
+    else if (arg == "-v") flags += ({ "--verbose" });
+    else if (arg == "-c" || arg == "-g" ||
+             arg == "-MD" || arg == "-MT" ||
+             arg == "-MDd" || arg == "-MTd" ||
+             arg == "-fPIC" || arg == "-fpic" ||
+             has_prefix(arg, "-O") || has_prefix(arg, "-D") ||
+             has_prefix(arg, "-U")) {
+      // C compiler flags do not affect already preprocessed assembly.
+    } else if (has_suffix(arg, ".s") && !has_prefix(arg, "-"))
+      inputs += ({ arg });
+    else {
+      werror("rntas: Unsupported argument %O.\n", arg);
+      return 1;
+    }
+  }
+  if (sizeof(inputs) != 1) {
+    werror("rntas: Expected one preprocessed .s input.\n");
+    return 1;
+  }
+  if (!output) output = basename(inputs[0])[..<2] + ".o";
+  // rntcl and the MSVC library wrapper use .obj aliases for .o files.
+  string alias = has_suffix(output, ".o") ? output + "bj" : 0;
+  rm(output);
+  if (alias) rm(alias);
+  int status = Process.create_process(
+    ({ assembler }) + flags + ({ "-o", output }) + inputs)->wait();
+  if (status) {
+    rm(output);
+    return status;
+  }
+  if (!file_stat(output)) {
+    werror("rntas: Assembler did not produce %s.\n", output);
+    return 1;
+  }
+  if (alias && !Stdio.cp(output, alias)) {
+    werror("rntas: Cannot copy %s to %s.\n", output, alias);
+    return 1;
+  }
+  return 0;
+}

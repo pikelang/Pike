@@ -1,0 +1,387 @@
+Porting Unix libraries to MSVC with nt-tools
+==========================================
+
+These notes describe the tested 32-bit builds of GMP 6.3.0, Nettle/Hogweed
+3.10.2 and zlib 1.3.2 using Visual C++ 2010 under Wine. See HOWTO-WINE.txt
+for compiler setup. The installed libraries are static COFF archives using
+the release DLL CRT (/MD). Applications must select the same CRT.
+
+Prerequisites and build environment
+----------------------------------
+
+The Unix host needs GNU make, m4, a native C compiler for build generators,
+and Windows-target GNU binutils. C compilation and linking still use MSVC;
+using GNU as does not introduce a MinGW CRT dependency.
+
+Enter an nt-tools shell before running the recipes below:
+
+    . /etc/profile
+    env -u WIN_ARCH /path/to/nt-tools/init_nt sh
+
+Inside that shell, choose absolute source, build and staging paths:
+
+    PORT_WORK=/tmp/nt-deps
+    PORT_SRC="$PORT_WORK/src"
+    PORT_PREFIX="$PORT_WORK/prefix"
+    export RNTCL_AS=/usr/bin/i686-w64-mingw32-as
+    export PIKE_BUILD_ARCH=i386
+    export NM=/usr/bin/i686-w64-mingw32-nm
+    export OBJDUMP=/usr/bin/i686-w64-mingw32-objdump
+    mkdir -p "$PORT_WORK/build" "$PORT_PREFIX"
+
+Extract sources below PORT_SRC. The tested source archives are available
+in /var/cache/distfiles/. Adapt paths and --build for a different host.
+Use serial make with older Microsoft compilers when debug information
+uses a shared PDB database.
+
+Source compatibility fixes
+--------------------------
+
+The installed C:\pike-deps\share\build directory contains gmp-c89.patch
+and nettle-c89.patch. On the Wine setup used here, their Unix location is
+$WINEPREFIX/drive_c/pike-deps/share/build. Apply them to fresh sources:
+
+    PORT_PATCHES="$WINEPREFIX/drive_c/pike-deps/share/build"
+    (cd "$PORT_SRC/gmp-6.3.0" && patch -p1 < "$PORT_PATCHES/gmp-c89.patch")
+    (cd "$PORT_SRC/nettle-3.10.2" &&
+        patch -p1 < "$PORT_PATCHES/nettle-c89.patch")
+
+GMP needs declarations moved before statements and typed for-loop
+initializers rewritten with enclosing blocks to preserve scope. Older
+MSVC also needs snprintf mapped to _snprintf in the affected formatting
+implementation. Nettle needs mixed declarations moved, a designated
+union initializer rewritten, and an empty initializer changed to {0}.
+Its public asn1.h and pgp.h also had trailing enum commas removed.
+
+An assembly-enabled GMP build additionally needs gmp-impl.h to use:
+
+    #include <gmp-mparam.h>
+
+MSVC searches the directories of enclosing source files for quoted
+includes. Through mpn/generic/*.c this can select the generic tuning header
+instead of the configured CPU header. In the tested build, C code then
+used a 50-limb squaring threshold while assembly expected 30, causing a
+computed jump outside its unrolled code. Angle brackets select the
+configured include path. Clean existing builds after changing this header;
+the tested GMP makefiles did not track this header dependency.
+
+Preserve GMP's upstream inline linkage. MSVC __inline and static __inline
+have different linkage; replacing one with the other is not a general
+porting fix. The original public declarations passed multi-file linking
+and function-pointer checks. Keep required 64-bit integer types as well:
+strict C89 checks may need the long-long extension, while MSVC uses __int64.
+
+GNU assembly and ABI selection
+------------------------------
+
+rntas assembles already preprocessed .s files locally. It selects --32 or
+--64 from PIKE_BUILD_ARCH and creates .obj aliases for .o outputs, as
+expected by the MSVC wrappers. Setting RNTCL_AS enables rntcl -c file.s;
+GMP's separate assembly driver is selected with CCAS=rntas. Libraries
+perform their own m4/cpp preprocessing; rntas does not preprocess .S files.
+
+Select a Windows-target assembler, not a host ELF assembler. Even a tool
+named i686-w64-mingw32-as can be configured for x86_64; the explicit --32
+selection matters. Use matching GNU nm and objdump for configure probes.
+The existing nt-tools nm wrapper does not supply the GNU symbol listing
+expected by these assembly checks.
+
+COFF output does not convert calling conventions. Select Windows ABI
+assembly in the library configuration, especially for x86-64, whose
+register arguments, shadow space and preserved registers differ from
+System V. Only the 32-bit library builds below were runtime-tested.
+The selected routines use cdecl and do not require aligned SSE stack loads.
+
+GMP
+---
+
+    mkdir -p "$PORT_WORK/build/gmp"
+    cd "$PORT_WORK/build/gmp"
+    ac_cv_func_memset=yes \
+    gmp_cv_c_double_format='IEEE little endian' \
+    CC=rntcl CCAS=rntas CFLAGS='-O2 -MD' CC_FOR_BUILD=gcc \
+    AR=ar RANLIB=ranlib \
+        "$PORT_SRC/gmp-6.3.0/configure" \
+        --host=i686-pc-windows --build=x86_64-pc-linux-gnu \
+        --prefix="$PORT_PREFIX" --enable-assembly \
+        --disable-shared --enable-static --disable-cxx
+    make CC_FOR_BUILD=gcc
+    make CC_FOR_BUILD=gcc install
+    /bin/cp "$PORT_PREFIX/lib/libgmp.a" "$PORT_PREFIX/lib/gmp.lib"
+    /bin/cp "$PORT_PREFIX/lib/libgmp.a" "$PORT_PREFIX/lib/libgmp.lib"
+
+The windows host keeps libtool using the nt-tools archiver. With a mingw32
+host and this compiler, libtool instead tried to execute Microsoft lib
+directly on Unix. Assembly probes determine COFF directives and prefixes.
+
+The cache answers above apply to the tested x86 Windows CRT: its memset
+exists, but the autoconf probe conflicts with MSVC's intrinsic declaration;
+doubles use IEEE little endian. Recheck these answers for other targets.
+CC_FOR_BUILD=gcc builds native generators; it does not compile the library.
+
+To disable assembly, use --host=none-pc-windows --disable-assembly in a
+fresh build directory. Merely disabling assembly with an x86 host can still
+select GMP's assembler-based cycle-counter helper.
+
+Nettle and Hogweed
+------------------
+
+Build and install GMP, including its .lib aliases, first:
+
+    mkdir -p "$PORT_WORK/build/nettle"
+    cd "$PORT_WORK/build/nettle"
+    CC=rntcl CXX=rntcl CFLAGS='-O2 -MD' CC_FOR_BUILD=gcc \
+    AR=ar RANLIB=ranlib \
+        "$PORT_SRC/nettle-3.10.2/configure" \
+        --host=i686-pc-mingw32 --build=x86_64-pc-linux-gnu \
+        --prefix="$PORT_PREFIX" \
+        --with-include-path="$PORT_PREFIX/include" \
+        --with-lib-path="$PORT_PREFIX/lib" \
+        --enable-assembler --disable-shared --enable-static \
+        --disable-openssl --disable-documentation --disable-fat
+    make libnettle.a libhogweed.a
+    make install-here
+    /bin/cp "$PORT_PREFIX/lib/libnettle.a" "$PORT_PREFIX/lib/nettle.lib"
+    /bin/cp "$PORT_PREFIX/lib/libhogweed.a" "$PORT_PREFIX/lib/hogweed.lib"
+
+For a C-only build use --disable-assembler. Verify configure finds the
+external GMP and enables public-key support rather than using mini-gmp.
+
+zlib and installation
+---------------------
+
+zlib builds with its supplied MSVC makefile, without source changes:
+
+    cd "$PORT_SRC/zlib-1.3.2"
+    wine "$MSVC\bin\nmake.exe" /nologo /f win32/Makefile.msc zlib.lib
+    /bin/cp zlib.h zconf.h "$PORT_PREFIX/include/"
+    /bin/cp zlib.lib "$PORT_PREFIX/lib/zlib.lib"
+    /bin/cp zlib.lib "$PORT_PREFIX/lib/z.lib"
+
+Install headers and archives into the intended Windows development prefix,
+then update the Wine branch of ~/.init_ntrc: INCLUDE needs its include
+directory, LIB its lib directory, and NTLD_LIBRARY_PATH the corresponding
+Unix lib path. Keep RNTCL_AS exported to enable subsequent assembly builds.
+The tested installation is C:\pike-deps. Preserve BINMODE.OBJ availability
+when adjusting paths; rntcl uses it when linking executables.
+
+Validation
+----------
+
+From the nt-tools checkout, run pike tools/rntas.test and
+pike tools/rntcl.test. The assembler tests also run with Pike 8.0.
+Compile, link and run a GNU-assembled object with rntcl under Wine.
+
+Check public headers individually and together, without private config.h:
+MSVC 2010 passed 76 individual headers plus one combined translation unit.
+They also passed strict C99 and C89 syntax checks with a Windows-target GCC;
+the C89 check allowed long long to preserve 64-bit integer widths.
+
+Test arithmetic across algorithm thresholds, prime operations, conversions
+and formatted output against a host GMP build. Exercise all selected
+Nettle assembly routines with known-answer vectors: AES encrypt/decrypt,
+Camellia and SHA-1 in this build. Also test RSA, Ed25519, CFB8, SIV-CMAC and
+zlib round trips. Repeat through the installed configuration without extra
+include/library paths, to catch stale-library fallbacks.
+
+The installed share/build directory retains test sources, build recipes,
+patches and validation logs. The final test executable imported MSVCR100.dll
+and KERNEL32.dll, with no MinGW runtime DLLs.
+
+Additional Win32 libraries
+--------------------------
+
+The additional builds use FreeType 2.14.3, libjpeg-turbo 3.1.4.1,
+libtiff 4.7.1, MariaDB Connector/C 3.4.7, PCRE 8.45, PCRE2 10.49 and
+SQLite 3.53.4 from the cached distributions. MariaDB Connector/C supplies
+the MySQL client API; no MySQL server is needed for the client library.
+
+Windows CMake 3.31.12 with the NMake Makefiles generator runs under Wine.
+Set CMAKE_C_COMPILER and CMAKE_CXX_COMPILER to the actual cl.exe paths:
+the inherited CC=rntcl names a Unix wrapper that Windows CMake cannot run.
+Select Release builds and build serially. Disable Unix discovery tools
+with empty PKG_CONFIG_EXECUTABLE, GIT_EXECUTABLE and CURL_CONFIG_EXECUTABLE
+cache entries, and disable optional Python3 discovery. Otherwise CMake can
+find Unix executables through Wine's PATH and fail with
+"AssignProcessToJobObject: (6) Invalid handle."
+
+Build shared libraries to provide import libraries and DLLs for the Pike
+modules. Put DLLs in the dependency prefix's bin directory and add it to
+WINEPATH; put import libraries in lib. Library-name aliases must refer to
+the import library, not an unrelated static archive.
+
+MSVC 2010 compatibility:
+
+- It lacks inttypes.h. The msinttypes implementation by Alexander Chemeris
+  supplies the format macros and conversions needed by TIFF. Keep it in a
+  separate include/msvc-compat directory on the old-MSVC include path.
+- Use __inline for C99 inline in private compilation settings, preserving
+  any explicit static qualifier. Map __func__ to __FUNCTION__.
+- SQLite's recent floating-point conversion code uses INFINITY. The
+  old-MSVC compatibility header defines it as ((float)HUGE_VAL), using
+  the CRT's infinity value. For C99 snprintf/vsnprintf, use a private
+  wrapper that preserves the required-length return value and termination
+  on truncation. A direct alias to _snprintf has different semantics.
+- Rewrite C99 for-loop declarations inside enclosing scopes; preserve
+  macro continuation backslashes when changing loop declarations inside
+  macros. Move mixed declarations before statements without moving their
+  initializer evaluations ahead of code they depend on.
+
+Package-specific issues:
+
+- libjpeg-turbo's Windows version resource includes MFC's winres.h, which
+  is absent from Visual C++ Express. The resource only needs SDK version
+  definitions, so use winresrc.h. The initial build has SIMD disabled;
+  enabling its SIMD routines requires a Windows NASM executable.
+- PCRE2's public header can use stdint.h for the fixed-width types on old
+  MSVC. Its SLJIT code assumes _xgetbv is available with older MSVC than
+  the tested compiler supports. On 32-bit MSVC, emit the XGETBV instruction
+  in inline assembly in execute_get_xcr0_low(); keep its existing CPU/OS
+  feature guard. This preserves JIT support.
+- MariaDB Connector/C also uses C99 in its authentication plugins and
+  option tables. Use the MSVC-compatible Clang frontend for its C files.
+  SDK 7.0A lacks TLS 1.3's protocol constant and the SCH_CREDENTIALS and
+  TLS_PARAMETERS declarations. Supply these guarded declarations privately;
+  retain the client's existing OS-version checks before using them.
+  Configure with CMAKE_INSTALL_PREFIX=C:/pike-deps, then stage installation
+  with cmake --install --prefix. Otherwise the default authentication
+  plugin directory retains the temporary staging path. The Windows loader
+  uses its DLL search path unless MYSQL_PLUGIN_DIR or MARIADB_PLUGIN_DIR is
+  set explicitly. The Wine configuration sets MARIADB_PLUGIN_DIR to
+  C:\pike-deps\lib\mariadb\plugin.
+- Current TIFF uses C99 declarations extensively. Compile its C sources
+  with Clang targeting i686-pc-windows-msvc, using the Microsoft headers,
+  CRT and linker, rather than maintaining widespread declaration rewrites.
+  Clang needs a case-insensitive VFS overlay for SDK header names on Unix.
+  Keep Windows feature/configuration definitions when compiling these
+  objects; the Unix host ABI is inappropriate. Put Clang's resource include
+  directory before the old Microsoft include directory. Its vadefs.h
+  intercepts the old CRT's va_start macros; without that interception,
+  inlined variadic functions can read the wrong arguments and crash.
+- Generate SQLite's amalgamation with native Unix tools, then compile
+  sqlite3.c as a Windows DLL. Python ZIP extraction loses executable bits
+  on its autosetup scripts; restore them before running configure. Enable
+  SQLITE_THREADSAFE and SQLITE_ENABLE_COLUMN_METADATA.
+
+Kerberos for Windows
+--------------------
+
+The Windows SDK provides SSPI, while Pike's Kerberos and GSSAPI modules
+need the MIT/Heimdal C APIs. MIT's current KfW 4.1 MSI contains runtime DLLs
+but no development headers or import libraries. Administrative extraction
+with msiexec /a permits obtaining the DLLs without configuring a realm or
+installing the graphical ticket manager.
+
+The published KfW 3.2.2 SDK supplies the compatible 32-bit development
+interface used here with the KfW 4.1 runtime. Copy inc/krb5 into the include
+root, the required lib/i386 import libraries into lib, and the 4.1 runtime
+DLLs into bin. Keep dependent DLLs such as comerr32, k5sprt32 and krbcc32
+alongside krb5_32 and gssapi32. Preserve the SDK's calling-convention macros;
+the Win32 functions use __stdcall. Context creation and GSS mechanism
+enumeration were tested against this runtime/header combination.
+
+Upstream downloads used for these tools and compatibility files:
+
+    https://cmake.org/download/
+    https://web.mit.edu/Kerberos/dist/
+    https://github.com/chemeris/msinttypes
+
+For package discovery through nt-tools, set WINE_PKG_CONFIG to the Unix
+pkg-config executable, and PKG_CONFIG_LIBDIR to the Windows dependency
+prefix's lib/pkgconfig directory. Clear PKG_CONFIG_PATH to prevent native
+Unix packages from leaking into target probes. The wrapper delegates
+locally only when WINE_PKG_CONFIG is explicitly set. Rewrite installed .pc
+paths to the Unix view of the dependency prefix.
+
+CMake's MariaDB package installs mysql.h and its normal client interface,
+but its plugin-development headers are not self-contained on Windows;
+client_plugin.h also references an uninstalled private ma_compress.h.
+The normal client API and runtime plugin lookup use mysql.h and work
+without those plugin implementation headers.
+
+Validation completed with the installed libraries:
+
+- All nine affected Pike modules detect their dependencies, build and load.
+- FreeType renders a glyph; JPEG and TIFF round trips pass, including TIFF
+  raw, LZW, Deflate and JPEG compression. SQLite executes memory-database
+  queries, including floating-point overflow/underflow and column metadata.
+- PCRE1 and PCRE2 pass their upstream JIT regression suites; PCRE2 also
+  passes invalid UTF-8/16/32 JIT tests and its POSIX API tests.
+- Kerberos creates a context, and GSSAPI enumerates mechanisms. No KDC or
+  domain credentials are needed for these checks.
+- MariaDB initializes with thread support and handles a closed-port error.
+  Its client_ed25519, caching_sha2_password and parsec plugins load from the
+  installed plugin directory. No server or authentication session was used.
+
+The final recipes, patches, original archives and validation logs are kept
+under C:\pike-deps\share. See share/build/additional/final-runtime-tests.log
+and share/build/additional/pike-modules.log for the installed-build checks.
+
+GObject Introspection and GTK
+----------------------------
+
+The Wine prefix also has a separate C:\pike-gtk containing 32-bit MSYS2
+binaries: GObject Introspection 1.86.0, GTK 3.24.51 and GTK 4.18.2. Keeping
+this stack separate avoids replacing the MSVC libraries in C:\pike-deps.
+Both Gtk-3.0.typelib and Gtk-4.0.typelib are installed. GIRepository 1.0
+and 2.0 C libraries are included; Pike currently uses the 1.0 API.
+
+Download archives from https://repo.msys2.org/mingw/mingw32/ . GTK and GI
+are no longer in the active mingw32.db, but their package archives remain.
+Resolve runtime dependencies from each archive's .PKGINFO; do not install
+only the top-level packages. URL-decode archive names when resolving
+libstdc++: its '+' characters appear as '%2B' in the directory index.
+Compiler runtime metapackages can have no files of their own.
+
+Extract the mingw32/ subtree into C:\pike-gtk. Retain package metadata and
+checksums. Rewrite /mingw32 in lib/pkgconfig/*.pc to the Unix view of this
+prefix for nt-tools' local pkg-config. Generate Microsoft import libraries
+from the DLL export tables with lib.exe /machine:x86 /def:... /out:... .
+Do not link MinGW static libraries into the MSVC Pike executable.
+
+The Wine configuration adds this prefix's bin to WINEPATH, lib to LIB and
+NTLD_LIBRARY_PATH, and lib/pkgconfig to PKG_CONFIG_LIBDIR. It also sets:
+
+    GI_TYPELIB_PATH=C:\pike-gtk\lib\girepository-1.0
+    XDG_DATA_DIRS=C:\pike-gtk\share
+
+The package set includes the scanner's Python dependencies as well as the
+runtime DLLs. Loading Gtk 3 and Gtk 4 requires separate processes since GI
+cannot load two versions of the same namespace into one repository.
+
+Wine smoke tests loaded both Gtk typelibs, checked their runtime versions,
+and initialized each GTK version, creating and destroying a window.
+Wine reports harmless device-property and keyboard-layout warnings during
+these checks. Installation recipes, package metadata and checksums are in
+C:\pike-gtk\share\pike-install.
+
+The scanner runs inside Windows Python, so it needs Windows pkg-config
+and Windows paths, rather than nt-tools' Unix pkg-config wrapper. A second
+set of .pc files with prefix=C:/pike-gtk is in lib/pkgconfig-win32. Run it
+inside init_nt with:
+
+    PKG_CONFIG=C:/pike-gtk/bin/pkg-config.exe \
+      PKG_CONFIG_LIBDIR=C:/pike-gtk/lib/pkgconfig-win32 \
+      wine C:/pike-gtk/bin/g-ir-scanner.exe --version
+
+When generating MSVC import libraries, omit GNU _imp__ / __imp_ aliases
+from DLL exports: these can conflict with MSVC's generated import-pointer
+symbols and cause LNK1127. The gettext DLL contains such an alias.
+
+Pike's GI module builds with MSVC 2010 after moving its callback type-info
+local declaration to the start of the block. Pike can call GLib and both
+GTK namespaces. Its GI testsuite passes two tests and skips three that
+require backend integration, which remains disabled on Windows. Iterate
+the GLib main context explicitly when processing GLib/GTK events there.
+The existing image, database, regexp and Kerberos smoke tests also pass.
+
+After extraction, run glib-compile-schemas, gdk-pixbuf-query-loaders
+--update-cache, gtk-query-immodules-3.0 --update-cache, fc-cache -f, and
+update the Adwaita and hicolor icon caches. These are normally package
+manager hooks. Their complete commands are retained in post-install.sh.
+
+Cairo 1.18.4, Cairo-GObject, headers, typelibs and pkg-config files are
+included. Generate cairo.lib and cairo-gobject.lib from the DLLs as above.
+Pike's native Cairo module builds and passes its testsuite. GI maps
+cairo.Context to Cairo.Context; this mapping was verified with a drawing
+and PNG round trip through the native Pike Cairo module.

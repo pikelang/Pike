@@ -1,0 +1,86 @@
+#!/usr/bin/env pike
+// Run with: pike tools/rntas.test (no Windows tools required).
+
+int main()
+{
+  string directory = combine_path("/tmp",
+    sprintf("rntas-test-%d-%d", getpid(), random(1000000000)));
+  if (!mkdir(directory)) error("Cannot create temporary directory.\n");
+  string assembler = directory + "/mock assembler";
+  Stdio.write_file(assembler, #"#!/bin/sh
+printf '%s\\n' \"$@\" > args
+output=
+while [ $# -gt 0 ]; do
+  if [ \"$1\" = -o ]; then shift; output=$1; fi
+  shift
+done
+printf object > \"$output\"
+if [ -n \"$ASM_TEST_STATUS\" ]; then exit \"$ASM_TEST_STATUS\"; fi
+");
+  chmod(assembler, 0700);
+  string driver = combine_path(dirname(__FILE__), "rntas");
+  string compiler = combine_path(dirname(__FILE__), "rntcl");
+  mapping env = getenv() + ([ "RNTCL_AS": assembler,
+                             "PIKE_BUILD_ARCH": "i386" ]);
+  function run = lambda(array(string) args, mapping changes,
+                        void|int dispatch) {
+    return Process.run(({ master()->_pike_file_name,
+                          dispatch ? compiler : driver }) + args,
+      ([ "cwd": directory, "env": env + changes ]));
+  };
+  int tests;
+  mixed failure = catch {
+    mapping result = run(({ "-c", "-O2", "-MD", "-DTEST=1", "-I",
+                           "include dir", "-Wa,--noexecstack",
+                           "source file.s" }), ([]));
+    if (result->exitcode ||
+        Stdio.read_file(directory + "/source file.o") != "object" ||
+        Stdio.read_file(directory + "/source file.obj") != "object" ||
+        Stdio.read_file(directory + "/args") !=
+          "--32\n-I\ninclude dir\n--noexecstack\n-o\n" +
+          "source file.o\nsource file.s\n")
+      error("Assembler arguments or aliases incorrect: %O\n", result);
+    tests++;
+    string wine = directory + "/wine";
+    Stdio.write_file(wine, "#!/bin/sh\nprintf 'int preprocessed;\\n'\n");
+    chmod(wine, 0700);
+    result = run(({ "-E", "source.c", "-o", "output.s" }),
+                 ([ "REMOTE_METHOD": "wine",
+                    "PATH": directory + ":" + getenv("PATH") ]), 1);
+    if (result->exitcode || result->stdout != "int preprocessed;\n")
+      error("C preprocessing was sent to assembler: %O\n", result);
+    tests++;
+    result = run(({ "-c", "-o", "explicit.obj", "source.s" }),
+                 ([ "PIKE_BUILD_ARCH": "x86_64" ]), 1);
+    if (result->exitcode ||
+        Stdio.read_file(directory + "/explicit.obj") != "object" ||
+        !has_prefix(Stdio.read_file(directory + "/args"), "--64\n"))
+      error("Compiler dispatch or 64-bit selection failed: %O\n", result);
+    tests++;
+    result = run(({ "-o", "source file.o", "source.s" }),
+                 ([ "ASM_TEST_STATUS": "7" ]));
+    if (result->exitcode != 7 ||
+        file_stat(directory + "/source file.o") ||
+        file_stat(directory + "/source file.obj"))
+      error("Assembler failure retained stale objects: %O\n", result);
+    tests++;
+    foreach (({ ({ "-o" }), ({ "source.S" }),
+                ({ "source.s", "-unknown" }),
+                ({ "a.s", "b.s" }) }), array(string) args) {
+      if (!run(args, ([]))->exitcode)
+        error("Invalid invocation accepted: %O\n", args);
+      tests++;
+    }
+    if (!run(({ "source.s" }), ([ "PIKE_BUILD_ARCH": "arm64" ]))->exitcode)
+      error("Unsupported architecture accepted.\n");
+    tests++;
+    if (!run(({ "source.s" }), ([ "RNTCL_AS": "" ]))->exitcode)
+      error("Missing assembler accepted.\n");
+    tests++;
+  };
+  foreach (get_dir(directory), string file) rm(directory + "/" + file);
+  rm(directory);
+  if (failure) throw(failure);
+  write("%d assembler driver tests passed.\n", tests);
+  return 0;
+}

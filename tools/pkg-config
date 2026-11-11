@@ -58,6 +58,13 @@ int main(int argc, array(string) argv)
 
   newargs = ({"pkg-config"}) + newargs+ Getopt.get_args (argv[1..]);
 
+  // Wine builds can use a Unix pkg-config with target-only .pc files.
+  // Keep this opt-in so existing Windows pkg-config setups still work.
+  if (getenv("REMOTE_METHOD") == "wine" && getenv("WINE_PKG_CONFIG")) {
+    newargs[0] = getenv("WINE_PKG_CONFIG");
+    return Process.create_process(newargs)->wait();
+  }
+
   int ret = silent_do_cmd (newargs);
 
   if(ret)

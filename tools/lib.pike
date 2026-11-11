@@ -302,6 +302,9 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
       {
 	// Some special cases that are builtin into sprshd.
 	switch(cmd[0]) {
+        case "copy":
+          cmd = ({ "cmd", "/c", "copy", "/y" }) + cmd[1..];
+          break;
 	case "getenv":
 	  cmd = ({ "cmd", "/c", "echo", "%" + cmd[1] + "%" });
 	  break;
