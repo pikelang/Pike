@@ -5,12 +5,13 @@ The experimental machine-state SSA model is in ssa.[ch]. Enable it with
 frame pointer, stack pointer, and mark stack pointer as code is emitted.
 The amd64 backend keeps pending stack pointer stores as small IR nodes.
 It lowers the latest node at calls and control-flow boundaries, so earlier
-stores in the same straight-line region can be removed. Other backends still
+stores in the same straight-line region can be removed. The SPARC backends
+track their existing deferred stores in the same model. Other backends still
 use their existing register caches. This is an initial machine-state IR,
 not a full machine-instruction SSA IR.
 
-For code generation comparisons, PIKE_SSA_EAGER_STORES=1 restores eager
-stores in the same binary. PIKE_SSA_STATS=1 prints aggregate counts of
+For amd64 code generation comparisons, PIKE_SSA_EAGER_STORES=1 restores
+eager stores in the same binary. PIKE_SSA_STATS=1 prints aggregate counts of
 state loads, definitions, stores, and generated code bytes at process exit.
 PIKE_SSA_NO_FP_JOIN=1 disables frame-pointer register preservation at
 forward control-flow joins for a same-binary comparison.
@@ -24,6 +25,19 @@ reloads. Statistics include retained SP joins
 and first uses that avoid a load.
 For example, run the same Pike program with PIKE_SSA_STATS=1 alone and with
 both variables set, then compare the reported store counts and code bytes.
+
+On SPARC and SPARC64, PIKE_SSA_SPARC_JOINS=1 enables experimental
+register preservation at forward joins. It is disabled by default. The
+backend tracks the lazily loaded interpreter pointer and cached frame and
+stack pointers, retaining only registers valid on every incoming path.
+Stack-pointer agreement includes its logical value and depth; normalizing
+the deferred byte bias does not change that value. Mark-stack pointers are
+not retained at joins. Existing deferred stores, call invalidations, delay
+slots, and word-based code offsets retain their original behavior.
+PIKE_SSA_STATS=1 reports loads, definitions, stores, joins, first uses that
+avoid a reload, calls, and emitted code bytes. Compare the same binary with
+the joins variable unset and set. The amd64 eager-store, locals-cache, and
+integer-region flags do not apply to these backends.
 
 PIKE_SSA_LOCALS_CACHE=1 enables an experimental read-only cache of
 frame->locals in caller-saved R11 on amd64. PIKE_SSA_NO_LOCALS_CACHE=1

@@ -297,6 +297,63 @@ unsigned INT32 sparc_codegen_state = 0;
 static int sparc_pike_sp_bias = 0;
 ptrdiff_t sparc_last_pc = 0;
 
+#ifdef PIKE_ENABLE_SSA
+static struct pikecode_ssa_state sparc_ssa;
+static unsigned int sparc_sp_value, sparc_sp_next_value;
+static INT32 sparc_sp_depth;
+static unsigned int sparc_join_unused;
+static int sparc_ssa_initialized, sparc_ssa_stats, sparc_ssa_no_joins;
+static ptrdiff_t sparc_function_start;
+static struct {
+  unsigned long loads[PIKE_SSA_SLOT_COUNT];
+  unsigned long defs[PIKE_SSA_SLOT_COUNT];
+  unsigned long stores[PIKE_SSA_SLOT_COUNT];
+  unsigned long joins[PIKE_SSA_SLOT_COUNT];
+  unsigned long avoided[PIKE_SSA_SLOT_COUNT];
+  unsigned long calls, code_bytes;
+} sparc_stats;
+
+static void sparc_ssa_use(unsigned int bit, enum pikecode_ssa_slot slot)
+{
+  if ((sparc_join_unused & sparc_codegen_state & bit) != 0) {
+    sparc_join_unused &= ~bit;
+    if (sparc_ssa_stats) sparc_stats.avoided[slot]++;
+  }
+}
+
+static void sparc_ssa_load(enum pikecode_ssa_slot slot)
+{
+  pikecode_ssa_read(&sparc_ssa, slot);
+  if (sparc_ssa_stats) sparc_stats.loads[slot]++;
+}
+
+static void sparc_ssa_define(enum pikecode_ssa_slot slot, int delta)
+{
+  pikecode_ssa_define(&sparc_ssa, slot);
+  if (slot == PIKE_SSA_SP) sparc_sp_depth += delta;
+  if (sparc_ssa_stats) sparc_stats.defs[slot]++;
+}
+
+static void sparc_ssa_store(enum pikecode_ssa_slot slot)
+{
+  struct pikecode_ssa_op op;
+  if (!pikecode_ssa_take_store(&sparc_ssa, slot, &op))
+    Pike_fatal("SPARC SSA store without a definition.\n");
+  if (sparc_ssa_stats) sparc_stats.stores[slot]++;
+}
+
+#define SPARC_SSA_USE(SLOT, BIT) sparc_ssa_use(BIT, PIKE_SSA_##SLOT)
+#define SPARC_SSA_LOAD(SLOT) sparc_ssa_load(PIKE_SSA_##SLOT)
+#define SPARC_SSA_DEFINE(SLOT, DELTA) \
+  sparc_ssa_define(PIKE_SSA_##SLOT, DELTA)
+#define SPARC_SSA_STORE(SLOT) sparc_ssa_store(PIKE_SSA_##SLOT)
+#else
+#define SPARC_SSA_USE(SLOT, BIT) do {} while (0)
+#define SPARC_SSA_LOAD(SLOT) do {} while (0)
+#define SPARC_SSA_DEFINE(SLOT, DELTA) do {} while (0)
+#define SPARC_SSA_STORE(SLOT) do {} while (0)
+#endif
+
 #ifdef PIKE_BYTECODE_SPARC64
 #define PIKE_LDPTR	SPARC_LDX
 #define PIKE_STPTR	SPARC_STX
@@ -306,30 +363,36 @@ ptrdiff_t sparc_last_pc = 0;
 #endif /* PIKE_BYTECODE_SPARC64 */
 
 #define LOAD_PIKE_INTERPRETER() do {				\
+    SPARC_SSA_USE(IP, SPARC_CODEGEN_IP_IS_SET); \
     if (!(sparc_codegen_state & SPARC_CODEGEN_IP_IS_SET)) {	\
       SET_REG(SPARC_REG_PIKE_IP,				\
 	      ((ptrdiff_t)(&Pike_interpreter_pointer)));	\
       PIKE_LDPTR(SPARC_REG_PIKE_IP, SPARC_REG_PIKE_IP, 0, 1);	\
+      SPARC_SSA_LOAD(IP); \
       sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET;		\
     }								\
   } while(0)
 
 #define LOAD_PIKE_FP() do {						\
+    SPARC_SSA_USE(FP, SPARC_CODEGEN_FP_IS_SET); \
     if (!(sparc_codegen_state & SPARC_CODEGEN_FP_IS_SET)) {		\
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, frame_pointer) ], %l1 */	\
       PIKE_LDPTR(SPARC_REG_PIKE_FP, SPARC_REG_PIKE_IP,			\
 		 OFFSETOF(Pike_interpreter_struct, frame_pointer), 1);	\
+      SPARC_SSA_LOAD(FP); \
       sparc_codegen_state |= SPARC_CODEGEN_FP_IS_SET;			\
     }									\
   } while(0)
 
 #define LOAD_PIKE_SP()	do {						\
+    SPARC_SSA_USE(SP, SPARC_CODEGEN_SP_IS_SET); \
     if (!(sparc_codegen_state & SPARC_CODEGEN_SP_IS_SET)) {		\
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, stack_pointer) ], %l2 */	\
       PIKE_LDPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
 		 OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);	\
+      SPARC_SSA_LOAD(SP); \
       sparc_codegen_state |= SPARC_CODEGEN_SP_IS_SET;			\
       sparc_pike_sp_bias = 0;						\
     } else if (sparc_pike_sp_bias > 0xf00) {				\
@@ -342,11 +405,13 @@ ptrdiff_t sparc_last_pc = 0;
   } while(0)
 
 #define LOAD_PIKE_MARK_SP()	do {						\
+    SPARC_SSA_USE(MARK_SP, SPARC_CODEGEN_MARK_SP_IS_SET); \
     if (!(sparc_codegen_state & SPARC_CODEGEN_MARK_SP_IS_SET)) {	\
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, mark_stack_pointer) ], %l2 */	\
       PIKE_LDPTR(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
 		 OFFSETOF(Pike_interpreter_struct, mark_stack_pointer), 1);	\
+      SPARC_SSA_LOAD(MARK_SP); \
       sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_IS_SET;		\
     }									\
   } while(0)
@@ -362,12 +427,14 @@ ptrdiff_t sparc_last_pc = 0;
       /* stw %pike_mark_sp, [ %ip, %offset(Pike_interpreter, mark_stack_pointer) ] */	\
       PIKE_STPTR(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
 		 OFFSETOF(Pike_interpreter_struct, mark_stack_pointer), 1);	\
+      SPARC_SSA_STORE(MARK_SP); \
       sparc_codegen_state &= ~SPARC_CODEGEN_MARK_SP_NEEDS_STORE;	\
     }									\
     if (sparc_codegen_state & SPARC_CODEGEN_SP_NEEDS_STORE) {		\
       /* stw %pike_sp, [ %ip, %offset(Pike_interpreter, stack_pointer) ] */	\
       PIKE_STPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
 		 OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);	\
+      SPARC_SSA_STORE(SP); \
       sparc_codegen_state &= ~SPARC_CODEGEN_SP_NEEDS_STORE;		\
     }									\
   } while(0)
@@ -380,8 +447,94 @@ ptrdiff_t sparc_last_pc = 0;
 void sparc_flush_codegen_state(void)
 {
   SPARC_FLUSH_UNSTORED();
+#ifdef PIKE_ENABLE_SSA
+  pikecode_ssa_barrier(&sparc_ssa, PIKE_SSA_MERGE);
+  pikecode_ssa_reset(&sparc_ssa);
+  /* L0 is loaded lazily, rather than supplied by the entry ABI. */
+  pikecode_ssa_clobber(&sparc_ssa, PIKE_SSA_IP);
+  sparc_join_unused = 0;
+  sparc_sp_value = ++sparc_sp_next_value;
+  sparc_sp_depth = 0;
+#endif
   sparc_codegen_state = 0;
 }
+
+#ifdef PIKE_ENABLE_SSA
+static void sparc_ssa_report(void)
+{
+  fprintf(stderr,
+          "SSA SPARC%u: loads ip=%lu fp=%lu sp=%lu mark=%lu; "
+          "defs sp=%lu mark=%lu; stores sp=%lu mark=%lu; "
+          "joins ip=%lu fp=%lu sp=%lu; avoided ip=%lu fp=%lu sp=%lu; "
+          "calls=%lu bytes=%lu; joins enabled=%d\n",
+          (unsigned)(8 * sizeof(void *)),
+          sparc_stats.loads[PIKE_SSA_IP], sparc_stats.loads[PIKE_SSA_FP],
+          sparc_stats.loads[PIKE_SSA_SP], sparc_stats.loads[PIKE_SSA_MARK_SP],
+          sparc_stats.defs[PIKE_SSA_SP], sparc_stats.defs[PIKE_SSA_MARK_SP],
+          sparc_stats.stores[PIKE_SSA_SP], sparc_stats.stores[PIKE_SSA_MARK_SP],
+          sparc_stats.joins[PIKE_SSA_IP], sparc_stats.joins[PIKE_SSA_FP],
+          sparc_stats.joins[PIKE_SSA_SP], sparc_stats.avoided[PIKE_SSA_IP],
+          sparc_stats.avoided[PIKE_SSA_FP], sparc_stats.avoided[PIKE_SSA_SP],
+          sparc_stats.calls, sparc_stats.code_bytes, !sparc_ssa_no_joins);
+}
+
+void sparc_start_function(int UNUSED(store_lines))
+{
+  if (!sparc_ssa_initialized) {
+    sparc_ssa_initialized = 1;
+    sparc_ssa_stats = getenv("PIKE_SSA_STATS") != NULL;
+    sparc_ssa_no_joins = getenv("PIKE_SSA_SPARC_JOINS") == NULL;
+    if (sparc_ssa_stats) atexit(sparc_ssa_report);
+  }
+  sparc_function_start = Pike_compiler->new_program->num_program;
+}
+
+void sparc_end_function(int UNUSED(store_lines))
+{
+  SPARC_FLUSH_UNSTORED();
+  pikecode_ssa_barrier(&sparc_ssa, PIKE_SSA_FUNCTION);
+  if (sparc_ssa_stats)
+    sparc_stats.code_bytes +=
+      (Pike_compiler->new_program->num_program - sparc_function_start) *
+      sizeof(PIKE_OPCODE_T);
+}
+
+unsigned int sparc_codegen_sp_value(void) { return sparc_sp_value; }
+INT32 sparc_codegen_sp_depth(void) { return sparc_sp_depth; }
+
+int sparc_codegen_state_valid(void)
+{
+  return sparc_codegen_state & (SPARC_CODEGEN_IP_IS_SET |
+                               SPARC_CODEGEN_FP_IS_SET |
+                               SPARC_CODEGEN_SP_IS_SET);
+}
+
+void sparc_flush_codegen_state_keep(int keep)
+{
+  unsigned int value = sparc_sp_value;
+  INT32 depth = sparc_sp_depth;
+  int slot;
+  static const unsigned int bits[PIKE_SSA_SLOT_COUNT] = {
+    SPARC_CODEGEN_IP_IS_SET, SPARC_CODEGEN_SP_IS_SET,
+    SPARC_CODEGEN_FP_IS_SET, 0, 0
+  };
+  /* Normalize the fallthrough bias before publishing the target address.
+   * Branch predecessors have already normalized it before their C helper. */
+  sparc_flush_codegen_state();
+  if (sparc_ssa_no_joins) return;
+  sparc_codegen_state |= keep;
+  sparc_join_unused = keep;
+  if (keep & SPARC_CODEGEN_SP_IS_SET) {
+    sparc_sp_value = value;
+    sparc_sp_depth = depth;
+  }
+  for (slot = 0; slot < PIKE_SSA_SLOT_COUNT; slot++) {
+    if (!(keep & bits[slot])) continue;
+    pikecode_ssa_merge_reg(&sparc_ssa, slot);
+    if (sparc_ssa_stats) sparc_stats.joins[slot]++;
+  }
+}
+#endif
 
 #define ADJUST_PIKE_PC(NEW_PC)	do {			\
     sparc_last_pc = NEW_PC;				\
@@ -459,6 +612,7 @@ static void sparc_incr_mark_sp(int delta)
   /* add %pike_mark_sp, %pike_mark_sp, 4 * delta */
   SPARC_ADD(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_MARK_SP,
 	    sizeof(void *)*delta, 1);
+  SPARC_SSA_DEFINE(MARK_SP, delta);
   sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_NEEDS_STORE;
 }
 
@@ -524,6 +678,7 @@ static void sparc_push_int(INT_TYPE x, int sub_type)
   /* stw %reg, [ %pike_sp ] */
   SPARC_STW(reg, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
   sparc_pike_sp_bias += sizeof(struct svalue);
+  SPARC_SSA_DEFINE(SP, 1);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
@@ -557,6 +712,7 @@ static void sparc_push_lfun(unsigned int no)
   /* stw %i1, [ %pike_sp, %g0 ] */
   SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
   sparc_pike_sp_bias += sizeof(struct svalue);
+  SPARC_SSA_DEFINE(SP, 1);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
@@ -587,6 +743,7 @@ void sparc_local_lvalue(unsigned int no)
   PIKE_STPTR(SPARC_REG_I2, SPARC_REG_PIKE_SP,
 	     sparc_pike_sp_bias + OFFSETOF(svalue, u.lval), 1);
   sparc_pike_sp_bias += sizeof(struct svalue) * 2;
+  SPARC_SSA_DEFINE(SP, 2);
   /* sth %i0, [ %pike_sp , -sizeof(struct svalue) ] */
   SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP,
 	    sparc_pike_sp_bias - sizeof(struct svalue), 1);
@@ -711,6 +868,10 @@ static void low_ins_call(void *addr, int delay_ok, int i_flags)
     }
   }
 
+#ifdef PIKE_ENABLE_SSA
+  pikecode_ssa_barrier(&sparc_ssa, PIKE_SSA_CALL);
+  if (sparc_ssa_stats) sparc_stats.calls++;
+#endif
   ADD_CALL(addr, delay_ok);
 
 #if 1
@@ -718,12 +879,26 @@ static void low_ins_call(void *addr, int delay_ok, int i_flags)
   if (i_flags & (I_UPDATE_SP|I_UPDATE_M_SP|I_UPDATE_FP)) {
     if (i_flags & I_UPDATE_SP) {
       sparc_codegen_state &= ~SPARC_CODEGEN_SP_IS_SET;
+#ifdef PIKE_ENABLE_SSA
+      pikecode_ssa_clobber(&sparc_ssa, PIKE_SSA_SP);
+      sparc_join_unused &= ~SPARC_CODEGEN_SP_IS_SET;
+      sparc_sp_value = ++sparc_sp_next_value;
+      sparc_sp_depth = 0;
+#endif
     }
     if (i_flags & I_UPDATE_M_SP) {
       sparc_codegen_state &= ~SPARC_CODEGEN_MARK_SP_IS_SET;
+#ifdef PIKE_ENABLE_SSA
+      pikecode_ssa_clobber(&sparc_ssa, PIKE_SSA_MARK_SP);
+      sparc_join_unused &= ~SPARC_CODEGEN_MARK_SP_IS_SET;
+#endif
     }
     if (i_flags & I_UPDATE_FP) {
       sparc_codegen_state &= ~SPARC_CODEGEN_FP_IS_SET;
+#ifdef PIKE_ENABLE_SSA
+      pikecode_ssa_clobber(&sparc_ssa, PIKE_SSA_FP);
+      sparc_join_unused &= ~SPARC_CODEGEN_FP_IS_SET;
+#endif
     }
   }
 #else /* !1 */

@@ -41,6 +41,23 @@ extern ptrdiff_t sparc_last_pc;
 void sparc_flush_codegen_state(void);
 #define FLUSH_CODE_GENERATOR_STATE()	sparc_flush_codegen_state()
 
+#ifdef PIKE_ENABLE_SSA
+void sparc_start_function(int store_lines);
+void sparc_end_function(int store_lines);
+#define START_NEW_FUNCTION sparc_start_function
+#define END_FUNCTION sparc_end_function
+#define CODE_GENERATOR_STATE_SP SPARC_CODEGEN_SP_IS_SET
+int sparc_codegen_state_valid(void);
+unsigned int sparc_codegen_sp_value(void);
+INT32 sparc_codegen_sp_depth(void);
+void sparc_flush_codegen_state_keep(int keep);
+#define CODE_GENERATOR_STATE_VALID() sparc_codegen_state_valid()
+#define CODE_GENERATOR_SP_VALUE() sparc_codegen_sp_value()
+#define CODE_GENERATOR_SP_DEPTH() sparc_codegen_sp_depth()
+#define FLUSH_CODE_GENERATOR_STATE_KEEP(KEEP) \
+  sparc_flush_codegen_state_keep(KEEP)
+#endif
+
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
 #define ENTRY_PROLOGUE_SIZE	1
 
