@@ -178,6 +178,26 @@ test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n| 1 | 2 | 3 |\n"),
         "</tbody>\n"
         "</table>\n")
 
+dnl R()->split_string() used "c && c[0] || sizeof(subject)" to pick the
+dnl end of each field, which treated a match starting at offset 0 (an
+dnl empty leading cell) as "no more matches" and copied the rest of the
+dnl row, unsplit, into the first field.
+test_eq(Parser.Markdown.parse("| | b |\n|---|---|\n| 1 | 2 |\n"),
+        "<table>\n"
+        "<thead>\n"
+        "<tr>\n"
+        "<th></th>\n"
+        "<th>b</th>\n"
+        "</tr>\n"
+        "</thead>\n"
+        "<tbody>\n"
+        "<tr>\n"
+        "<td>1</td>\n"
+        "<td>2</td>\n"
+        "</tr>\n"
+        "</tbody>\n"
+        "</table>\n")
+
 dnl image() ignored its title argument and wrote the alt text into the
 dnl title attribute instead.
 test_eq(Parser.Markdown.parse("![a](/i.png \"Real Title\")\n"),

@@ -239,7 +239,7 @@ protected class R
 
     for (int i; i < sizeof(offsets); i++) {
       c    = offsets[i];
-      stop = c && c[0] || sizeof(subject);
+      stop = arrayp(c) ? c[0] : sizeof(subject);
       ret += ({ subject[start .. stop-1] });
       if (!c) break;
       start = c[1];
