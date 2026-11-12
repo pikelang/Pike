@@ -698,10 +698,10 @@ class Lexer
 
         mapping item = ([
           "type"   : "table",
-          "header" : REGX(" *\\| *")->split_string(REGX("^ *| *\\| *$")
-                                                   ->replace(cap[1], "")),
-          "align"  : REGX(" *\\| *")->split_string(REGX("^ *|\\| *$")
-                                                   ->replace(cap[2], "")),
+          "header" : REGX(" *(?<!\\\\)\\| *")->split_string(
+                       REGX("^ *| *\\| *$")->replace(cap[1], "")),
+          "align"  : REGX(" *(?<!\\\\)\\| *")->split_string(
+                       REGX("^ *|\\| *$")->replace(cap[2], "")),
           "cells"  : REGX("\\n$")->replace(cap[3], "") / "\n"
         ]);
 
@@ -721,7 +721,7 @@ class Lexer
         }
 
         for (int i; i < sizeof(item->cells); i++) {
-          item->cells[i] = REGX(" *\\| *")->split_string(item->cells[i]);
+          item->cells[i] = REGX(" *(?<!\\\\)\\| *")->split_string(item->cells[i]);
         }
 
         PUSH_TOKEN(item);
@@ -857,10 +857,10 @@ class Lexer
 
         mapping item = ([
           "type"   : "table",
-          "header" : REGX(" *\\| *")->split_string(REGX("^ *| *\\| *$")
-                                                   ->replace(cap[1], "")),
-          "align"  : REGX(" *\\| *")->split_string(REGX("^ *|\\| *$")
-                                                   ->replace(cap[2], "")),
+          "header" : REGX(" *(?<!\\\\)\\| *")->split_string(
+                       REGX("^ *| *\\| *$")->replace(cap[1], "")),
+          "align"  : REGX(" *(?<!\\\\)\\| *")->split_string(
+                       REGX("^ *|\\| *$")->replace(cap[2], "")),
           "cells"  : REGX("(?: *\\| *)?\\n$")->replace(cap[3], "") / "\n"
         ]);
 
@@ -881,7 +881,7 @@ class Lexer
 
         for (int i; i < sizeof(item->cells); i++) {
           item->cells[i] =
-            REGX(" *\\| *")->split_string(
+            REGX(" *(?<!\\\\)\\| *")->split_string(
               REGX("^ *\\| *| *\\| *$")->replace(item->cells[i], ""));
         }
 

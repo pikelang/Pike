@@ -198,6 +198,26 @@ test_eq(Parser.Markdown.parse("| | b |\n|---|---|\n| 1 | 2 |\n"),
         "</tbody>\n"
         "</table>\n")
 
+dnl Cell/header splitting didn't honour a backslash-escaped "\|", so a
+dnl cell containing one (eg. inside a code span) spilled into extra
+dnl columns instead of keeping the escaped pipe as literal content.
+test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n"
+                               "| `x\\|y` | 2 |\n"),
+        "<table>\n"
+        "<thead>\n"
+        "<tr>\n"
+        "<th>a</th>\n"
+        "<th>b</th>\n"
+        "</tr>\n"
+        "</thead>\n"
+        "<tbody>\n"
+        "<tr>\n"
+        "<td><code>x\\|y</code></td>\n"
+        "<td>2</td>\n"
+        "</tr>\n"
+        "</tbody>\n"
+        "</table>\n")
+
 dnl image() ignored its title argument and wrote the alt text into the
 dnl title attribute instead.
 test_eq(Parser.Markdown.parse("![a](/i.png \"Real Title\")\n"),
