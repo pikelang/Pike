@@ -100,6 +100,13 @@ static int ret_for_func = 0;
 static struct pikecode_ssa_state ssa_state;
 static int ssa_eager_stores = -1;
 static int ssa_no_fp_join = 0;
+static int ssa_no_sp_join = 0;
+static int ssa_sp_join_unused = 0;
+static unsigned int ssa_sp_value = 0;
+static unsigned int ssa_sp_next_value = 0;
+/* A known SP base plus a constant svalue offset. Keep base identifiers
+ * unique across cache resets so unrelated paths cannot compare equal. */
+static INT32 ssa_sp_depth = 0;
 static int ssa_report_stats = 0;
 static struct {
   unsigned long loads[PIKE_SSA_SLOT_COUNT];
@@ -108,6 +115,8 @@ static struct {
   unsigned long barriers[PIKE_SSA_BARRIER_COUNT];
   unsigned long code_bytes;
   unsigned long fp_joins;
+  unsigned long sp_joins;
+  unsigned long sp_join_loads_avoided;
 } ssa_stats;
 #else
 static int dirty_regs = 0;
@@ -121,6 +130,10 @@ struct label {
   int n_label_uses;
   ptrdiff_t addr;
   ptrdiff_t offset[MAX_LABEL_USES];
+#ifdef PIKE_ENABLE_SSA
+  unsigned int sp_value;
+  INT32 sp_depth;
+#endif
 };
 
 static void flush_dirty_regs(void);
@@ -133,6 +146,11 @@ static void label( struct label *l )
   int i;
 #ifdef PIKE_ENABLE_SSA
   amd64_ssa_barrier(PIKE_SSA_MERGE);
+  if (l->n_label_uses &&
+      (l->sp_value != ssa_sp_value || l->sp_depth != ssa_sp_depth)) {
+    ssa_sp_value = ++ssa_sp_next_value;
+    ssa_sp_depth = 0;
+  }
 #endif
   if (l->addr >= 0) Pike_fatal("Label reused.\n");
   for( i=0; i<l->n_label_uses; i++ )
@@ -972,6 +990,12 @@ static void call_rel_imm32( int addr )
   opcode( 0xe8 );
   id( rel );
   sp_reg = -1;
+#ifdef PIKE_ENABLE_SSA
+  ssa_sp_join_unused = 0;
+  ssa_sp_value = ++ssa_sp_next_value;
+  ssa_sp_depth = 0;
+  pikecode_ssa_clobber(&ssa_state, PIKE_SSA_SP);
+#endif
   return;
 }
 
@@ -1173,6 +1197,14 @@ static void jump_rel8( struct label *res, unsigned char op )
     return;
   }
 
+#ifdef PIKE_ENABLE_SSA
+  if (!res->n_label_uses) {
+    res->sp_value = ssa_sp_value;
+    res->sp_depth = ssa_sp_depth;
+  }
+  else if (res->sp_value != ssa_sp_value || res->sp_depth != ssa_sp_depth)
+    res->sp_value = 0;  /* Unknown merge; value numbers start at one. */
+#endif
   if( res->n_label_uses >= MAX_LABEL_USES )
     Pike_fatal( "Label used too many times\n" );
   res->offset[res->n_label_uses] = PIKE_PC;
@@ -1241,7 +1273,7 @@ static void amd64_ssa_report_stats(void)
           "SSA codegen: ip loads=%lu; sp loads=%lu defs=%lu stores=%lu; "
           "fp loads=%lu; mark loads=%lu defs=%lu stores=%lu; "
           "code bytes=%lu; calls=%lu branches=%lu merges=%lu; "
-          "fp joins=%lu; eager=%d\n",
+          "fp joins=%lu; sp joins=%lu loads avoided=%lu; eager=%d\n",
           ssa_stats.loads[PIKE_SSA_IP],
           ssa_stats.loads[PIKE_SSA_SP],
           ssa_stats.definitions[PIKE_SSA_SP],
@@ -1255,6 +1287,8 @@ static void amd64_ssa_report_stats(void)
           ssa_stats.barriers[PIKE_SSA_BRANCH],
           ssa_stats.barriers[PIKE_SSA_MERGE],
           ssa_stats.fp_joins,
+          ssa_stats.sp_joins,
+          ssa_stats.sp_join_loads_avoided,
           ssa_eager_stores);
 }
 #endif
@@ -1266,6 +1300,7 @@ void amd64_start_function(int store_lines )
   if (ssa_eager_stores < 0) {
     ssa_eager_stores = getenv("PIKE_SSA_EAGER_STORES") != NULL;
     ssa_no_fp_join = getenv("PIKE_SSA_NO_FP_JOIN") != NULL;
+    ssa_no_sp_join = getenv("PIKE_SSA_NO_SP_JOIN") != NULL;
     ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;
     if (ssa_report_stats) atexit(amd64_ssa_report_stats);
   }
@@ -1377,6 +1412,9 @@ void amd64_flush_code_generator_state(void)
 #ifdef PIKE_ENABLE_SSA
   amd64_ssa_barrier(PIKE_SSA_MERGE);
   pikecode_ssa_reset(&ssa_state);
+  ssa_sp_join_unused = 0;
+  ssa_sp_value = ++ssa_sp_next_value;
+  ssa_sp_depth = 0;
 #endif
   amd64_prev_stored_pc = -1;
   ret_for_func = 0;
@@ -1389,18 +1427,40 @@ void amd64_flush_code_generator_state(void)
 }
 
 #ifdef PIKE_ENABLE_SSA
-int amd64_fp_reg_valid(void)
+INT32 amd64_sp_depth(void)
 {
-  return fp_reg >= 0;
+  return ssa_sp_depth;
 }
 
-void amd64_flush_code_generator_state_keep_fp(int keep_fp)
+unsigned int amd64_sp_value(void)
 {
+  return ssa_sp_value;
+}
+
+int amd64_state_reg_valid(void)
+{
+  return ((fp_reg >= 0) ? AMD64_STATE_FP : 0) |
+    ((sp_reg >= 0) ? CODE_GENERATOR_STATE_SP : 0);
+}
+
+void amd64_flush_code_generator_state_keep(int keep)
+{
+  unsigned int sp_value = ssa_sp_value;
+  INT32 sp_depth = ssa_sp_depth;
   amd64_flush_code_generator_state();
-  if (keep_fp && !ssa_no_fp_join) {
+  if ((keep & AMD64_STATE_FP) && !ssa_no_fp_join) {
     fp_reg = PIKE_FP_REG;
     pikecode_ssa_merge_reg(&ssa_state, PIKE_SSA_FP);
     if (ssa_report_stats) ssa_stats.fp_joins++;
+  }
+  if ((keep & CODE_GENERATOR_STATE_SP) && !ssa_no_sp_join) {
+    /* All incoming edges carry the same materialized SP value. */
+    ssa_sp_value = sp_value;
+    ssa_sp_depth = sp_depth;
+    sp_reg = PIKE_SP_REG;
+    pikecode_ssa_merge_reg(&ssa_state, PIKE_SSA_SP);
+    ssa_sp_join_unused = 1;
+    if (ssa_report_stats) ssa_stats.sp_joins++;
   }
 }
 #endif
@@ -1463,6 +1523,14 @@ static void amd64_load_fp_reg(void)
 
 static void amd64_load_sp_reg(void)
 {
+#ifdef PIKE_ENABLE_SSA
+  if (ssa_sp_join_unused) {
+    if (sp_reg >= 0 && ssa_report_stats)
+      ssa_stats.sp_join_loads_avoided++;
+    /* Count the first use only; a retained but unused phi saves no load. */
+    ssa_sp_join_unused = 0;
+  }
+#endif
   if (sp_reg < 0) {
     mov_mem_reg(Pike_interpreter_reg,
                 OFFSETOF(Pike_interpreter_struct, stack_pointer),
@@ -1534,6 +1602,7 @@ static void amd64_add_sp( int num )
   amd64_load_sp_reg();
   add_reg_imm( sp_reg, num * sizeof(struct svalue));
 #ifdef PIKE_ENABLE_SSA
+  ssa_sp_depth += num;
   pikecode_ssa_define(&ssa_state, PIKE_SSA_SP);
   if (ssa_report_stats) ssa_stats.definitions[PIKE_SSA_SP]++;
   if (ssa_eager_stores) flush_dirty_regs();
@@ -1867,7 +1936,14 @@ static void sync_registers(int flags)
   flush_dirty_regs();
 #endif
 
-  if (flags & I_UPDATE_SP) sp_reg = P_REG_INVALID;
+  if (flags & I_UPDATE_SP) {
+    sp_reg = P_REG_INVALID;
+#ifdef PIKE_ENABLE_SSA
+    ssa_sp_join_unused = 0;
+    ssa_sp_value = ++ssa_sp_next_value;
+    ssa_sp_depth = 0;
+#endif
+  }
   if (flags & I_UPDATE_M_SP) mark_sp_reg = P_REG_INVALID;
   if (flags & I_UPDATE_FP) fp_reg = P_REG_INVALID;
 #ifdef PIKE_ENABLE_SSA

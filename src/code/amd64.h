@@ -46,11 +46,17 @@ void amd64_flush_code_generator_state(void);
 #define FLUSH_CODE_GENERATOR_STATE()	amd64_flush_code_generator_state()
 
 #ifdef PIKE_ENABLE_SSA
-int amd64_fp_reg_valid(void);
-void amd64_flush_code_generator_state_keep_fp(int keep_fp);
-#define CODE_GENERATOR_FP_VALID() amd64_fp_reg_valid()
-#define FLUSH_CODE_GENERATOR_STATE_KEEP_FP(KEEP) \
-  amd64_flush_code_generator_state_keep_fp(KEEP)
+#define AMD64_STATE_FP 1
+#define CODE_GENERATOR_STATE_SP 2
+INT32 amd64_sp_depth(void);
+#define CODE_GENERATOR_SP_DEPTH() amd64_sp_depth()
+unsigned int amd64_sp_value(void);
+#define CODE_GENERATOR_SP_VALUE() amd64_sp_value()
+int amd64_state_reg_valid(void);
+void amd64_flush_code_generator_state_keep(int keep);
+#define CODE_GENERATOR_STATE_VALID() amd64_state_reg_valid()
+#define FLUSH_CODE_GENERATOR_STATE_KEEP(KEEP) \
+  amd64_flush_code_generator_state_keep(KEEP)
 #endif
 
 int amd64_ins_f_jump(unsigned int op, int backward_jump);

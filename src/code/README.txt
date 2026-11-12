@@ -14,6 +14,14 @@ stores in the same binary. PIKE_SSA_STATS=1 prints aggregate counts of
 state loads, definitions, stores, and generated code bytes at process exit.
 PIKE_SSA_NO_FP_JOIN=1 disables frame-pointer register preservation at
 forward control-flow joins for a same-binary comparison.
+PIKE_SSA_NO_SP_JOIN=1 disables stack-pointer register preservation at
+forward joins. A register is retained only if all incoming edges and the
+fallthrough path have the same stack-pointer value and depth cached.
+The backend tracks constant stack adjustments relative to a known value;
+clobbers and ambiguous internal joins start a new value. Stores are still
+materialized before branches and joins. Backward and unknown edges require
+reloads. Statistics include retained SP joins
+and first uses that avoid a load.
 For example, run the same Pike program with PIKE_SSA_STATS=1 alone and with
 both variables set, then compare the reported store counts and code bytes.
 
