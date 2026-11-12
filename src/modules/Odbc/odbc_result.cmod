@@ -217,28 +217,25 @@ static void push_numeric(int UNUSED(i))
 {
   struct pike_string *data = Pike_sp[-1].u.string;
   SQL_NUMERIC_STRUCT *numeric = (SQL_NUMERIC_STRUCT *)data->str;
-  struct object *res;
-  MP_INT *mp;
+  int scale;
 
   if (data->len != sizeof(SQL_NUMERIC_STRUCT)) {
     Pike_error("Invalid numeric field length: %td\n", data->len);
   }
 
-  res = fast_clone_object(bignum_program);
-  Pike_sp--;
-  push_object(res);
-  mp = (MP_INT *)res->storage;
-  mpz_import(mp, SQL_MAX_NUMERIC_LEN, -1, 1, 0, 0, numeric->val);
+  scale = numeric->scale;
+  push_string(make_shared_binary_string((const char *)numeric->val,
+                                       SQL_MAX_NUMERIC_LEN));
+  push_int(-256);  /* Unsigned little-endian bytes. */
+  convert_stack_top_with_base_to_bignum();
   if (!numeric->sign) {
-    mpz_neg(mp, mp);
+    o_negate();
   }
-  if (numeric->scale) {
-    push_int(-numeric->scale);
-    free_string(data);
+  stack_pop_keep_top();
+  if (scale) {
+    push_int(-scale);
     apply_current(f_Odbc_TypedResult_scale_numeric_fun_num, 2);
-    return;
   }
-  free_string(data);
 }
 
 static void push_time(int UNUSED(i))
