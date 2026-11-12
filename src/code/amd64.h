@@ -46,6 +46,22 @@ void amd64_flush_code_generator_state(void);
 #define FLUSH_CODE_GENERATOR_STATE()	amd64_flush_code_generator_state()
 
 #ifdef PIKE_ENABLE_SSA
+/* Keep regions small so native layout and value graphs stay bounded. */
+#define CODE_GENERATOR_REGION_LIMIT 8
+struct p_instr_s;
+int amd64_integer_regions_enabled(void);
+int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available);
+#define CODE_GENERATOR_INTEGER_ENABLED() amd64_integer_regions_enabled()
+#define CODE_GENERATOR_INTEGER_RUN(CODE, N) amd64_integer_run(CODE, N)
+int amd64_ssa_regions_enabled(void);
+#define CODE_GENERATOR_REGIONS_ENABLED() amd64_ssa_regions_enabled()
+int amd64_ssa_region_opcode(unsigned int op);
+void amd64_ssa_region_begin(void);
+void amd64_ssa_region_end(void);
+#define CODE_GENERATOR_REGION_OPCODE(OP) amd64_ssa_region_opcode(OP)
+#define CODE_GENERATOR_REGION_BEGIN() amd64_ssa_region_begin()
+#define CODE_GENERATOR_REGION_END() amd64_ssa_region_end()
+
 #define AMD64_STATE_FP 1
 #define CODE_GENERATOR_STATE_SP 2
 INT32 amd64_sp_depth(void);

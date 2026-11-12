@@ -13,6 +13,7 @@ enum pikecode_ssa_slot {
   PIKE_SSA_SP,
   PIKE_SSA_FP,
   PIKE_SSA_MARK_SP,
+  PIKE_SSA_LOCALS,  /* Read-only base derived from the current frame. */
   PIKE_SSA_SLOT_COUNT
 };
 

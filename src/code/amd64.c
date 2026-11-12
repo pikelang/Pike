@@ -8,6 +8,7 @@
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "pike_compiler.h"
+#include "peep.h"
 
 /* These come from linux include files. */
 #ifdef REG_RBX
@@ -73,6 +74,7 @@ enum amd64_reg {P_REG_RAX = 0, P_REG_RBX = 3, P_REG_RCX = 1, P_REG_RDX = 2,
 #define PIKE_MARK_SP_REG	 P_REG_R12
 #define PIKE_SP_REG		     P_REG_R13
 #define PIKE_FP_REG		     P_REG_R14
+#define PIKE_LOCALS_REG       P_REG_R11
 #define Pike_interpreter_reg P_REG_R15
 
 #ifdef __NT__
@@ -101,6 +103,9 @@ static struct pikecode_ssa_state ssa_state;
 static int ssa_eager_stores = -1;
 static int ssa_no_fp_join = 0;
 static int ssa_no_sp_join = 0;
+static int ssa_no_locals_cache = 1;
+static int ssa_integer_regions = 0;
+static int ssa_locals_valid = 0;
 static int ssa_sp_join_unused = 0;
 static unsigned int ssa_sp_value = 0;
 static unsigned int ssa_sp_next_value = 0;
@@ -117,6 +122,13 @@ static struct {
   unsigned long fp_joins;
   unsigned long sp_joins;
   unsigned long sp_join_loads_avoided;
+  unsigned long locals_reuses;
+  unsigned long locals_repairs;
+  unsigned long locals_repairs_removed, locals_copies_removed;
+  unsigned long regions, regions_abandoned;
+  unsigned long region_bytes_removed, branches_shortened;
+  unsigned long integer_regions, integer_ops, integer_values;
+  unsigned long integer_loads_avoided, integer_stores_avoided;
 } ssa_stats;
 #else
 static int dirty_regs = 0;
@@ -130,22 +142,51 @@ struct label {
   int n_label_uses;
   ptrdiff_t addr;
   ptrdiff_t offset[MAX_LABEL_USES];
+  unsigned int wide_uses;
 #ifdef PIKE_ENABLE_SSA
   unsigned int sp_value;
   INT32 sp_depth;
+  int locals_valid;
+  unsigned int locals_value;
 #endif
 };
 
 static void flush_dirty_regs(void);
+static void amd64_local_address(INT32 local, enum amd64_reg dst);
+static void amd64_load_fp_reg(void);
 #ifdef PIKE_ENABLE_SSA
 static void amd64_ssa_barrier(enum pikecode_ssa_barrier_kind kind);
+#endif
+
+#ifdef PIKE_ENABLE_SSA
+#include "amd64_ssa.c"
 #endif
 
 static void label( struct label *l )
 {
   int i;
 #ifdef PIKE_ENABLE_SSA
+  int keep_locals;
+  if (!ssa_locals_valid && l->n_label_uses && l->locals_valid) {
+    /* Repair a clobbered fallthrough before the target. Incoming branches
+     * already have R11 valid and skip these loads. This keeps cold opcode
+     * fallback calls from forcing loads on the normal path. */
+    ptrdiff_t start;
+    amd64_load_fp_reg();
+    start = PIKE_PC;
+    amd64_local_address(0, PIKE_LOCALS_REG);
+    amd64_region_repair(start);
+    if (ssa_report_stats) ssa_stats.locals_repairs++;
+  }
+  keep_locals = ssa_locals_valid && l->n_label_uses && l->locals_valid;
   amd64_ssa_barrier(PIKE_SSA_MERGE);
+  l->locals_valid = keep_locals;
+  if (keep_locals) {
+    ssa_locals_valid = 1;
+    ssa_region.value = amd64_region_value(l->locals_value,
+                                         ssa_region.value, -1);
+    pikecode_ssa_merge_reg(&ssa_state, PIKE_SSA_LOCALS);
+  }
   if (l->n_label_uses &&
       (l->sp_value != ssa_sp_value || l->sp_depth != ssa_sp_depth)) {
     ssa_sp_value = ++ssa_sp_next_value;
@@ -155,10 +196,15 @@ static void label( struct label *l )
   if (l->addr >= 0) Pike_fatal("Label reused.\n");
   for( i=0; i<l->n_label_uses; i++ )
   {
-    int dist = PIKE_PC - (l->offset[i] + 1);
-    if( dist > 0x7f || dist < -0x80 )
-      Pike_fatal("Branch %d too far\n", dist);
-    Pike_compiler->new_program->program[l->offset[i]] = dist;
+    int wide = l->wide_uses & (1U << i);
+    int dist = PIKE_PC - (l->offset[i] + (wide ? 4 : 1));
+    if (wide)
+      upd_pointer(l->offset[i], dist);
+    else {
+      if (dist > 0x7f || dist < -0x80)
+        Pike_fatal("Branch %d too far\n", dist);
+      Pike_compiler->new_program->program[l->offset[i]] = dist;
+    }
   }
   l->n_label_uses = 0;
   l->addr = PIKE_PC;
@@ -1148,6 +1194,11 @@ static void add_reg_imm_reg( enum amd64_reg src, long imm32, enum amd64_reg dst 
 /* load code adress + imm to reg, always 32bit offset */
 static void mov_rip_imm_reg( int imm, enum amd64_reg reg )
 {
+#ifdef PIKE_ENABLE_SSA
+  struct amd64_region_node *node =
+    amd64_region_node(AMD64_REGION_PC, PIKE_PC, PIKE_PC + 7);
+  if (node) node->target = PIKE_PC + imm;
+#endif
   imm -= 7; /* The size of this instruction. */
 
   rex( 1, reg, 0, 0 );
@@ -1185,32 +1236,70 @@ static void add_imm_mem( int imm32, enum amd64_reg reg, int offset )
 }
 
 
-static void jump_rel8( struct label *res, unsigned char op )
+static void jump_label( struct label *res, unsigned char op )
 {
+  int wide = 0;
 #ifdef PIKE_ENABLE_SSA
+  ptrdiff_t start;
+  struct amd64_region_node *node;
   amd64_ssa_barrier(PIKE_SSA_BRANCH);
+  if (res->addr >= 0 && res->locals_valid && !ssa_locals_valid) {
+    /* A backward edge must satisfy the target's cache assumption. Only
+     * MOV instructions are emitted here, preserving the branch flags. */
+    amd64_local_address(0, PIKE_LOCALS_REG);
+    if (ssa_region.active) ssa_region.abandoned = 1;
+  }
+  /* Cache repairs can make forward opcode paths exceed a short branch. */
+  wide = ssa_region.active || (!ssa_no_locals_cache && ssa_no_regions);
 #endif
-  opcode( op );
+  if (res->addr >= 0) {
+    ptrdiff_t dist = res->addr - (PIKE_PC + 2);
+    wide = dist < -128 || dist > 127;
+  }
+#ifdef PIKE_ENABLE_SSA
+  start = PIKE_PC;
+  node = amd64_region_node(AMD64_REGION_BRANCH, start,
+                          start + (wide ? (op == 0xeb ? 5 : 6) : 2));
+  if (node) node->op = op;
+  /* The initial value graph is acyclic. Keep the original layout if a
+   * future audited opcode introduces a native loop. */
+  if (ssa_region.active && res->addr >= 0) ssa_region.abandoned = 1;
+#endif
+  if (wide) {
+    if (op == 0xeb) opcode(0xe9);
+    else {
+      opcode(0x0f);
+      opcode(op + 0x10);
+    }
+  } else opcode(op);
 
   if (res->addr >= 0) {
-    ib(res->addr - (PIKE_PC+1));
+    if (wide) id(res->addr - (PIKE_PC + 4));
+    else ib(res->addr - (PIKE_PC + 1));
     return;
   }
-
+  if (!res->n_label_uses) res->wide_uses = 0;
 #ifdef PIKE_ENABLE_SSA
   if (!res->n_label_uses) {
+    res->locals_valid = ssa_locals_valid;
+    res->locals_value = ssa_region.active ? ssa_region.value : 0;
     res->sp_value = ssa_sp_value;
     res->sp_depth = ssa_sp_depth;
+  } else {
+    res->locals_valid &= ssa_locals_valid;
+    res->locals_value = amd64_region_value(res->locals_value,
+                                          ssa_region.value, -1);
+    if (res->sp_value != ssa_sp_value || res->sp_depth != ssa_sp_depth)
+      res->sp_value = 0; /* Unknown merge; value numbers start at one. */
   }
-  else if (res->sp_value != ssa_sp_value || res->sp_depth != ssa_sp_depth)
-    res->sp_value = 0;  /* Unknown merge; value numbers start at one. */
 #endif
-  if( res->n_label_uses >= MAX_LABEL_USES )
-    Pike_fatal( "Label used too many times\n" );
+  if (res->n_label_uses >= MAX_LABEL_USES)
+    Pike_fatal("Label used too many times\n");
   res->offset[res->n_label_uses] = PIKE_PC;
+  if (wide) res->wide_uses |= 1U << res->n_label_uses;
   res->n_label_uses++;
-
-  ib(0);
+  if (wide) id(0);
+  else ib(0);
 }
 
 static int jnz_imm_rel32( int rel )
@@ -1241,19 +1330,19 @@ static int jz_imm_rel32( int rel )
 
 #define      jne(X) jnz(X)
 #define      je(X)  jz(X)
-static void jmp( struct label *l ) { return jump_rel8( l, 0xeb ); }
-static void jo( struct label *l )  { return jump_rel8( l, 0x70 ); }
-static void jno( struct label *l ) { return jump_rel8( l, 0x71 ); }
-static void jz( struct label *l )  { return jump_rel8( l, 0x74 ); }
-static void jnz( struct label *l ) { return jump_rel8( l, 0x75 ); }
-static void js( struct label *l )  { return jump_rel8( l, 0x78 ); }
-static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
-static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
-static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
+static void jmp( struct label *l ) { return jump_label( l, 0xeb ); }
+static void jo( struct label *l )  { return jump_label( l, 0x70 ); }
+static void jno( struct label *l ) { return jump_label( l, 0x71 ); }
+static void jz( struct label *l )  { return jump_label( l, 0x74 ); }
+static void jnz( struct label *l ) { return jump_label( l, 0x75 ); }
+static void js( struct label *l )  { return jump_label( l, 0x78 ); }
+static void jl( struct label *l )  { return jump_label( l, 0x7c ); }
+static void jge( struct label *l ) { return jump_label( l, 0x7d ); }
+static void jle( struct label *l ) { return jump_label( l, 0x7e ); }
 #if 0
-static void jc( struct label *l )  { return jump_rel8( l, 0x72 ); }
-static void jnc( struct label *l ) { return jump_rel8( l, 0x73 ); }
-static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
+static void jc( struct label *l )  { return jump_label( l, 0x72 ); }
+static void jnc( struct label *l ) { return jump_label( l, 0x73 ); }
+static void jg( struct label *l )  { return jump_label( l, 0x7f ); }
 #endif
 
 #define LABELS()  struct label label_A, label_B, label_C, label_D, label_E;label_A.addr = -1;label_A.n_label_uses = 0;label_B.addr = -1;label_B.n_label_uses = 0;label_C.addr = -1;label_C.n_label_uses = 0;label_D.addr = -1;label_D.n_label_uses = 0;label_E.addr=-1;label_E.n_label_uses=0;
@@ -1273,7 +1362,11 @@ static void amd64_ssa_report_stats(void)
           "SSA codegen: ip loads=%lu; sp loads=%lu defs=%lu stores=%lu; "
           "fp loads=%lu; mark loads=%lu defs=%lu stores=%lu; "
           "code bytes=%lu; calls=%lu branches=%lu merges=%lu; "
-          "fp joins=%lu; sp joins=%lu loads avoided=%lu; eager=%d\n",
+          "fp joins=%lu; sp joins=%lu loads avoided=%lu; "
+          "locals loads=%lu reused=%lu repairs=%lu removed=%lu copies removed=%lu; "
+          "regions=%lu abandoned=%lu bytes removed=%lu short branches=%lu; "
+          "integer regions=%lu ops=%lu values=%lu "
+          "loads avoided=%lu stores avoided=%lu; eager=%d\n",
           ssa_stats.loads[PIKE_SSA_IP],
           ssa_stats.loads[PIKE_SSA_SP],
           ssa_stats.definitions[PIKE_SSA_SP],
@@ -1289,6 +1382,20 @@ static void amd64_ssa_report_stats(void)
           ssa_stats.fp_joins,
           ssa_stats.sp_joins,
           ssa_stats.sp_join_loads_avoided,
+          ssa_stats.loads[PIKE_SSA_LOCALS],
+          ssa_stats.locals_reuses,
+          ssa_stats.locals_repairs,
+          ssa_stats.locals_repairs_removed,
+          ssa_stats.locals_copies_removed,
+          ssa_stats.regions,
+          ssa_stats.regions_abandoned,
+          ssa_stats.region_bytes_removed,
+          ssa_stats.branches_shortened,
+          ssa_stats.integer_regions,
+          ssa_stats.integer_ops,
+          ssa_stats.integer_values,
+          ssa_stats.integer_loads_avoided,
+          ssa_stats.integer_stores_avoided,
           ssa_eager_stores);
 }
 #endif
@@ -1297,10 +1404,18 @@ static void amd64_ssa_report_stats(void)
 void amd64_start_function(int store_lines )
 {
 #ifdef PIKE_ENABLE_SSA
+  ssa_region.active = 0;
   if (ssa_eager_stores < 0) {
     ssa_eager_stores = getenv("PIKE_SSA_EAGER_STORES") != NULL;
     ssa_no_fp_join = getenv("PIKE_SSA_NO_FP_JOIN") != NULL;
     ssa_no_sp_join = getenv("PIKE_SSA_NO_SP_JOIN") != NULL;
+    /* Keep the experiment opt-in until paired runtime measurements justify
+     * enabling it. NO_REGIONS restores the original eager cache emitter. */
+    ssa_no_regions = getenv("PIKE_SSA_NO_REGIONS") != NULL;
+    ssa_integer_regions = getenv("PIKE_SSA_INTEGER_REGIONS") != NULL &&
+      getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
+    ssa_no_locals_cache = getenv("PIKE_SSA_LOCALS_CACHE") == NULL ||
+      getenv("PIKE_SSA_NO_LOCALS_CACHE") != NULL;
     ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;
     if (ssa_report_stats) atexit(amd64_ssa_report_stats);
   }
@@ -1412,6 +1527,7 @@ void amd64_flush_code_generator_state(void)
 #ifdef PIKE_ENABLE_SSA
   amd64_ssa_barrier(PIKE_SSA_MERGE);
   pikecode_ssa_reset(&ssa_state);
+  ssa_locals_valid = 0;
   ssa_sp_join_unused = 0;
   ssa_sp_value = ++ssa_sp_next_value;
   ssa_sp_depth = 0;
@@ -1499,6 +1615,11 @@ static void amd64_ssa_barrier(enum pikecode_ssa_barrier_kind kind)
 {
   flush_dirty_regs();
   pikecode_ssa_barrier(&ssa_state, kind);
+  if (kind != PIKE_SSA_BRANCH) {
+    /* R11 is caller-saved, and incoming paths may not have loaded it. */
+    ssa_locals_valid = 0;
+    pikecode_ssa_clobber(&ssa_state, PIKE_SSA_LOCALS);
+  }
   if (ssa_report_stats) ssa_stats.barriers[kind]++;
 }
 #endif
@@ -1519,6 +1640,38 @@ static void amd64_load_fp_reg(void)
     if (ssa_report_stats) ssa_stats.loads[PIKE_SSA_FP]++;
 #endif
   }
+}
+
+/* Form a local address without changing the cached base. Values and tags
+ * remain in their canonical svalues; only the current frame's base is cached.
+ */
+static void amd64_local_address(INT32 local, enum amd64_reg dst)
+{
+  amd64_load_fp_reg();
+#ifdef PIKE_ENABLE_SSA
+  if (!ssa_no_locals_cache && (ssa_no_regions || ssa_region.active)) {
+    ptrdiff_t start = -1, load_end = -1;
+    if (!ssa_locals_valid) {
+      start = PIKE_PC;
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), PIKE_LOCALS_REG);
+      load_end = PIKE_PC;
+      pikecode_ssa_read(&ssa_state, PIKE_SSA_LOCALS);
+      ssa_locals_valid = 1;
+      ssa_region.value = 0;
+      if (ssa_report_stats) ssa_stats.loads[PIKE_SSA_LOCALS]++;
+    } else {
+      if (ssa_region.active) amd64_region_use(ssa_region.value);
+      if (ssa_report_stats) ssa_stats.locals_reuses++;
+    }
+    add_reg_imm_reg(PIKE_LOCALS_REG, local * sizeof(struct svalue), dst);
+    if (ssa_region.active && start >= 0 && !local && dst != PIKE_LOCALS_REG)
+      amd64_region_base(start, load_end, dst);
+    return;
+  }
+  if (ssa_report_stats) ssa_stats.loads[PIKE_SSA_LOCALS]++;
+#endif
+  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), dst);
+  add_reg_imm(dst, local * sizeof(struct svalue));
 }
 
 static void amd64_load_sp_reg(void)
@@ -1796,8 +1949,7 @@ void amd64_assign_local( int b )
 {
   amd64_load_fp_reg();
   amd64_load_sp_reg();
-  mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
-  add_reg_imm( P_REG_RBX, b*sizeof(struct svalue) );
+  amd64_local_address(b, P_REG_RBX);
   amd64_free_svalue(P_REG_RBX, 0);
   amd64_assign_svalue_no_free( P_REG_RBX, sp_reg, -1*sizeof(struct svalue));
 }
@@ -3583,8 +3735,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       amd64_load_sp_reg();
       amd64_load_fp_reg();
 
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,locals), P_REG_RDX);
-      add_reg_imm( P_REG_RDX, b*sizeof(struct svalue));
+      amd64_local_address(b, P_REG_RDX);
       mov_mem8_reg( P_REG_RDX, 0, P_REG_RAX );
       mov_mem8_reg( sp_reg, -1*sizeof(struct svalue), P_REG_RBX );
       shl_reg_imm( P_REG_RAX, 8 );
@@ -3993,8 +4144,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       amd64_load_fp_reg();
       amd64_load_sp_reg();
 
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,locals), ARG1_REG);
-      add_reg_imm( ARG1_REG, b*sizeof(struct svalue));
+      amd64_local_address(b, ARG1_REG);
       mov_sval_type( ARG1_REG, P_REG_RAX );
       /* type in RAX, svalue in ARG1 */
       cmp_reg32_imm( P_REG_RAX, PIKE_T_ARRAY );
@@ -4030,8 +4180,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       amd64_load_fp_reg();
       amd64_load_sp_reg();
 
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,locals), ARG1_REG);
-      add_reg_imm( ARG1_REG, b*sizeof(struct svalue));
+      amd64_local_address(b, ARG1_REG);
       mov_sval_type( ARG1_REG, P_REG_RAX );
       mov_mem_reg( ARG1_REG, OFFSETOF(svalue, u.string ), P_REG_RBX);
       /* type in RAX, svalue in ARG1 */
@@ -4083,8 +4232,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     amd64_load_sp_reg();
-    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RCX);
-    add_reg_imm(P_REG_RCX, b*sizeof(struct svalue));
+    amd64_local_address(b, P_REG_RCX);
     amd64_push_svaluep(P_REG_RCX);
     return;
 
@@ -4101,7 +4249,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     amd64_load_sp_reg();
-    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RAX);
+    amd64_local_address(0, P_REG_RAX);
     add_reg_imm_reg( sp_reg, -sizeof(struct svalue), P_REG_RCX );
 
 #if SIZEOF_LONG_DOUBLE != 16
@@ -4129,8 +4277,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_fp_reg();
-      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RCX);
-      add_reg_imm(P_REG_RCX, b*sizeof(struct svalue));
+      amd64_local_address(b, P_REG_RCX);
       mov_sval_type(P_REG_RCX, P_REG_RAX);
       cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
       jne(&label_A);
@@ -4163,8 +4310,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_fp_reg();
-      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RCX);
-      add_reg_imm(P_REG_RCX, b*sizeof(struct svalue));
+      amd64_local_address(b, P_REG_RCX);
       mov_sval_type(P_REG_RCX, P_REG_RAX);
       cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
       jne(&label_A);
@@ -4339,8 +4485,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_load_sp_reg();
 
     /* &frame->locals[b] */
-    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), P_REG_RAX);
-    add_reg_imm( P_REG_RAX, b*sizeof(struct svalue));
+    amd64_local_address(b, P_REG_RAX);
 
     mov_imm_mem( T_SVALUE_PTR,  sp_reg, OFFSETOF(svalue, tu.t.type));
     mov_reg_mem( P_REG_RAX, sp_reg, OFFSETOF(svalue,u.lval) );
@@ -4356,7 +4501,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     if (Pike_compiler->compiler_frame->generator_local != -1) {
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, save_sp), ARG1_REG);
     } else {
-      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+      amd64_local_address(0, ARG1_REG);
     }
     if (b) {
       add_reg_imm_reg(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
@@ -4402,8 +4547,7 @@ int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump)
     case F_BRANCH_IF_LOCAL:
       ins_debug_instr_prologue(op-F_OFFSET, a, 0);
       amd64_load_fp_reg();
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-      add_reg_imm( ARG1_REG, a*sizeof(struct svalue));
+      amd64_local_address(a, ARG1_REG);
       /* if( type == PIKE_T_INT )
            u.integer -> RAX
          else if( type == PIKE_T_OBJECT || type == PIKE_T_FUNCTION )
@@ -4462,8 +4606,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
-      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
-      add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
+      amd64_local_address(b, P_REG_RBX);
       if( c > 1 ) {
 	push(P_REG_RBP);
         sub_reg_imm(P_REG_RSP, 8);	/* Align on 16 bytes. */
@@ -4490,7 +4633,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,locals), P_REG_RDX);
+      amd64_local_address(0, P_REG_RDX);
 
       add_reg_imm_reg( P_REG_RDX, b*sizeof(struct svalue), P_REG_RBX);
       add_reg_imm_reg( P_REG_RDX, c*sizeof(struct svalue), P_REG_RCX);
@@ -4729,8 +4872,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-      add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
+      amd64_local_address(b, ARG1_REG);
 
       /* arg1 = dst
          arg2 = int
@@ -4788,8 +4930,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_fp_reg();
-      mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-      add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
+      amd64_local_address(b, ARG1_REG);
       add_reg_imm_reg( ARG1_REG,(c-b)*sizeof(struct svalue), ARG2_REG );
 
       /* arg1 = dst
@@ -4820,8 +4961,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_ASSIGN_LOCAL_NUMBER_AND_POP:
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
     amd64_load_fp_reg();
-    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-    add_reg_imm( ARG1_REG,b*sizeof(struct svalue) );
+    amd64_local_address(b, ARG1_REG);
     mov_reg_reg( ARG1_REG, P_REG_RBX );
     amd64_free_svalue(ARG1_REG, 0);
     mov_imm_mem(c, P_REG_RBX, OFFSETOF(svalue, u.integer));
@@ -4832,8 +4972,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     amd64_load_sp_reg();
-    mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG3_REG );
-    add_reg_imm( ARG3_REG, c*sizeof(struct svalue) );
+    amd64_local_address(c, ARG3_REG);
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame, current_object),    ARG1_REG);
     mov_mem_reg(fp_reg, OFFSETOF(pike_frame,context),            ARG2_REG);
     mov_mem16_reg(ARG2_REG, OFFSETOF(inherit, identifier_level), ARG2_REG);
@@ -4882,8 +5021,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     if( b != c )
     {
         amd64_load_fp_reg();
-        mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX );
-        add_reg_imm( P_REG_RBX, b*sizeof(struct svalue) );
+        amd64_local_address(b, P_REG_RBX);
         /* RBX points to dst. */
         amd64_free_svalue( P_REG_RBX, 0 );
         /* assign rbx[0] = rbx[c-b] */
@@ -4899,8 +5037,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
     amd64_load_fp_reg();
     amd64_load_sp_reg();
-    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_R8);
-    add_reg_imm( P_REG_R8, b*sizeof(struct svalue) );
+    amd64_local_address(b, P_REG_R8);
     amd64_push_svaluep(P_REG_R8);
     add_reg_imm( P_REG_R8, (c-b)*sizeof(struct svalue) );
     amd64_push_svaluep(P_REG_R8);
@@ -4917,8 +5054,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       amd64_load_sp_reg();
-      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-      add_reg_imm(ARG1_REG, b*sizeof(struct svalue));
+      amd64_local_address(b, ARG1_REG);
       jmp(&label_A);
       LABEL_B;
       amd64_push_int(0, c);
@@ -5774,3 +5910,7 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
   fprintf(stderr, "%s", buf.s->str);
   free_string_builder(&buf);
 }
+
+#ifdef PIKE_ENABLE_SSA
+#include "amd64_integer.c"
+#endif

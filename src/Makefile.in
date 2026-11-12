@@ -1604,6 +1604,8 @@ $(SRCDIR)/pikecode.h: \
 $(SRCDIR)/pikecode.c: \
   $(SRCDIR)/code/ia32.c \
   $(SRCDIR)/code/amd64.c \
+  $(SRCDIR)/code/amd64_ssa.c \
+  $(SRCDIR)/code/amd64_integer.c \
   $(SRCDIR)/code/sparc.c \
   $(SRCDIR)/code/ppc32.c \
   $(SRCDIR)/code/ppc64.c \

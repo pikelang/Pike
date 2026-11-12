@@ -217,6 +217,11 @@ INT32 assemble(int store_linenumbers)
   size_t state_label_count;
 #endif
   ptrdiff_t e, length;
+#ifdef CODE_GENERATOR_REGION_OPCODE
+  ptrdiff_t region_left = 0;
+  int use_regions;
+  int use_integer;
+#endif
   p_instr *c;
   struct pike_string *triples = NULL;
 #ifdef PIKE_DEBUG
@@ -536,6 +541,17 @@ INT32 assemble(int store_linenumbers)
   START_NEW_FUNCTION(store_linenumbers);
 #endif
 
+#ifdef CODE_GENERATOR_REGION_OPCODE
+  use_integer = CODE_GENERATOR_INTEGER_ENABLED() &&
+    !(lex->pragmas & ID_DISASSEMBLE);
+  use_regions = CODE_GENERATOR_REGIONS_ENABLED() &&
+    !(lex->pragmas & ID_DISASSEMBLE);
+#ifdef PIKE_DEBUG
+  use_regions = use_regions && !a_flag && !d_flag;
+  use_integer = use_integer && !a_flag && !d_flag;
+#endif
+#endif
+
 #ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
   while( ( (((INT32) PIKE_PC)+4) & (ALIGN_PIKE_JUMPS-1)))
     ins_byte(0);
@@ -612,6 +628,34 @@ INT32 assemble(int store_linenumbers)
       }
 #endif
     }
+
+#ifdef CODE_GENERATOR_REGION_OPCODE
+    if (use_integer && !region_left) {
+      int consumed = CODE_GENERATOR_INTEGER_RUN(c, length - e);
+      if (consumed) {
+#ifdef PIKE_DEBUG
+        if (store_linenumbers) {
+          int i;
+          for (i = 1; i < consumed; i++) ADD_COMPILED(c[i].opcode);
+        }
+#endif
+        c += consumed;
+        e += consumed - 1;
+        continue;
+      }
+    }
+    if (use_regions && !region_left) {
+      /* Local-only native regions cannot move a published jump target,
+       * line entry, or variable debug directive. */
+      while (region_left < CODE_GENERATOR_REGION_LIMIT &&
+             e + region_left < length &&
+             c[region_left].line == c->line &&
+             c[region_left].file == c->file &&
+             CODE_GENERATOR_REGION_OPCODE(c[region_left].opcode))
+        region_left++;
+      if (region_left) CODE_GENERATOR_REGION_BEGIN();
+    }
+#endif
 
     switch(c->opcode)
     {
@@ -821,6 +865,10 @@ INT32 assemble(int store_linenumbers)
 #endif
       }
     }
+
+#ifdef CODE_GENERATOR_REGION_OPCODE
+    if (region_left && !--region_left) CODE_GENERATOR_REGION_END();
+#endif
 
 #ifdef CODE_GENERATOR_STATE_VALID
     /* Record the state at each emitted jump to a forward label. */

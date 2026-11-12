@@ -25,6 +25,64 @@ and first uses that avoid a load.
 For example, run the same Pike program with PIKE_SSA_STATS=1 alone and with
 both variables set, then compare the reported store counts and code bytes.
 
+PIKE_SSA_LOCALS_CACHE=1 enables an experimental read-only cache of
+frame->locals in caller-saved R11 on amd64. PIKE_SSA_NO_LOCALS_CACHE=1
+forces it off for paired measurements. Values and tags stay in canonical
+svalues, and calls invalidate the cache.
+
+The amd64 SSA region pass buffers up to eight audited local/constant/stack
+opcodes on one source line. It stops at labels, line changes, local debug
+directives, and unsupported opcodes. Debug tracing and disassembly use the
+ordinary emitter. The native buffer retains opaque instruction spans plus
+nodes for locals materializations, branches, and PC-relative LEAs. A small
+value graph records the dependencies of locals uses through internal joins.
+Only repairs reached by a use survive lowering. If a first access at offset
+zero has no later cache use, its load is retargeted directly to the address
+register, removing the copy from R11. Frame-pointer loads are kept because
+other instructions may use them independently of the locals cache.
+
+After dropping dead materializations, the pass repeatedly shortens internal
+branches until the layout stops changing. It then compacts the buffer and
+fixes branch displacements and PC-relative LEAs. Every region ends with the
+locals cache invalid, so a discarded terminal repair cannot affect later
+code. Native back edges and exhausted node/value limits retain the original
+layout. No line records or externally referenced jump offsets move.
+
+PIKE_SSA_NO_REGIONS=1 with PIKE_SSA_LOCALS_CACHE=1 restores the earlier
+unbuffered cache experiment for comparison. That emitter repairs internal
+joins eagerly and uses wide forward branches. Statistics include retained
+and removed repairs, removed copies, shortened branches, region counts,
+and bytes removed by layout. The locals cache remains disabled by default
+until repeated runtime measurements justify enabling it. This is a bounded
+materialization/layout IR, not SSA for individual Pike local values.
+
+PIKE_SSA_INTEGER_REGIONS=1 enables a separate integer value pass on amd64
+with 64-bit Pike integers. PIKE_SSA_NO_INTEGER_REGIONS=1 forces it off.
+It is independent of the locals-cache flags and remains opt-in. Before
+ordinary region emission, it recognizes up to eight additions/increments
+using at most three locals on one source line. Supported units include
+local updates and local/stack/add/assignment sequences that leave the Pike
+stack at its original depth. Labels, debug directives, and unsupported
+operations end a run. Tracing and disassembly use the ordinary emitter.
+
+The pass assigns SSA versions to integer loads and additions and coalesces
+each local's versions into R8, R9, or R10. Each input local is guarded once.
+Results are computed in RAX before replacing the current version, and only
+final dirty locals are stored on the fast path. An overflow exit commits
+completed units and resumes the remaining source opcodes through their C
+implementations. A multi-step unit saves its input in RDX so it can restore
+that version and replay the unit from a balanced Pike stack. No fast-path
+operation calls C or exposes an uncommitted value to a callback. Source
+locals that were only read retain their original subtype tags.
+
+Integer statistics count regions, arithmetic operations, SSA values, reused
+logical operand reads, and deferred local writes. The latter two are IR
+counts, not hardware load/store counts. Use perf and repeated runtime tests
+for performance claims. Tools.Shoot.AdjacentArithmetics exercises adjacent
+updates while masking results back into the native integer range. For a
+paired comparison, run -x benchmark --json -s1 with
+-t'Adjacent arithmetics (locals)' with the integer flag unset and set.
+
 One set of these paired files is included by the selection code
 in ../pikecode.[ch]. The selection code is also present in
 ../program.h (for PIKE_OPCODE_T).
