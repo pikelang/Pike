@@ -2393,7 +2393,7 @@ test_any_equal([[
                              mixed direct, mixed inherited) {
     if (name != "\0begin" && name != "\0end") return 0;
     if (value != o || t != _typeof(o) ||
-        !equal(direct, (< "derived" >)) || !undefinedp(inherited))
+        !equal(direct, ({ "derived" })) || !undefinedp(inherited))
       error("Invalid object boundary.\n");
     return 1;
   };
@@ -2403,17 +2403,17 @@ test_any_equal([[
       if (boundary(value, name, t, direct, inherited)) return;
       seen[name] = ({ value,
         equal(direct, name == "plain" ? UNDEFINED :
-                       (< name == "value" ? "field" : "secret" >)),
-        equal(inherited, (< "derived", "base", "inherited" >)) });
+                       ({ name == "value" ? "field" : "secret" })),
+        equal(inherited, ({ "derived", "base", "inherited" })) });
     });
   Serializer.deserialize(o,
     lambda(mixed setter, string name, mixed t, mixed direct, mixed inherited) {
       events += ({ name });
       if (boundary(setter, name, t, direct, inherited)) return;
       seen[name] += ({ equal(direct, name == "plain" ? UNDEFINED :
-                                      (< name == "value" ? "field" : "secret" >)),
+                                      ({ name == "value" ? "field" : "secret" })),
                        equal(inherited,
-                             (< "derived", "base", "inherited" >)) });
+                             ({ "derived", "base", "inherited" })) });
       setter(name == "value" ? 13 : name == "secret" ? 14 : 15);
     });
   return ({ seen, o->value, o->get_secret(), o->plain, events });
@@ -2498,8 +2498,8 @@ test_any_equal([[
   object o = Record();
   Serializer.serialize(o, lambda(mixed value, string name, mixed t,
                                  mixed direct, mixed inherited) {
-    if (name == "value" && (!equal(direct, (< "field" >)) ||
-                           !equal(inherited, (< "object" >))))
+    if (name == "value" && (!equal(direct, ({ "field" })) ||
+                           !equal(inherited, ({ "object" }))))
       error("Hook lost annotations.\n");
   });
   Serializer.deserialize(o, lambda(mixed setter, string name, mixed t,
@@ -2583,13 +2583,35 @@ test_any_equal([[
       names += ({ name });
       if (name == "value") {
         if (value != 3 || !undefinedp(direct) ||
-            !equal(inherited, (< "base" >))) error("Invalid field.\n");
+            !equal(inherited, ({ "base" }))) error("Invalid field.\n");
       } else if (value != context || t != _typeof(context) ||
-                 !equal(direct, (< "base" >)) || !undefinedp(inherited)) {
+                 !equal(direct, ({ "base" })) || !undefinedp(inherited)) {
         error("Invalid inherited boundary.\n");
       }
     });
   return names;
 ]], ({ "\0begin", "value", "\0end" }))
+
+test_any_equal([[
+  class Leaf {}
+  class Base { @"inner": inherit Leaf; }
+  class Empty {}
+  class Derived {
+    @"outer": inherit Base;
+    inherit Empty;
+  }
+  array bases = Program.inherit_list(Derived);
+  array annotations = Program.inherit_annotations(Derived);
+  if (sizeof(bases) != 2 || sizeof(annotations) != 2) return 0;
+  for (int i = 0; i < sizeof(bases); i++) {
+    if (bases[i] == Base) {
+      if (!equal(annotations[i], ({ "outer" }))) return 0;
+    } else if (bases[i] == Empty) {
+      if (annotations[i]) return 0;
+    } else return 0;
+  }
+  return equal(Program.inherit_annotations(Base), ({ ({ "inner" }) })) &&
+         !sizeof(Program.inherit_annotations(Leaf));
+]], 1)
 
 END_MARKER

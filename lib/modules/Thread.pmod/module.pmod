@@ -34,6 +34,19 @@ constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
 constant THREAD_EXITED = __builtin.THREAD_EXITED;
 constant THREAD_ABORTED = __builtin.THREAD_ABORTED;
 
+//! Recognition constant for interrupting threads blocked in I/O.
+//!
+//! If nonzero, the thread implementation can send a signal to wake a
+//! thread blocked in an interruptible system call. This allows
+//! @[Thread()->interrupt()] and @[Thread()->kill()] to take effect without
+//! waiting for the I/O to complete. It does not guarantee that every
+//! system call can be interrupted.
+//!
+//! If zero, interrupts are handled when the thread resumes executing
+//! Pike code.
+constant THREAD_SUPPORTS_IO_INTERRUPTS =
+  __builtin.THREAD_SUPPORTS_IO_INTERRUPTS;
+
 #if constant(__builtin.MUTEX_SUPPORTS_SHARED_LOCKS)
 //! Recognition constant for support of shared locks.
 //!

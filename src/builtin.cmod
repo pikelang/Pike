@@ -6616,7 +6616,7 @@ PIKECLASS Serializable
     push_object_type(1, p->id);
     push_type_value(pop_unfinished_type());
     if (p->inherits[0].annotations) {
-      ref_push_multiset(p->inherits[0].annotations);
+      push_array(copy_array(p->inherits[0].annotations));
     } else {
       push_undefined();
     }
@@ -6670,13 +6670,17 @@ PIKECLASS Serializable
       ref_push_type_value(id->type);
       if ((ref->identifier_offset < PROG_FROM_PTR(p, ref)->num_annotations) &&
           PROG_FROM_PTR(p, ref)->annotations[ref->identifier_offset]) {
-        ref_push_multiset(
-          PROG_FROM_PTR(p, ref)->annotations[ref->identifier_offset]);
+        push_array(copy_array(
+          PROG_FROM_PTR(p, ref)->annotations[ref->identifier_offset]));
       } else {
         push_undefined();
       }
       if (inherit_annotations) {
-        push_svalue(ITEM(inherit_annotations) + ref->inherit_offset);
+        struct svalue *annotations =
+          ITEM(inherit_annotations) + ref->inherit_offset;
+        if (TYPEOF(*annotations) == PIKE_T_ARRAY)
+          push_array(copy_array(annotations->u.array));
+        else push_undefined();
       } else {
         push_undefined();
       }
@@ -6694,12 +6698,12 @@ PIKECLASS Serializable
 
   /*! @decl protected void _serialize_variable( @
    *!			function(mixed, string, type, @
-   *!                            multiset|zero, multiset|zero:void) serializer, @
+   *!                            array|zero, array|zero:void) serializer, @
    *!			mixed value, @
    *!			string symbol, @
    *!			type symbol_type, @
-   *!			multiset|zero symbol_annotations, @
-   *!                         multiset|zero inherited_annotations)
+   *!			array|zero symbol_annotations, @
+   *!                         array|zero inherited_annotations)
    *!
    *!   Default serialization function for variables.
    *!
@@ -6733,12 +6737,12 @@ PIKECLASS Serializable
    *!   @[_serialize()], @[_deserialize_variable()]
    */
   PIKEFUN void _serialize_variable(function(mixed, string, type,
-                                   multiset|int(0..0),
-                                   multiset|int(0..0):void)
+                                   array|int(0..0),
+                                   array|int(0..0):void)
                                    serializer, mixed value,
                                    string symbol, type symbol_type,
-                                   multiset|int(0..0) symbol_annotations,
-                                   multiset|int(0..0) inherited_annotations)
+                                   array|int(0..0) symbol_annotations,
+                                   array|int(0..0) inherited_annotations)
     flags ID_PROTECTED;
   {
     f_call_function(args);
@@ -6746,7 +6750,7 @@ PIKECLASS Serializable
 
   /*! @decl protected void _serialize(object o, @
    *!			function(mixed, string, type, @
-   *!                            multiset|zero, multiset|zero:void) serializer)
+   *!                            array|zero, array|zero:void) serializer)
    *!
    *!   Dispatch function for serialization.
    *!
@@ -6795,8 +6799,8 @@ PIKECLASS Serializable
    */
   PIKEFUN void _serialize(object o,
                           function(mixed, string, type,
-                                   multiset|int(0..0),
-                                   multiset|int(0..0):void) serializer)
+                                   array|int(0..0),
+                                   array|int(0..0):void) serializer)
     flags ID_PROTECTED;
   {
     if (o != Pike_fp->current_object) {
@@ -6820,12 +6824,12 @@ PIKECLASS Serializable
 
   /*! @decl protected void _deserialize_variable( @
    *!			function(mixed, string, type, @
-   *!                            multiset|zero, multiset|zero: void) deserializer, @
+   *!                            array|zero, array|zero: void) deserializer, @
    *!			function(mixed:void) setter, @
    *!			string symbol, @
    *!			type symbol_type, @
-   *!			multiset|zero symbol_annotations, @
-   *!                   multiset|zero inherited_annotations, @
+   *!			array|zero symbol_annotations, @
+   *!                   array|zero inherited_annotations, @
    *!                   int|void recurse)
    *!
    *!   Default deserialization function for variables.
@@ -6893,13 +6897,13 @@ PIKECLASS Serializable
    *!   @[_deserialize()], @[_serialize_variable()], @[Builtin.Setter]
    */
   PIKEFUN void _deserialize_variable(function(mixed, string, type,
-                                   multiset|int(0..0),
-                                   multiset|int(0..0):void)
+                                   array|int(0..0),
+                                   array|int(0..0):void)
                                      deserializer, function(mixed:void) setter,
                                      string symbol,
                                      type symbol_type,
-                                     multiset|int(0..0) symbol_annotations,
-                                     multiset|int(0..0) inherited_annotations,
+                                     array|int(0..0) symbol_annotations,
+                                     array|int(0..0) inherited_annotations,
                                      int|void recurse)
     flags ID_PROTECTED;
   {
@@ -6924,7 +6928,7 @@ PIKECLASS Serializable
 
   /*! @decl protected void _deserialize(object o, @
    *!		function(mixed, string, type, @
-   *!		         multiset|zero, multiset|zero: void) deserializer, @
+   *!		         array|zero, array|zero: void) deserializer, @
    *!                                   int|void recurse)
    *!
    *!   Dispatch function for deserialization.
@@ -6977,8 +6981,8 @@ PIKECLASS Serializable
    */
   PIKEFUN void _deserialize(object o,
                             function(mixed, string, type,
-                                   multiset|int(0..0),
-                                   multiset|int(0..0):void) deserializer,
+                                   array|int(0..0),
+                                   array|int(0..0):void) deserializer,
                             int|void recurse)
     flags ID_PROTECTED;
   {
@@ -6995,7 +6999,7 @@ PIKECLASS Serializable
 
 /*! @decl void serialize(object o, @
  *!                      function(mixed, string, type, @
- *!                               multiset|zero, multiset|zero:void) serializer)
+ *!                               array|zero, array|zero:void) serializer)
  *!
  *!   Call @[lfun::_serialize()] in @[o].
  *!
@@ -7005,8 +7009,8 @@ PIKECLASS Serializable
  */
 PIKEFUN void serialize(object o,
                        function(mixed, string, type,
-                                   multiset|int(0..0),
-                                   multiset|int(0..0):void) serializer)
+                                   array|int(0..0),
+                                   array|int(0..0):void) serializer)
 {
   struct inherit *inh;
   struct program *p;
@@ -7024,8 +7028,8 @@ PIKEFUN void serialize(object o,
 
 /*! @decl void deserialize(object o, @
  *!                        function(mixed, string, type, @
- *!                                 multiset|zero, @
- *!                                 multiset|zero:void) deserializer, @
+ *!                                 array|zero, @
+ *!                                 array|zero:void) deserializer, @
  *!                        int|void recurse)
  *!
  *!   Call @[lfun::_deserialize()] in @[o].
@@ -7039,8 +7043,8 @@ PIKEFUN void serialize(object o,
  */
 PIKEFUN void deserialize(object o,
                          function(mixed, string, type,
-                                   multiset|int(0..0),
-                                   multiset|int(0..0):void) deserializer,
+                                   array|int(0..0),
+                                   array|int(0..0):void) deserializer,
                          int|void recurse)
 {
   struct inherit *inh;

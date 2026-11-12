@@ -545,6 +545,55 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
     </subsection>
   </section>
 
+  <section title="Annotations">
+    <p>An annotation attaches a constant value to a declaration. Write
+    <tt>@</tt>, the value, and a colon before the declaration's modifiers.
+    Several annotations can precede the same declaration:</p>
+
+    <code>
+@"first": @"second": @"first": int value;
+    </code>
+
+    <p>In Pike 9.0, annotations are stored and returned as arrays in
+    declaration order. Repeated values remain separate entries: the
+    variable above has <expr>({ "first", "second", "first" })</expr> as
+    its annotations. Annotations do not need to be unique, and are not
+    sorted by their values. Earlier implementations used multisets.</p>
+
+    <p>Annotations can also appear on inherit declarations. A standalone
+    annotation followed by a semicolon attaches to the enclosing class.
+    Objects inheriting <ref>Pike.Annotation</ref> can implement compiler
+    callbacks; the standard <ref>Pike.Annotations</ref> module provides
+    annotations such as <ref>Pike.Annotations.Implements</ref>,
+    <ref>Pike.Annotations.Override</ref>, and
+    <ref>Pike.Annotations.Inherited</ref>.</p>
+
+    <subsection title="Inspecting annotations">
+      <p><ref>annotations</ref> returns one annotation array or zero per
+      symbol, aligned with <ref>indices</ref>.
+      <ref>Program.annotations</ref> returns class annotations.
+      <ref>Program.inherit_annotations</ref> returns one array or zero per
+      direct inherit, aligned with <ref>Program.inherit_list</ref>. Use the
+      latter pair when each inherit must remain a separate occurrence.</p>
+
+      <p>With recursive annotation collection enabled, enclosing inherit
+      annotations precede annotations from deeper contexts, which precede
+      the symbol's own annotations. This combined array does not encode
+      the boundaries between inherit segments. Returned metadata arrays
+      can be modified without changing the compiled program's annotation
+      arrays; annotation objects themselves are shared.</p>
+
+      <p><ref>Serializer.serialize</ref> and
+      <ref>Serializer.deserialize</ref> callbacks receive the symbol's own
+      annotations and its effective inherit annotations as separate fourth
+      and fifth arguments. Each is an array or zero. The reserved field
+      names <expr>"\0begin"</expr> and <expr>"\0end"</expr> identify
+      object boundaries. The Pike 8.0 compatibility API retains its
+      three-argument field callbacks.</p>
+    </subsection>
+
+  </section>
+
   <section title="Type attributes">
     <p>Attributes are markers that modify the type-checker behavior for
     a type. They can either be declared directly on a type, or after

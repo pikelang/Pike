@@ -1109,4 +1109,58 @@ test_any( [[
   return 0;
 ]], 0)
 
+cond([[Thread["THREAD_SUPPORTS_IO_INTERRUPTS"]]], [[
+test_any([[
+  class ReceivingFile {
+    inherit Stdio.File;
+    void receive_fd(object fd) { fd->close(); }
+  };
+  int operations = 5;
+#if constant(_Stdio.__HAVE_SEND_FD__)
+  operations = 8;
+#endif
+  foreach (({ 0, 1 }), int kill) {
+    for (int operation = 0; operation < operations; operation++) {
+      Stdio.File reader = Stdio.File();
+      Stdio.File writer;
+#if constant(_Stdio.__HAVE_SEND_FD__)
+      if (operation >= 5) {
+        reader = ReceivingFile();
+        writer = reader->pipe(Stdio.PROP_IPC | Stdio.PROP_SEND_FD);
+      } else
+#endif
+        writer = reader->pipe();
+      Thread.Queue ready = Thread.Queue();
+      Thread.Thread worker = Thread.Thread(lambda() {
+        mixed failure = catch {
+          ready->write(1);
+          switch (operation % 5) {
+          case 0: reader->read(1); break;
+          case 1: reader->read(); break;
+          case 2: reader->read(1000000); break;
+          case 3: writer->write("x" * 1000000); break;
+          case 4: writer->write(({ "x" * 1000000,
+                                   "y" * 1000000 })); break;
+          }
+        };
+        return !!failure;
+      });
+      ready->read();
+      sleep(0.05);
+      if (kill) worker->kill();
+      else worker->interrupt();
+      mixed result;
+      mixed failed = catch { result = worker->wait(); };
+      // Pike 9.0 rethrows a killed thread's result from wait().
+      if (kill) {
+        if (failed && failed != -1) throw(failed);
+      } else if (failed || result != 1) return operation + 1;
+      reader->close();
+      writer->close();
+    }
+  }
+  return 0;
+]], 0)
+]])
+
 END_MARKER
