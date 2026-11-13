@@ -83,6 +83,10 @@ o Compiler
   variable PIKE_SSA_NO_INTEGER_STACK=1 to select
   the earlier balanced-unit planner for comparisons.
 
+  Successful integer-region exits can also publish live stack results for
+  subsequent ordinary opcodes. Set PIKE_SSA_NO_INTEGER_STACK_EXITS=1 to
+  require successful exits to return to their entry stack depth.
+
 
 Deprecated symbols and modules
 ------------------------------

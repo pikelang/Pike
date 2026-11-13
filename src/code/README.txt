@@ -51,22 +51,27 @@ before local commits so an original UNDEFINED subtype survives even if
 its local has been updated. The slow-path merge clears cached machine
 state before each possible entry.
 
-The first stack-aware implementation still requires each complete region
-to finish at its entry stack depth. It stops at the existing
-source/debug boundaries and does not carry values across calls or
-labels. Bare input assignments that need parallel subtype-tag moves use
-the ordinary path. Native encoding and register mappings remain
-backend-specific.
+Successful exits may leave up to two live values above the entry stack
+pointer. The final snapshot publishes those values, their tags, the
+stack pointer, and dirty locals before the next ordinary opcode. Both
+fast and replayed paths leave machine caches empty at their merge. Set
+PIKE_SSA_NO_INTEGER_STACK_EXITS=1 to require the original entry stack
+depth at successful exits while retaining stack-aware overflow exits.
+
+Regions still stop at source/debug boundaries and do not carry registers
+across calls or labels. Bare input assignments that need parallel
+subtype-tag moves use the ordinary path. Native encoding and register
+mappings remain backend-specific.
 
 Integer statistics count regions, arithmetic operations, SSA values,
-reused logical operand reads, deferred local writes, and stack-aware
-regions. Reused operand reads and deferred writes are IR counts, not
-hardware load/store counts. Use perf and repeated runtime tests for
-performance claims. Tools.Shoot.AdjacentArithmetics exercises adjacent
-updates while masking results back into the native integer range. For a
-paired comparison, run -x benchmark --json -s1 with
--t'Adjacent arithmetics (locals)' with PIKE_SSA_NO_INTEGER_REGIONS unset
-and set.
+reused logical operand reads, deferred local writes, stack-aware
+regions, and successful exits with live stack values. Reused operand
+reads and deferred writes are IR counts, not hardware load/store counts.
+Use perf and repeated runtime tests for performance claims.
+Tools.Shoot.AdjacentArithmetics exercises adjacent updates while masking
+results back into the native integer range. For a paired comparison, run
+-x benchmark --json -s1 with -t'Adjacent arithmetics (locals)' with
+PIKE_SSA_NO_INTEGER_REGIONS unset and set.
 
 One set of these paired files is included by the selection code
 in ../pikecode.[ch]. The selection code is also present in

@@ -429,6 +429,53 @@ test_any([[
   return 1;
 ]], 1)
 
+// Successful integer-region exits publish live results before ordinary
+// arithmetic, aggregate construction, and conditional branches consume them.
+test_any([[
+  int sum(int a, int b) { a += b; a += 2; return a + b; }
+  array(int) pair(int a, int b) { a += b; a += 2; return ({ a, b }); }
+  int product(int a, int b) { a += b; a += 2; return (a + b) * 3; }
+  int branch(int a, int b) { a += b; a += 2; return (a + b) ? a : b; }
+  int nested(int a, int b) { b -= 2; b += 2; return a + (++a + ++a); }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int x = a + b;
+    x += 2;
+    int y = a;
+    y++;
+    int first = y;
+    y++;
+    if (sum(a, b) != x + b || !equal(pair(a, b), ({ x, b })) ||
+        product(a, b) != (x + b) * 3 ||
+        branch(a, b) != ((x + b) ? x : b) ||
+        nested(a, b) != a + (first + y)) return 0;
+  }
+  return 1;
+]], 1)
+
+// Publish two arguments, including an untouched UNDEFINED tag, before an
+// ordinary increment and call. The callback must see every completed update.
+test_any([[
+  mixed f(int a, int b, function sink) {
+    return sink((b += 2) + 3, a, ++a);
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int expected = b + 2;
+    expected += 3;
+    array(int) result = f(a, b, lambda(int x, int y, int z) {
+      return ({ x, y, z, zero_type(y), zero_type(z) });
+    });
+    if (!equal(result, ({ expected, a, a + 1, zero_type(a), 0 })))
+      return 0;
+  }
+  return 1;
+]], 1)
+
 test_any([[
   // bug 2690
   array(function) foo(void|int b)

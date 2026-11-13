@@ -135,7 +135,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   unsigned int i, stores = 0;
   if (sparc_ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
-        (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue)))
+        (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue),
+        !sparc_ssa_no_integer_stack_exits))
     return 0;
   sparc_flush_codegen_state();
   sparc_update_pc();
@@ -165,6 +166,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     sparc_integer_branch(&overflow[i], SPARC_INTEGER_BVS);
     SPARC_OR(sparc_integer_reg(v), SPARC_REG_O3, SPARC_REG_G0, 0);
   }
+  /* Publish live results before the next ordinary opcode. The slow replay
+   * finishes at the same stack depth with empty machine caches. */
   sparc_integer_snapshot(&p, &p.final);
   sparc_integer_branch(&done, 0x10800000);
   for (i = 0; i < p.count; i++) {
@@ -190,6 +193,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     for (i = 0; i < p.locals; i++) stores += !!(p.final.dirty & (1U << i));
     sparc_stats.integer_regions++;
     sparc_stats.integer_stack_regions++;
+    if (p.final.depth) sparc_stats.integer_stack_exits++;
     sparc_stats.integer_ops += p.count;
     sparc_stats.integer_values += p.values;
     sparc_stats.integer_loads_avoided += p.loads - p.locals;

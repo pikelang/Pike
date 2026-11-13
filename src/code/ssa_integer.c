@@ -139,8 +139,8 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
   return p->consumed;
 }
 
-/* Retained assignments use a separate plan so the original balanced-unit
- * planner stays available as a comparison and as a register-budget fallback.
+/* Retained assignments and live-stack exits use a separate plan so the
+ * original balanced-unit planner remains a register-budget fallback.
  * Three physical banks are shared by local versions and virtual stack values.
  * A bank may be reused only after its last local/stack reference disappears.
  * The result is copied into that bank after the overflow branch, so the
@@ -183,7 +183,8 @@ static int integer_stack_refs(const struct p_instr_s *op,
 
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *p,
-    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local)
+    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
+    int stack_exits)
 {
   struct pikecode_ssa_integer_snapshot state;
   struct pikecode_ssa_integer_stack_plan best;
@@ -214,7 +215,7 @@ int pikecode_ssa_plan_integer_stack(
     arithmetic += is_arithmetic;
     retained |= op->opcode == F_ASSIGN_LOCAL;
   }
-  if (!retained || arithmetic < 2) return 0;
+  if ((!retained && !stack_exits) || arithmetic < 2) return 0;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
   memset(p->value, 0, sizeof(p->value));
   memset(p->step, 0, sizeof(p->step));
@@ -320,7 +321,10 @@ int pikecode_ssa_plan_integer_stack(
     if (src >= 0) used |= 1U << src;
     p->final = state;
     p->consumed = e + 1;
-    if (!state.depth && p->retained && p->count >= 2 &&
+    /* Keep the longest profitable prefix, including a live-stack exit.
+     * Its final snapshot is published just like an overflow snapshot. */
+    if (((!state.depth && p->retained) || (state.depth && stack_exits)) &&
+        p->count >= 2 &&
         p->loads > p->locals) {
       best = *p;
       best_used = used;

@@ -98,7 +98,8 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   if (ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (INT32)((0x7fffffff - OFFSETOF(svalue, u.integer)) /
-                sizeof(struct svalue)))) return 0;
+                sizeof(struct svalue)),
+        !ssa_no_integer_stack_exits)) return 0;
   for (i = 0; i < p.count; i++) overflow[i] = (struct label){ .addr = -1 };
   for (i = 0; i < p.consumed; i++) slow[i] = (struct label){ .addr = -1 };
   amd64_flush_code_generator_state();
@@ -124,6 +125,8 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     jo(&overflow[i]);
     mov_reg_reg(P_REG_RAX, amd64_integer_reg(v));
   }
+  /* Publish live results before the next ordinary opcode. The slow replay
+   * finishes at the same stack depth with empty machine caches. */
   amd64_integer_snapshot(&p, &p.final);
   jmp(&done);
   for (i = 0; i < p.count; i++) {
@@ -148,6 +151,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     for (i = 0; i < p.locals; i++) stores += !!(p.final.dirty & (1U << i));
     ssa_stats.integer_regions++;
     ssa_stats.integer_stack_regions++;
+    if (p.final.depth) ssa_stats.integer_stack_exits++;
     ssa_stats.integer_ops += p.count;
     ssa_stats.integer_values += p.values;
     ssa_stats.integer_loads_avoided += p.loads - p.locals;

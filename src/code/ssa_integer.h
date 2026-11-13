@@ -31,7 +31,7 @@ struct pikecode_ssa_integer_plan {
 
 /* The stack extension retains at most two virtual stack operands. Every
  * snapshot is taken before an arithmetic opcode, while all its versions
- * are still resident. Regions start and finish at their entry stack depth.
+ * are still resident. Final snapshots may publish live stack operands.
  */
 #define PIKE_SSA_INTEGER_STACK 2
 #define PIKE_SSA_INTEGER_CODE 32
@@ -58,5 +58,6 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *plan,
                               ptrdiff_t available, INT32 max_local);
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *plan,
-    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local);
+    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
+    int stack_exits);
 #endif
