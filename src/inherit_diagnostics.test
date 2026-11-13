@@ -1,0 +1,158 @@
+#charset utf-8
+// Source context for unfinished inheritance errors (#7703).
+// Use 9.0 mode: native 9.1 can defer some of these inheritance dependencies.
+
+class Errors {
+  array(string) messages = ({});
+  void compile_error(string file, int line, string message) {
+    messages += ({ sprintf("%s:%d: %s", file, line, message) });
+  }
+  void compile_warning(string file, int line, string message) {
+    compile_error(file, line, message);
+  }
+}
+
+int main()
+{
+#if constant(alarm)
+  alarm(60);
+#endif
+  string directory = combine_path(getenv("TMPDIR") || "/tmp",
+    sprintf("pike-inherit-diagnostics-%d-%d", getpid(), random(1000000000)));
+  if (!mkdir(directory)) error("Cannot create test directory.\n");
+  int passed, failed, sequence;
+  function test = lambda(string name, mapping(string:string) sources,
+                         string first, array(string) expected) {
+    string prefix = sprintf("Diagnostic%d_%d_", getpid(), sequence++);
+    string module_path = directory + "/" + prefix;
+    mkdir(module_path);
+    mapping(string:string) substitutions = ([]);
+    foreach (({ "A", "B", "C", "M" }), string key)
+      substitutions["@" + key + "@"] = prefix + key;
+    foreach (sources; string key; string source) {
+      string path = module_path + "/" + prefix + key + ".pmod";
+      Stdio.mkdirhier(dirname(path));
+      Stdio.write_file(path, "#pike 9.0\n#line 1\n" +
+                       replace(source, substitutions));
+    }
+    master()->add_module_path(module_path);
+    Errors handler = Errors();
+    mixed previous_handler = master()->get_inhibit_compile_errors();
+    master()->set_inhibit_compile_errors(handler);
+    mixed failure = catch {
+      object module = master()->resolv(prefix + first);
+      if (!module) error("Module resolution failed.\n");
+      if (!sizeof(expected)) {
+        module = master()->resolv(prefix + "A");
+        if (module->make()->value() != 42) error("Wrong result.\n");
+      }
+    };
+    master()->set_inhibit_compile_errors(previous_handler);
+    master()->remove_module_path(module_path);
+    string messages = handler->messages * "\n";
+    int ok = sizeof(expected) ? !!failure : !failure && !sizeof(messages);
+    foreach (expected, string text)
+      if (!has_value(messages, replace(text, substitutions))) ok = 0;
+    if (ok) passed++;
+    else {
+      failed++;
+      werror("%s failed: %s\n%O\n", name, messages, failure);
+    }
+    Stdio.recursive_rm(module_path);
+    gc();
+#if constant(_verify_internals)
+    _verify_internals();
+#endif
+  };
+
+  mixed failure = catch {
+    mapping(string:string) two_modules = ([
+      "A": "class Base { int value() { return 42; } }\n"
+           "@B@.Derived make() { return @B@.Derived(); }\n",
+      "B": "class Derived {\n  inherit @A@.Base;\n}\n"
+    ]);
+    test("type reference", two_modules, "A", ({
+      "Cannot inherit program in pass 2 which is not fully compiled yet.",
+      "@A@.pmod:1: Inherited program defined here; "
+      "its final compiler pass is still pending.",
+      "@A@.pmod:2: Compilation requested while resolving @B@."
+    }));
+    test("supported loading order", two_modules, "B", ({}));
+
+    test("nested resolution chain", ([
+      "A": "class Base { int value() { return 42; } }\n"
+           "@B@.Type make() { return @B@.Type(); }\n",
+      "B": "class Type {}\n"
+           "@C@.Derived make() { return @C@.Derived(); }\n",
+      "C": "class Derived { inherit @A@.Base; }\n"
+    ]), "A", ({
+      "Cannot inherit program in pass 2",
+      "@B@.pmod:2: Compilation requested while resolving @C@.",
+      "@A@.pmod:2: Compilation requested while resolving @B@."
+    }));
+
+    test("first-pass placeholder", ([
+      "A": "class Base { inherit @B@.Derived; }\n",
+      "B": "class Derived { inherit @A@.Base; }\n"
+    ]), "A", ({
+      "Cannot inherit program in pass 1 which is only a placeholder.",
+      "its first compiler pass is not complete",
+      "@A@.pmod:1: Compilation requested while resolving @B@."
+    }));
+
+    test("logical source location", ([
+      "A": "class Base { int value() { return 42; } }\n"
+           "#line 71 \"types.pike\"\n"
+           "@B@.Derived make() { return @B@.Derived(); }\n",
+      "B": two_modules->B
+    ]), "A", ({
+      "Cannot inherit program in pass 2",
+      "types.pike:71: Compilation requested while resolving @B@."
+    }));
+
+    test("delayed compilation retains its context", ([
+      "A": "class Derived { inherit @B@.Type; }\n",
+      "B": "class Type {}\n"
+           "class Base { inherit @A@.Derived; }\n"
+    ]), "B", ({
+      "Cannot inherit program in pass 2",
+      "@B@.pmod:2: Compilation requested while resolving @A@."
+    }));
+
+    test("module indexing", ([
+      "A": "class Base { int value() { return 42; } }\n"
+           "@M@.Sub.Derived make() { return @M@.Sub.Derived(); }\n",
+      "M.pmod/Sub": "class Derived { inherit @A@.Base; }\n"
+    ]), "A", ({
+      "Cannot inherit program in pass 2",
+      "@A@.pmod:2: Compilation requested while resolving Sub."
+    }));
+
+    test("string inherit has no stale resolution name", ([
+      "A": two_modules->A,
+      "B": "class Derived { inherit \"@C@.pmod\"; }\n",
+      "C": "inherit @A@.Base;\n"
+    ]), "A", ({
+      "Cannot inherit program in pass 2",
+      "@B@.pmod:1: Nested compilation requested here.",
+      "@A@.pmod:2: Compilation requested while resolving @B@."
+    }));
+
+#if constant(thread_create)
+    Thread.Thread worker = Thread.Thread(lambda() {
+      return compile_string("int value() { return 42; }")()->value();
+    });
+    if (worker->wait() == 42) passed++;
+    else failed++;
+#endif
+  };
+  Stdio.recursive_rm(directory);
+#if constant(alarm)
+  alarm(0);
+#endif
+  if (failure) throw(failure);
+  write("%d inheritance diagnostic checks passed, %d failed.\n",
+        passed, failed);
+  Tools.Testsuite.report_result(passed, failed);
+  return !!failed;
+}

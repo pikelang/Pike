@@ -101,13 +101,69 @@ struct program *compilation_env_program = 0;
 struct object *compilation_environment = NULL;
 
 /*
- * Supporters.
+ * Supporters and delayed compilation.
  *
- * Supporters are used to register that a program being compiled depends on
- * another program that also is being compiled.
+ * A Supporter is embedded in struct compilation and represents one source
+ * compilation unit, or one program being decoded. Source-level nested
+ * classes belong to their enclosing unit; they have no separate supporters.
+ * Supporter.prog identifies the unit's top-level program, and self identifies
+ * the CompilerEnvironment.PikeCompiler object that owns the storage. See
+ * pike_compiler.h for the fields and encode.c for the decoder callbacks.
  *
- * Every program being compiled has a supporter (in the compilation
- * struct).
+ * Compiling a type or resolving a module can recursively start another unit.
+ * current_supporter and previous form the stack of active first passes,
+ * protected by the compiler lock. A reference back to an unfinished ancestor
+ * can require that unit's declarations before our second pass can proceed.
+ * report_compiler_dependency() records this requirement, allowing us to
+ * return our first-pass program and resume compilation later.
+ *
+ * The declaration-wait links have two uses:
+ *
+ *   Active:   previous links to the caller; depends_on points to the
+ *             outermost active supplier whose declarations we require.
+ *   Delayed:  the supplier's dependants list owns the waiting compiler;
+ *             next_dependant links entries, and depends_on is a back link
+ *             while the supplier remains on the active stack.
+ *
+ * For declaration waits, only the outermost prerequisite is retained. Its
+ * first pass ends after those of intervening units, so waiting there covers
+ * those units' declarations as well. A dependency is propagated through the
+ * intervening active units that have not yet completed their first passes.
+ *
+ * At the end of a first pass, unlink_current_supporter() pops the unit and
+ * queues it if necessary. The supplier calls call_dependants() after its own
+ * first pass to release declaration waits. A consumer also waiting for final
+ * passes remains pinned until the final-pass dispatcher can invoke fun.
+ * Otherwise call_dependants() invokes fun before releasing the list's
+ * reference to the compiler object. For source compilation, fun is
+ * call_delayed_pass2(); decoding supplies its own callback.
+ * Declaration links do not own references to suppliers: active calls keep
+ * them alive. previous must not be followed after the unit is popped.
+ *
+ * Declaration dependencies wait for PROGRAM_PASS_1_DONE. For example, A
+ * can start B while resolving a type; B can finish its first pass and wait
+ * for A, then run its second pass before A runs its second pass. This resolves
+ * some recursive type references, but does not ensure inherited bases have
+ * completed their final compiler passes.
+ *
+ * Native Pike 9.1 additionally records COMPILER_DEPENDENCY_FINISHED edges in
+ * finish_dependencies. These may name several suppliers, including units
+ * already waiting off the active stack. pending_supporters is a non-owning
+ * registry used to locate the unit containing an inherited nested class.
+ * A queued final-pass wait holds an additional reference to its compiler
+ * object. It can run only after both its declaration and final-pass waits
+ * have cleared; callback_ready prevents reentering a compile() call that has
+ * not yet returned its first-pass result. Supplier completion or failure
+ * releases the corresponding edges and resumes or cancels ready consumers.
+ * Final-pass cycles are rejected. Nested classes share their containing
+ * unit's completion point; they are not independently scheduled.
+ *
+ * Pike 9.0 and earlier compatibility modes retain declaration-only scheduling
+ * at inherit declarations and still reject unfinished bases in the final pass.
+ *
+ * compilation_context records the source references that started nested
+ * compilations. It is diagnostic information, independent of the wait links,
+ * and is retained even after previous has ceased to be usable.
  */
 
 struct Supporter *current_supporter=0;
@@ -340,16 +396,55 @@ void verify_supporters()
 #define verify_supporters();
 #endif
 
+/* Push a first-pass compilation or decode operation. The caller has already
+ * initialized self; it assigns prog once the target program has been started.
+ * fun(s, 1) resumes a delayed operation; fun(s, 0) handles supplier failure.
+ * data holds callback state. The caller can set exit_fun after initialization
+ * to release that state. self is not refcounted here.
+ */
 void init_supporter(struct Supporter *s,
 		    supporter_callback *fun,
 		    void *data)
 {
+  struct compilation *compilation = (struct compilation *)s;
   CDFPRINTF("th(%ld) init_supporter() supporter=%p data=%p.\n",
             (long) th_self(), s, data);
   verify_supporters();
 #ifdef PIKE_DEBUG
   s->magic = 0x500b0127;
 #endif
+  if (compilation->compilation_context) {
+    free_string(compilation->compilation_context);
+    compilation->compilation_context = NULL;
+  }
+  if (current_supporter) {
+    /* Both source compilers and decoders embed Supporter first. The
+     * caller's lexer still points at the reference that started this unit.
+     */
+    struct compilation *caller = (struct compilation *)current_supporter;
+    struct pike_string *identifier = caller->resolving_identifier;
+    struct string_builder context;
+
+    init_string_builder(&context, 0);
+    if (identifier) {
+      string_builder_sprintf(&context,
+                            "%pS:%" PRINTPIKEINT "d: Compilation requested "
+                            "while resolving %pS.",
+                            caller->lex.current_file,
+                            caller->lex.current_line, identifier);
+    } else {
+      string_builder_sprintf(&context,
+                            "%pS:%" PRINTPIKEINT "d: Nested compilation "
+                            "requested here.",
+                            caller->lex.current_file,
+                            caller->lex.current_line);
+    }
+    if (caller->compilation_context) {
+      string_builder_putchar(&context, '\n');
+      string_builder_shared_strcat(&context, caller->compilation_context);
+    }
+    compilation->compilation_context = finish_string_builder(&context);
+  }
   s->previous=current_supporter;
   current_supporter=s;
 
@@ -371,6 +466,12 @@ void init_supporter(struct Supporter *s,
   verify_supporters();
 }
 
+/* Pop the current first pass. Return nonzero if its remaining work was
+ * deferred. A declaration-wait list takes a reference to self; final-pass
+ * waits retain another reference until their callbacks have run or failed.
+ * Back links from our own waiting dependants are cleared because we are no
+ * longer an active supplier; their list entries remain for call_dependants().
+ */
 int unlink_current_supporter(struct Supporter *c)
 {
   int ret=0;
@@ -422,6 +523,9 @@ int unlink_current_supporter(struct Supporter *c)
   return ret;
 }
 
+/* Detach a supporter, cancel its final-pass dependencies, and release
+ * callback-specific state. call_dependants() handles declaration waiters.
+ */
 void free_supporter(struct Supporter *c)
 {
   if (c == current_supporter)
@@ -439,6 +543,13 @@ void free_supporter(struct Supporter *c)
   verify_supporters();
 }
 
+/* Drain the operations waiting for this supplier's declarations. finish
+ * means the supplier's first pass succeeded, not that PROGRAM_FINISHED is set.
+ * A false value tells callbacks to clean up rather than complete their work.
+ * Detach each entry before invoking its callback or leaving it to the
+ * final-pass dispatcher: callbacks can recursively compile other units.
+ * Return false if any callback reports failure.
+ */
 int call_dependants(struct Supporter *s, int finish)
 {
   int ok = 1;
@@ -472,6 +583,17 @@ int call_dependants(struct Supporter *s, int finish)
   return ok;
 }
 
+/* Record a dependency on an active ancestor's top-level program p. Callers
+ * normally reach this while resolving or indexing a still-incomplete program.
+ * Each affected first-pass unit waits for the outermost applicable ancestor;
+ * an existing outer wait is never replaced by a nearer one. The return value
+ * counts registered requirements, not distinct suppliers or graph edges.
+ *
+ * Self references are ignored. COMPILATION_FORCE_RESOLVE forbids introducing
+ * such a wait when the caller requires a value immediately. Programs without
+ * a matching active supporter, including individual nested classes, do not
+ * acquire an independent scheduling point here.
+ */
 int report_compiler_dependency(struct program *p)
 {
   int ret=0;
@@ -545,6 +667,42 @@ int report_compiler_dependency_level(struct program *p,
   d->next = consumer->finish_dependencies;
   consumer->finish_dependencies = d;
   return 1;
+}
+
+/* Keep the details in the error itself so legacy compile_error handlers
+ * receive them too. No resolution or Pike-level indexing is needed here.
+ */
+void report_unfinished_inherit(struct program *p, int pass)
+{
+  struct string_builder message;
+  struct pike_string *file, *text;
+  INT_TYPE line;
+  struct compilation *c = THIS_COMPILATION;
+
+  init_string_builder(&message, 0);
+  string_builder_sprintf(&message, "Cannot inherit program in pass %d ", pass);
+  string_builder_strcat(&message,
+                       pass == 1 ? "which is only a placeholder." :
+                                   "which is not fully compiled yet.");
+  file = low_get_program_line(p, &line);
+  if (file) {
+    string_builder_sprintf(&message,
+                          "\n%pS:%" PRINTPIKEINT "d: Inherited program "
+                          "defined here; %s.",
+                          file, line,
+                          p->flags & PROGRAM_PASS_1_DONE ?
+                          "its final compiler pass is still pending" :
+                          "its first compiler pass is not complete");
+    free_string(file);
+  }
+  if (c->compilation_context) {
+    string_builder_putchar(&message, '\n');
+    string_builder_shared_strcat(&message,
+                                 c->compilation_context);
+  }
+  text = finish_string_builder(&message);
+  my_yyerror("%pS", text);
+  free_string(text);
 }
 
 extern int yyparse(void);
@@ -1180,6 +1338,10 @@ static void free_compilation(struct compilation *c)
     free_mapping(c->resolve_cache);
     c->resolve_cache = NULL;
   }
+  if (c->compilation_context) {
+    free_string(c->compilation_context);
+    c->compilation_context = NULL;
+  }
   free_svalue(& c->default_module);
   SET_SVAL(c->default_module, T_INT, NUMBER_NUMBER, integer, 0);
   free_supporter(&c->supporter);
@@ -1682,6 +1844,13 @@ static void run_cleanup(struct compilation *c, int delayed)
   unlock_pike_compiler();
 }
 
+/* Resume a source compiler whose first pass returned an unfinished program.
+ * A declaration queue or final-pass wait keeps its PikeCompiler object alive
+ * across the return to the resolver. Reenter it, run any extra pass and the final
+ * pass on supplier success, then handle placeholders and release its compiler
+ * lock in run_cleanup(). The dispatcher drops the wait's reference after
+ * this callback returns; the temporary interpreter frame owns another one.
+ */
 static int call_delayed_pass2(struct Supporter *s, int finish)
 {
   int ok = 0;
@@ -2069,6 +2238,10 @@ static void f_compilation_compile(INT32 args)
 		 (void *)c);
 
   delay=run_pass1(c);
+  /* Our declarations are now available. Resume units waiting for them before
+   * our own final pass, even if we in turn must wait for an outer supplier.
+   * Passing false cancels their completion after a failed first pass.
+   */
   dependants_ok = call_dependants(& c->supporter, !!c->p );
   /* Declaration callbacks can finish our suppliers before we return our
    * first-pass program. In that case finish here, rather than invoking a

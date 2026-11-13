@@ -204,7 +204,13 @@ static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,
                                       int num_args, int num_create_args,
                                       int opt_flags);
-static void add_parent_local_function(struct pike_string *identifier, int id);
+static int compiler_declare_local_function(int modifiers,
+                                           struct pike_string *identifier,
+                                           int num_args);
+static node *compiler_define_local_function(int modifiers, int localid,
+                                            node *block, int num_args);
+static int low_islocal(struct compiler_frame *frame,
+                       struct pike_string *identifier);
 static int compiler_define_function(int modifiers,
                                     struct pike_string *identifier,
                                     struct pike_type *fun_type,
@@ -2652,63 +2658,21 @@ lambda: optional_local_modifier TOK_LAMBDA line_number_info
 
 local_function: TOK_IDENTIFIER start_function func_args
   {
-    struct pike_string *name = get_new_name($1->u.sval.u.string);
-    node *save_attrs = Pike_compiler->current_attributes;
-    Pike_compiler->current_attributes = NULL;
-
-    $<number>$ =
-      compiler_declare_prototype(ID_PROTECTED | ID_PRIVATE |
-                                 ID_INLINE | ID_USED,
-                                 name, $3, 0,
-                                 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-    free_string(name);
-#ifdef PIKE_DEBUG
-    if (Pike_compiler->current_attributes) {
-      Pike_fatal("Unexpected attribute scope.\n");
-    }
-#endif
-    Pike_compiler->current_attributes = save_attrs;
-
-    add_parent_local_function($1->u.sval.u.string, $<number>$);
+    $<number>$ = compiler_declare_local_function(0, $1->u.sval.u.string, $3);
   }
-  failsafe_block
+  block_or_semi
   {
-    int localid;
-    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program,$<number>4);
-    int f = compiler_define_function(ID_PROTECTED | ID_PRIVATE |
-                                     ID_INLINE | ID_USED,
-                                     i->name, i->type, $5,
-                                     $3, 0,
-                                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    $$ = compiler_define_local_function(0, $<number>4, $5, $3);
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $2) {
       Pike_fatal("Lost track of compiler_frame!\n"
-		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $2,
-		 Pike_compiler->compiler_frame->previous);
+                 "  Got: %p (Expected: %p) Previous: %p\n",
+                 Pike_compiler->compiler_frame, $2,
+                 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
     free_node($1);
-
-    /* WARNING: If the local function adds more variables we are screwed */
-    /* WARNING2: if add_local_name stops adding local variables at the end,
-     *           this has to be fixed.
-     */
-
-    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
-    if(Pike_compiler->compiler_frame->local_names[localid].def)
-    {
-      $$=copy_node(Pike_compiler->compiler_frame->local_names[localid].def);
-    }else{
-      if(Pike_compiler->compiler_frame->lexical_scope &
-	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
-      {
-        $$ = mktrampolinenode(f, Pike_compiler->compiler_frame);
-      }else{
-        $$ = mkidentifiernode(f);
-      }
-    }
   }
   | TOK_IDENTIFIER start_function error
   {
@@ -2732,63 +2696,21 @@ local_function: TOK_IDENTIFIER start_function func_args
 local_restartable_function: local_modifier simple_type2 TOK_IDENTIFIER
   start_function func_args
   {
-    struct pike_string *name = get_new_name($3->u.sval.u.string);
-    node *save_attrs = Pike_compiler->current_attributes;
-    Pike_compiler->current_attributes = NULL;
-
-    $<number>$ =
-      compiler_declare_prototype($1 | ID_PROTECTED | ID_PRIVATE |
-                                 ID_INLINE | ID_USED,
-                                 name, $5, 0,
-                                 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-    free_string(name);
-#ifdef PIKE_DEBUG
-    if (Pike_compiler->current_attributes) {
-      Pike_fatal("Unexpected attribute scope.\n");
-    }
-#endif
-    Pike_compiler->current_attributes = save_attrs;
-
-    add_parent_local_function($3->u.sval.u.string, $<number>$);
+    $<number>$ = compiler_declare_local_function($1, $3->u.sval.u.string, $5);
   }
-  failsafe_block
+  block_or_semi
   {
-    int localid;
-    struct identifier *i = ID_FROM_INT(Pike_compiler->new_program, $<number>6);
-    int f = compiler_define_function($1 | ID_PROTECTED | ID_PRIVATE |
-                                     ID_INLINE | ID_USED,
-                                     i->name, i->type, $7,
-                                     $5, 0,
-                                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    $$ = compiler_define_local_function($1, $<number>6, $7, $5);
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $4) {
       Pike_fatal("Lost track of compiler_frame!\n"
-		 "  Got: %p (Expected: %p) Previous: %p\n",
+                 "  Got: %p (Expected: %p) Previous: %p\n",
                  Pike_compiler->compiler_frame, $4,
-		 Pike_compiler->compiler_frame->previous);
+                 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
     free_node($3);
-
-    /* WARNING: If the local function adds more variables we are screwed */
-    /* WARNING2: if add_local_name stops adding local variables at the end,
-     *           this has to be fixed.
-     */
-
-    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
-    if(Pike_compiler->compiler_frame->local_names[localid].def)
-    {
-      $$=copy_node(Pike_compiler->compiler_frame->local_names[localid].def);
-    }else{
-      if(Pike_compiler->compiler_frame->lexical_scope &
-	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
-      {
-	$$ = mktrampolinenode(f, Pike_compiler->compiler_frame);
-      }else{
-	$$ = mkidentifiernode(f);
-      }
-    }
   }
   | local_modifier simple_type2 TOK_IDENTIFIER start_function error
   {
@@ -5831,18 +5753,103 @@ static int compiler_declare_prototype(int modifiers,
   return id;
 }
 
-static void add_parent_local_function(struct pike_string *identifier, int id)
+/* Return the program identifier behind a named local function binding. */
+static int local_function_identifier(node *n)
 {
-  struct identifier *i = ID_FROM_INT(Pike_compiler->new_program, id);
-  node *n = NULL;
+  if (n->token == F_TRAMPOLINE) return n->u.trampoline.ident;
+  return n->u.integer.b;
+}
 
-  if(i->identifier_flags & IDENTIFIER_SCOPED)
-    n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+static int compiler_declare_local_function(int modifiers,
+                                           struct pike_string *identifier,
+                                           int num_args)
+{
+  struct compiler_frame *parent = Pike_compiler->compiler_frame->previous;
+  int localid = low_islocal(parent, identifier);
+  int id;
+  node *n;
+  node *save_attrs = Pike_compiler->current_attributes;
+  struct pike_string *name;
+
+  if (localid >= parent->last_block_level &&
+      (parent->local_names[localid].flags & LOCAL_VAR_IS_FUNCTION)) {
+    id = local_function_identifier(parent->local_names[localid].def);
+    copy_shared_string(name, ID_FROM_INT(Pike_compiler->new_program, id)->name);
+  } else {
+    localid = -1;
+    name = get_new_name(identifier);
+  }
+
+  Pike_compiler->current_attributes = NULL;
+  id = compiler_declare_prototype(modifiers | ID_PROTECTED | ID_PRIVATE |
+                                 ID_INLINE | ID_USED,
+                                 name, num_args, 0,
+                                 OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+  free_string(name);
+#ifdef PIKE_DEBUG
+  if (Pike_compiler->current_attributes) {
+    Pike_fatal("Unexpected attribute scope.\n");
+  }
+#endif
+  Pike_compiler->current_attributes = save_attrs;
+
+  if (ID_FROM_INT(Pike_compiler->new_program, id)->identifier_flags &
+      IDENTIFIER_SCOPED)
+    n = mktrampolinenode(id, parent);
   else
     n = mkidentifiernode(id);
 
-  low_add_local_name(Pike_compiler->compiler_frame->previous,
-                     identifier, NULL, n, NULL);
+  if (localid >= 0) {
+    set_node_name(n, identifier);
+    redefine_local(parent, localid, n, NULL);
+  } else {
+    localid = low_add_local_name(parent, identifier, NULL, n, NULL);
+    if (localid >= 0)
+      parent->local_names[localid].flags |= LOCAL_VAR_IS_FUNCTION;
+  }
+  return localid;
+}
+
+static node *compiler_define_local_function(int modifiers, int localid,
+                                            node *block, int num_args)
+{
+  struct compiler_frame *parent = Pike_compiler->compiler_frame->previous;
+  struct local_name *local;
+  struct identifier *i;
+  int id;
+
+  if (localid < 0) {
+    free_node(block);
+    return mkintnode(0);
+  }
+  local = parent->local_names + localid;
+  id = local_function_identifier(local->def);
+  i = ID_FROM_INT(Pike_compiler->new_program, id);
+
+  if (block) {
+    if (local->flags & LOCAL_VAR_FUNCTION_HAS_BODY)
+      my_yyerror("Duplicate definition of local function %pS.", local->name);
+    local->flags |= LOCAL_VAR_FUNCTION_HAS_BODY;
+  }
+  compiler_define_function(modifiers | ID_PROTECTED | ID_PRIVATE |
+                           ID_INLINE | ID_USED,
+                           i->name, i->type, block, num_args, 0,
+                           OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+
+  if (!block) {
+    node *n;
+    /* A forward declaration may be used before its body's lexical
+     * dependencies are known. Always bind it to the enclosing frame.
+     */
+    ID_FROM_INT(Pike_compiler->new_program, id)->identifier_flags |=
+      IDENTIFIER_SCOPED;
+    n = mktrampolinenode(id, parent);
+    set_node_name(n, local->name);
+    redefine_local(parent, localid, n, NULL);
+    return mkintnode(0);
+  }
+
+  return copy_node(local->def);
 }
 
 static int compiler_define_function(int modifiers,

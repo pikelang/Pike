@@ -2137,7 +2137,10 @@ static void low_index_node(node * const n, struct pike_string *id)
 	ref_push_string(id);
 	{
 	  JMP_BUF recovery;
+          struct compilation *compiler = THIS_COMPILATION;
+          struct pike_string *saved_identifier = compiler->resolving_identifier;
 	  STACK_LEVEL_START(2);
+          compiler->resolving_identifier = id;
 	  if (SETJMP_SP(recovery, 2)) {
             if (n->name) {
               handle_compile_exception("Error looking up '%pS' in module %pS.",
@@ -2174,6 +2177,7 @@ static void low_index_node(node * const n, struct pike_string *id)
 	  }
 	  STACK_LEVEL_DONE(1);
 	  UNSETJMP(recovery);
+          compiler->resolving_identifier = saved_identifier;
 	}
 
 	if(TYPEOF(Pike_sp[-1]) == T_INT &&

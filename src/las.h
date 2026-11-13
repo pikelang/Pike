@@ -55,6 +55,10 @@ typedef struct node_s node;
 /* Var is an argument. def is used for default value. */
 #define LOCAL_VAR_IS_ARGUMENT		4
 
+/* Local function binding, optionally followed by its definition. */
+#define LOCAL_VAR_IS_FUNCTION           8
+#define LOCAL_VAR_FUNCTION_HAS_BODY     16
+
 /**
  * Represents a single mapping from symbol to local
  * definition. Usually an F_LOCAL or F_LOCAL_INDIRECT

@@ -110,7 +110,7 @@ statement            ::= init_expression ";" | import | block | ";"
 init_expression      ::= expression | type variable_names
 local_constant       ::= "constant" cast_type? constant_names ";"
 local_function       ::= ( "__async__" | "__generator__" )?
-                           type identifier "(" arguments ")" block
+                           type identifier "(" arguments ")" ( block | ";" )
 local_class          ::= "class" identifier class_tail
 cond                 ::= "if" "(" init_expression ")" statement
                            ( "else" statement )?

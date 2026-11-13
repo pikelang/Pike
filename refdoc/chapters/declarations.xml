@@ -175,6 +175,31 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
       </example>
     </subsection>
 
+    <subsection title="Named local functions">
+      <p>A named function can be declared inside another function. Its name
+      is visible from the declaration to the end of the enclosing block, and
+      its body can refer to local variables in enclosing scopes.</p>
+
+      <p>To refer to a local function before its definition, declare a
+      prototype with a semicolon instead of a body. This makes mutually
+      recursive local functions possible:</p>
+
+      <example>
+        bool is_even(int n) {
+          bool odd(int n);
+          bool even(int n) { return n == 0 || odd(n - 1); };
+          bool odd(int n) { return n != 0 &amp;&amp; even(n - 1); };
+          return even(n);
+        }
+      </example>
+
+      <p>The definition must occur in the same block as the prototype and
+      have a compatible function type. A prototype does not create an
+      assignable function variable. Calls and function references may precede
+      the definition, but any captured variables must be initialized before
+      they are used. Local function prototypes are available in Pike 9.0.</p>
+    </subsection>
+
     <subsection title="Variant functions">
       <p>Similar to C++ and Java you can use function overloading in Pike.
       This means that you can have one function called 'foo' which takes

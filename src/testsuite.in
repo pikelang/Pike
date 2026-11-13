@@ -5981,6 +5981,150 @@ test_do([[{
   }]])
 
 // local function tests
+dnl Local function prototypes (#10237).
+test_any_equal([[
+  string fn2();
+  string fn1(bool call_fn2) {
+    return call_fn2 ? fn2() : "fn1";
+  };
+  string fn2() { return fn1(false); };
+  return fn1(true);
+]], "fn1")
+
+test_any_equal([[
+  int odd(int n);
+  int even(int n) { return n ? odd(n - 1) : 1; };
+  int odd(int n) { return n ? even(n - 1) : 0; };
+  return ({ even(10), odd(10), even(11), odd(11) });
+]], ({ 1, 0, 0, 1 }))
+
+test_any_equal([[
+  int value = 17;
+  int later();
+  function saved = later;
+  int result = later();
+  int later() { return value; };
+  value++;
+  return ({ result, saved(), later() });
+]], ({ 17, 18, 18 }))
+
+test_any_equal([[
+  function make(int value) {
+    int second(int n);
+    int first(int n) { return n ? second(n - 1) : ++value; };
+    int second(int n) { return n ? first(n - 1) : ++value; };
+    return first;
+  };
+  function a = make(10), b = make(20);
+  return ({ a(4), b(3), a(1) });
+]], ({ 11, 21, 12 }))
+
+test_any_equal([[
+  int value = 3;
+  int later();
+  int call() {
+    int nested() { return later(); };
+    return nested();
+  };
+  int later() { return value; };
+  return call();
+]], 3)
+
+test_any_equal([[
+  int value();
+  int value() { return 1; };
+  int result = value();
+  {
+    int value();
+    int value() { return 2; };
+    result += value();
+  }
+  {
+    int value();
+    int value() { return 4; };
+    result += value();
+  }
+  return result + value();
+]], 8)
+
+test_any_equal([[
+  int fn(int arg);
+  int fn(int arg);
+  int fn(int arg) { return arg; };
+  int fn(int arg);
+  return fn(42);
+]], 42)
+
+test_compile_error([[
+  int missing();
+  return missing();
+]])
+test_compile_error([[
+  int missing();
+  return 0;
+]])
+test_compile_error([[
+  int fn(int arg);
+  string fn(string arg) { return arg; };
+]])
+test_compile_error([[
+  int fn() { return 1; };
+  int fn() { return 2; };
+]])
+test_compile_error([[
+  int fn();
+  int fn() { return 1; };
+  int fn() { return 2; };
+]])
+test_compile_error([[
+  int fn;
+  int fn();
+]])
+test_compile_error([[
+  int fn();
+  int fn;
+]])
+test_compile_error([[
+  int fn();
+  { int fn() { return 1; }; }
+  return fn();
+]])
+test_compile_error([[
+  auto fn();
+  int fn() { return 1; };
+]])
+
+test_any_equal([[
+  __generator__ int later(int n);
+  function make(int n) { return later(n); };
+  int base = 10;
+  __generator__ int later(int n) {
+    while (n > 0) continue return base + n--;
+    return base;
+  };
+  function f = make(2);
+  return ({ f(), f(), f() });
+]], ({ 12, 11, 10 }))
+
+test_any_equal([[
+  __async__ int later();
+  Concurrent.Future call() { return later(); };
+  int value = 42;
+  __async__ int later() { return value; };
+  return call()->get();
+]], 42)
+
+
+test_compile_error([[
+  __generator__ int fn();
+  int fn() { return 1; };
+]])
+test_compile_error([[
+  int fn();
+  __generator__ int fn() { return 1; };
+]])
+
+
 test_eq(120,
         [[ lambda()
            {
@@ -16189,13 +16333,21 @@ array a()
 }
 ]])
 
-// Inheriting programs whose declarations are available but whose
-// containing compilation unit has not completed its final pass (#7703).
+// Inheritance dependencies on declarations and completed programs (#7703).
 test_tests([[
 array a()
 {
   return Tools.Testsuite.run_script (
     "]]SRCDIR[[/test_inherit_dependencies.test");
+}
+]])
+
+// Source context for unfinished inheritance dependencies (#7703).
+test_tests([[
+array a()
+{
+  return Tools.Testsuite.run_script (
+    "]]SRCDIR[[/inherit_diagnostics.test");
 }
 ]])
 

@@ -18,33 +18,12 @@ o Syntax for default values in multi-assignment.
   Both of the above statements will assign the value 1 to
   the variable a, and the value 5 to the variable b.
 
-o Syntax for using multi-assign in function calls.
-
-  *CAVEAT* Broken in combination with default values (Issue #10169).
+  *CAVEAT* Multi-assign in function calls is broken in combination with
+  default values (Issue #10169).
 
 
 Bug fixes
 ---------
-
-o Concurrent.Future
-
-  delay() now preserves an explicitly assigned backend throughout its
-  internal callback chain, avoiding a dependency on the default backend.
-
-o predef::backtrace()
-
-  Improved handling of frames whose arguments are not fully initialized.
-
-o predef::{en,de}code_value()
-
-  Several fixes related to encoding and decoding of programs.
-
-o Cpp
-
-  - Fixed line numbering issue when handling multi-line comments
-    in arguments to macros.
-
-  - Improved cleanup when preprocessor callbacks throw errors.
 
 o Compiler
 
