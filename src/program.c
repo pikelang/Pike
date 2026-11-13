@@ -6358,8 +6358,8 @@ void lower_inherit(struct program *p,
        * 2. Otherwise we might not have all definitions when we
        * fixate our program.
        *
-       * FIXME: Maybe this can be relaxed by registering a dependency
-       * and delaying compilation here?
+       * Cross-unit inheritance dependencies are registered in pass 1.
+       * Keep this check for unresolved and same-unit dependency cycles.
        */
       yyerror ("Cannot inherit program in pass 2 "
 	       "which is not fully compiled yet.");
@@ -6403,6 +6403,10 @@ void lower_inherit(struct program *p,
     yyerror("Trying to inherit placeholder program (resolver problem).");
     return;
   }
+
+  /* Keep the old loading-order restrictions when checking older code. */
+  if (!(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(9,0))
+    report_compiler_dependency_level(p, COMPILER_DEPENDENCY_FINISHED);
 
   /* Propagate the HAS_C_METHODS, CLEAR_STORAGE and DESTRUCT_IMMEDIATE flags. */
   if (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE|PROGRAM_DESTRUCT_IMMEDIATE)) {

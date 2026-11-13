@@ -21,6 +21,12 @@ PMOD_EXPORT extern struct program *Implements_program;
 PMOD_EXPORT extern struct object *Inherited_annotation;
 
 struct Supporter;
+struct compiler_dependency;
+
+enum compiler_dependency_level {
+  COMPILER_DEPENDENCY_DECLARATIONS,
+  COMPILER_DEPENDENCY_FINISHED
+};
 
 typedef int supporter_callback (struct Supporter *, int);
 typedef void supporter_exit_callback (struct Supporter *);
@@ -30,6 +36,15 @@ struct Supporter
 #ifdef PIKE_DEBUG
   int magic;
 #endif
+
+  /* Registry of active and delayed compilation units. Not refcounted. */
+  struct Supporter *pending_next;
+  struct compiler_dependency *finish_dependencies;
+  unsigned int waiting_for_finish : 1;
+  unsigned int callback_ready : 1;
+  unsigned int declarations_pending : 1;
+  unsigned int dependency_failed : 1;
+  unsigned int checking_dependencies : 1;
 
   struct Supporter *previous;
   /* Makes up a linked list of supporters with the first one in
@@ -193,6 +208,8 @@ void init_supporter(struct Supporter *s,
 int unlink_current_supporter(struct Supporter *c);
 int call_dependants(struct Supporter *s, int finish);
 int report_compiler_dependency(struct program *p);
+int report_compiler_dependency_level(struct program *p,
+                                     enum compiler_dependency_level level);
 struct compilation;
 void run_pass2(struct compilation *c);
 PMOD_EXPORT void enter_compiler(struct pike_string *filename,

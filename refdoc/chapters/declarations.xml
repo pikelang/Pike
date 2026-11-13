@@ -275,6 +275,22 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
     a template to create objects implementing the class.</p>
 
     <subsection title="Inheritance">
+      <p>When inheriting a program from another module, the compiler can
+      defer the derived module's final compilation until the supplying
+      compilation unit has finished. References to types and declarations
+      can therefore coexist with inheritance dependencies between modules.
+      The inherited program must already have completed its first compiler
+      pass, so that its inheritance and storage layout are known. This
+      deferral is available in Pike 9.1 and later; <tt>#pike 9.0</tt> and
+      earlier compatibility modes retain the previous restrictions at the
+      inherit declaration, allowing code to be checked for compatibility
+      with older Pike versions.</p>
+
+      <p>This does not permit inheritance from unresolved placeholders or
+      cycles that require compilation units to finish before each other.
+      Nested classes share their enclosing compilation unit's completion
+      dependency; they are not independently scheduled.</p>
+
       <p>The functionality of a class may be extended by a new class
       by means of inheritance.</p>
 

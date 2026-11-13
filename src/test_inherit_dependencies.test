@@ -1,0 +1,198 @@
+#charset utf-8
+// Regression tests for module compilation dependencies (#7703).
+
+class Errors {
+  array(string) messages = ({});
+  void compile_error(string file, int line, string message) {
+    messages += ({ sprintf("%s:%d: %s", file, line, message) });
+  }
+  void compile_warning(string file, int line, string message) {
+    compile_error(file, line, message);
+  }
+}
+
+int main()
+{
+#if constant(alarm)
+  alarm(60);
+#endif
+  string directory = combine_path(getenv("TMPDIR") || "/tmp",
+    sprintf("pike-inherit-%d-%d", getpid(), random(1000000000)));
+  if (!mkdir(directory)) error("Cannot create test directory.\n");
+  int passed, failed, sequence;
+
+  function test = lambda(string name, mapping(string:string) sources,
+                         array(string) orders, int expect_success,
+                         void|string version, void|string expected_error) {
+    foreach (orders, string first) {
+      string prefix = sprintf("Inherit%d_%d_", getpid(), sequence++);
+      string module_path = directory + "/" + prefix;
+      mkdir(module_path);
+      mapping(string:string) substitutions = ([]);
+      foreach (indices(sources), string key)
+        substitutions["@" + key + "@"] = prefix + key;
+      foreach (sources; string key; string source) {
+        string path = module_path + "/" + prefix + key + ".pmod";
+        string contents = replace(source, substitutions);
+        if (version) contents = "#pike " + version + "\n" + contents;
+        if (Stdio.write_file(path, contents) != sizeof(contents))
+          error("Cannot write test module.\n");
+      }
+      master()->add_module_path(module_path);
+      Errors handler = Errors();
+      mixed previous_handler = master()->get_inhibit_compile_errors();
+      master()->set_inhibit_compile_errors(handler);
+      mixed result;
+      mixed failure = catch {
+        result = master()->resolv(prefix + first);
+        if (!result) error("Module resolution failed.\n");
+        object module = master()->resolv(prefix + "A");
+        if (!module || module->make()->value() != 42)
+          error("Wrong inherited result.\n");
+      };
+      master()->set_inhibit_compile_errors(previous_handler);
+      master()->remove_module_path(module_path);
+      foreach (get_dir(module_path), string file) rm(module_path + "/" + file);
+      rm(module_path);
+      if (expect_success ? (!failure && !sizeof(handler->messages)) :
+                           (!!failure && sizeof(handler->messages) &&
+                            (!expected_error ||
+                             has_value(handler->messages * "\n",
+                                       expected_error)))) {
+        passed++;
+      } else {
+        failed++;
+        werror("%s (%s first) failed: %O\n%s\n", name, first,
+               handler->messages, failure ? describe_backtrace(failure) :
+               "Unexpected successful compilation.");
+      }
+      gc();
+#if constant(_verify_internals)
+      _verify_internals();
+#endif
+    }
+  };
+
+  mixed failure = catch {
+    mapping(string:string) two_modules = ([
+      "A": #{
+        class Base { int value() { return 42; } }
+        @B@.Derived make() { return @B@.Derived(); }
+      #},
+      "B": #{ class Derived { inherit @A@.Base; } #}
+    ]);
+    test("two modules", two_modules, ({ "A", "B" }), 1);
+    test("explicit 9.1", two_modules, ({ "A", "B" }), 1, "9.1");
+    foreach (({ "9.0", "8.0", "7.8" }), string version) {
+      test(version + " old failure", two_modules, ({ "A" }), 0, version,
+           "Cannot inherit program in pass 2");
+      test(version + " supported order", two_modules, ({ "B" }), 1,
+           version);
+    }
+    // The mode on the inherit determines whether deferral is available.
+    mapping(string:string) mixed_modes = two_modules + ([]);
+    mixed_modes->A = "#pike 9.0\n" + two_modules->A;
+    mixed_modes->B = "#pike 9.1\n" + two_modules->B;
+    test("new inheritor, old supplier", mixed_modes, ({ "A" }), 1);
+    mixed_modes->A = "#pike 9.1\n" + two_modules->A;
+    mixed_modes->B = "#pike 9.0\n" + two_modules->B;
+    test("old inheritor, new supplier", mixed_modes, ({ "A" }), 0,
+         UNDEFINED, "Cannot inherit program in pass 2");
+
+    test("nested class and constructor", ([
+      "A": #{
+        class Container {
+          class Base(int number) { int value() { return number; } }
+        }
+        @B@.Derived make() { return @B@.Derived(42); }
+      #},
+      "B": #{ class Derived { inherit @A@.Container.Base; } #}
+    ]), ({ "A", "B" }), 1);
+
+    test("multiple bases", ([
+      "A": #{
+        class Base { int part() { return 40; } }
+        @B@.Derived make() { return @B@.Derived(); }
+      #},
+      "B": #{
+        class Derived {
+          inherit @A@.Base;
+          inherit @C@.Base;
+          int value() { return part() + other(); }
+        }
+      #},
+      "C": #{
+        class Base { int other() { return 2; } }
+        @A@.Base type_reference;
+      #}
+    ]), ({ "A", "B", "C" }), 1);
+
+    test("inheritance chain", ([
+      "A": #{
+        class Base { int value() { return 42; } }
+        @C@.Derived make() { return @C@.Derived(); }
+      #},
+      "B": #{ class Middle { inherit @A@.Base; } #},
+      "C": #{ class Derived { inherit @B@.Middle; } #}
+    ]), ({ "A", "C" }), 1);
+
+    test("inheritance cycle", ([
+      "A": #{ class Base { inherit @B@.Derived; } #},
+      "B": #{ class Derived { inherit @A@.Base; } #}
+    ]), ({ "A", "B" }), 0);
+
+    // This cycle is between compilation units: the nested base is not
+    // independently compiled. It must fail rather than leave pinned waits.
+    test("final-pass dependency cycle", ([
+      "A": #{
+        class Base { int value() { return 42; } }
+        class Derived { inherit @B@.Derived; }
+        Derived make() { return Derived(); }
+      #},
+      "B": #{ class Derived { inherit @A@.Base; } #}
+    ]), ({ "A" }), 0);
+
+    test("failed supplier", ([
+      "A": #{
+        class Base { int value() { return missing_identifier; } }
+        @B@.Derived make() { return @B@.Derived(); }
+      #},
+      "B": #{ class Derived { inherit @A@.Base; } #}
+    ]), ({ "A", "B" }), 0);
+
+    test("failed consumer", ([
+      "A": #{
+        class Base { int value() { return 42; } }
+        @B@.Derived make() { return @B@.Derived(); }
+      #},
+      "B": #{ class Derived { inherit @A@.Base; int = ; } #}
+    ]), ({ "A", "B" }), 0);
+
+    // Error recovery must leave the scheduler usable for fresh modules.
+    test("after failures", ([
+      "A": #{
+        class Base { int value() { return 42; } }
+        @B@.Derived make() { return @B@.Derived(); }
+      #},
+      "B": #{ class Derived { inherit @A@.Base; } #}
+    ]), ({ "A", "B" }), 1);
+#if constant(thread_create)
+    // Failed delayed compiles must release the global compiler lock too.
+    Thread.Thread worker = Thread.Thread(lambda() {
+      return compile_string("int value() { return 42; }")()->value();
+    });
+    if (worker->wait() == 42) passed++;
+    else failed++;
+#endif
+  };
+  foreach (get_dir(directory) || ({}), string file)
+    rm(directory + "/" + file);
+  rm(directory);
+#if constant(alarm)
+  alarm(0);
+#endif
+  if (failure) throw(failure);
+  write("%d inheritance dependency tests passed, %d failed.\n", passed, failed);
+  Tools.Testsuite.report_result(passed, failed);
+  return !!failed;
+}

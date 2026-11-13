@@ -112,6 +112,114 @@ struct object *compilation_environment = NULL;
 
 struct Supporter *current_supporter=0;
 
+/* Declaration dependencies use the recursive supporter stack. Inheritance
+ * additionally requires the supplier's final pass. These edges retain their
+ * target programs; a delayed consumer owns one reference to its compiler
+ * object until all its final-pass dependencies have been satisfied.
+ */
+struct compiler_dependency {
+  struct compiler_dependency *next;
+  struct Supporter *supplier;
+  struct program *program;
+};
+
+static struct Supporter *pending_supporters;
+static int finish_compiler_supporter(struct Supporter *s, int success);
+static int run_finished_dependants(void);
+
+static void clear_finish_dependencies(struct Supporter *s)
+{
+  struct compiler_dependency *d;
+  while ((d = s->finish_dependencies)) {
+    s->finish_dependencies = d->next;
+    free_program(d->program);
+    free(d);
+  }
+}
+
+/* Only final-pass edges participate here: declaration dependencies have
+ * already been discharged before a delayed final pass can run.
+ */
+static int depends_on_finished(struct Supporter *s, struct Supporter *target)
+{
+  struct compiler_dependency *d;
+  if (s == target) return 1;
+  if (s->checking_dependencies) return 0;
+  s->checking_dependencies = 1;
+  for (d = s->finish_dependencies; d; d = d->next) {
+    if (depends_on_finished(d->supplier, target)) {
+      s->checking_dependencies = 0;
+      return 1;
+    }
+  }
+  s->checking_dependencies = 0;
+  return 0;
+}
+
+static int run_finished_dependants(void)
+{
+  int ok = 1;
+  struct Supporter *s;
+
+  /* Restart after each callback: it may compile more units, complete other
+   * suppliers, or remove entries from the registry.
+   */
+  for (;;) {
+    for (s = pending_supporters; s; s = s->pending_next) {
+      if (s->waiting_for_finish && s->callback_ready &&
+          !s->declarations_pending &&
+          (!s->finish_dependencies || s->dependency_failed)) break;
+    }
+    if (!s) break;
+    s->waiting_for_finish = 0;
+    clear_finish_dependencies(s);
+    {
+      int success = s->fun(s, !s->dependency_failed);
+      if (!finish_compiler_supporter(s, success)) ok = 0;
+      if (!success) ok = 0;
+    }
+    free_object(s->self.u.object);
+  }
+  return ok;
+}
+
+static int finish_compiler_supporter(struct Supporter *supplier, int success)
+{
+  struct Supporter *s, **link;
+
+  if (!success) {
+    clear_finish_dependencies(supplier);
+    if (supplier->waiting_for_finish) {
+      supplier->waiting_for_finish = 0;
+      free_object(supplier->self.u.object);
+    }
+  }
+  for (s = pending_supporters; s; s = s->pending_next) {
+    struct compiler_dependency **edge = &s->finish_dependencies;
+    while (*edge) {
+      struct compiler_dependency *d = *edge;
+      if (d->supplier != supplier) {
+        edge = &d->next;
+        continue;
+      }
+      if (!success || !(d->program->flags & PROGRAM_FINISHED))
+        s->dependency_failed = 1;
+      *edge = d->next;
+      free_program(d->program);
+      free(d);
+    }
+  }
+  for (link = &pending_supporters; *link; link = &(*link)->pending_next) {
+    if (*link == supplier) {
+      *link = supplier->pending_next;
+      supplier->pending_next = NULL;
+      break;
+    }
+  }
+  return run_finished_dependants();
+}
+
+
 
 #ifdef PIKE_DEBUG
 
@@ -245,6 +353,14 @@ void init_supporter(struct Supporter *s,
   s->previous=current_supporter;
   current_supporter=s;
 
+  s->pending_next = pending_supporters;
+  pending_supporters = s;
+  s->finish_dependencies = NULL;
+  s->waiting_for_finish = 0;
+  s->callback_ready = 0;
+  s->declarations_pending = 0;
+  s->dependency_failed = 0;
+  s->checking_dependencies = 0;
   s->depends_on=0;
   s->dependants=0;
   s->next_dependant=0;
@@ -275,6 +391,12 @@ int unlink_current_supporter(struct Supporter *c)
        */
       s->depends_on = NULL;
     }
+  }
+  c->declarations_pending = !!c->depends_on;
+  if (c->finish_dependencies) {
+    c->waiting_for_finish = 1;
+    add_ref(c->self.u.object);
+    ret = 1;
   }
   if(c->depends_on)
   {
@@ -311,6 +433,8 @@ void free_supporter(struct Supporter *c)
       if (*s == c) {*s = c->next_dependant; break;}
     c->depends_on = 0;
   }
+  clear_finish_dependencies(c);
+  finish_compiler_supporter(c, 0);
   if (c->exit_fun) c->exit_fun(c);
   verify_supporters();
 }
@@ -332,10 +456,19 @@ int call_dependants(struct Supporter *s, int finish)
     tmp->next_dependant=0;
 #endif
     verify_supporters();
-    if (!tmp->fun(tmp, finish)) ok = 0;
+    tmp->declarations_pending = 0;
+    if (!finish) tmp->dependency_failed = 1;
+    if (!tmp->waiting_for_finish) {
+      int success = tmp->fun(tmp, finish);
+      if (!success) ok = 0;
+      if (!finish_compiler_supporter(tmp, success)) ok = 0;
+    }
     verify_supporters();
     free_object(tmp->self.u.object);
   }
+  if (!finish || (s->prog && (s->prog->flags & PROGRAM_FINISHED))) {
+    if (!finish_compiler_supporter(s, finish)) ok = 0;
+  } else if (!run_finished_dependants()) ok = 0;
   return ok;
 }
 
@@ -378,6 +511,40 @@ int report_compiler_dependency(struct program *p)
   }
   verify_supporters();
   return ret;
+}
+
+int report_compiler_dependency_level(struct program *p,
+                                     enum compiler_dependency_level level)
+{
+  struct Supporter *supplier, *consumer = current_supporter;
+  struct program *parent;
+  struct compiler_dependency *d;
+
+  if (level == COMPILER_DEPENDENCY_DECLARATIONS)
+    return report_compiler_dependency(p);
+  if (!consumer || (p->flags & PROGRAM_FINISHED)) return 0;
+
+  /* Nested classes share their containing compilation unit's supporter. */
+  for (parent = p; parent; parent = parent->parent) {
+    for (supplier = pending_supporters; supplier;
+         supplier = supplier->pending_next)
+      if (supplier->prog == parent) break;
+    if (supplier) break;
+  }
+  if (!parent || supplier == consumer) return 0;
+  for (d = consumer->finish_dependencies; d; d = d->next)
+    if (d->program == p) return 1;
+  if (depends_on_finished(supplier, consumer)) {
+    yyerror("Cyclic dependency between final compiler passes.");
+    return 0;
+  }
+
+  d = ALLOC_STRUCT(compiler_dependency);
+  add_ref(d->program = p);
+  d->supplier = supplier;
+  d->next = consumer->finish_dependencies;
+  consumer->finish_dependencies = d;
+  return 1;
 }
 
 extern int yyparse(void);
@@ -1538,6 +1705,11 @@ static int call_delayed_pass2(struct Supporter *s, int finish)
     }
     run_pass2(cc);
   }
+  if (!finish) {
+    if (cc->p) free_program(cc->p);
+    cc->p = NULL;
+  }
+  if (!finish_compiler_supporter(s, !!cc->p)) finish = 0;
   run_cleanup(cc,1);
 
   exit_compiler();
@@ -1898,6 +2070,18 @@ static void f_compilation_compile(INT32 args)
 
   delay=run_pass1(c);
   dependants_ok = call_dependants(& c->supporter, !!c->p );
+  /* Declaration callbacks can finish our suppliers before we return our
+   * first-pass program. In that case finish here, rather than invoking a
+   * delayed callback that would consume c->p under this stack frame.
+   */
+  if (!c->p && !c->supporter.declarations_pending) delay = 0;
+  if (c->supporter.waiting_for_finish &&
+      !c->supporter.declarations_pending &&
+      !c->supporter.finish_dependencies) {
+    c->supporter.waiting_for_finish = 0;
+    free_object(c->supporter.self.u.object);
+    delay = 0;
+  }
 #ifdef PIKE_DEBUG
   /* FIXME */
   UNSET_ONERROR(tmp);
@@ -1911,6 +2095,7 @@ static void f_compilation_compile(INT32 args)
     /* finish later */
     verify_supporters();
     /* We're hanging in the supporter. */
+    c->supporter.callback_ready = 1;
     ret = debug_malloc_pass(c->p);
   }else{
     CDFPRINTF("th(%ld) %p f_compilation_compile() finish now.\n",
@@ -1921,6 +2106,8 @@ static void f_compilation_compile(INT32 args)
     }
     /* finish now */
     run_pass2(c);
+    if (!finish_compiler_supporter(&c->supporter, !!c->p))
+      dependants_ok = 0;
     debug_malloc_touch(c);
     run_cleanup(c,0);
 

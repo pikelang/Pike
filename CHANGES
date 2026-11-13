@@ -48,6 +48,13 @@ o Cpp
 
 o Compiler
 
+  - Inheritance can now delay a derived module's final compilation until an
+    inherited program's compilation unit has finished. This avoids some
+    loading-order-dependent failures when modules refer to each other's
+    types. The base must already have completed its first pass; unresolved
+    placeholders and cyclic final-pass dependencies are still rejected.
+    Pike 9.0 and earlier compatibility modes retain the old restrictions.
+
   - Keep mutable container construction visible to the normal optimizer.
     This restores array append optimizations and avoids replacing simple
     array allocation with expensive recursive copies of constants.

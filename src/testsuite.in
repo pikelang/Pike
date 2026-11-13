@@ -16189,6 +16189,16 @@ array a()
 }
 ]])
 
+// Inheriting programs whose declarations are available but whose
+// containing compilation unit has not completed its final pass (#7703).
+test_tests([[
+array a()
+{
+  return Tools.Testsuite.run_script (
+    "]]SRCDIR[[/test_inherit_dependencies.test");
+}
+]])
+
 // enum and typedef
 
 test_compile_error_any([[enum X {A, B}; enum(X) x;]])
