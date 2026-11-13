@@ -31,8 +31,13 @@ Inside that shell, choose absolute source, build and staging paths:
 
 Extract sources below PORT_SRC. The tested source archives are available
 in /var/cache/distfiles/. Adapt paths and --build for a different host.
-Use serial make with older Microsoft compilers when debug information
-uses a shared PDB database.
+Parallel make is supported with older Microsoft compilers: rntcl serializes
+-g invocations within each working directory using .rntcl-pdb.lock, while
+separate directories can compile concurrently. The persistent sidecar uses
+Pike's file locking; no external flock command is required. Do not delete it
+while wrappers are running. All compilers sharing a PDB must use the wrappers
+on a filesystem with working file locks. Explicitly shared linker PDBs across
+different directories need separate coordination.
 
 Source compatibility fixes
 --------------------------

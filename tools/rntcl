@@ -67,6 +67,10 @@ int verbose=0;
 // Temporary variable
 int linking_failed;
 
+// Keep both objects alive until exit, including output-file handling.
+Stdio.File pdb_lock_file;
+object pdb_lock_key;
+
 // Files to remove upon exit
 array(string) tmpfiles=({});
 
@@ -273,7 +277,7 @@ int main(int argc, array(string) argv)
 #ifdef OLD_VC
 	    "-Z7",   // This flag is of no use if -Zi is given.
 #endif
-	    "-Zi",   // This flag prevents parallell compilation
+            "-Zi",   // Requires serialized access to the compiler PDB.
 //	    "-FR",   // This flag confuses libtool
 //	    "-Yd",
 	  });
@@ -492,6 +496,21 @@ int main(int argc, array(string) argv)
   if (!crt_lib) {
     cflags+=({"-MT"});
     crt_lib = "libcmt.lib";
+  }
+
+  if (debug && target != "-") {
+    // cl.exe uses a shared compiler PDB in the working directory. Use a
+    // sidecar: the compiler may replace the PDB itself. Never unlink this
+    // file, since waiters must continue to lock the same inode. Different
+    // build directories can still compile concurrently.
+    pdb_lock_file = Stdio.File();
+    if (!pdb_lock_file->open(".rntcl-pdb.lock", "rwc", 0666))
+      error("RNTCL: Cannot open PDB lock in %s: %s.\n",
+            getcwd(), strerror(pdb_lock_file->errno()));
+    pdb_lock_key = pdb_lock_file->lock();
+    if (!pdb_lock_key)
+      error("RNTCL: Cannot lock compiler PDB in %s: %s.\n",
+            getcwd(), strerror(pdb_lock_file->errno()));
   }
 
   if(output) rm(output);

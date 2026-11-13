@@ -1,0 +1,107 @@
+#!/usr/bin/env pike
+// Run with: pike tools/rntcl-pdb.test (no Windows tools required).
+
+int main()
+{
+  string directory = combine_path("/tmp",
+    sprintf("rntcl-test-%d-%d", getpid(), random(1000000000)));
+  if (!mkdir(directory)) error("Cannot create temporary directory.\n");
+  string driver = combine_path(dirname(__FILE__), "rntcl");
+  string wine = directory + "/wine";
+  Stdio.write_file(wine, #{#!/bin/sh
+for arg do
+  case "$arg" in
+    -E) printf 'preprocessed\n'; exit 0 ;;
+  esac
+done
+if ! mkdir active; then echo 'Concurrent PDB access' >&2; exit 8; fi
+printf '%s start\n' "$TEST_GROUP" >> "$TEST_EVENTS"
+sleep 0.1
+printf '%s end\n' "$TEST_GROUP" >> "$TEST_EVENTS"
+rmdir active
+if [ -n "$TEST_FAIL" ]; then exit 7; fi
+for arg do
+  case "$arg" in
+    -Fo*) printf object > "${arg#-Fo}" ;;
+  esac
+done
+#});
+  chmod(wine, 0700);
+  mapping env = getenv() + ([ "REMOTE_METHOD": "wine",
+    "PATH": directory + ":" + getenv("PATH"),
+    "TEST_EVENTS": directory + "/events", "RNTCL_AS": "",
+    "TEST_FAIL": "" ]);
+  Stdio.File log = Stdio.File(directory + "/log", "wct");
+  array(object) processes = ({});
+  int tests;
+  mixed failure = catch {
+    foreach (({ "one", "two" }), string group)
+      mkdir(directory + "/" + group);
+    // Interleave directories: each PDB must be exclusive, but independent
+    // PDBs should be usable concurrently. Exercise both output paths.
+    for (int i; i < 8; i++) {
+      foreach (({ "one", "two" }), string group) {
+        processes += ({ Process.create_process(
+          ({ master()->_pike_file_name, driver, "-g", "-MD", "-c",
+             "-o", sprintf("part%d.o", i), "source.c" }) +
+          (i & 1 ? ({ "-v" }) : ({})),
+          ([ "cwd": directory + "/" + group,
+             "env": env + ([ "TEST_GROUP": group ]),
+             "stdout": log, "stderr": log ])) });
+      }
+    }
+    foreach (processes, object process)
+      if (process->wait()) error("Concurrent compilation failed.\n");
+    tests++;
+    mapping(string:int) active = ([]);
+    int overlap;
+    foreach (Stdio.read_file(directory + "/events") / "\n", string line) {
+      string group, event;
+      if (sscanf(line, "%s %s", group, event) != 2) continue;
+      if (event == "start") {
+        if (active[group]++) error("Overlapping access to one PDB.\n");
+        if (active->one && active->two) overlap = 1;
+      } else if (--active[group]) error("Unbalanced compiler events.\n");
+    }
+    if (!overlap) error("Independent directories did not overlap.\n");
+    tests++;
+    function run = lambda(array(string) args, mapping changes) {
+      return Process.run(({ master()->_pike_file_name, driver }) + args,
+        ([ "cwd": directory + "/one", "env": env + changes ]));
+    };
+    // Failure must release the lock for the next invocation.
+    if (run(({ "-g", "-c", "source.c" }),
+            ([ "TEST_FAIL": "1" ]))->exitcode != 7)
+      error("Compiler failure was not propagated.\n");
+    if (run(({ "-g", "-c", "source.c" }), ([]))->exitcode)
+      error("Compiler lock was not released after failure.\n");
+    tests++;
+    // Preprocessing must not try to acquire the held debug-PDB lock.
+    object file = Stdio.File(directory + "/one/.rntcl-pdb.lock", "rw");
+    object key = file->lock();
+    mapping result = run(({ "-g", "-E", "source.c" }), ([]));
+    if (result->exitcode || result->stdout != "preprocessed\n")
+      error("Debug preprocessing failed: %O\n", result);
+    destruct(key);
+    file->close();
+    tests++;
+    foreach (({ "one", "two" }), string group) {
+      for (int i; i < 8; i++)
+        if (Stdio.read_file(sprintf("%s/%s/part%d.o", directory, group, i))
+            != "object") error("Missing compiler output.\n");
+    }
+    tests++;
+  };
+  foreach (processes, object process) process->wait();
+  log->close();
+  foreach (({ "one", "two" }), string group) {
+    foreach (get_dir(directory + "/" + group) || ({}), string file)
+      rm(directory + "/" + group + "/" + file);
+    rm(directory + "/" + group);
+  }
+  foreach (get_dir(directory), string file) rm(directory + "/" + file);
+  rm(directory);
+  if (failure) throw(failure);
+  write("%d compiler PDB locking tests passed.\n", tests);
+  return 0;
+}
