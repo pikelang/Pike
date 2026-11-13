@@ -29,8 +29,34 @@ struct pikecode_ssa_integer_plan {
   struct pikecode_ssa_integer_value value[PIKE_SSA_INTEGER_VALUES + 1];
 };
 
+/* The stack extension retains at most two virtual stack operands. Every
+ * snapshot is taken before an arithmetic opcode, while all its versions
+ * are still resident. Regions start and finish at their entry stack depth.
+ */
+#define PIKE_SSA_INTEGER_STACK 2
+#define PIKE_SSA_INTEGER_CODE 32
+struct pikecode_ssa_integer_snapshot {
+  unsigned int local[PIKE_SSA_INTEGER_LOCALS];
+  unsigned int stack[PIKE_SSA_INTEGER_STACK];
+  unsigned int depth, dirty;
+};
+struct pikecode_ssa_integer_step {
+  unsigned int first, result;
+  struct pikecode_ssa_integer_snapshot before;
+};
+struct pikecode_ssa_integer_stack_plan {
+  unsigned int locals, values, count, consumed, loads, writes, retained;
+  INT32 local[PIKE_SSA_INTEGER_LOCALS];
+  struct pikecode_ssa_integer_value value[PIKE_SSA_INTEGER_VALUES + 1];
+  struct pikecode_ssa_integer_step step[PIKE_SSA_INTEGER_LIMIT];
+  struct pikecode_ssa_integer_snapshot final;
+};
+
 struct p_instr_s;
 int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *plan,
                               const struct p_instr_s *code,
                               ptrdiff_t available, INT32 max_local);
+int pikecode_ssa_plan_integer_stack(
+    struct pikecode_ssa_integer_stack_plan *plan,
+    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local);
 #endif

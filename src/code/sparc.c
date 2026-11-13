@@ -27,7 +27,9 @@
  * With SSA enabled, the shared integer value pass described in README.txt
  * defaults on for 32-bit Pike integers on either ABI and 64-bit integers
  * on SPARC64. Value banks use O0..O2; O3 holds speculative results and O4
- * saves a multi-step unit's input for rollback. Pointer loads follow the
+ * saves a balanced unit's input for rollback. The stack-aware lowering
+ * shares the banks between live local/stack versions and uses O4 to address
+ * the Pike stack when publishing side exits. Pointer loads follow the
  * ABI, independently of integer width. Word values use word loads/stores
  * and ICC overflow branches; doublewords use XCC branches. Word
  * arithmetic needs only V7 instructions. SPARC32 with 64-bit Pike integers
@@ -330,7 +332,7 @@ static INT32 sparc_sp_depth;
 static unsigned int sparc_join_unused;
 static int sparc_ssa_initialized, sparc_ssa_stats, sparc_ssa_no_joins;
 static ptrdiff_t sparc_function_start;
-static int sparc_ssa_integer_regions;
+static int sparc_ssa_integer_regions, sparc_ssa_no_integer_stack;
 static struct {
   unsigned long loads[PIKE_SSA_SLOT_COUNT];
   unsigned long defs[PIKE_SSA_SLOT_COUNT];
@@ -339,6 +341,7 @@ static struct {
   unsigned long avoided[PIKE_SSA_SLOT_COUNT];
   unsigned long calls, code_bytes;
   unsigned long integer_regions, integer_ops, integer_values;
+  unsigned long integer_stack_regions;
   unsigned long integer_loads_avoided, integer_stores_avoided;
 } sparc_stats;
 
@@ -506,10 +509,11 @@ static void sparc_ssa_report(void)
           sparc_stats.avoided[PIKE_SSA_FP], sparc_stats.avoided[PIKE_SSA_SP],
           sparc_stats.calls, sparc_stats.code_bytes, !sparc_ssa_no_joins);
   fprintf(stderr, "SSA SPARC integers: regions=%lu ops=%lu values=%lu "
-          "loads avoided=%lu stores avoided=%lu; enabled=%d\n",
+          "loads avoided=%lu stores avoided=%lu stack regions=%lu; enabled=%d\n",
           sparc_stats.integer_regions, sparc_stats.integer_ops,
           sparc_stats.integer_values, sparc_stats.integer_loads_avoided,
-          sparc_stats.integer_stores_avoided, sparc_integer_regions_enabled());
+          sparc_stats.integer_stores_avoided, sparc_stats.integer_stack_regions,
+          sparc_integer_regions_enabled());
 }
 
 void sparc_start_function(int UNUSED(store_lines))
@@ -519,6 +523,7 @@ void sparc_start_function(int UNUSED(store_lines))
     sparc_ssa_stats = getenv("PIKE_SSA_STATS") != NULL;
     sparc_ssa_no_joins = getenv("PIKE_SSA_SPARC_JOINS") == NULL;
     sparc_ssa_integer_regions = getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
+    sparc_ssa_no_integer_stack = getenv("PIKE_SSA_NO_INTEGER_STACK") != NULL;
     if (sparc_ssa_stats) atexit(sparc_ssa_report);
   }
   sparc_function_start = Pike_compiler->new_program->num_program;

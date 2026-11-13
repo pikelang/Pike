@@ -83,7 +83,8 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
     return 0;
   }
   memset(p, 0, sizeof(*p));
-  while (p->count < PIKE_SSA_INTEGER_LIMIT && p->consumed < available) {
+  while (p->count < PIKE_SSA_INTEGER_LIMIT &&
+         (ptrdiff_t)p->consumed < available) {
     const struct p_instr_s *op = &code[p->consumed];
     struct pikecode_ssa_integer_unit *u = &p->unit[p->units];
     unsigned int steps;
@@ -135,5 +136,198 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
     if (!used) return 0;
   }
   if (p->loads <= p->locals) return 0;
+  return p->consumed;
+}
+
+/* Retained assignments use a separate plan so the original balanced-unit
+ * planner stays available as a comparison and as a register-budget fallback.
+ * Three physical banks are shared by local versions and virtual stack values.
+ * A bank may be reused only after its last local/stack reference disappears.
+ * The result is copied into that bank after the overflow branch, so the
+ * before-snapshot still names intact operands on every side exit.
+ */
+static int integer_stack_local(struct pikecode_ssa_integer_stack_plan *p,
+                               INT32 local, INT32 max_local)
+{
+  unsigned int i;
+  for (i = 0; i < p->locals; i++)
+    if (p->local[i] == local) return i;
+  if (local < 0 || local > max_local ||
+      p->locals == PIKE_SSA_INTEGER_LOCALS) return -1;
+  p->local[p->locals++] = local;
+  return p->locals - 1;
+}
+
+static int integer_stack_refs(const struct p_instr_s *op,
+                               INT32 *a, INT32 *b)
+{
+  *a = *b = -1;
+  switch (op->opcode) {
+  case F_2_LOCALS: case F_ADD_LOCALS_AND_POP:
+    *b = op->arg2;
+    if (*b < 0) return 0;
+    /* FALLTHRU */
+  case F_LOCAL: case F_INC_LOCAL: case F_DEC_LOCAL:
+  case F_INC_LOCAL_AND_POP: case F_DEC_LOCAL_AND_POP:
+  case F_ASSIGN_LOCAL: case F_ASSIGN_LOCAL_AND_POP:
+  case F_ADD_LOCAL_INT_AND_POP:
+    *a = op->arg;
+    return *a >= 0;
+  case F_ADD_INTS: case F_ADD_INT: case F_POP_VALUE:
+    return 1;
+  case F_ADD_NEG_INT: case F_SUBTRACT_INT:
+    return !INT32_NEG_OVERFLOW(op->arg);
+  }
+  return 0;
+}
+
+int pikecode_ssa_plan_integer_stack(
+    struct pikecode_ssa_integer_stack_plan *p,
+    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local)
+{
+  struct pikecode_ssa_integer_snapshot state;
+  struct pikecode_ssa_integer_stack_plan best;
+  unsigned int n, e, i, arithmetic = 0, retained = 0, used = 0, best_used = 0;
+  if (available <= 0) return 0;
+  switch (code[0].opcode) {
+  case F_LOCAL: case F_2_LOCALS: case F_INC_LOCAL: case F_DEC_LOCAL:
+  case F_INC_LOCAL_AND_POP: case F_DEC_LOCAL_AND_POP:
+  case F_ADD_LOCAL_INT_AND_POP: case F_ADD_LOCALS_AND_POP:
+    break;
+  default: return 0;
+  }
+  p->locals = 0;
+  /* All guards run at entry. Discover initial local versions before any
+   * temporary can borrow a bank, including locals first read later. */
+  for (n = 0; n < PIKE_SSA_INTEGER_CODE && (ptrdiff_t)n < available; n++) {
+    const struct p_instr_s *op = &code[n];
+    INT32 a, b;
+    int is_arithmetic;
+    if (op->line != code[0].line || op->file != code[0].file ||
+        !integer_stack_refs(op, &a, &b)) break;
+    is_arithmetic = op->opcode != F_LOCAL && op->opcode != F_2_LOCALS &&
+      op->opcode != F_ASSIGN_LOCAL && op->opcode != F_ASSIGN_LOCAL_AND_POP &&
+      op->opcode != F_POP_VALUE;
+    if (is_arithmetic && arithmetic == PIKE_SSA_INTEGER_LIMIT) break;
+    if (a >= 0 && integer_stack_local(p, a, max_local) < 0) break;
+    if (b >= 0 && integer_stack_local(p, b, max_local) < 0) break;
+    arithmetic += is_arithmetic;
+    retained |= op->opcode == F_ASSIGN_LOCAL;
+  }
+  if (!retained || arithmetic < 2) return 0;
+  p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
+  memset(p->value, 0, sizeof(p->value));
+  memset(p->step, 0, sizeof(p->step));
+  memset(&state, 0, sizeof(state));
+  memset(&best, 0, sizeof(best));
+  for (i = 0; i < p->locals; i++) {
+    struct pikecode_ssa_integer_value *v = &p->value[++p->values];
+    v->kind = PIKE_SSA_INTEGER_LOAD;
+    v->local = p->local[i];
+    v->bank = i;
+    state.local[i] = p->values;
+  }
+  for (e = 0; e < n; e++) {
+    const struct p_instr_s *op = &code[e];
+    struct pikecode_ssa_integer_snapshot before = state;
+    unsigned int left = 0, right = 0, push = 0, write = 0, live = 0, bank;
+    INT32 imm = 0, a, b;
+    int dst = -1, src = -1;
+    integer_stack_refs(op, &a, &b);
+    for (i = 0; i < p->locals; i++) {
+      if (p->local[i] == a) dst = i;
+      if (p->local[i] == b) src = i;
+    }
+    switch (op->opcode) {
+    case F_LOCAL: case F_2_LOCALS:
+      if (state.depth + (src >= 0 ? 2 : 1) > PIKE_SSA_INTEGER_STACK)
+        goto finished;
+      state.stack[state.depth++] = state.local[dst];
+      if (src >= 0) state.stack[state.depth++] = state.local[src];
+      goto accepted;
+    case F_ASSIGN_LOCAL: case F_ASSIGN_LOCAL_AND_POP:
+      if (!state.depth) goto finished;
+      left = state.stack[state.depth - 1];
+      /* Bare input copies would need parallel subtype-tag moves at commit.
+       * Keep those on the ordinary path; arithmetic results have tag INT/0. */
+      if (p->value[left].kind != PIKE_SSA_INTEGER_ADD) goto finished;
+      state.local[dst] = left;
+      state.dirty |= 1U << dst;
+      p->writes++;
+      if (op->opcode == F_ASSIGN_LOCAL_AND_POP) state.depth--;
+      else p->retained = 1;
+      goto accepted;
+    case F_POP_VALUE:
+      if (!state.depth) goto finished;
+      state.depth--;
+      goto accepted;
+    case F_ADD_INTS:
+      if (state.depth < 2) goto finished;
+      right = state.stack[--state.depth];
+      left = state.stack[--state.depth];
+      push = 1;
+      break;
+    case F_ADD_INT: case F_ADD_NEG_INT: case F_SUBTRACT_INT:
+      if (!state.depth) goto finished;
+      left = state.stack[--state.depth];
+      imm = op->opcode == F_ADD_INT ? op->arg : -op->arg;
+      push = 1;
+      break;
+    default:
+      left = state.local[dst];
+      write = 1;
+      if (op->opcode == F_ADD_LOCALS_AND_POP) right = state.local[src];
+      else if (op->opcode == F_ADD_LOCAL_INT_AND_POP) imm = op->arg2;
+      else imm = (op->opcode == F_INC_LOCAL ||
+                  op->opcode == F_INC_LOCAL_AND_POP) ? 1 : -1;
+      push = op->opcode == F_INC_LOCAL || op->opcode == F_DEC_LOCAL;
+      if (push && state.depth == PIKE_SSA_INTEGER_STACK) goto finished;
+      state.local[dst] = 0;
+      break;
+    }
+    for (i = 0; i < p->locals; i++)
+      if (state.local[i]) live |= 1U << p->value[state.local[i]].bank;
+    for (i = 0; i < state.depth; i++)
+      live |= 1U << p->value[state.stack[i]].bank;
+    bank = p->value[left].bank;
+    if (live & (1U << bank)) {
+      for (bank = 0; bank < PIKE_SSA_INTEGER_LOCALS; bank++)
+        if (!(live & (1U << bank))) break;
+      if (bank == PIKE_SSA_INTEGER_LOCALS) goto finished;
+    }
+    {
+      struct pikecode_ssa_integer_step *step = &p->step[p->count++];
+      struct pikecode_ssa_integer_value *v = &p->value[++p->values];
+      step->first = e;
+      step->before = before;
+      step->result = p->values;
+      v->kind = PIKE_SSA_INTEGER_ADD;
+      v->left = left;
+      v->right = right;
+      v->imm = imm;
+      v->bank = bank;
+      v->local = -1;
+      if (write) {
+        state.local[dst] = p->values;
+        state.dirty |= 1U << dst;
+        p->writes++;
+      }
+      if (push) state.stack[state.depth++] = p->values;
+      p->loads += right ? 2 : 1;
+    }
+  accepted:
+    if (dst >= 0) used |= 1U << dst;
+    if (src >= 0) used |= 1U << src;
+    p->final = state;
+    p->consumed = e + 1;
+    if (!state.depth && p->retained && p->count >= 2 &&
+        p->loads > p->locals) {
+      best = *p;
+      best_used = used;
+    }
+  }
+ finished:
+  if (!best.consumed || best_used != (1U << best.locals) - 1) return 0;
+  *p = best;
   return p->consumed;
 }

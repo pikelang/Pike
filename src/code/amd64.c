@@ -54,7 +54,9 @@
  * With SSA enabled and 64-bit Pike integers, the shared integer value pass
  * described in README.txt is enabled by default. Value banks use R8,
  * R9, and R10. RAX holds speculative results; a multi-step unit saves its
- * input in RDX for overflow rollback. This pass is independent of the
+ * input in RDX for balanced-unit rollback. The stack-aware lowering shares
+ * the three banks between live local/stack versions and uses RDX to address
+ * the Pike stack when publishing side exits. It is independent of the
  * locals-cache flags.
  */
 
@@ -161,6 +163,7 @@ static int ssa_no_fp_join = 0;
 static int ssa_no_sp_join = 0;
 static int ssa_no_locals_cache = 1;
 static int ssa_integer_regions = 0;
+static int ssa_no_integer_stack = 0;
 static int ssa_locals_valid = 0;
 static int ssa_sp_join_unused = 0;
 static unsigned int ssa_sp_value = 0;
@@ -184,6 +187,7 @@ static struct {
   unsigned long regions, regions_abandoned;
   unsigned long region_bytes_removed, branches_shortened;
   unsigned long integer_regions, integer_ops, integer_values;
+  unsigned long integer_stack_regions;
   unsigned long integer_loads_avoided, integer_stores_avoided;
 } ssa_stats;
 #else
@@ -1422,7 +1426,7 @@ static void amd64_ssa_report_stats(void)
           "locals loads=%lu reused=%lu repairs=%lu removed=%lu copies removed=%lu; "
           "regions=%lu abandoned=%lu bytes removed=%lu short branches=%lu; "
           "integer regions=%lu ops=%lu values=%lu "
-          "loads avoided=%lu stores avoided=%lu; eager=%d\n",
+          "loads avoided=%lu stores avoided=%lu stack regions=%lu; eager=%d\n",
           ssa_stats.loads[PIKE_SSA_IP],
           ssa_stats.loads[PIKE_SSA_SP],
           ssa_stats.definitions[PIKE_SSA_SP],
@@ -1452,6 +1456,7 @@ static void amd64_ssa_report_stats(void)
           ssa_stats.integer_values,
           ssa_stats.integer_loads_avoided,
           ssa_stats.integer_stores_avoided,
+          ssa_stats.integer_stack_regions,
           ssa_eager_stores);
 }
 #endif
@@ -1469,6 +1474,7 @@ void amd64_start_function(int store_lines )
      * the original eager cache emitter. */
     ssa_no_regions = getenv("PIKE_SSA_NO_REGIONS") != NULL;
     ssa_integer_regions = getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
+    ssa_no_integer_stack = getenv("PIKE_SSA_NO_INTEGER_STACK") != NULL;
     ssa_no_locals_cache = getenv("PIKE_SSA_LOCALS_CACHE") == NULL ||
       getenv("PIKE_SSA_NO_LOCALS_CACHE") != NULL;
     ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;

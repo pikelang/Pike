@@ -77,6 +77,12 @@ o Compiler
 
   SPARC32 now also supports integer regions with 32-bit Pike integers.
 
+  Integer regions now track retained local-assignment results on a virtual
+  Pike stack by default. Overflow exits publish the completed local and
+  stack state before resuming the failed operation. Set the environment
+  variable PIKE_SSA_NO_INTEGER_STACK=1 to select
+  the earlier balanced-unit planner for comparisons.
+
 
 Deprecated symbols and modules
 ------------------------------

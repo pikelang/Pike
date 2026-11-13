@@ -3,40 +3,66 @@ Code generation templates for Pike.
 The experimental machine-state SSA model is in ssa.[ch]. Enable it with
 --enable-ssa. The model assigns versions to the interpreter pointer,
 frame pointer, stack pointer, and mark stack pointer as code is emitted.
-This is an initial machine-state IR, not a full machine-instruction SSA IR.
-PIKE_SSA_STATS=1 prints aggregate counts of state loads, definitions,
-stores, and generated code bytes at process exit.
+This is an initial machine-state IR, not a full machine-instruction SSA
+IR. PIKE_SSA_STATS=1 prints aggregate counts of state loads,
+definitions, stores, and generated code bytes at process exit.
 
 Backend-specific registers, optimizations, and comparison flags are
 documented in the opening comments of the corresponding CPU files.
 
 The integer value pass is enabled by default in SSA-enabled builds on
 backends that implement it for the configured Pike integer width. Set
-PIKE_SSA_NO_INTEGER_REGIONS=1 to disable it for comparisons or debugging.
-The former PIKE_SSA_INTEGER_REGIONS flag is no longer needed. The pass
-recognizes up to eight additions/increments using at most three locals on
-one source line.
-Supported units include local updates and local/stack/add/assignment
-sequences that leave the Pike stack at its original depth. Labels, debug
-directives, and unsupported operations end a run. Tracing and disassembly
-use the ordinary emitter.
+PIKE_SSA_NO_INTEGER_REGIONS=1 to disable it for comparisons or
+debugging. The former PIKE_SSA_INTEGER_REGIONS flag is no longer needed.
+The pass recognizes up to eight additions/increments using at most three
+locals on one source line. The original planner supports local updates
+and local/stack/add/assignment units that leave the Pike stack at its
+original depth. Labels, debug directives, and unsupported operations end
+a run. Tracing and disassembly use the ordinary emitter.
 
-The shared planner in ssa_integer.[ch] assigns SSA versions to integer
-loads and additions and coalesces each local's versions into a logical
-value bank. It contains no native registers or instruction encodings. The
+The shared planners in ssa_integer.[ch] assign SSA versions to integer
+loads and additions and allocate logical value banks. The original
+balanced-unit planner coalesces each local's versions into one bank.
+Neither planner contains native registers or instruction encodings. The
 backends lower the same plan independently. Each input local is guarded
-once. A result replaces the current version only after its overflow check,
-and only final dirty locals are stored on the fast path. An overflow exit
-commits completed units and resumes the remaining source opcodes through
-their ordinary slow paths. A multi-step unit saves its input so it can
-restore that version and replay the unit from a balanced Pike stack. No
-fast-path operation calls C or exposes an uncommitted value to a callback.
-Source locals that were only read retain their original subtype tags.
+once. A result replaces the current version only after its overflow
+check, and only final dirty locals are stored on the fast path. The
+balanced-unit path commits completed units on overflow and resumes the
+remaining source opcodes through their ordinary slow paths. A multi-step
+unit saves its input so it can restore that version and replay the unit
+from a balanced Pike stack. No fast-path operation calls C or exposes an
+uncommitted value to a callback. Source locals that were only read
+retain their original subtype tags.
 
-Integer statistics count regions, arithmetic operations, SSA values, reused
-logical operand reads, and deferred local writes. The latter two are IR
-counts, not hardware load/store counts. Use perf and repeated runtime tests
-for performance claims. Tools.Shoot.AdjacentArithmetics exercises adjacent
+The stack-aware planner is enabled by default. It extends the original
+path through retained local assignments (F_ASSIGN_LOCAL), using up to
+two virtual Pike-stack operands and three shared value banks. Banks are
+reused only after their last local or stack reference disappears. Set
+PIKE_SSA_NO_INTEGER_STACK=1 to use only the original balanced-unit
+planner for comparisons. It also remains the fallback when the extended
+plan cannot fit its register budget.
+
+A snapshot before each arithmetic opcode names the current local
+versions, dirty locals, and virtual stack values. Speculative results
+replace their bank only after the overflow check. An overflow exit
+publishes the stack and dirty locals, then resumes at the failed opcode;
+completed increments are not replayed. Input stack tags are copied
+before local commits so an original UNDEFINED subtype survives even if
+its local has been updated. The slow-path merge clears cached machine
+state before each possible entry.
+
+The first stack-aware implementation still requires each complete region
+to finish at its entry stack depth. It stops at the existing
+source/debug boundaries and does not carry values across calls or
+labels. Bare input assignments that need parallel subtype-tag moves use
+the ordinary path. Native encoding and register mappings remain
+backend-specific.
+
+Integer statistics count regions, arithmetic operations, SSA values,
+reused logical operand reads, deferred local writes, and stack-aware
+regions. Reused operand reads and deferred writes are IR counts, not
+hardware load/store counts. Use perf and repeated runtime tests for
+performance claims. Tools.Shoot.AdjacentArithmetics exercises adjacent
 updates while masking results back into the native integer range. For a
 paired comparison, run -x benchmark --json -s1 with
 -t'Adjacent arithmetics (locals)' with PIKE_SSA_NO_INTEGER_REGIONS unset

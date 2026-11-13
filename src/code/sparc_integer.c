@@ -85,6 +85,120 @@ static void sparc_integer_commit(const struct pikecode_ssa_integer_plan *p,
 }
 #endif
 
+#ifdef SPARC_INTEGER_LD
+static void sparc_integer_snapshot(
+    const struct pikecode_ssa_integer_stack_plan *p,
+    const struct pikecode_ssa_integer_snapshot *s)
+{
+  unsigned int i;
+  /* Copy input tags before committing locals that might own those tags. */
+  if (s->depth) {
+    PIKE_LDPTR(SPARC_REG_O4, SPARC_REG_PIKE_IP,
+               OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);
+    for (i = 0; i < s->depth; i++) {
+      const struct pikecode_ssa_integer_value *v = &p->value[s->stack[i]];
+      ptrdiff_t off = i * sizeof(struct svalue);
+      SPARC_INTEGER_ST(sparc_integer_reg(v), SPARC_REG_O4,
+                       off + OFFSETOF(svalue, u.integer), 1);
+      if (v->kind == PIKE_SSA_INTEGER_LOAD) {
+        SPARC_LDUW(SPARC_REG_O3, SPARC_REG_L5,
+                    v->local * sizeof(struct svalue) +
+                    OFFSETOF(svalue, tu.t.type), 1);
+        SPARC_STW(SPARC_REG_O3, SPARC_REG_O4,
+                   off + OFFSETOF(svalue, tu.t.type), 1);
+      } else
+        SPARC_STW(SPARC_REG_G0, SPARC_REG_O4,
+                   off + OFFSETOF(svalue, tu.t.type), 1);
+    }
+    SPARC_ADD(SPARC_REG_O4, SPARC_REG_O4,
+               s->depth * sizeof(struct svalue), 1);
+    PIKE_STPTR(SPARC_REG_O4, SPARC_REG_PIKE_IP,
+                OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);
+  }
+  for (i = 0; i < p->locals; i++) {
+    ptrdiff_t off = p->local[i] * sizeof(struct svalue);
+    if (!(s->dirty & (1U << i))) continue;
+    SPARC_INTEGER_ST(sparc_integer_reg(&p->value[s->local[i]]), SPARC_REG_L5,
+                     off + OFFSETOF(svalue, u.integer), 1);
+    SPARC_STW(SPARC_REG_G0, SPARC_REG_L5,
+               off + OFFSETOF(svalue, tu.t.type), 1);
+  }
+}
+
+static int sparc_integer_stack_run(const struct p_instr_s *code,
+                                   ptrdiff_t available)
+{
+  struct pikecode_ssa_integer_stack_plan p;
+  struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
+  struct sparc_integer_label slow[PIKE_SSA_INTEGER_CODE] = {{0}};
+  struct sparc_integer_label done = {0};
+  unsigned int i, stores = 0;
+  if (sparc_ssa_no_integer_stack ||
+      !pikecode_ssa_plan_integer_stack(&p, code, available,
+        (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue)))
+    return 0;
+  sparc_flush_codegen_state();
+  sparc_update_pc();
+  LOAD_PIKE_FP();
+  PIKE_LDPTR(SPARC_REG_L5, SPARC_REG_PIKE_FP,
+             OFFSETOF(pike_frame, locals), 1);
+  for (i = 1; i <= p.locals; i++) {
+    const struct pikecode_ssa_integer_value *v = &p.value[i];
+    ptrdiff_t off = v->local * sizeof(struct svalue);
+    SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
+               off + OFFSETOF(svalue, tu.t.type), 1);
+    SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
+    sparc_integer_branch(&slow[0], 0x12800000); /* bne %icc */
+    SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
+                     off + OFFSETOF(svalue, u.integer), 1);
+  }
+  for (i = 0; i < p.count; i++) {
+    const struct pikecode_ssa_integer_value *v = &p.value[p.step[i].result];
+    int right;
+    if (v->right) right = sparc_integer_reg(&p.value[v->right]);
+    else {
+      SET_REG(SPARC_REG_O5, v->imm);
+      right = SPARC_REG_O5;
+    }
+    SPARC_ALU_OP(0x10, SPARC_REG_O3,
+                 sparc_integer_reg(&p.value[v->left]), right, 0); /* addcc */
+    sparc_integer_branch(&overflow[i], SPARC_INTEGER_BVS);
+    SPARC_OR(sparc_integer_reg(v), SPARC_REG_O3, SPARC_REG_G0, 0);
+  }
+  sparc_integer_snapshot(&p, &p.final);
+  sparc_integer_branch(&done, 0x10800000);
+  for (i = 0; i < p.count; i++) {
+    sparc_integer_bind(&overflow[i]);
+    sparc_integer_snapshot(&p, &p.step[i].before);
+    sparc_integer_branch(&slow[p.step[i].first], 0x10800000);
+  }
+  for (i = 0; i < p.consumed; i++) {
+    const struct p_instr_s *op = &code[i];
+    unsigned int flags = instrs[op->opcode - F_OFFSET].flags;
+    /* Fallthrough publishes its deferred stores before the label. Side
+     * exits skip them and arrive with their own canonical stack snapshot. */
+    sparc_flush_codegen_state();
+    sparc_integer_bind(&slow[i]);
+    if (flags & I_HASARG2)
+      ins_f_byte_with_2_args(op->opcode, op->arg, op->arg2);
+    else if (flags & I_HASARG) ins_f_byte_with_arg(op->opcode, op->arg);
+    else ins_f_byte(op->opcode);
+  }
+  sparc_flush_codegen_state();
+  sparc_integer_bind(&done);
+  if (sparc_ssa_stats) {
+    for (i = 0; i < p.locals; i++) stores += !!(p.final.dirty & (1U << i));
+    sparc_stats.integer_regions++;
+    sparc_stats.integer_stack_regions++;
+    sparc_stats.integer_ops += p.count;
+    sparc_stats.integer_values += p.values;
+    sparc_stats.integer_loads_avoided += p.loads - p.locals;
+    sparc_stats.integer_stores_avoided += p.writes - stores;
+  }
+  return p.consumed;
+}
+#endif
+
 int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
 {
 #ifdef SPARC_INTEGER_LD
@@ -93,8 +207,12 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
   struct sparc_integer_label slow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
   struct sparc_integer_label done = {0};
   unsigned int i, j, stores = 0;
-  if (!sparc_integer_regions_enabled() ||
-      !pikecode_ssa_plan_integer(&p, code, available,
+  if (!sparc_integer_regions_enabled()) return 0;
+  {
+    int consumed = sparc_integer_stack_run(code, available);
+    if (consumed) return consumed;
+  }
+  if (!pikecode_ssa_plan_integer(&p, code, available,
         (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue)))
     return 0;
 

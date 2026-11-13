@@ -380,6 +380,55 @@ test_any([[
   return 1;
 ]],1)
 
+// A retained assignment must not overwrite a value still on the stack.
+// Overflow snapshots must include the completed preincrement side effect.
+test_any([[
+  array(int) f(int a, int b) {
+    a += b; a = a + ++a; a += b; a -= 2; b++;
+    if (b) b += 3;
+    return ({ a, b });
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 2, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int x = a, y = b;
+    x += y;
+    int retained = x;
+    x++;
+    x = retained + x;
+    x += y;
+    x -= 2;
+    y++;
+    if (y) y += 3;
+    if (!equal(f(a, b), ({ x, y }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Overflow with an untouched input on the virtual stack must publish that
+// input's original subtype, as well as the already completed local updates.
+test_any([[
+  array(int) f(int x, int y) {
+    y -= 2; y += 2; y = x + ++y;
+    if (x) y++;
+    return ({ x, y, zero_type(x) });
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int x) foreach (values, int y) {
+    int expected = y;
+    expected -= 2;
+    expected += 2;
+    expected++;
+    expected = x + expected;
+    if (x) expected++;
+    if (!equal(f(x, y), ({ x, expected, zero_type(x) }))) return 0;
+  }
+  return 1;
+]], 1)
+
 test_any([[
   // bug 2690
   array(function) foo(void|int b)
