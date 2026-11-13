@@ -51,8 +51,8 @@
  * until repeated runtime measurements justify enabling it. This is a bounded
  * materialization/layout IR, not SSA for individual Pike local values.
  *
- * With 64-bit Pike integers, PIKE_SSA_INTEGER_REGIONS=1 enables the
- * shared integer value pass described in README.txt. Value banks use R8,
+ * With SSA enabled and 64-bit Pike integers, the shared integer value pass
+ * described in README.txt is enabled by default. Value banks use R8,
  * R9, and R10. RAX holds speculative results; a multi-step unit saves its
  * input in RDX for overflow rollback. This pass is independent of the
  * locals-cache flags.
@@ -1465,11 +1465,10 @@ void amd64_start_function(int store_lines )
     ssa_eager_stores = getenv("PIKE_SSA_EAGER_STORES") != NULL;
     ssa_no_fp_join = getenv("PIKE_SSA_NO_FP_JOIN") != NULL;
     ssa_no_sp_join = getenv("PIKE_SSA_NO_SP_JOIN") != NULL;
-    /* Keep the experiment opt-in until paired runtime measurements justify
-     * enabling it. NO_REGIONS restores the original eager cache emitter. */
+    /* The locals-cache experiment remains opt-in. NO_REGIONS restores
+     * the original eager cache emitter. */
     ssa_no_regions = getenv("PIKE_SSA_NO_REGIONS") != NULL;
-    ssa_integer_regions = getenv("PIKE_SSA_INTEGER_REGIONS") != NULL &&
-      getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
+    ssa_integer_regions = getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
     ssa_no_locals_cache = getenv("PIKE_SSA_LOCALS_CACHE") == NULL ||
       getenv("PIKE_SSA_NO_LOCALS_CACHE") != NULL;
     ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;

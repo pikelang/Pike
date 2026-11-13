@@ -24,8 +24,8 @@
  * avoid a reload, calls, and emitted code bytes. Compare the same binary with
  * the joins variable unset and set.
  *
- * On SPARC64 with 64-bit Pike integers, PIKE_SSA_INTEGER_REGIONS=1
- * enables the shared integer value pass described in README.txt. SPARC32
+ * On SPARC64 with SSA enabled and 64-bit Pike integers, the shared integer
+ * value pass described in README.txt is enabled by default. SPARC32
  * retains ordinary arithmetic emission. Value banks use O0..O2; O3 holds
  * speculative results and O4 saves a multi-step unit's input for rollback.
  * The lowering uses 64-bit XCC overflow branches with explicit delay-slot
@@ -515,8 +515,7 @@ void sparc_start_function(int UNUSED(store_lines))
     sparc_ssa_initialized = 1;
     sparc_ssa_stats = getenv("PIKE_SSA_STATS") != NULL;
     sparc_ssa_no_joins = getenv("PIKE_SSA_SPARC_JOINS") == NULL;
-    sparc_ssa_integer_regions = getenv("PIKE_SSA_INTEGER_REGIONS") != NULL &&
-      getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
+    sparc_ssa_integer_regions = getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
     if (sparc_ssa_stats) atexit(sparc_ssa_report);
   }
   sparc_function_start = Pike_compiler->new_program->num_program;

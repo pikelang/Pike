@@ -10,10 +10,12 @@ stores, and generated code bytes at process exit.
 Backend-specific registers, optimizations, and comparison flags are
 documented in the opening comments of the corresponding CPU files.
 
-PIKE_SSA_INTEGER_REGIONS=1 enables the integer value pass on backends that
-implement it, with 64-bit Pike integers. PIKE_SSA_NO_INTEGER_REGIONS=1
-forces it off. The pass remains opt-in. It recognizes up to eight
-additions/increments using at most three locals on one source line.
+The integer value pass is enabled by default in SSA-enabled builds on
+backends that implement it, with 64-bit Pike integers. Set
+PIKE_SSA_NO_INTEGER_REGIONS=1 to disable it for comparisons or debugging.
+The former PIKE_SSA_INTEGER_REGIONS flag is no longer needed. The pass
+recognizes up to eight additions/increments using at most three locals on
+one source line.
 Supported units include local updates and local/stack/add/assignment
 sequences that leave the Pike stack at its original depth. Labels, debug
 directives, and unsupported operations end a run. Tracing and disassembly
@@ -37,7 +39,8 @@ counts, not hardware load/store counts. Use perf and repeated runtime tests
 for performance claims. Tools.Shoot.AdjacentArithmetics exercises adjacent
 updates while masking results back into the native integer range. For a
 paired comparison, run -x benchmark --json -s1 with
--t'Adjacent arithmetics (locals)' with the integer flag unset and set.
+-t'Adjacent arithmetics (locals)' with PIKE_SSA_NO_INTEGER_REGIONS unset
+and set.
 
 One set of these paired files is included by the selection code
 in ../pikecode.[ch]. The selection code is also present in
