@@ -466,6 +466,10 @@ o Gmp
 
 o Stdio.File
 
+  Fixed socket duplication on Windows to use the Winsock duplication
+  API. This prevents close errors and missing EOF notifications that
+  could hang subprocess output handling, notably under Wine.
+
   Fixed a fatal error when interrupting or killing a thread blocked in
   file I/O. Busy-thread cleanup now handles exceptions from interrupt
   checks without unlinking the thread twice.

@@ -1,0 +1,54 @@
+#charset utf-8
+// Socket duplication must preserve I/O and EOF when either copy is closed.
+
+int main()
+{
+  int passed, failed;
+  foreach (({ 0, 1 }), int use_dup2) {
+    foreach (({ 0, 1 }), int close_original) {
+      Stdio.File reader = Stdio.File();
+      Stdio.File writer = reader->pipe();
+      Stdio.File copy;
+      mixed failure = catch {
+        if (use_dup2) {
+          // Use an open destination to exercise fd_dup2 rather than fd_dup.
+          Stdio.File discarded = Stdio.File();
+          copy = discarded->pipe();
+          if (!writer->dup2(copy)) error("dup2 failed.\n");
+          discarded->close();
+        } else {
+          copy = writer->dup();
+        }
+        if (copy->write("before\n") != 7) error("First write failed.\n");
+        (close_original ? writer : copy)->close();
+        Stdio.File remaining = close_original ? copy : writer;
+        if (remaining->write("after\n") != 6) error("Second write failed.\n");
+        remaining->close();
+
+        Pike.SmallBackend backend = Pike.SmallBackend();
+        reader->set_backend(backend);
+        string data = "";
+        int closed;
+        reader->set_nonblocking(
+          lambda(mixed id, string chunk) { data += chunk; }, 0,
+          lambda(mixed id) { closed = 1; });
+        int deadline = time() + 3;
+        while (!closed && time() < deadline) backend(0.05);
+        if (!closed || data != "before\nafter\n")
+          error("Missing data or EOF: %O, closed=%d.\n", data, closed);
+      };
+      catch { reader->close(); };
+      catch { writer->close(); };
+      if (copy) catch { copy->close(); };
+      if (failure) {
+        failed++;
+        werror("dup%s, close %s first:\n%s\n", use_dup2 ? "2" : "",
+               close_original ? "original" : "copy",
+               describe_backtrace(failure));
+      } else passed++;
+    }
+  }
+  write("%d socket duplication checks passed, %d failed.\n", passed, failed);
+  Tools.Testsuite.report_result(passed, failed);
+  return !!failed;
+}
