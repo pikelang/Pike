@@ -452,6 +452,12 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o Gmp
+
+  Fixed incorrect bignum results for overflowing negative integer products
+  on AMD64. Conversion of signed double-width products now propagates the
+  borrow between words and avoids signed negation overflow.
+
 o Stdio.File
 
   Fixed a fatal error when interrupting or killing a thread blocked in

@@ -501,11 +501,13 @@ PMOD_EXPORT struct object *create_double_bignum( INT_TYPE low, INT_TYPE high )
 {
   struct object *res = fast_clone_object( bignum_program );
   MP_INT *mpz = (MP_INT*)res->storage;
-  INT_TYPE data[2];
+  unsigned INT_TYPE data[2];
   if( UNLIKELY(high < 0) )
   {
-    data[0] = -low;
-    data[1] = -high;
+    /* Negate the whole double-width value, including the borrow from
+     * the low word. Unsigned arithmetic also handles INT_TYPE_MIN. */
+    data[0] = -(unsigned INT_TYPE)low;
+    data[1] = -(unsigned INT_TYPE)high - (low != 0);
     mpz_import( mpz, 2, -1, sizeof(INT_TYPE), 0, 0, data );
     mpz_neg( mpz,mpz );
   }

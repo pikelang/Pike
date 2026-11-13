@@ -9152,6 +9152,22 @@ test_any([[
   };
 ]], 0)
 
+// Overflowing signed products must import both words with the right sign.
+test_any([[
+  int product(int x, int y) { return x*y; }
+  int triple(int x) { return 3*x; }
+  array(int) values = ({ Int.NATIVE_MIN, Int.NATIVE_MIN + 1,
+                        -Int.NATIVE_MAX, -3, -2, -1, 0, 1, 2, 3,
+                        Int.NATIVE_MAX - 1, Int.NATIVE_MAX });
+  foreach (values, int x) {
+    if ((string)triple(x) != (string)(Gmp.mpz(x)*Gmp.mpz(3))) return 0;
+    foreach (values, int y)
+      if ((string)product(x, y) != (string)(Gmp.mpz(x)*Gmp.mpz(y)))
+        return 0;
+  }
+  return 1;
+]],1)
+
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
 test_true([[Int.NATIVE_MAX >= 2147483647]])
