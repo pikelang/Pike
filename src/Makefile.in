@@ -1590,6 +1590,7 @@ export_functions.c: import_functions.h
 # and that doesn't suffice in source dists.
 
 $(SRCDIR)/pikecode.h: \
+  $(SRCDIR)/code/ssa_integer.h \
   $(SRCDIR)/code/ia32.h \
   $(SRCDIR)/code/amd64.h \
   $(SRCDIR)/code/sparc.h \
@@ -1606,7 +1607,9 @@ $(SRCDIR)/pikecode.c: \
   $(SRCDIR)/code/amd64.c \
   $(SRCDIR)/code/amd64_ssa.c \
   $(SRCDIR)/code/amd64_integer.c \
+  $(SRCDIR)/code/ssa_integer.c \
   $(SRCDIR)/code/sparc.c \
+  $(SRCDIR)/code/sparc_integer.c \
   $(SRCDIR)/code/ppc32.c \
   $(SRCDIR)/code/ppc64.c \
   $(SRCDIR)/code/arm32.c \

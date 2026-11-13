@@ -22,6 +22,8 @@
 
 #ifdef PIKE_ENABLE_SSA
 #include "code/ssa.c"
+#include "peep.h"
+#include "code/ssa_integer.c"
 #endif
 
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32

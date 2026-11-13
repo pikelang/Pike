@@ -15,6 +15,7 @@
 
 #ifdef PIKE_ENABLE_SSA
 #include "code/ssa.h"
+#include "code/ssa_integer.h"
 #endif
 
 void ins_pointer(INT32 ptr);

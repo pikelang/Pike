@@ -330,6 +330,45 @@ test_any([[
   return 1;
 ]],1)
 
+// Roll back both steps of a unit after a different local was committed.
+// The branch prevents retaining the assignment result on the Pike stack.
+test_any([[
+  array(int) f(int x, int y) {
+    y++; x++; x += 3;
+    if (y) y++;
+    return ({ x, y });
+  }
+  array(int) values = ({ UNDEFINED, -1, 0, 1, (1 << 31) - 1,
+                        -(1 << 31), (1 << 63) - 1, (1 << 63) - 2,
+                        (1 << 63) - 4, -(1 << 63), 1 << 90 });
+  foreach (values, int x)
+    foreach (values, int y) {
+      int rx = x, ry = y;
+      ry++;
+      rx++;
+      rx += 3;
+      if (ry) ry++;
+      if (!equal(f(x, y), ({ rx, ry }))) return 0;
+    }
+  return 1;
+]],1)
+
+// Integer guards accept UNDEFINED, but a read-only source keeps its subtype.
+test_any([[
+  array(int) f(int x, int y, int z) {
+    x += y; z++; z++;
+    if (y) z++;
+    return ({ x, y, z, zero_type(y) });
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, (1 << 63) - 1,
+                        -(1 << 63), 1 << 90 });
+  foreach (values, int x)
+    foreach (values, int y)
+      if (!equal(f(x, y, 0), ({ x + y, y, y ? 3 : 2, zero_type(y) })))
+        return 0;
+  return 1;
+]],1)
+
 test_any([[
   // bug 2690
   array(function) foo(void|int b)

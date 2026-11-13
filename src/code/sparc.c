@@ -304,6 +304,7 @@ static INT32 sparc_sp_depth;
 static unsigned int sparc_join_unused;
 static int sparc_ssa_initialized, sparc_ssa_stats, sparc_ssa_no_joins;
 static ptrdiff_t sparc_function_start;
+static int sparc_ssa_integer_regions;
 static struct {
   unsigned long loads[PIKE_SSA_SLOT_COUNT];
   unsigned long defs[PIKE_SSA_SLOT_COUNT];
@@ -311,6 +312,8 @@ static struct {
   unsigned long joins[PIKE_SSA_SLOT_COUNT];
   unsigned long avoided[PIKE_SSA_SLOT_COUNT];
   unsigned long calls, code_bytes;
+  unsigned long integer_regions, integer_ops, integer_values;
+  unsigned long integer_loads_avoided, integer_stores_avoided;
 } sparc_stats;
 
 static void sparc_ssa_use(unsigned int bit, enum pikecode_ssa_slot slot)
@@ -476,6 +479,11 @@ static void sparc_ssa_report(void)
           sparc_stats.joins[PIKE_SSA_SP], sparc_stats.avoided[PIKE_SSA_IP],
           sparc_stats.avoided[PIKE_SSA_FP], sparc_stats.avoided[PIKE_SSA_SP],
           sparc_stats.calls, sparc_stats.code_bytes, !sparc_ssa_no_joins);
+  fprintf(stderr, "SSA SPARC integers: regions=%lu ops=%lu values=%lu "
+          "loads avoided=%lu stores avoided=%lu; enabled=%d\n",
+          sparc_stats.integer_regions, sparc_stats.integer_ops,
+          sparc_stats.integer_values, sparc_stats.integer_loads_avoided,
+          sparc_stats.integer_stores_avoided, sparc_integer_regions_enabled());
 }
 
 void sparc_start_function(int UNUSED(store_lines))
@@ -484,6 +492,8 @@ void sparc_start_function(int UNUSED(store_lines))
     sparc_ssa_initialized = 1;
     sparc_ssa_stats = getenv("PIKE_SSA_STATS") != NULL;
     sparc_ssa_no_joins = getenv("PIKE_SSA_SPARC_JOINS") == NULL;
+    sparc_ssa_integer_regions = getenv("PIKE_SSA_INTEGER_REGIONS") != NULL &&
+      getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;
     if (sparc_ssa_stats) atexit(sparc_ssa_report);
   }
   sparc_function_start = Pike_compiler->new_program->num_program;
@@ -1311,3 +1321,7 @@ void sparc_disassemble_code(void *addr, size_t bytes)
   fprintf(stderr, "%s", buf.s->str);
   free_string_builder(&buf);
 }
+
+#ifdef PIKE_ENABLE_SSA
+#include "sparc_integer.c"
+#endif

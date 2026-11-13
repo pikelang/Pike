@@ -36,8 +36,8 @@ not retained at joins. Existing deferred stores, call invalidations, delay
 slots, and word-based code offsets retain their original behavior.
 PIKE_SSA_STATS=1 reports loads, definitions, stores, joins, first uses that
 avoid a reload, calls, and emitted code bytes. Compare the same binary with
-the joins variable unset and set. The amd64 eager-store, locals-cache, and
-integer-region flags do not apply to these backends.
+the joins variable unset and set. The amd64 eager-store and locals-cache
+flags do not apply to these backends.
 
 PIKE_SSA_LOCALS_CACHE=1 enables an experimental read-only cache of
 frame->locals in caller-saved R11 on amd64. PIKE_SSA_NO_LOCALS_CACHE=1
@@ -71,7 +71,8 @@ until repeated runtime measurements justify enabling it. This is a bounded
 materialization/layout IR, not SSA for individual Pike local values.
 
 PIKE_SSA_INTEGER_REGIONS=1 enables a separate integer value pass on amd64
-with 64-bit Pike integers. PIKE_SSA_NO_INTEGER_REGIONS=1 forces it off.
+and SPARC64 with 64-bit Pike integers. SPARC32 retains ordinary emission.
+PIKE_SSA_NO_INTEGER_REGIONS=1 forces it off.
 It is independent of the locals-cache flags and remains opt-in. Before
 ordinary region emission, it recognizes up to eight additions/increments
 using at most three locals on one source line. Supported units include
@@ -79,15 +80,23 @@ local updates and local/stack/add/assignment sequences that leave the Pike
 stack at its original depth. Labels, debug directives, and unsupported
 operations end a run. Tracing and disassembly use the ordinary emitter.
 
-The pass assigns SSA versions to integer loads and additions and coalesces
-each local's versions into R8, R9, or R10. Each input local is guarded once.
-Results are computed in RAX before replacing the current version, and only
-final dirty locals are stored on the fast path. An overflow exit commits
-completed units and resumes the remaining source opcodes through their C
-implementations. A multi-step unit saves its input in RDX so it can restore
-that version and replay the unit from a balanced Pike stack. No fast-path
-operation calls C or exposes an uncommitted value to a callback. Source
-locals that were only read retain their original subtype tags.
+The shared planner in ssa_integer.[ch] assigns SSA versions to integer
+loads and additions and coalesces each local's versions into a logical
+value bank. It contains no native registers or instruction encodings. The
+backends lower the same plan independently. On amd64, banks use R8, R9,
+and R10; RAX holds speculative results. On SPARC64, banks use O0..O2; O3
+holds speculative results. Each input local is guarded once. A result
+replaces the current version only after its overflow check, and only final
+dirty locals are stored on the fast path. An overflow exit commits
+completed units and resumes the remaining source opcodes through their
+ordinary slow paths. A multi-step unit saves its input in RDX (amd64) or O4
+(SPARC64) so it can restore that version and replay the unit from a
+balanced Pike stack. No fast-path operation calls C or exposes an
+uncommitted value to a callback. Source locals that were only read retain
+their original subtype tags. SPARC64
+uses 64-bit XCC overflow branches with explicit delay-slot NOPs, word
+displacements, and big-endian tag accesses. Its local offsets must fit the
+load/store immediate field; larger offsets use ordinary emission.
 
 Integer statistics count regions, arithmetic operations, SSA values, reused
 logical operand reads, and deferred local writes. The latter two are IR
