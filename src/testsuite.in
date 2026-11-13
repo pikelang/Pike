@@ -16275,6 +16275,15 @@ array a()
 }
 ]])
 
+// Source context for unfinished inheritance dependencies (#7703).
+test_tests([[
+array a()
+{
+  return Tools.Testsuite.run_script (
+    "]]SRCDIR[[/inherit_diagnostics.test");
+}
+]])
+
 // enum and typedef
 
 test_compile_error_any([[enum X {A, B}; enum(X) x;]])

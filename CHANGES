@@ -537,6 +537,10 @@ o Cpp
 
 o Compiler
 
+  - Inheritance errors involving unfinished programs now identify the base's
+    source location and show the references that started nested compilations.
+    This helps locate circular dependencies introduced through type references.
+
   - Compile-time lookup with '.' preserves the declared types of indexed
     values, including custom attributes and deprecation warnings.
 

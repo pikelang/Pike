@@ -108,6 +108,13 @@ struct compilation
   int saved_lock_depth;
 #endif
   struct mapping *resolve_cache;
+
+  /* Source locations that led to this compilation. Retained independently
+   * of the supporter stack so delayed compiles keep their original context.
+   */
+  struct pike_string *compilation_context;
+  /* Borrowed from the active, exception-protected resolution call. */
+  struct pike_string *resolving_identifier;
 };
 
 /*
@@ -193,6 +200,7 @@ void init_supporter(struct Supporter *s,
 int unlink_current_supporter(struct Supporter *c);
 int call_dependants(struct Supporter *s, int finish);
 int report_compiler_dependency(struct program *p);
+void report_unfinished_inherit(struct program *p, int pass);
 struct compilation;
 void run_pass2(struct compilation *c);
 PMOD_EXPORT void enter_compiler(struct pike_string *filename,

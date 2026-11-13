@@ -236,12 +236,45 @@ void init_supporter(struct Supporter *s,
 		    supporter_callback *fun,
 		    void *data)
 {
+  struct compilation *compilation = (struct compilation *)s;
   CDFPRINTF("th(%ld) init_supporter() supporter=%p data=%p.\n",
             (long) th_self(), s, data);
   verify_supporters();
 #ifdef PIKE_DEBUG
   s->magic = 0x500b0127;
 #endif
+  if (compilation->compilation_context) {
+    free_string(compilation->compilation_context);
+    compilation->compilation_context = NULL;
+  }
+  if (current_supporter) {
+    /* Both source compilers and decoders embed Supporter first. The
+     * caller's lexer still points at the reference that started this unit.
+     */
+    struct compilation *caller = (struct compilation *)current_supporter;
+    struct pike_string *identifier = caller->resolving_identifier;
+    struct string_builder context;
+
+    init_string_builder(&context, 0);
+    if (identifier) {
+      string_builder_sprintf(&context,
+                            "%pS:%" PRINTPIKEINT "d: Compilation requested "
+                            "while resolving %pS.",
+                            caller->lex.current_file,
+                            caller->lex.current_line, identifier);
+    } else {
+      string_builder_sprintf(&context,
+                            "%pS:%" PRINTPIKEINT "d: Nested compilation "
+                            "requested here.",
+                            caller->lex.current_file,
+                            caller->lex.current_line);
+    }
+    if (caller->compilation_context) {
+      string_builder_putchar(&context, '\n');
+      string_builder_shared_strcat(&context, caller->compilation_context);
+    }
+    compilation->compilation_context = finish_string_builder(&context);
+  }
   s->previous=current_supporter;
   current_supporter=s;
 
@@ -378,6 +411,42 @@ int report_compiler_dependency(struct program *p)
   }
   verify_supporters();
   return ret;
+}
+
+/* Keep the details in the error itself so legacy compile_error handlers
+ * receive them too. No resolution or Pike-level indexing is needed here.
+ */
+void report_unfinished_inherit(struct program *p, int pass)
+{
+  struct string_builder message;
+  struct pike_string *file, *text;
+  INT_TYPE line;
+  struct compilation *c = THIS_COMPILATION;
+
+  init_string_builder(&message, 0);
+  string_builder_sprintf(&message, "Cannot inherit program in pass %d ", pass);
+  string_builder_strcat(&message,
+                       pass == 1 ? "which is only a placeholder." :
+                                   "which is not fully compiled yet.");
+  file = low_get_program_line(p, &line);
+  if (file) {
+    string_builder_sprintf(&message,
+                          "\n%pS:%" PRINTPIKEINT "d: Inherited program "
+                          "defined here; %s.",
+                          file, line,
+                          p->flags & PROGRAM_PASS_1_DONE ?
+                          "its final compiler pass is still pending" :
+                          "its first compiler pass is not complete");
+    free_string(file);
+  }
+  if (c->compilation_context) {
+    string_builder_putchar(&message, '\n');
+    string_builder_shared_strcat(&message,
+                                 c->compilation_context);
+  }
+  text = finish_string_builder(&message);
+  my_yyerror("%pS", text);
+  free_string(text);
 }
 
 extern int yyparse(void);
@@ -1006,6 +1075,10 @@ static void free_compilation(struct compilation *c)
   if (c->resolve_cache) {
     free_mapping(c->resolve_cache);
     c->resolve_cache = NULL;
+  }
+  if (c->compilation_context) {
+    free_string(c->compilation_context);
+    c->compilation_context = NULL;
   }
   free_svalue(& c->default_module);
   SET_SVAL(c->default_module, T_INT, NUMBER_NUMBER, integer, 0);
