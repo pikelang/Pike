@@ -3,100 +3,33 @@ Code generation templates for Pike.
 The experimental machine-state SSA model is in ssa.[ch]. Enable it with
 --enable-ssa. The model assigns versions to the interpreter pointer,
 frame pointer, stack pointer, and mark stack pointer as code is emitted.
-The amd64 backend keeps pending stack pointer stores as small IR nodes.
-It lowers the latest node at calls and control-flow boundaries, so earlier
-stores in the same straight-line region can be removed. The SPARC backends
-track their existing deferred stores in the same model. Other backends still
-use their existing register caches. This is an initial machine-state IR,
-not a full machine-instruction SSA IR.
+This is an initial machine-state IR, not a full machine-instruction SSA IR.
+PIKE_SSA_STATS=1 prints aggregate counts of state loads, definitions,
+stores, and generated code bytes at process exit.
 
-For amd64 code generation comparisons, PIKE_SSA_EAGER_STORES=1 restores
-eager stores in the same binary. PIKE_SSA_STATS=1 prints aggregate counts of
-state loads, definitions, stores, and generated code bytes at process exit.
-PIKE_SSA_NO_FP_JOIN=1 disables frame-pointer register preservation at
-forward control-flow joins for a same-binary comparison.
-PIKE_SSA_NO_SP_JOIN=1 disables stack-pointer register preservation at
-forward joins. A register is retained only if all incoming edges and the
-fallthrough path have the same stack-pointer value and depth cached.
-The backend tracks constant stack adjustments relative to a known value;
-clobbers and ambiguous internal joins start a new value. Stores are still
-materialized before branches and joins. Backward and unknown edges require
-reloads. Statistics include retained SP joins
-and first uses that avoid a load.
-For example, run the same Pike program with PIKE_SSA_STATS=1 alone and with
-both variables set, then compare the reported store counts and code bytes.
+Backend-specific registers, optimizations, and comparison flags are
+documented in the opening comments of the corresponding CPU files.
 
-On SPARC and SPARC64, PIKE_SSA_SPARC_JOINS=1 enables experimental
-register preservation at forward joins. It is disabled by default. The
-backend tracks the lazily loaded interpreter pointer and cached frame and
-stack pointers, retaining only registers valid on every incoming path.
-Stack-pointer agreement includes its logical value and depth; normalizing
-the deferred byte bias does not change that value. Mark-stack pointers are
-not retained at joins. Existing deferred stores, call invalidations, delay
-slots, and word-based code offsets retain their original behavior.
-PIKE_SSA_STATS=1 reports loads, definitions, stores, joins, first uses that
-avoid a reload, calls, and emitted code bytes. Compare the same binary with
-the joins variable unset and set. The amd64 eager-store and locals-cache
-flags do not apply to these backends.
-
-PIKE_SSA_LOCALS_CACHE=1 enables an experimental read-only cache of
-frame->locals in caller-saved R11 on amd64. PIKE_SSA_NO_LOCALS_CACHE=1
-forces it off for paired measurements. Values and tags stay in canonical
-svalues, and calls invalidate the cache.
-
-The amd64 SSA region pass buffers up to eight audited local/constant/stack
-opcodes on one source line. It stops at labels, line changes, local debug
-directives, and unsupported opcodes. Debug tracing and disassembly use the
-ordinary emitter. The native buffer retains opaque instruction spans plus
-nodes for locals materializations, branches, and PC-relative LEAs. A small
-value graph records the dependencies of locals uses through internal joins.
-Only repairs reached by a use survive lowering. If a first access at offset
-zero has no later cache use, its load is retargeted directly to the address
-register, removing the copy from R11. Frame-pointer loads are kept because
-other instructions may use them independently of the locals cache.
-
-After dropping dead materializations, the pass repeatedly shortens internal
-branches until the layout stops changing. It then compacts the buffer and
-fixes branch displacements and PC-relative LEAs. Every region ends with the
-locals cache invalid, so a discarded terminal repair cannot affect later
-code. Native back edges and exhausted node/value limits retain the original
-layout. No line records or externally referenced jump offsets move.
-
-PIKE_SSA_NO_REGIONS=1 with PIKE_SSA_LOCALS_CACHE=1 restores the earlier
-unbuffered cache experiment for comparison. That emitter repairs internal
-joins eagerly and uses wide forward branches. Statistics include retained
-and removed repairs, removed copies, shortened branches, region counts,
-and bytes removed by layout. The locals cache remains disabled by default
-until repeated runtime measurements justify enabling it. This is a bounded
-materialization/layout IR, not SSA for individual Pike local values.
-
-PIKE_SSA_INTEGER_REGIONS=1 enables a separate integer value pass on amd64
-and SPARC64 with 64-bit Pike integers. SPARC32 retains ordinary emission.
-PIKE_SSA_NO_INTEGER_REGIONS=1 forces it off.
-It is independent of the locals-cache flags and remains opt-in. Before
-ordinary region emission, it recognizes up to eight additions/increments
-using at most three locals on one source line. Supported units include
-local updates and local/stack/add/assignment sequences that leave the Pike
-stack at its original depth. Labels, debug directives, and unsupported
-operations end a run. Tracing and disassembly use the ordinary emitter.
+PIKE_SSA_INTEGER_REGIONS=1 enables the integer value pass on backends that
+implement it, with 64-bit Pike integers. PIKE_SSA_NO_INTEGER_REGIONS=1
+forces it off. The pass remains opt-in. It recognizes up to eight
+additions/increments using at most three locals on one source line.
+Supported units include local updates and local/stack/add/assignment
+sequences that leave the Pike stack at its original depth. Labels, debug
+directives, and unsupported operations end a run. Tracing and disassembly
+use the ordinary emitter.
 
 The shared planner in ssa_integer.[ch] assigns SSA versions to integer
 loads and additions and coalesces each local's versions into a logical
 value bank. It contains no native registers or instruction encodings. The
-backends lower the same plan independently. On amd64, banks use R8, R9,
-and R10; RAX holds speculative results. On SPARC64, banks use O0..O2; O3
-holds speculative results. Each input local is guarded once. A result
-replaces the current version only after its overflow check, and only final
-dirty locals are stored on the fast path. An overflow exit commits
-completed units and resumes the remaining source opcodes through their
-ordinary slow paths. A multi-step unit saves its input in RDX (amd64) or O4
-(SPARC64) so it can restore that version and replay the unit from a
-balanced Pike stack. No fast-path operation calls C or exposes an
-uncommitted value to a callback. Source locals that were only read retain
-their original subtype tags. SPARC64
-uses 64-bit XCC overflow branches with explicit delay-slot NOPs, word
-displacements, and big-endian tag accesses. Its local offsets must fit the
-load/store immediate field; larger offsets use ordinary emission.
+backends lower the same plan independently. Each input local is guarded
+once. A result replaces the current version only after its overflow check,
+and only final dirty locals are stored on the fast path. An overflow exit
+commits completed units and resumes the remaining source opcodes through
+their ordinary slow paths. A multi-step unit saves its input so it can
+restore that version and replay the unit from a balanced Pike stack. No
+fast-path operation calls C or exposes an uncommitted value to a callback.
+Source locals that were only read retain their original subtype tags.
 
 Integer statistics count regions, arithmetic operations, SSA values, reused
 logical operand reads, and deferred local writes. The latter two are IR

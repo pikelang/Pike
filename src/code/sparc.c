@@ -8,6 +8,29 @@
  * Machine code generator for sparc.
  *
  * Henrik Grubbström 20010720
+ *
+ * The SPARC backends track their existing deferred stores in the shared
+ * machine-state SSA model described in README.txt.
+ *
+ * On SPARC and SPARC64, PIKE_SSA_SPARC_JOINS=1 enables experimental
+ * register preservation at forward joins. It is disabled by default. The
+ * backend tracks the lazily loaded interpreter pointer and cached frame and
+ * stack pointers, retaining only registers valid on every incoming path.
+ * Stack-pointer agreement includes its logical value and depth; normalizing
+ * the deferred byte bias does not change that value. Mark-stack pointers are
+ * not retained at joins. Existing deferred stores, call invalidations, delay
+ * slots, and word-based code offsets retain their original behavior.
+ * PIKE_SSA_STATS=1 reports loads, definitions, stores, joins, first uses that
+ * avoid a reload, calls, and emitted code bytes. Compare the same binary with
+ * the joins variable unset and set.
+ *
+ * On SPARC64 with 64-bit Pike integers, PIKE_SSA_INTEGER_REGIONS=1
+ * enables the shared integer value pass described in README.txt. SPARC32
+ * retains ordinary arithmetic emission. Value banks use O0..O2; O3 holds
+ * speculative results and O4 saves a multi-step unit's input for rollback.
+ * The lowering uses 64-bit XCC overflow branches with explicit delay-slot
+ * NOPs, word displacements, and big-endian tag accesses. Local offsets must
+ * fit the load/store immediate field; larger offsets use ordinary emission.
  */
 
 #include "global.h"
