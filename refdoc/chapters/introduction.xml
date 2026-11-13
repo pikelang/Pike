@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="utf-8"?>
 <chapter title="Introduction">
 
 <p>This introduction will give you some background about Pike and
@@ -23,30 +23,30 @@ available Pike resources such as the "Pike Tutorial".</p>
 <section title="The history of Pike">
 
 <p>In the beginning, there was Zork. Then a bunch of people decided to make
-multi-player adventure games. One of those people was Lars Pensjö at the
+multi-player adventure games. One of those people was Lars PensjÃ¶ at the
 Chalmers university in Gothenburg, Sweden. For his game he needed a simple,
-memory-efficient language, and thus LPC (Lars Pensjö C) was born. About a
-year later Fredrik Hübinette (Hubbe) started playing one of these games and
+memory-efficient language, and thus LPC (Lars PensjÃ¶ C) was born. About a
+year later Fredrik HÃ¼binette (Hubbe) started playing one of these games and
 found that the language was the most easy-to-use language he had ever
 encountered. He liked the language so much that he started improving it and
 before long he had made his own LPC dialect called LPC4. LPC4 was still geared
 towards writing adventure games, but was quite useful for writing other
 things as well. A major problem with LPC4 was the copyright, since it was
-based on Lars Pensjö's code. It had a license that did not allow it to be
-used for commercial gain, so in 1994 Hubbe started writing µLPC, a new
+based on Lars PensjÃ¶'s code. It had a license that did not allow it to be
+used for commercial gain, so in 1994 Hubbe started writing ÂµLPC, a new
 but similar LPC interpreter.</p>
 
-<p>After a while Hubbe got financial backing for writing µLPC from Signum
+<p>After a while Hubbe got financial backing for writing ÂµLPC from Signum
 Support AB, a company dedicated to supporting GNU and GPL software. The
 goal with their funding was simply to create more GPL software.</p>
 
-<p>When µLPC became usable, InformationsVävarna AB started using it for
+<p>When ÂµLPC became usable, InformationsVÃ¤varna AB started using it for
 their web-server. Before then, Roxen WebServer (then called Spinner) was
 non-commercial and written in LPC4. Then in 1996 Hubbe started working for
-InformationsVävarna developing µLPC for them. At this time the name was 
-changed from µLPC to Pike to get a more commercially viable name. Pike
+InformationsVÃ¤varna developing ÂµLPC for them. At this time the name was 
+changed from ÂµLPC to Pike to get a more commercially viable name. Pike
 was then developed full time by Hubbe and part time by other employees
-until Hubbe quit InformationsVävarna, which now had changed name to
+until Hubbe quit InformationsVÃ¤varna, which now had changed name to
 Roxen Internet Software.</p>
 </section>
 

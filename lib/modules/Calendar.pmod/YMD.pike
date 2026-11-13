@@ -9,7 +9,7 @@
 //!
 //! inherits Time
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //  #pragma strict_types
@@ -2918,7 +2918,7 @@ object(TimeRange)|zero parse(string fmt,string arg,void|TimeRange context)
    if (!nfmt)
    {
 //        nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
-#define ALNU "%[^ -,./:-?[-`{-¿-]"
+#define ALNU "%[^ -,./:-?[-`{-Â¿-]"
 #define AMPM "%[ampAMP.]"
 #define NUME "%[0-9]"
 #define ZONE "%[-+0-9A-Za-z/]"

@@ -2,7 +2,7 @@
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
-;;; Keywords: Pike, LPC, uLPC, µLPC, highlight
+;;; Keywords: Pike, LPC, uLPC, ÂµLPC, highlight
 
 ;;; To use:
 ;;;

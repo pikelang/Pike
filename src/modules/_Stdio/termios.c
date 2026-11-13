@@ -71,7 +71,7 @@
  *!     The value of a named flag. The flag name is
  *!     the string describing the termios flags (IGNBRK, BRKINT,
  *!     IGNPAR, PARMRK, INPCK, ISTRIP, INLCR, IGNCR, ICRNL, IUCLC,
- *!     IXON, IXANY, IXOFF, IMAXBEL, OPOST, OLCUC, ONLCR, OCRNL,
+ *!     IXON, IXANY, IXOFF, IMAXBEL, IUTF8, OPOST, OLCUC, ONLCR, OCRNL,
  *!     ONOCR, ONLRET, OFILL, OFDEL, OXTABS, ONOEOT, CSTOPB, CREAD,
  *!     PARENB, PARODD, HUPCL, CLOCAL, CRTSCTS, ISIG, ICANON, XCASE,
  *!     ECHO, ECHOE, ECHOK, ECHONL, ECHOCTL, ECHOPRT, ECHOKE, FLUSHO,
@@ -471,7 +471,7 @@ void file_tcsendbreak(INT32 args)
   INT_TYPE len=0;
 
   get_all_args(NULL, args, ".%i", &len);
-  pop_stack();
+  pop_n_elems(args);
   push_int(!tcsendbreak(FD, len));
 }
 

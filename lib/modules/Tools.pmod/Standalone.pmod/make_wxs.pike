@@ -5,7 +5,7 @@
  * Make a Wix modules source XML file from an existing set of
  * directories or files.
  *
- * 2004-11-02 Henrik Grubbström
+ * 2004-11-02 Henrik GrubbstrÃ¶m
  */
 
 constant description = "Creates a Wix modules source XML file.";

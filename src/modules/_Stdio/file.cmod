@@ -533,6 +533,39 @@ static inline void mark_file_busy(struct my_file *f) {}
 static void mark_file_idle(struct my_file *f) {}
 #endif
 
+/* Interrupt checks can throw while the file is temporarily idle. Keep
+ * that state in the cleanup context without changing the onerror stack:
+ * buffer cleanup handlers may have been registered above this one.
+ */
+struct file_busy_context {
+  struct my_file *file;
+  int active;
+};
+
+static void enter_file_busy(struct file_busy_context *busy,
+                            struct my_file *file)
+{
+  busy->file = file;
+  mark_file_busy(file);
+  busy->active = 1;
+}
+
+static void leave_file_busy(void *arg)
+{
+  struct file_busy_context *busy = arg;
+  if (busy->active) {
+    mark_file_idle(busy->file);
+    busy->active = 0;
+  }
+}
+
+static void check_file_threads(struct file_busy_context *busy)
+{
+  leave_file_busy(busy);
+  check_threads_etc();
+  enter_file_busy(busy, busy->file);
+}
+
 #ifdef PIKE_DEBUG
 static void debug_check_internals (struct my_file *f)
 {
@@ -919,10 +952,17 @@ static int map(int flags)
 static struct pike_string *do_read(int fd,
 				   size_t count,
 				   unsigned int mode,
-				   INT_TYPE *err)
+                                   INT_TYPE *errnop)
 {
+  ONERROR err, ebuf;
+  struct pike_string *result;
+  struct file_busy_context busy;
   struct byte_buffer buf = BUFFER_INIT();
   int e = 0;
+
+  SET_ONERROR(ebuf, buffer_free, &buf);
+  enter_file_busy(&busy, THIS);
+  SET_ONERROR(err, leave_file_busy, &busy);
 
   buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
@@ -966,9 +1006,7 @@ static struct pike_string *do_read(int fd,
     /* NB: This is needed in case check_threads_etc() below
      *     triggers some function that performs I/O.
      */
-    mark_file_idle(THIS);
-    check_threads_etc();
-    mark_file_busy(THIS);
+    check_file_threads(&busy);
 
     fd = FD;
     if (fd < 0) {
@@ -986,16 +1024,20 @@ static struct pike_string *do_read(int fd,
     break;
   }
 
+  CALL_AND_UNSET_ONERROR(err);
+
   if (e && !buffer_content_length(&buf)) {
-    buffer_free(&buf);
-    *err = e;
+    CALL_AND_UNSET_ONERROR(ebuf);
+    *errnop = e;
     return NULL;
   }
 
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
-  return buffer_finish_pike_string(&buf);
+  result = buffer_finish_pike_string(&buf);
+  UNSET_ONERROR(ebuf);
+  return result;
 }
 
 static ptrdiff_t do_read_into_buffer(int fd,
@@ -1205,8 +1247,11 @@ static void check_message(struct msghdr *msg)
 #define CMSG_LEN(x)	(x)
 #endif
 
-static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode, INT_TYPE *err)
+static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode, INT_TYPE *errnop)
 {
+  ONERROR err, ebuf;
+  struct pike_string *result;
+  struct file_busy_context busy;
   struct {
     struct msghdr msg;
     struct iovec iov;
@@ -1224,6 +1269,10 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
   /* XPG 4.2 */
   message.msg.msg_flags = 0;
 #endif
+
+  SET_ONERROR(ebuf, buffer_free, &buf);
+  enter_file_busy(&busy, THIS);
+  SET_ONERROR(err, leave_file_busy, &busy);
 
   buffer_set_flags(&buf, BUFFER_GROW_EXACT);
 
@@ -1287,9 +1336,7 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
     /* NB: This is needed in case check_threads_etc() below
      *     triggers some function that performs I/O.
      */
-    mark_file_idle(THIS);
-    check_threads_etc();
-    mark_file_busy(THIS);
+    check_file_threads(&busy);
 
     fd = FD;
     if (fd < 0) {
@@ -1313,28 +1360,29 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
         message.msg.msg_accrightslen
 #endif
         )) {
-      ONERROR ebuf;
-      SET_ONERROR(ebuf, buffer_free, &buf);
       check_message(&message.msg);
-      UNSET_ONERROR(ebuf);
       if (bytes_read && !(mode & PIKE_READ_ONCE)) continue;
     }
     break;
   }
 
+  CALL_AND_UNSET_ONERROR(err);
+
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
   if (e) {
-    *err = e;
+    *errnop = e;
 
     if (!buffer_content_length(&buf)) {
-      buffer_free(&buf);
+      CALL_AND_UNSET_ONERROR(ebuf);
       return NULL;
     }
   }
 
-  return buffer_finish_pike_string(&buf);
+  result = buffer_finish_pike_string(&buf);
+  UNSET_ONERROR(ebuf);
+  return result;
 }
 
 /* Send a set of iovecs and fds over an fd. */
@@ -1396,14 +1444,19 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
 static struct pike_string *do_read_oob(int UNUSED(fd),
 				       ptrdiff_t r,
 				       int all,
-				       INT_TYPE *err)
+                                       INT_TYPE *errnop)
 {
+  ONERROR err;
+  struct file_busy_context busy;
   ONERROR ebuf;
   INT32 bytes_read,i;
   struct pike_string *str;
 
   bytes_read=0;
-  *err=0;
+  *errnop=0;
+
+    enter_file_busy(&busy, THIS);
+    SET_ONERROR(err, leave_file_busy, &busy);
 
     str=begin_shared_string(r);
 
@@ -1425,9 +1478,7 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
       /* NB: This is needed in case check_threads_etc() below
        *     triggers some function that performs I/O.
        */
-      mark_file_idle(THIS);
-      check_threads_etc();
-      mark_file_busy(THIS);
+      check_file_threads(&busy);
 
       if(i>0)
       {
@@ -1449,11 +1500,12 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
       }
       else if(e != EINTR)
       {
-	*err=e;
+        *errnop=e;
 	if(!bytes_read)
 	{
 	  do_free_unlinked_pike_string(str);
 	  UNSET_ONERROR(ebuf);
+          CALL_AND_UNSET_ONERROR(err);
 	  return 0;
 	}
 	break;
@@ -1461,6 +1513,8 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
     }while(r);
 
     UNSET_ONERROR(ebuf);
+
+    CALL_AND_UNSET_ONERROR(err);
 
     if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ_OOB]))
       ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ_OOB);
@@ -1535,7 +1589,6 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
 PIKEFUN string(8bit) read(int(0..)|void len, int(0..1)|void not_all)
 {
   struct my_file *file = THIS;
-  ONERROR err;
 
   int fd = file->box.fd;
 
@@ -1557,9 +1610,6 @@ PIKEFUN string(8bit) read(int(0..)|void len, int(0..1)|void not_all)
       mode |= PIKE_READ_ONCE;
     }
 
-    mark_file_busy(THIS);
-    SET_ONERROR(err, mark_file_idle, THIS);
-
 #ifdef HAVE_PIKE_SEND_FD
     /* Check if there's any need to use recvmsg(2). */
     if ((file->open_mode & fd_SEND_FD) &&
@@ -1579,8 +1629,6 @@ PIKEFUN string(8bit) read(int(0..)|void len, int(0..1)|void not_all)
       push_int(0);
     }
   }
-
-  CALL_AND_UNSET_ONERROR(err);
 
   if (!(file->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
@@ -2059,7 +2107,6 @@ static void file_read_oob(INT32 args)
 {
   struct pike_string *tmp;
   INT32 all, len;
-  ONERROR err;
 
   if(FD < 0)
     Pike_error("File not open.\n");
@@ -2084,9 +2131,6 @@ static void file_read_oob(INT32 args)
     all=1;
   }
 
-  mark_file_busy(THIS);
-  SET_ONERROR(err, mark_file_idle, THIS);
-
   pop_n_elems(args);
 
   if((tmp=do_read_oob(FD, len, all, & ERRNO)))
@@ -2095,8 +2139,6 @@ static void file_read_oob(INT32 args)
     errno = ERRNO;
     push_int(0);
   }
-
-  CALL_AND_UNSET_ONERROR(err);
 
   if (!(THIS->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
@@ -2362,18 +2404,21 @@ static void file__disable_callbacks(INT32 UNUSED(args))
 #ifdef HAVE_WRITEV
 static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 {
+  ONERROR err, eiov;
+  struct file_busy_context busy;
   ptrdiff_t written, i;
   struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
   struct iovec *iov = iovbase;
   int iovcnt = a->size;
   int e = 0;
 
+  SET_ONERROR(eiov, free, iovbase);
+
   i = a->size;
   while(i--) {
     struct pike_string *s = a->item[i].u.string;
 
     if (s->size_shift) {
-      free(iovbase);
       Pike_error("Bad argument 1 to file->write().\n"
                  "Element %ld is a wide string.\n",
                  (long)i);
@@ -2387,6 +2432,9 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
       iovcnt--;
     }
   }
+
+  enter_file_busy(&busy, THIS);
+  SET_ONERROR(err, leave_file_busy, &busy);
 
   for(written = 0; iovcnt; check_signals(0,0,0)) {
     int fd = file->box.fd;
@@ -2437,9 +2485,7 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
     /* NB: This is needed in case check_threads_etc() below
      *     triggers some function that performs I/O.
      */
-    mark_file_idle(THIS);
-    check_threads_etc();
-    mark_file_busy(THIS);
+    check_file_threads(&busy);
 
     if(i<0)
     {
@@ -2489,7 +2535,9 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
     }
   }
 
-  free(iovbase);
+  CALL_AND_UNSET_ONERROR(err);
+
+  CALL_AND_UNSET_ONERROR(eiov);
 
   file->my_errno = e;
 
@@ -2499,8 +2547,13 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 
 static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
 {
+  ONERROR err;
+  struct file_busy_context busy;
   ptrdiff_t written;
   int e = 0;
+
+  enter_file_busy(&busy, THIS);
+  SET_ONERROR(err, leave_file_busy, &busy);
 
   for(written=0;(size_t)written < len;check_signals(0,0,0))
   {
@@ -2570,6 +2623,8 @@ static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
     }
   }
 
+  CALL_AND_UNSET_ONERROR(err);
+
   file->my_errno = e;
 
   return written;
@@ -2577,11 +2632,16 @@ static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
 
 static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str)
 {
+  ONERROR err;
+  struct file_busy_context busy;
   ptrdiff_t written = 0;
   int e = 0;
 
   if(str->size_shift)
     Pike_error("Stdio.File->write(): cannot output wide strings.\n");
+
+  enter_file_busy(&busy, THIS);
+  SET_ONERROR(err, leave_file_busy, &busy);
 
   for(written=0;written < str->len;check_signals(0,0,0))
   {
@@ -2626,9 +2686,7 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
     /* NB: This is needed in case check_threads_etc() below
      *     triggers some function that performs I/O.
      */
-    mark_file_idle(THIS);
-    check_threads_etc();
-    mark_file_busy(THIS);
+    check_file_threads(&busy);
 
     if(i<0)
     {
@@ -2661,6 +2719,8 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
     }
   }
 
+  CALL_AND_UNSET_ONERROR(err);
+
   file->my_errno = e;
 
   return written;
@@ -2672,13 +2732,9 @@ static void file_write(INT32 args)
   ptrdiff_t written;
 
   struct my_file *file = THIS;
-  ONERROR err;
 
   if(file->box.fd < 0)
     Pike_error("File not open for write.\n");
-
-  mark_file_busy(THIS);
-  SET_ONERROR(err, mark_file_idle, THIS);
 
   if (!(file->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
@@ -2773,8 +2829,6 @@ static void file_write(INT32 args)
    * bad - it will get through in a later backend round. */
   file->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
-  CALL_AND_UNSET_ONERROR(err);
-
   pop_n_elems(args);
   push_int64(written);
 }
@@ -2814,6 +2868,7 @@ static void file_write_oob(INT32 args)
   ptrdiff_t written, i;
   struct pike_string *str;
   ONERROR err;
+  struct file_busy_context busy;
 
   if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("write_oob",1,"string");
@@ -2832,8 +2887,8 @@ static void file_write_oob(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write_oob(): cannot output wide strings.\n");
 
-  mark_file_busy(THIS);
-  SET_ONERROR(err, mark_file_idle, THIS);
+  enter_file_busy(&busy, THIS);
+  SET_ONERROR(err, leave_file_busy, &busy);
 
   while(written < str->len)
   {
@@ -2854,9 +2909,7 @@ static void file_write_oob(INT32 args)
     /* NB: This is needed in case check_threads_etc() below
      *     triggers some function that performs I/O.
      */
-    mark_file_idle(THIS);
-    check_threads_etc();
-    mark_file_busy(THIS);
+    check_file_threads(&busy);
 
     if(i<0)
     {

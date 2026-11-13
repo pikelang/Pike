@@ -105,9 +105,10 @@ struct array *encode_stat(PIKE_STAT_T *s)
 }
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
-/*! @decl array(string) listxattr( string file, void|int(0..1) symlink )
+/*! @decl array(string)|zero listxattr( string file, void|int(0..1) symlink )
  *!
- *! Return an array of all extended attributes set on the file
+ *! Return an array of all extended attributes set on the file,
+ *! or @expr{0@} (zero) on failure, setting errno.
  */
 
 #ifdef HAVE_DARWIN_XATTR
@@ -194,7 +195,7 @@ static void f_listxattr(INT32 args)
 #define LGETXATTR(PATH, NAME, BUF, SZ)	lgetxattr(PATH, NAME, BUF, SZ)
 #endif /* !HAVE_DARWIN_XATTR */
 
-/*! @decl string getxattr(string file, string attr, void|int(0..1) symlink)
+/*! @decl string|zero getxattr(string file, string attr, void|int(0..1) symlink)
  *!
  *! Return the value of a specified attribute, or 0 if it does not exist.
  */
@@ -269,8 +270,11 @@ static void f_getxattr(INT32 args)
 #define LREMOVEXATTR(PATH, NAME)	lremovexattr(PATH, NAME)
 #endif /* !HAVE_DARWIN_XATTR */
 
-/*! @decl void removexattr( string file, string attr , void|int(0..1) symlink)
+/*! @decl int(0..1) removexattr( string file, string attr , void|int(0..1) symlink)
  *! Remove the specified extended attribute.
+ *!
+ *! @returns
+ *! 1 if successful, 0 otherwise, setting errno.
  */
 static void f_removexattr( INT32 args )
 {
@@ -308,7 +312,7 @@ static void f_removexattr( INT32 args )
 #define LSETXATTR(PATH, NAME, BUF, SZ, FL)	lsetxattr(PATH, NAME, BUF, SZ, FL)
 #endif /* !HAVE_DARWIN_XATTR */
 
-/*! @decl void setxattr( string file, string attr, string value, int flags,void|int(0..1) symlink)
+/*! @decl int(0..1) setxattr( string file, string attr, string value, int flags,void|int(0..1) symlink)
  *!
  *! Set the attribute @[attr] to the value @[value].
  *!
@@ -359,7 +363,7 @@ static void f_setxattr( INT32 args )
 #endif
 
 
-/*! @decl Stdio.Stat file_stat(string path, void|int(0..1) symlink)
+/*! @decl Stdio.Stat|zero file_stat(string path, void|int(0..1) symlink)
  *!
  *! Stat a file.
  *!
@@ -476,7 +480,7 @@ void f_file_truncate(INT32 args)
   push_int(!res);
 }
 
-/*! @decl mapping(string:int) filesystem_stat(string path)
+/*! @decl mapping(string:int|string)|zero filesystem_stat(string path)
  *!
  *! Returns a mapping describing the properties of the filesystem
  *! containing the path specified by @[path].
@@ -969,7 +973,7 @@ void f_mkdir(INT32 args)
 
 #endif /* _REENTRANT && HAVE_READDIR_R */
 
-/*! @decl array(string) get_dir(void|string dirname)
+/*! @decl array(string)|zero get_dir(void|string dirname)
  *!
  *! Returns an array of all filenames in the directory @[dirname], or
  *! @expr{0@} (zero) if the directory does not exist. When no
@@ -1704,8 +1708,8 @@ void init_stdio_efuns(void)
 #endif
 #endif /* 0 */
 
-/* function(string,int|void:object) */
-  ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tObjIs_STDIO_STAT), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+/* function(string,int|void:object|zero) */
+  ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tOr(tObjIs_STDIO_STAT,tZero)), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   /* function(string,int:int(0..1)) */
   ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
@@ -1713,9 +1717,9 @@ void init_stdio_efuns(void)
   ADD_EFUN("access", f_access, tFunc(tStr tOr(tVoid,tStr),tInt),OPT_EXTERNAL_DEPEND);
 #endif
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
-  ADD_EFUN( "listxattr", f_listxattr, tFunc(tStr tOr(tVoid,tInt),tArr(tStr)), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN( "listxattr", f_listxattr, tFunc(tStr tOr(tVoid,tInt),tOr(tArr(tStr),tZero)), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
   ADD_EFUN( "setxattr", f_setxattr, tFunc(tStr tStr tStr tInt tOr(tVoid,tInt),tInt), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-  ADD_EFUN( "getxattr", f_getxattr, tFunc(tStr tStr tOr(tVoid,tInt),tStr), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN( "getxattr", f_getxattr, tFunc(tStr tStr tOr(tVoid,tInt),tOr(tStr,tZero)), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
   ADD_EFUN( "removexattr", f_removexattr, tFunc(tStr tStr  tOr(tVoid,tInt),tInt), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 #endif
 
@@ -1739,7 +1743,7 @@ void init_stdio_efuns(void)
   ADD_EFUN("mv", f_mv,tFunc(tStr tStr,tInt), OPT_SIDE_EFFECT);
 
 /* function(string:string *) */
-  ADD_EFUN("get_dir",f_get_dir,tFunc(tOr(tVoid,tStr),tArr(tStr)),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN("get_dir",f_get_dir,tFunc(tOr(tVoid,tStr),tOr(tArr(tStr),tZero)),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
 /* function(string:int) */
   ADD_EFUN("cd",f_cd,tFunc(tStr,tInt),OPT_SIDE_EFFECT);

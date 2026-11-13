@@ -2,6 +2,7 @@
 #pragma strict_types
 
 constant inherit_list = __builtin.inherit_list;
+constant inherit_annotations = __builtin.inherit_annotations;
 constant inherits = __builtin.program_inherits;
 constant implements = __builtin.program_implements;
 constant annotations = __builtin.direct_program_annotations;

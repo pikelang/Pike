@@ -3020,6 +3020,13 @@ PIKECLASS Buffer
   }
 
   /*! @decl String.Buffer `+( string|String.Buffer what )
+   *!
+   *!   Returns a new @[String.Buffer] containing a copy of this
+   *!   buffer's content with @[what] appended. This buffer is left
+   *!   untouched.
+   *!
+   *! @seealso
+   *!   @[`+=()], @[add()]
    */
   PIKEFUN object `+( string|Buffer what )
     rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
@@ -3037,6 +3044,12 @@ PIKECLASS Buffer
   }
 
   /*! @decl String.Buffer `+=( string|String.Buffer what )
+   *!
+   *!   Appends @[what] to this buffer, and returns this buffer
+   *!   (for chaining).
+   *!
+   *! @seealso
+   *!   @[`+()], @[add()]
    */
   PIKEFUN object `+=( string|Buffer what )
     rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
@@ -3250,19 +3263,24 @@ PIKECLASS Buffer
     RETURN str->str.s ? str->str.s->len : 0;
   }
 
-  /*! @decl int(0..) _search(int character, int|void start, int|void end)
+  /*! @decl int(-1..) _search(int character, int|void start, int|void end)
    *!
    *! Search for a @[character] in the buffer, starting the scan
    *! from @[start] and ending at @[end] (inclusive).
    *!
    *! @returns
-   *!   Returns to position in the buffer where the character was found
-   *!   on success, and @[UNDEFINED] on failure.
+   *!   Returns the position in the buffer where the character was found
+   *!   on success, and @expr{-1@} on failure.
+   *!
+   *! @note
+   *!   Unlike the @expr{string@} variant of this function (which
+   *!   returns @[UNDEFINED] on failure), this variant returns
+   *!   @expr{-1@}.
    *!
    *! @seealso
    *!   @[Stdio.Buffer()->_search()], @[search()], @[lfun::_search()]
    */
-  PIKEFUN int(0..) _search(int character, int|void start, int|void end)
+  PIKEFUN int(-1..) _search(int character, int|void start, int|void end)
   {
     PCHARP buf = MKPCHARP_STR(THIS->str.s);
     ptrdiff_t len = THIS->str.s->len;
@@ -3309,7 +3327,7 @@ PIKECLASS Buffer
    *! from @[start] and ending at @[end] (inclusive).
    *!
    *! @returns
-   *!   Returns to position in the buffer where the substring was found
+   *!   Returns the position in the buffer where the substring was found
    *!   on success, and @[UNDEFINED] on failure.
    *!
    *! @seealso

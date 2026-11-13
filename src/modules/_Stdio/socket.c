@@ -295,7 +295,7 @@ static void port_listen_fd(INT32 args)
  *!
  *! Opens a socket and binds it to port number on the local machine.
  *! If the second argument is present, the socket is set to
- *! nonblocking and the callback funcition is called whenever
+ *! nonblocking and the callback function is called whenever
  *! something connects to it. The callback will receive the id for
  *! this port as argument and should typically call @[accept] to
  *! establish a connection.
@@ -446,7 +446,7 @@ static void port_bind(INT32 args)
  *!
  *! Opens a Unix domain socket at the given path in the file system.
  *! If the second argument is present, the socket is set to
- *! nonblocking and the callback funcition is called whenever
+ *! nonblocking and the callback function is called whenever
  *! something connects to it. The callback will receive the id for
  *! this port as argument and should typically call @[accept] to
  *! establish a connection.
@@ -709,7 +709,7 @@ static int blocking_port_accept(struct port *p, struct sockaddr *addr,
 }
 #endif /* USE_NONBLOCKING_CONNECT_AND_ACCEPT */
 
-/*! @decl Stdio.File accept()
+/*! @decl Stdio.Fd|zero accept()
  *!
  *! Get the first connection request waiting for this port and return
  *! it as a connected socket.
@@ -785,7 +785,7 @@ static void port_accept(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
-/*! @decl string query_address()
+/*! @decl string|zero query_address()
  *!
  *! Get the address and port of the local socket end-point.
  *!
@@ -974,14 +974,14 @@ void init_stdio_port(void)
   /* function(:mixed) */
   ADD_FUNCTION("query_id",port_query_id,tFunc(tNone,tMix),0);
   /* function(:string) */
-  ADD_FUNCTION("query_address",socket_query_address,tFunc(tNone,tStr),0);
+  ADD_FUNCTION("query_address",socket_query_address,tFunc(tNone,tOr(tStr,tZero)),0);
   /* function(:int) */
   ADD_FUNCTION("errno",port_errno,tFunc(tNone,tInt),0);
   /* function(:object) */
   port_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", port_fd_factory, tFunc(tNone,tObjIs_STDIO_FD),
                  ID_PROTECTED);
-  ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObjIs_STDIO_FD),0);
+  ADD_FUNCTION("accept",port_accept,tFunc(tNone,tOr(tObjIs_STDIO_FD,tZero)),0);
   /* function(void|string|int,void|mixed,void|string:void) */
   ADD_FUNCTION("create", port_create,
 	       tFunc(tOr3(tVoid,tStr,tInt) tOr(tVoid,tMix) tOr(tVoid,tStr),

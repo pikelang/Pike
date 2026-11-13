@@ -15,7 +15,7 @@ constant TM    = __builtin.TM;
 //! Set the file last access time to @[atime].
 void set_file_atime(string path, int atime, int(1bit)|void symlink)
 {
-  Stdio.Stat st = file_stat(path, symlink);
+  object(Stdio.Stat)|zero st = file_stat(path, symlink);
   if (!st) {
     error("File not found.\n");
   }
@@ -26,7 +26,7 @@ void set_file_atime(string path, int atime, int(1bit)|void symlink)
 //! Set the file last modification time to @[mtime].
 void set_file_mtime(string path, int mtime, int(1bit)|void symlink)
 {
-  Stdio.Stat st = file_stat(path, symlink);
+  object(Stdio.Stat)|zero st = file_stat(path, symlink);
   if (!st) {
     error("File not found.\n");
   }

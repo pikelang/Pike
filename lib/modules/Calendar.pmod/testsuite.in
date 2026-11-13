@@ -175,12 +175,22 @@ test_eq([[ Calendar.ISO.Week(2003, 1)->format_ymd() ]], "2002-12-30")
 test_eq([[ Calendar.ISO.Week(2004, 1)->format_ymd() ]], "2003-12-29")
 test_eq([[ Calendar.ISO.Week(2005, 1)->format_ymd() ]], "2005-01-03")
 
-test_eq([[Calendar.Language["swe"]->week_day_name_from_number(1)]], "måndag")
+test_eq([[Calendar.Language["swe"]->week_day_name_from_number(1)]], "m\u00e5ndag")
 
 test_any([[
   object k=Calendar.Events.se["midsummers eve"]->next(Calendar.Year());
   return k->second(1)!=k->second(2);
 ]], 1)
+
+dnl The event data files are UTF-8. The Czech namedays were ISO-8859-2.
+test_equal([[Calendar.Events.find_namedays("se")->
+               names(Calendar.Day(2000, 1, 27))]],
+           [[({ "G\u00f6te", "G\u00f6ta" })]])
+test_equal([[Calendar.Events.find_namedays("cs")->
+               names(Calendar.Day(2000, 1, 6))]],
+           [[({ "T\u0159i kr\u00e1lov\u00e9" })]])
+test_eq([[Calendar.Events["bahai/declaration of bab"]->name]],
+        "Declaration of B\u00e1b")
 
 test_eq([[Calendar.ISO.Day (2007, 12, 31)->week()->month_day()]], 31);
 test_any([[

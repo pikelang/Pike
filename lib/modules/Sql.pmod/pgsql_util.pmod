@@ -988,7 +988,8 @@ class Result {
   //!  @[Sql.Result()->affected_rows()]
   /*semi*/final int affected_rows() {
     int rows;
-    sscanf(status_command_complete() || "", "%*s %d %d", rows, rows);
+    string status = status_command_complete() || "";
+    sscanf(status, "%*s %d %d", rows, rows);
     return rows;
   }
 
@@ -2696,7 +2697,9 @@ class proxy {
 #ifdef PG_DEBUGMORE
             showportalstack("ERRORRESPONSE");
 #endif
-            if (portalsinflight->drained() && !readyforquerycount)
+            /* PostgreSQL discards commands after an error until Sync.
+             * The failing portal still counts as inflight here. */
+            if (!readyforquerycount)
               sendsync();
             PD("%O ErrorResponse %O\n",
              objectp(portal) && (portal._portalname || portal._preparedname),

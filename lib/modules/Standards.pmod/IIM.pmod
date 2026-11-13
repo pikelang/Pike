@@ -1,7 +1,7 @@
 // Extracts IPTC Information Interchange Model data (aka "IPTC
 // headers") from JPEG files created with PhotoShop.
 //
-// Anders Johansson & Henrik Grubbström
+// Anders Johansson & Henrik GrubbstrÃ¶m
 
 #pike __REAL_VERSION__
 

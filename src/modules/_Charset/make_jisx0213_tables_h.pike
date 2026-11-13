@@ -4,7 +4,7 @@
  *
  *   http://x0213.org/codetable/jisx0213-2004-std.txt
  *
- * 2011-04-22 Henrik Grubbström
+ * 2011-04-22 Henrik GrubbstrÃ¶m
  */
 
 // NB: This script needs to be able to run on an older system pike.

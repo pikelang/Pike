@@ -1,7 +1,7 @@
 #
 # Configure script for the odbc-module
 #
-# Henrik Grubbström
+# Henrik GrubbstrÃ¶m
 #
 
 AC_INIT(odbc.cmod)
@@ -30,7 +30,15 @@ if test x$with_odbc = xyes; then
   PIKE_FEATURE_NODEP(Odbc)
 
   if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
-    AC_CHECK_HEADERS(windows.h sql.h sqlext.h)
+    # SQL headers need Windows types; sqlext.h also needs sql.h.
+    AC_CHECK_HEADERS(windows.h sql.h sqlext.h,,, [
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
+#ifdef HAVE_SQL_H
+#include <sql.h>
+#endif
+    ])
 
     if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
       AC_DEFINE(HAVE_ODBC)
@@ -159,7 +167,16 @@ EOF
 
       # Header file
 
-      AC_CHECK_HEADERS(windows.h qeodbc.h sql.h sqlext.h)
+      AC_CHECK_HEADERS(windows.h qeodbc.h sql.h sqlext.h,,, [
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#elif defined(HAVE_QEODBC_H)
+#include <qeodbc.h>
+#endif
+#ifdef HAVE_SQL_H
+#include <sql.h>
+#endif
+      ])
 
       if test "$ac_cv_header_sql_h$ac_cv_header_sqlext_h" = "yesyes"; then
 

@@ -61,6 +61,60 @@ test_any([[
 
 test_do( add_constant("tds_binding_test") )
 
+test_any([[
+#pragma no_experimental_warnings
+  Sql.Connection db = Sql.Sql("null://");
+  Concurrent.Future(<Sql.Result>) future =
+    db->promise_query("SELECT 42");
+  Sql.Result result = future->get();
+  if (result->num_rows() != 1 || result->eof()) return 0;
+  if (sizeof(result->fetch_row()) != 3) return 0;
+  return result->eof();
+]], 1)
+
+test_any([[
+#pragma no_experimental_warnings
+  Sql.Connection db = Sql.Sql("null://");
+  Concurrent.Future(<Sql.Result>) future =
+    db->promise_query("SELECT 42", 0, 0, (["discard_records":0]));
+  return future->get()->num_rows();
+]], 0)
+
+test_any([[
+#pragma no_experimental_warnings
+  Sql.Connection db = Sql.Sql("null://");
+  Concurrent.Future(<Sql.Result>) future =
+    db->promise_query("SELECT 42", 0, 0, (["max_records":0]));
+  mixed err = catch(future->get());
+  return arrayp(err) && has_prefix(err[0], "Too many records");
+]], 1)
+
+test_any([[
+#pragma no_experimental_warnings
+  Sql.Connection db = Sql.Sql("null://");
+  Concurrent.Future(<Sql.Result>) future =
+    db->promise_query("SELECT 42", 0, 0, (["min_records":2]));
+  mixed err = catch(future->get());
+  return arrayp(err) && has_prefix(err[0], "Insufficient number");
+]], 1)
+
+test_any([[
+#pragma no_experimental_warnings
+  Sql.Connection db = Sql.Sql("null://");
+  Concurrent.Future(<Sql.Result>) future = db->promise_query(
+    "SELECT 42", lambda(array row, object result, array collected) {
+      return ({42});
+    }, (["min_records":1]));
+  return future->get()->fetch_row()[0];
+]], 42)
+
+test_any([[
+#pragma no_experimental_warnings
+  Sql.Connection db = Sql.Sql("null://");
+  return !!catch(db->promise_query("SELECT 42", 0, 0,
+                                   (["unknown":1])));
+]], 1)
+
 ifefun(db,[[
   test_equal( db->query("select 1"), ({ ([ "1":"1" ]) }) )
   test_eq( db->big_query("select 1")->num_rows(), 1 )

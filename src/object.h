@@ -303,7 +303,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_OBJECT_LFUN(struct object *o,
 #define tF_MAGIC_TYPES tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) \
                              tOr(tVoid,tInt), tArr(tType(tMix)))
 #define tF_MAGIC_ANNOTATIONS tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) \
-				   tOr(tVoid,tInt) tOr(tVoid,tInt01), \
-				   tArr(tType(tMix)))
+                                   tOr(tVoid,tInt) tOr(tVoid,tInt01), \
+                                   tArr(tOr(tArray,tZero)))
 
 #endif /* OBJECT_H */

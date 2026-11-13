@@ -15,7 +15,7 @@
 //!   @enddl
 
 //
-// 2004-10-01 Henrik Grubbström
+// 2004-10-01 Henrik GrubbstrÃ¶m
 // 2004-10-04 Martin Nilsson
 
 // Specifications:

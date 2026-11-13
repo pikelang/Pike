@@ -17,7 +17,7 @@
 // and generates the files TZs.h and TZrules.pmod (neither of which is
 // currently used).
 
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 #if !constant(zero)
@@ -394,7 +394,7 @@ class MyRule (string id)
 		  {
 		     if (my[INF_YEAR])
 			t+="         default: // .."+max(y1,mn-1)+
-			   " and ½½½..\n";
+			   " and Â½Â½Â½..\n";
 		     else
 			t+="         default: // .."+max(y1,mn-1)+":\n";
 		  }
@@ -403,7 +403,7 @@ class MyRule (string id)
 		  else if (y1 == INF_YEAR)
 		     {
 			if (!my[NUL_YEAR]) t+="         case "+y0+"..:\n";
-			else t=replace(t,"½½½",(string)y0);
+			else t=replace(t,"Â½Â½Â½",(string)y0);
 		     }
 		  else
 		     t+="         case "+y0+".."+y1+":\n";

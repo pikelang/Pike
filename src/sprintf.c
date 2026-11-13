@@ -3051,7 +3051,8 @@ static void low_handle_sprintf_format(struct svalue *fmt_sval,
  *!                                           type|zero cont_type, @
  *!                                           mapping state)
  *!
- *!   Type attribute handler for @expr{"sprintf_format"@}.
+ *!   Type attribute handler for @expr{"sprintf_format"@} and
+ *!   @expr{"strict_sprintf_format"@}.
  *!
  *! @param attr
  *!   Attribute to handle, either @expr{"sprintf_format"@}
@@ -3294,7 +3295,7 @@ void f___handle_sprintf_format(INT32 args)
  *!   @[strict_sprintf_format], @[sprintf_format], @[sprintf()]
  */
 
-/*! @decl constant sprintf_result = __attribute__("sprintf_result", int)
+/*! @decl constant sprintf_result = __attribute__("sprintf_result", string)
  *!
  *!   Type constant used for typing the return value from @[sprintf()].
  *!

@@ -7,7 +7,7 @@
 /*
  * Machine code generator for sparc.
  *
- * Henrik Grubbström 20010720
+ * Henrik GrubbstrÃ¶m 20010720
  *
  * The SPARC backends track their existing deferred stores in the shared
  * machine-state SSA model described in README.txt.

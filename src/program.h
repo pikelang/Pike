@@ -589,7 +589,7 @@ struct inherit
    */
   unsigned int identifiers_offset;
 
-  /* The set of annotations for this inherit (if any).
+  /* The ordered annotations for this inherit (if any).
    *
    * For inherit #0 these are set either directly via
    * annotations on the class, or via inherit of classes
@@ -603,7 +603,7 @@ struct inherit
    * For inherits at higher levels they are copied verbatim from their
    * previous program.
    */
-  struct multiset *annotations;
+  struct array *annotations;
 };
 
 /**

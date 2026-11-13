@@ -1,10 +1,10 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-//  Johan Schön <js@roxen.com>, July 2001.
+//  Johan SchÃ¶n <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
 // Some URLs:
@@ -231,7 +231,7 @@ protected mapping canon_multi3(array(int) data)
 	       0xffec: "-0.67 EV",
 	       0xfff0: "-0.50 EV",
 	       0xfff4: "-0.33 EV",
-	       0x0000: "±0 EV",
+	       0x0000: "Â±0 EV",
 	       0x000c: "+0.33 EV",
 	       0x0010: "+0.50 EV",
 	       0x0014: "+0.67 EV",

@@ -398,8 +398,8 @@ PIKECLASS define
     push_int(THIS->flags);
   }
 
-  /*! @decl string `()(array(string)|void arguments, CPP|void context, @
-   *!                  CppFlags|void flags)
+  /*! @decl string|zero `()(array(string)|void arguments, CPP|void context, @
+   *!                       CppFlags|void flags)
    *!
    *!   Apply the macro with the specified arguments.
    *!
@@ -413,7 +413,7 @@ PIKECLASS define
    *!   Returns the expansion of the macro on success, and @expr{0@} (zero)
    *!   on failure (typically due to invalid @[arguments]).
    */
-  PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj,
+  PIKEFUN string|zero `()(array(string)|void arguments, object(CPP)|void context_obj,
                      CppFlags_t|void flags_sval)
     flags ID_PROTECTED;
   {
@@ -686,42 +686,42 @@ PIKECLASS define
 /*! @endclass define
  */
 
-/*! @decl string handle_include(string header_file, string current_file, @
+/*! @decl string|zero handle_include(string header_file, string current_file, @
  *!                             int(0..1) is_local_ref)
  *!
  *!   The default implementation calls the corresponding
  *!   function in @[master()] with the same arguments
  *!   and returns its result.
  */
-PIKEFUN string handle_include(string header_file, string current_file,
+PIKEFUN string|zero handle_include(string header_file, string current_file,
 			      int(0..1) is_local_ref)
 {
   APPLY_MASTER("handle_include", args);
 }
 
-/*! @decl string read_include(string filename)
+/*! @decl string|zero read_include(string filename)
  *!
  *!   The default implementation calls the corresponding
  *!   function in @[master()] with the same arguments
  *!   and returns its result.
  */
-PIKEFUN string read_include(string filename)
+PIKEFUN string|zero read_include(string filename)
 {
   APPLY_MASTER("read_include", args);
 }
 
-/*! @decl string decode_charset(string data, string charset)
+/*! @decl string|zero decode_charset(string data, string charset)
  *!
  *!   The default implementation calls the corresponding
  *!   function in @[master()] with the same arguments
  *!   and returns its result.
  */
-PIKEFUN string decode_charset(string data, string charset)
+PIKEFUN string|zero decode_charset(string data, string charset)
 {
   APPLY_MASTER("decode_charset", args);
 }
 
-/*! @decl mapping(string:string|function|object) get_predefines()
+/*! @decl mapping(string:string|function|object)|zero get_predefines()
  *!
  *! Returns a mapping containing the set of predefined macros.
  *! These are typically the macros defined via the @tt{-D@} option
@@ -735,7 +735,7 @@ PIKEFUN string decode_charset(string data, string charset)
  *!   @[cpp()], @[CompilationHandler->get_predefines()],
  *!   @[Builtin._take_over_initial_predefines()]
  */
-PIKEFUN mapping(string:string|function|object) get_predefines()
+PIKEFUN mapping(string:string|function|object)|zero get_predefines()
 {
   if (use_initial_predefs) {
     push_mapping(initial_predefs_mapping());
@@ -1005,7 +1005,7 @@ static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
     apply_current(f_CPP_report_fun_num, 4 + args);
   }
 
-  /*! @decl string format_exception(mixed err)
+  /*! @decl string|zero format_exception(mixed err)
    *!
    *!   Format an exception caught by cpp as a
    *!   suitable cpp error message.
@@ -1027,7 +1027,7 @@ static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
    *!
    *!   The default implementation just returns @expr{0@}.
    */
-  PIKEFUN string format_exception(mixed err)
+  PIKEFUN string|zero format_exception(mixed err)
   {
     push_int(0);
   }
@@ -1130,7 +1130,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   Returns a compilation handler for Pike >= @[major].@[minor].
  */
 
-/*! @decl string decode_charset(string raw, string charset)
+/*! @decl string|zero decode_charset(string raw, string charset)
  *!
  *!   Convert @[raw] from encoding @[charset] to UNICODE.
  *!
@@ -1258,7 +1258,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[resolv()]
  */
 
-/*! @decl string handle_include(string header_file, string current_file, @
+/*! @decl string|zero handle_include(string header_file, string current_file, @
  *!                             int(0..1) is_local_ref)
  *!
  *!   Called by @[cpp()] to resolv @expr{#include@} and @expr{#string@}
@@ -1287,7 +1287,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[read_include()]
  */
 
-/*! @decl string read_include(string filename)
+/*! @decl string|zero read_include(string filename)
  *!
  *!   Called by @[cpp()] to read included files.
  *!
@@ -1405,13 +1405,13 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
-  /*! @decl string handle_include(string header_file, string current_file, @
+  /*! @decl string|zero handle_include(string header_file, string current_file, @
    *!                             int(0..1) is_local_ref)
    *!
    *!   The default implementation is a proxy for the same function
    *!   in the lexical parent class.
    */
-  PIKEFUN string handle_include(string header_file, string current_file,
+  PIKEFUN string|zero handle_include(string header_file, string current_file,
 				int(0..1) is_local_ref)
   {
 #ifdef SUPPORT_HANDLERS
@@ -1423,12 +1423,12 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
-  /*! @decl string read_include(string filename)
+  /*! @decl string|zero read_include(string filename)
    *!
    *!   The default implementation is a proxy for the same function
    *!   in the lexical parent class.
    */
-  PIKEFUN string read_include(string filename)
+  PIKEFUN string|zero read_include(string filename)
   {
 #ifdef SUPPORT_HANDLERS
     struct CPP_struct *this = THIS;
@@ -1439,12 +1439,12 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
-  /*! @decl string decode_charset(string data, string charset)
+  /*! @decl string|zero decode_charset(string data, string charset)
    *!
    *!   The default implementation is a proxy for the same function
    *!   in the lexical parent class.
    */
-  PIKEFUN string decode_charset(string data, string charset)
+  PIKEFUN string|zero decode_charset(string data, string charset)
   {
 #ifdef SUPPORT_HANDLERS
     struct CPP_struct *this = THIS;
@@ -1909,7 +1909,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
       size_t limit = (size_t)~0;
 
       ref_push_string(filename);
-      if (!safe_apply_current2(f_CPP_read_include_fun_num, 1, "NULL") ||
+      if (!safe_apply_current2(f_CPP_read_include_fun_num, 1, "read_include") ||
           !((1<<TYPEOF(Pike_sp[-1])) & (BIT_STRING|BIT_INT))) {
         cpp_handle_exception (this, "Couldn't read include file.");
         push_empty_string();
@@ -1925,7 +1925,8 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
       if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
         ref_push_string(sval->u.string);
 
-        if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
+        if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2,
+            "decode_charset") ||
             (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
           cpp_error(this, "Invalid encoding for embedded file.");
           push_empty_string();
@@ -2431,7 +2432,7 @@ static void cpp_constant(struct CPP_struct *this, int value)
     /* Handle constant(.foo) */
     push_static_text("");
 
-    if (safe_apply_current2(f_CPP_handle_import_fun_num, 1, "NULL") &&
+    if (safe_apply_current2(f_CPP_handle_import_fun_num, 1, "handle_import") &&
 	((1<<TYPEOF(Pike_sp[-1])) & (BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))) {
       res = !(SAFE_IS_ZERO(Pike_sp-1) && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED);
     } else {
@@ -3256,7 +3257,8 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
 
     push_static_text("ebcdic-us");
 
-    if (safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") &&
+    if (safe_apply_current2(f_CPP_decode_charset_fun_num, 2,
+        "decode_charset") &&
 	(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
       /* Various consistency checks. */
       if ((Pike_sp[-1].u.string->size_shift) ||
@@ -3328,7 +3330,8 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
 
     /* Decode the string */
 
-    if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
+    if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2,
+        "decode_charset") ||
 	(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
       cpp_handle_exception (this, "Error decoding with charset %pS", new_str);
       free_string (new_str);
@@ -5540,7 +5543,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                     ref_push_string(new_file);
 
-                    if (!safe_apply_current2(f_CPP_read_include_fun_num, 1, "NULL") ||
+                    if (!safe_apply_current2(f_CPP_read_include_fun_num, 1,
+                        "read_include") ||
 			 !((1<<TYPEOF(Pike_sp[-1])) & (BIT_STRING|BIT_INT))) {
                       cpp_handle_exception (this, "Couldn't read include file.");
                       pop_n_elems(Pike_sp-save_sp);
@@ -5580,7 +5584,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                           Pike_sp[-1].u.string = new_str;
                         } else if (charset) {
                           ref_push_string(charset);
-                          if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
+                          if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2,
+                              "decode_charset") ||
 			      (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
                             cpp_handle_exception (this,
                                                   "Charset decoding failed for included file.");
@@ -5921,7 +5926,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   /* The charset name */
                   push_string( make_shared_binary_pcharp( ADD_PCHARP(data,p),pos-p));
 
-                  if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2, "NULL") ||
+                  if (!safe_apply_current2(f_CPP_decode_charset_fun_num, 2,
+                      "decode_charset") ||
 		      (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
                     cpp_handle_exception (this, NULL);
                   } else {
@@ -6593,8 +6599,9 @@ PIKEFUN string macro___has_embed(string arg)
 
 /*! @decl constant __REAL_BUILD__
  *!
- *! This define always contains the minor part of the version of the
- *! current Pike, represented as an integer.
+ *! This define always contains the build number of the current Pike,
+ *! represented as an integer. Unlike @[__BUILD__], this constant is
+ *! not affected by emulation of another Pike version.
  *!
  *! @seealso
  *!   @[__BUILD__]
@@ -6821,7 +6828,7 @@ PIKEFUN string macro___has_embed(string arg)
 #endif
 	if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
 	if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
-	if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
+        if (GET_TYPE(INT, "picky_cpp")) picky_cpp = tmp->u.integer;
 	if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
 	if (GET_TYPE(INT, "keep_comments")) this->keep_comments = tmp->u.integer;
 	if (GET_TYPE(MAPPING, "predefines")) {
@@ -7175,7 +7182,7 @@ PIKEFUN string macro___has_embed(string arg)
     }
   }
 
-  /*! @decl mapping(string:string|function|object|array(string|CppDefArgFlags)) get_predefines()
+  /*! @decl mapping(string:string|function|object|array(string|CppDefArgFlags))|zero get_predefines()
    *!
    *!   Get the predefined macros for this preprocessor.
    *!
@@ -7195,7 +7202,7 @@ PIKEFUN string macro___has_embed(string arg)
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
    *!   @[Builtin._take_over_initial_predefines()], @[defines]
    */
-PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_predefines()
+PIKEFUN mapping(string:string|function|object|array(string|int(24bit)))|zero get_predefines()
   {
 #ifndef SUPPORT_HANDLERS
     apply_external(1, f_get_predefines_fun_num, args);
@@ -7270,7 +7277,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_pred
 /*! @endclass CompilerEnvironment
  */
 
-/*! @decl string cpp(string data, mapping|string|void current_file, @
+/*! @decl string|zero cpp(string data, mapping|string|void current_file, @
  *!                  int(0..1)|string|void charset, object|void handler, @
  *!                  void|int compat_major, void|int compat_minor, @
  *!                  void|int picky_cpp)
@@ -7316,7 +7323,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_pred
  *!   @[compile()]
  */
 
-PIKEFUN string cpp(string data,
+PIKEFUN string|zero cpp(string data,
 		   mapping|string|void opts_or_file,
                    int(0..1)|string|void charset_sv,
 		   object|void handler,

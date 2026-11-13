@@ -49,7 +49,7 @@
   TERMIOS_FLAG(c_iflag,IMAXBEL,"IMAXBEL")
 #endif
 #ifdef IUTF8
-  TERMIOS_FLAG(c_iflag,IMAXBEL,"IUTF8")
+  TERMIOS_FLAG(c_iflag,IUTF8,"IUTF8")
 #endif
 
 #ifdef OPOST

@@ -3566,24 +3566,28 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   return ret;
 }
 
-int safe_apply_low2(struct object *o, int fun, int args,
-				const char *fun_name)
+/* Keep error reporting independent of whether the caller knows the name. */
+static int do_safe_apply_low(struct object *o, int fun, int args,
+                             const char *fun_name, int report_error)
 {
   JMP_BUF recovery;
   int ret = 0;
 
-  free_svalue(& throw_value);
-  mark_free_svalue (&throw_value);
-  if(SETJMP_SP(recovery, args))
-  {
-    if(fun_name) call_handle_error();
+  free_svalue(&throw_value);
+  mark_free_svalue(&throw_value);
+  if (SETJMP_SP(recovery, args)) {
+    if (report_error) call_handle_error();
     push_int(0);
     ret = 0;
-  }else{
+  } else {
     if (fun >= 0) {
-      apply_low(o,fun,args);
-    } else if (fun_name) {
-      Pike_error("Cannot call unknown function \"%s\".\n", fun_name);
+      apply_low(o, fun, args);
+    } else if (report_error) {
+      if (fun_name) {
+        Pike_error("Cannot call unknown function \"%s\".\n", fun_name);
+      } else {
+        Pike_error("Cannot call unknown function.\n");
+      }
     } else {
       pop_n_elems(args);
       push_int(0);
@@ -3594,9 +3598,36 @@ int safe_apply_low2(struct object *o, int fun, int args,
   return ret;
 }
 
+int safe_apply_low2(struct object *o, int fun, int args,
+                    const char *fun_name)
+{
+#ifdef PIKE_DEBUG
+  if (fun >= 0) {
+    struct identifier *id;
+    if (!o || !o->prog || fun >= o->prog->num_identifier_references) {
+      Pike_fatal("safe_apply_low2(): Invalid function index %d "
+                 "(expected %s).\n",
+                 fun, fun_name ? fun_name : "<unspecified>");
+    }
+    id = ID_FROM_INT(o->prog, fun);
+    if (fun_name &&
+        (!id->name || id->name->size_shift ||
+         id->name->len != (ptrdiff_t)strlen(fun_name) ||
+         memcmp(id->name->str, fun_name, id->name->len))) {
+      Pike_fatal("safe_apply_low2(): Expected %s at function index %d "
+                 "in program %p, got %s.\n",
+                 fun_name, fun, o->prog,
+                 id->name && !id->name->size_shift ?
+                 id->name->str : "<missing or wide name>");
+    }
+  }
+#endif
+  return do_safe_apply_low(o, fun, args, fun_name, !!fun_name);
+}
+
 PMOD_EXPORT int safe_apply_low(struct object *o, int fun, int args)
 {
-  return safe_apply_low2(o, fun, args, "Unknown function.");
+  return do_safe_apply_low(o, fun, args, NULL, 1);
 }
 
 PMOD_EXPORT int safe_apply(struct object *o, const char *fun, INT32 args)
