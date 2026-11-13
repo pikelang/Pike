@@ -7368,6 +7368,25 @@ test_any_equal([[
   return res;
 ]], ({ "ok", "ok" }))
 
+dnl m_delete(m, index, expected) should remove the entry only if its
+dnl value equals expected, for any type of value, and not crash when
+dnl index has no entry (in a child process).
+test_any_equal([[ mapping m = ([ "a": 1 ]); m_delete(m, "a", 2); return m; ]], ([ "a": 1 ]))
+test_any_equal([[ mapping m = ([ "s": "x" ]); m_delete(m, "s", "y"); return m; ]], ([ "s": "x" ]))
+test_any_equal([[ mapping m = ([ "a": 1 ]); return ({ m_delete(m, "a", 1), m }); ]], ({ 1, ([]) }))
+test_any_equal([[ mapping m = ([ "f": 1.5 ]); return ({ m_delete(m, "f", 1.5), m }); ]], ({ 1.5, ([]) }))
+test_any([[ object o = class {}(); mapping m = ([ "o": o ]); m_delete(m, "o", 17); return m->o == o; ]], 1)
+test_any([[ object o = class {}(); mapping m = ([ "o": o ]); return m_delete(m, "o", o) == o && !sizeof(m); ]], 1)
+test_any([[
+  mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+    mapping m = ([ "a": 1 ]);
+    mixed r = m_delete(m, "b", 2);
+    write(undefinedp(r) && equal(m, ([ "a": 1 ])) ? "ok" : "wrong");
+    return 0;
+  #} }));
+  return r->exitcode ? sprintf("exit %d", r->exitcode) : r->stdout;
+]], "ok")
+
 // multiset tests
 
 test_any([[multiset m=(<>);int e;
