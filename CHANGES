@@ -4,6 +4,12 @@ Pike 9.0: Changes since Pike 8.0
 New language features
 ---------------------
 
+o Local function prototypes.
+
+  A local function can now be declared before its body, e.g. int fn(int n);.
+  This allows mutually recursive local functions. The definition must be in
+  the same block as the prototype and have a compatible function type.
+
 o Unlimited character constant size.
 
   There is no longer any limit to the size of character constants,
