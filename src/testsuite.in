@@ -13591,6 +13591,48 @@ test_false(allocate(2)==({0,0}))
 test_equal(allocate(2,2),({2,2}))
 test_true(allocate(65536,random))
 
+// Keep allocation calls out of the program's mutable constant table.
+// The retained program size must not grow with the allocation size.
+test_any([[
+  program small = compile_string("array f() { return allocate(16); }");
+  program large = compile_string("array f() { return allocate(4096); }");
+  return Pike.count_memory(0, large) - Pike.count_memory(0, small) < 8192;
+]], 1)
+
+// Delaying container folding must preserve fresh nested values.
+test_any([[
+  array f() { return ({ ([ "a": ({ 1 }) ]), (< 2 >) }); }
+  array a = f(), b = f();
+  a[0]->a[0] = 9;
+  a[1][2] = 0;
+  array c = allocate(2, ({ ([]) }));
+  c[0][0]->x = 1;
+  return b[0]->a[0] == 1 && b[1][2] && !c[1][0]->x;
+]], 1)
+
+// Literal containers must still work in constant expressions and types.
+test_any([[
+  class C {
+    constant value = 17 + sizeof(({ 1, 2, 3 }));
+    constant text = sprintf("%d", value);
+    typedef typeof(17 + sizeof(({ 1, 2, 3 }))) Value;
+    Value f() { return value; }
+  }
+  C c = C();
+  return c->f() == 20 && c->text == "20";
+]], 1)
+
+// Explicit casts must keep discarded size information out of assignments.
+test_any([[
+  foreach (({ "[array(int)](mixed)", "(array(int))(mixed)",
+              "(array)(mixed)", "(mixed)" }), string cast) {
+    program p = compile_string("int f() { int a; catch { [a] = " + cast +
+                               "({1,2}); return 0; }; return 1; }");
+    if (p()->f() != 1) return 0;
+  }
+  return 1;
+]], 1)
+
 // - array_sscanf
 
 // - arrayp

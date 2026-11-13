@@ -48,6 +48,10 @@ o Cpp
 
 o Compiler
 
+  - Keep mutable container construction visible to the normal optimizer.
+    This restores array append optimizations and avoids replacing simple
+    array allocation with expensive recursive copies of constants.
+
 o Runtime
 
 o Operator functions
