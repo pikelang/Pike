@@ -87,6 +87,10 @@ o Compiler
   subsequent ordinary opcodes. Set PIKE_SSA_NO_INTEGER_STACK_EXITS=1 to
   require successful exits to return to their entry stack depth.
 
+  Integer regions now lower variable and immediate subtraction with native
+  signed overflow checks. Set PIKE_SSA_NO_INTEGER_SUBTRACT=1 to restore the
+  previous handling for comparisons.
+
 
 Deprecated symbols and modules
 ------------------------------

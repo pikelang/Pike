@@ -24,14 +24,14 @@ amd64_integer_reg(const struct pikecode_ssa_integer_value *value)
   return regs[value->bank];
 }
 
-/* Unlike add_reg_imm(), emit an ADD even for zero, and never negate an
- * INT32_MIN immediate. The following overflow branch needs fresh flags. */
-static void amd64_integer_add_imm(enum amd64_reg reg, INT32 imm)
+/* Emit ADD/SUB even for zero, without negating an INT32_MIN immediate.
+ * Unlike the generic helpers, these always leave fresh overflow flags. */
+static void amd64_integer_alu_imm(enum amd64_reg reg, INT32 imm, int sub)
 {
   int small = imm >= -128 && imm <= 127;
   rex(1, 0, 0, reg);
   opcode(small ? 0x83 : 0x81);
-  modrm(3, 0, reg);
+  modrm(3, sub ? 5 : 0, reg);
   if (small) ib(imm);
   else id(imm);
 }
@@ -99,7 +99,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (INT32)((0x7fffffff - OFFSETOF(svalue, u.integer)) /
                 sizeof(struct svalue)),
-        !ssa_no_integer_stack_exits)) return 0;
+        !ssa_no_integer_stack_exits, !ssa_no_integer_subtract)) return 0;
   for (i = 0; i < p.count; i++) overflow[i] = (struct label){ .addr = -1 };
   for (i = 0; i < p.consumed; i++) slow[i] = (struct label){ .addr = -1 };
   amd64_flush_code_generator_state();
@@ -119,9 +119,13 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   for (i = 0; i < p.count; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[p.step[i].result];
     mov_reg_reg(amd64_integer_reg(&p.value[v->left]), P_REG_RAX);
-    if (v->right)
-      add_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
-    else amd64_integer_add_imm(P_REG_RAX, v->imm);
+    if (v->right) {
+      if (v->kind == PIKE_SSA_INTEGER_SUBTRACT)
+        sub_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
+      else add_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
+    } else
+      amd64_integer_alu_imm(P_REG_RAX, v->imm,
+                            v->kind == PIKE_SSA_INTEGER_SUBTRACT);
     jo(&overflow[i]);
     mov_reg_reg(P_REG_RAX, amd64_integer_reg(v));
   }
@@ -154,6 +158,9 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     if (p.final.depth) ssa_stats.integer_stack_exits++;
     ssa_stats.integer_ops += p.count;
     ssa_stats.integer_values += p.values;
+    for (i = 0; i < p.count; i++)
+      if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
+        ssa_stats.integer_subtract_ops++;
     ssa_stats.integer_loads_avoided += p.loads - p.locals;
     ssa_stats.integer_stores_avoided += p.writes - stores;
   }
@@ -205,7 +212,7 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available)
       mov_reg_reg(amd64_integer_reg(&p.value[v->left]), P_REG_RAX);
       if (v->right)
         add_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
-      else amd64_integer_add_imm(P_REG_RAX, v->imm);
+      else amd64_integer_alu_imm(P_REG_RAX, v->imm, 0);
       jo(&overflow[i]);
       mov_reg_reg(P_REG_RAX, amd64_integer_reg(v));
     }

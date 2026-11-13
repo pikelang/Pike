@@ -136,7 +136,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   if (sparc_ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue),
-        !sparc_ssa_no_integer_stack_exits))
+        !sparc_ssa_no_integer_stack_exits, !sparc_ssa_no_integer_subtract))
     return 0;
   sparc_flush_codegen_state();
   sparc_update_pc();
@@ -161,8 +161,9 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
       SET_REG(SPARC_REG_O5, v->imm);
       right = SPARC_REG_O5;
     }
-    SPARC_ALU_OP(0x10, SPARC_REG_O3,
-                 sparc_integer_reg(&p.value[v->left]), right, 0); /* addcc */
+    SPARC_ALU_OP(v->kind == PIKE_SSA_INTEGER_SUBTRACT ?
+                 SPARC_OP3_SUBcc : SPARC_OP3_ADDcc, SPARC_REG_O3,
+                 sparc_integer_reg(&p.value[v->left]), right, 0);
     sparc_integer_branch(&overflow[i], SPARC_INTEGER_BVS);
     SPARC_OR(sparc_integer_reg(v), SPARC_REG_O3, SPARC_REG_G0, 0);
   }
@@ -196,6 +197,9 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     if (p.final.depth) sparc_stats.integer_stack_exits++;
     sparc_stats.integer_ops += p.count;
     sparc_stats.integer_values += p.values;
+    for (i = 0; i < p.count; i++)
+      if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
+        sparc_stats.integer_subtract_ops++;
     sparc_stats.integer_loads_avoided += p.loads - p.locals;
     sparc_stats.integer_stores_avoided += p.writes - stores;
   }

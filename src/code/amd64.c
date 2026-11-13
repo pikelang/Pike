@@ -165,6 +165,7 @@ static int ssa_no_locals_cache = 1;
 static int ssa_integer_regions = 0;
 static int ssa_no_integer_stack = 0;
 static int ssa_no_integer_stack_exits = 0;
+static int ssa_no_integer_subtract;
 static int ssa_locals_valid = 0;
 static int ssa_sp_join_unused = 0;
 static unsigned int ssa_sp_value = 0;
@@ -189,7 +190,7 @@ static struct {
   unsigned long region_bytes_removed, branches_shortened;
   unsigned long integer_regions, integer_ops, integer_values;
   unsigned long integer_stack_regions;
-  unsigned long integer_stack_exits;
+  unsigned long integer_stack_exits, integer_subtract_ops;
   unsigned long integer_loads_avoided, integer_stores_avoided;
 } ssa_stats;
 #else
@@ -1429,7 +1430,7 @@ static void amd64_ssa_report_stats(void)
           "regions=%lu abandoned=%lu bytes removed=%lu short branches=%lu; "
           "integer regions=%lu ops=%lu values=%lu "
           "loads avoided=%lu stores avoided=%lu stack regions=%lu "
-          "stack exits=%lu; eager=%d\n",
+          "stack exits=%lu subtract ops=%lu; eager=%d\n",
           ssa_stats.loads[PIKE_SSA_IP],
           ssa_stats.loads[PIKE_SSA_SP],
           ssa_stats.definitions[PIKE_SSA_SP],
@@ -1460,6 +1461,7 @@ static void amd64_ssa_report_stats(void)
           ssa_stats.integer_loads_avoided,
           ssa_stats.integer_stores_avoided,
           ssa_stats.integer_stack_regions, ssa_stats.integer_stack_exits,
+          ssa_stats.integer_subtract_ops,
           ssa_eager_stores);
 }
 #endif
@@ -1480,6 +1482,8 @@ void amd64_start_function(int store_lines )
     ssa_no_integer_stack = getenv("PIKE_SSA_NO_INTEGER_STACK") != NULL;
     ssa_no_integer_stack_exits =
       getenv("PIKE_SSA_NO_INTEGER_STACK_EXITS") != NULL;
+    ssa_no_integer_subtract =
+      getenv("PIKE_SSA_NO_INTEGER_SUBTRACT") != NULL;
     ssa_no_locals_cache = getenv("PIKE_SSA_LOCALS_CACHE") == NULL ||
       getenv("PIKE_SSA_NO_LOCALS_CACHE") != NULL;
     ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;

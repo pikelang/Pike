@@ -11,7 +11,9 @@
 #define PIKE_SSA_INTEGER_LIMIT 8
 #define PIKE_SSA_INTEGER_VALUES (PIKE_SSA_INTEGER_LOCALS + PIKE_SSA_INTEGER_LIMIT)
 
-enum pikecode_ssa_integer_kind { PIKE_SSA_INTEGER_LOAD, PIKE_SSA_INTEGER_ADD };
+enum pikecode_ssa_integer_kind {
+  PIKE_SSA_INTEGER_LOAD, PIKE_SSA_INTEGER_ADD, PIKE_SSA_INTEGER_SUBTRACT
+};
 struct pikecode_ssa_integer_value {
   enum pikecode_ssa_integer_kind kind;
   unsigned int left, right;
@@ -59,5 +61,5 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *plan,
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *plan,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
-    int stack_exits);
+    int stack_exits, int subtract);
 #endif

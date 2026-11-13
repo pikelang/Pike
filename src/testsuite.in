@@ -476,6 +476,43 @@ test_any([[
   return 1;
 ]], 1)
 
+// Native subtraction must preserve operand order and the completed prefix
+// when any later operation overflows into the ordinary implementation.
+test_any([[
+  array(int) f(int a, int b) {
+    a++; b -= a; a -= b; a -= 3;
+    return ({ a, b });
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int x = a, y = b;
+    x++;
+    y -= x;
+    x -= y;
+    x -= 3;
+    if (!equal(f(a, b), ({ x, y }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// The left operand can name a version from before the right operand's
+// increments. Subtraction must publish that version on an overflow exit.
+test_any([[
+  int alias(int a, int b) { b -= 2; b += 2; return a - (++a - ++a); }
+  int input(int a, int b) { b -= 2; b += 2; return a - (++b - ++b); }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int expected = a;
+    expected++;
+    if (alias(a, b) != expected || input(a, b) != expected) return 0;
+  }
+  return 1;
+]], 1)
+
 test_any([[
   // bug 2690
   array(function) foo(void|int b)

@@ -5,10 +5,9 @@
 || for more information.
 */
 
-/* Included by pikecode.c. This planner contains no native registers,
- * instruction encodings or branch fixups. Value banks express coalescing:
- * every version of one local occupies the same backend-selected register.
- */
+/* Included by pikecode.c. These planners contain no native registers,
+ * instruction encodings or branch fixups. The balanced planner coalesces
+ * each local's versions; the stack planner shares banks by liveness. */
 /* Each unit starts and ends at the same Pike stack depth. Its fast path
  * writes one local. Multi-step units can replay from their beginning after
  * restoring that local's input register: no partial result was published. */
@@ -159,7 +158,7 @@ static int integer_stack_local(struct pikecode_ssa_integer_stack_plan *p,
 }
 
 static int integer_stack_refs(const struct p_instr_s *op,
-                               INT32 *a, INT32 *b)
+                               INT32 *a, INT32 *b, int subtract)
 {
   *a = *b = -1;
   switch (op->opcode) {
@@ -175,7 +174,11 @@ static int integer_stack_refs(const struct p_instr_s *op,
     return *a >= 0;
   case F_ADD_INTS: case F_ADD_INT: case F_POP_VALUE:
     return 1;
-  case F_ADD_NEG_INT: case F_SUBTRACT_INT:
+  case F_SUBTRACT:
+    return subtract;
+  case F_SUBTRACT_INT:
+    return subtract || !INT32_NEG_OVERFLOW(op->arg);
+  case F_ADD_NEG_INT:
     return !INT32_NEG_OVERFLOW(op->arg);
   }
   return 0;
@@ -184,7 +187,7 @@ static int integer_stack_refs(const struct p_instr_s *op,
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *p,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
-    int stack_exits)
+    int stack_exits, int subtract)
 {
   struct pikecode_ssa_integer_snapshot state;
   struct pikecode_ssa_integer_stack_plan best;
@@ -205,7 +208,7 @@ int pikecode_ssa_plan_integer_stack(
     INT32 a, b;
     int is_arithmetic;
     if (op->line != code[0].line || op->file != code[0].file ||
-        !integer_stack_refs(op, &a, &b)) break;
+        !integer_stack_refs(op, &a, &b, subtract)) break;
     is_arithmetic = op->opcode != F_LOCAL && op->opcode != F_2_LOCALS &&
       op->opcode != F_ASSIGN_LOCAL && op->opcode != F_ASSIGN_LOCAL_AND_POP &&
       op->opcode != F_POP_VALUE;
@@ -233,8 +236,9 @@ int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_snapshot before = state;
     unsigned int left = 0, right = 0, push = 0, write = 0, live = 0, bank;
     INT32 imm = 0, a, b;
+    enum pikecode_ssa_integer_kind kind = PIKE_SSA_INTEGER_ADD;
     int dst = -1, src = -1;
-    integer_stack_refs(op, &a, &b);
+    integer_stack_refs(op, &a, &b, subtract);
     for (i = 0; i < p->locals; i++) {
       if (p->local[i] == a) dst = i;
       if (p->local[i] == b) src = i;
@@ -251,7 +255,7 @@ int pikecode_ssa_plan_integer_stack(
       left = state.stack[state.depth - 1];
       /* Bare input copies would need parallel subtype-tag moves at commit.
        * Keep those on the ordinary path; arithmetic results have tag INT/0. */
-      if (p->value[left].kind != PIKE_SSA_INTEGER_ADD) goto finished;
+      if (p->value[left].kind == PIKE_SSA_INTEGER_LOAD) goto finished;
       state.local[dst] = left;
       state.dirty |= 1U << dst;
       p->writes++;
@@ -262,6 +266,9 @@ int pikecode_ssa_plan_integer_stack(
       if (!state.depth) goto finished;
       state.depth--;
       goto accepted;
+    case F_SUBTRACT:
+      kind = PIKE_SSA_INTEGER_SUBTRACT;
+      /* FALLTHRU */
     case F_ADD_INTS:
       if (state.depth < 2) goto finished;
       right = state.stack[--state.depth];
@@ -271,7 +278,11 @@ int pikecode_ssa_plan_integer_stack(
     case F_ADD_INT: case F_ADD_NEG_INT: case F_SUBTRACT_INT:
       if (!state.depth) goto finished;
       left = state.stack[--state.depth];
-      imm = op->opcode == F_ADD_INT ? op->arg : -op->arg;
+      if (op->opcode == F_SUBTRACT_INT && subtract) {
+        kind = PIKE_SSA_INTEGER_SUBTRACT;
+        imm = op->arg;
+      } else
+        imm = op->opcode == F_ADD_INT ? op->arg : -op->arg;
       push = 1;
       break;
     default:
@@ -302,7 +313,7 @@ int pikecode_ssa_plan_integer_stack(
       step->first = e;
       step->before = before;
       step->result = p->values;
-      v->kind = PIKE_SSA_INTEGER_ADD;
+      v->kind = kind;
       v->left = left;
       v->right = right;
       v->imm = imm;
