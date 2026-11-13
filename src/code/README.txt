@@ -11,7 +11,7 @@ Backend-specific registers, optimizations, and comparison flags are
 documented in the opening comments of the corresponding CPU files.
 
 The integer value pass is enabled by default in SSA-enabled builds on
-backends that implement it, with 64-bit Pike integers. Set
+backends that implement it for the configured Pike integer width. Set
 PIKE_SSA_NO_INTEGER_REGIONS=1 to disable it for comparisons or debugging.
 The former PIKE_SSA_INTEGER_REGIONS flag is no longer needed. The pass
 recognizes up to eight additions/increments using at most three locals on

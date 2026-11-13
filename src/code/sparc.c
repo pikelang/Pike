@@ -24,13 +24,16 @@
  * avoid a reload, calls, and emitted code bytes. Compare the same binary with
  * the joins variable unset and set.
  *
- * On SPARC64 with SSA enabled and 64-bit Pike integers, the shared integer
- * value pass described in README.txt is enabled by default. SPARC32
- * retains ordinary arithmetic emission. Value banks use O0..O2; O3 holds
- * speculative results and O4 saves a multi-step unit's input for rollback.
- * The lowering uses 64-bit XCC overflow branches with explicit delay-slot
- * NOPs, word displacements, and big-endian tag accesses. Local offsets must
- * fit the load/store immediate field; larger offsets use ordinary emission.
+ * With SSA enabled, the shared integer value pass described in README.txt
+ * defaults on for 32-bit Pike integers on either ABI and 64-bit integers
+ * on SPARC64. Value banks use O0..O2; O3 holds speculative results and O4
+ * saves a multi-step unit's input for rollback. Pointer loads follow the
+ * ABI, independently of integer width. Word values use word loads/stores
+ * and ICC overflow branches; doublewords use XCC branches. Word
+ * arithmetic needs only V7 instructions. SPARC32 with 64-bit Pike integers
+ * still uses ordinary emission. Branches use explicit delay-slot NOPs and
+ * word displacements; tags use big-endian accesses. Local offsets must fit the
+ * load/store immediate field; larger offsets use ordinary emission.
  */
 
 #include "global.h"

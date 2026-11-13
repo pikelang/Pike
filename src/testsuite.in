@@ -313,8 +313,8 @@ test_any([[
     return x;
   }
   for (int i = -1; i <= 9; i++) {
-    int hi = (1 << 63) - i;
-    int lo = -(1 << 63) + i;
+    int hi = Int.NATIVE_MAX + 1 - i;
+    int lo = Int.NATIVE_MIN + i;
     if (inc(hi) != hi + 8 || dec(lo) != lo - 8) return 0;
   }
   return inc(UNDEFINED) == 8 && dec(UNDEFINED) == -8;
@@ -347,9 +347,10 @@ test_any([[
     if (y) y++;
     return ({ x, y });
   }
-  array(int) values = ({ UNDEFINED, -1, 0, 1, (1 << 31) - 1,
-                        -(1 << 31), (1 << 63) - 1, (1 << 63) - 2,
-                        (1 << 63) - 4, -(1 << 63), 1 << 90 });
+  array(int) values = ({ UNDEFINED, -1, 0, 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, Int.NATIVE_MAX - 3,
+                        Int.NATIVE_MIN, Int.NATIVE_MIN + 1,
+                        (1 << 63) - 1, -(1 << 63), 1 << 90 });
   foreach (values, int x)
     foreach (values, int y) {
       int rx = x, ry = y;
@@ -369,7 +370,8 @@ test_any([[
     if (y) z++;
     return ({ x, y, z, zero_type(y) });
   }
-  array(int) values = ({ UNDEFINED, 0, -1, (1 << 63) - 1,
+  array(int) values = ({ UNDEFINED, 0, -1, Int.NATIVE_MAX,
+                        Int.NATIVE_MIN, (1 << 63) - 1,
                         -(1 << 63), 1 << 90 });
   foreach (values, int x)
     foreach (values, int y)

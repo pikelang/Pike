@@ -75,6 +75,8 @@ o Compiler
   on AMD64 and SPARC64 with 64-bit Pike integers. Set the environment
   variable PIKE_SSA_NO_INTEGER_REGIONS=1 to disable them.
 
+  SPARC32 now also supports integer regions with 32-bit Pike integers.
+
 
 Deprecated symbols and modules
 ------------------------------

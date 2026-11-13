@@ -7,17 +7,31 @@
 
 /* Included at the end of sparc.c. No C call is made with uncommitted
  * integer values. L5 holds locals, O0..O2 hold value banks, O3 a speculative
- * result, O4 a multi-step unit's input and O5 an immediate operand. */
+ * result, O4 a multi-step unit's input and O5 an immediate operand.
+ *
+ * Pointer width follows the ABI; integer loads, stores and condition
+ * codes follow Pike's native integer width. Word arithmetic needs only V7
+ * instructions. Doubleword values currently require the SPARC64 backend. */
+#if SIZEOF_INT_TYPE == 4
+#define SPARC_INTEGER_LD SPARC_LDUW
+#define SPARC_INTEGER_ST SPARC_STW
+#define SPARC_INTEGER_BVS 0x0e800000 /* bvs %icc */
+#elif defined(PIKE_BYTECODE_SPARC64) && SIZEOF_INT_TYPE == 8
+#define SPARC_INTEGER_LD SPARC_LDX
+#define SPARC_INTEGER_ST SPARC_STX
+#define SPARC_INTEGER_BVS 0x0e600000 /* bvs,pn %xcc */
+#endif
+
 int sparc_integer_regions_enabled(void)
 {
-#if defined(PIKE_BYTECODE_SPARC64) && SIZEOF_INT_TYPE == 8
+#ifdef SPARC_INTEGER_LD
   return sparc_ssa_integer_regions;
 #else
   return 0;
 #endif
 }
 
-#if defined(PIKE_BYTECODE_SPARC64) && SIZEOF_INT_TYPE == 8
+#ifdef SPARC_INTEGER_LD
 struct sparc_integer_label {
   unsigned int count;
   INT32 use[PIKE_SSA_INTEGER_LOCALS + 2];
@@ -61,8 +75,8 @@ static void sparc_integer_commit(const struct pikecode_ssa_integer_plan *p,
   for (i = 0; i < p->locals; i++) {
     ptrdiff_t off = p->local[i] * sizeof(struct svalue);
     if (!(dirty & (1U << i))) continue;
-    SPARC_STX(SPARC_REG_O0 + i, SPARC_REG_L5,
-              off + OFFSETOF(svalue, u.integer), 1);
+    SPARC_INTEGER_ST(SPARC_REG_O0 + i, SPARC_REG_L5,
+                     off + OFFSETOF(svalue, u.integer), 1);
     /* Both type and subtype become an ordinary integer. On big-endian
      * SPARC the contiguous tag word begins at tu.t.type. */
     SPARC_STW(SPARC_REG_G0, SPARC_REG_L5,
@@ -73,7 +87,7 @@ static void sparc_integer_commit(const struct pikecode_ssa_integer_plan *p,
 
 int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
 {
-#if defined(PIKE_BYTECODE_SPARC64) && SIZEOF_INT_TYPE == 8
+#ifdef SPARC_INTEGER_LD
   struct pikecode_ssa_integer_plan p;
   struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
   struct sparc_integer_label slow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
@@ -87,7 +101,7 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
   sparc_flush_codegen_state();
   sparc_update_pc();
   LOAD_PIKE_FP();
-  SPARC_LDX(SPARC_REG_L5, SPARC_REG_PIKE_FP,
+  PIKE_LDPTR(SPARC_REG_L5, SPARC_REG_PIKE_FP,
             OFFSETOF(pike_frame, locals), 1);
   for (i = 1; i <= p.values; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[i];
@@ -97,8 +111,8 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
                off + OFFSETOF(svalue, tu.t.type), 1);
     SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
     sparc_integer_branch(&slow[0], 0x12800000); /* bne %icc */
-    SPARC_LDX(sparc_integer_reg(v), SPARC_REG_L5,
-              off + OFFSETOF(svalue, u.integer), 1);
+    SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
+                     off + OFFSETOF(svalue, u.integer), 1);
   }
   for (i = 0; i < p.units; i++) {
     const struct pikecode_ssa_integer_unit *u = &p.unit[i];
@@ -115,7 +129,7 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
       }
       SPARC_ALU_OP(0x10, SPARC_REG_O3,
                    sparc_integer_reg(&p.value[v->left]), right, 0); /* addcc */
-      sparc_integer_branch(&overflow[i], 0x0e600000); /* bvs,pn %xcc */
+      sparc_integer_branch(&overflow[i], SPARC_INTEGER_BVS);
       SPARC_OR(sparc_integer_reg(v), SPARC_REG_O3, SPARC_REG_G0, 0);
     }
   }
