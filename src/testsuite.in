@@ -9312,6 +9312,25 @@ test_any([[
   return 1;
 ]],1)
 
+// INT32_MIN cannot be negated in an immediate-emitter helper. Both signs
+// must compile and run across native integer boundaries.
+test_any([[
+  array(int) f(int a) { return ({ a + -2147483648, a - -2147483648 }); }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MAX, 1 << 90 });
+  int offset = 1 << 30;
+  offset += offset;
+  foreach (values, int a) {
+    // Normalize only the reference: older interpreters may retain an
+    // UNDEFINED subtype when adding directly to that source value.
+    int normal = (int)(string)a;
+    int plus = normal + offset;
+    int minus = normal - offset;
+    if (!equal(f(a), ({ minus, plus }))) return 0;
+  }
+  return 1;
+]], 1)
+
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
 test_true([[Int.NATIVE_MAX >= 2147483647]])

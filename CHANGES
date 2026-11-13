@@ -541,6 +541,10 @@ o Cpp
 
 o Compiler
 
+  - Compiling arithmetic with -2147483648 no longer hangs on AMD64.
+    Signed-minimum immediates are emitted without overflowing negation;
+    subtraction uses its C fallback when sign flipping is unrepresentable.
+
   - Inheritance errors involving unfinished programs now identify the base's
     source location and show the references that started nested compilations.
     This helps locate circular dependencies introduced through type references.
