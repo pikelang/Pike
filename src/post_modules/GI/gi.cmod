@@ -2161,6 +2161,7 @@ static void low_invoke(GIBaseInfo *callable,
          */
       }
       if (scope != GI_SCOPE_TYPE_INVALID) {
+        GITypeInfo *cinfo;
         /* Callback function argument. */
         cbc = (struct gi_callback_context *)g_malloc0(sizeof(struct gi_callback_context));
         cbc->scope = scope;
@@ -2189,7 +2190,7 @@ static void low_invoke(GIBaseInfo *callable,
           array_fix_type_field(cbc->extra_args);
           args = last_arg;
         }
-        GITypeInfo *cinfo = g_arg_info_get_type(ai);
+        cinfo = g_arg_info_get_type(ai);
         if (g_type_info_get_tag(cinfo) == GI_TYPE_TAG_INTERFACE) {
           GIBaseInfo *iinfo = g_type_info_get_interface(cinfo);
           g_base_info_unref(cinfo);

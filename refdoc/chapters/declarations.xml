@@ -550,9 +550,9 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
     <tt>@</tt>, the value, and a colon before the declaration's modifiers.
     Several annotations can precede the same declaration:</p>
 
-    <code>
+    <example>
 @"first": @"second": @"first": int value;
-    </code>
+    </example>
 
     <p>In Pike 9.0, annotations are stored and returned as arrays in
     declaration order. Repeated values remain separate entries: the
