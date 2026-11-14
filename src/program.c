@@ -2415,6 +2415,8 @@ int low_resolve_identifier(struct pike_string *ident)
   struct compilation *c = THIS_COMPILATION;
   struct mapping *resolve_cache = c->resolve_cache;
   struct svalue *tmp = NULL;
+  struct pike_string *saved_identifier;
+  int resolved;
 
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
@@ -2459,7 +2461,11 @@ int low_resolve_identifier(struct pike_string *ident)
   CHECK_COMPILER();
 
   ref_push_string(ident);
-  if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 1, NULL))
+  saved_identifier = c->resolving_identifier;
+  c->resolving_identifier = ident;
+  resolved = safe_apply_current2(PC_RESOLV_FUN_NUM, 1, NULL);
+  c->resolving_identifier = saved_identifier;
+  if (!resolved)
     handle_compile_exception ("Error resolving '%pS'.", ident);
 
   if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) {
@@ -6358,11 +6364,10 @@ void lower_inherit(struct program *p,
        * 2. Otherwise we might not have all definitions when we
        * fixate our program.
        *
-       * FIXME: Maybe this can be relaxed by registering a dependency
-       * and delaying compilation here?
+       * Cross-unit inheritance dependencies are registered in pass 1.
+       * Keep this check for unresolved and same-unit dependency cycles.
        */
-      yyerror ("Cannot inherit program in pass 2 "
-	       "which is not fully compiled yet.");
+      report_unfinished_inherit(p, 2);
       yyerror ("(You probably have a cyclic symbol dependency that the "
 	       "compiler cannot handle.)");
     }
@@ -6392,8 +6397,7 @@ void lower_inherit(struct program *p,
   }
 
   if (!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE))) {
-    yyerror ("Cannot inherit program in pass 1 "
-	     "which is only a placeholder.");
+    report_unfinished_inherit(p, 1);
     yyerror ("(You probably have a cyclic symbol dependency that the "
 	     "compiler cannot handle.)");
     return;
@@ -6403,6 +6407,10 @@ void lower_inherit(struct program *p,
     yyerror("Trying to inherit placeholder program (resolver problem).");
     return;
   }
+
+  /* Keep the old loading-order restrictions when checking older code. */
+  if (!(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(9,0))
+    report_compiler_dependency_level(p, COMPILER_DEPENDENCY_FINISHED);
 
   /* Propagate the HAS_C_METHODS, CLEAR_STORAGE and DESTRUCT_IMMEDIATE flags. */
   if (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE|PROGRAM_DESTRUCT_IMMEDIATE)) {

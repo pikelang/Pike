@@ -113,7 +113,9 @@ protected array(3: int) read_identifier(Stdio.Buffer data,
   [int(0..3) cls, int constructed, int(0..) tag] =
     read_identifier(data, secure);
 
-  int(0..) len = data->read_int8();
+  int byte = data->read_int8();
+  if (byte < 0) error("Truncated ASN.1 data (missing length byte).\n");
+  int(0..) len = [int(0..)]byte;
   // if( !cls && !constructed && !tag && !len )
   //   error("End-of-contents not supported.\n");
   if( !cls && !tag )
@@ -129,7 +131,9 @@ protected array(3: int) read_identifier(Stdio.Buffer data,
         error("Non-canonical length encoding.\n");
       data->unread(1);
     }
-    len = data->read_int(len & 0x7f);
+    int new_len = data->read_int(len & 0x7f);
+    if (new_len < 0) error("Truncated ASN.1 data (missing length bytes).\n");
+    len = [int(0..)]new_len;
     if (secure && (len == (len & 0x7f)))
       error("Non-canonical length encoding.\n");
   }

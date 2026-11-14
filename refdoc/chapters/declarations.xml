@@ -173,6 +173,43 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
           return arg1 + arg2;
         }
       </example>
+
+      <p>Function arguments can also use array or mapping patterns, with
+      the same defaults, rest variables, and nesting as multi-assignment.
+      Each pattern consumes one argument. Pattern variables are available
+      in the function body.</p>
+
+      <example>
+        array split([mixed head, mixed ... tail], string label) {
+          return ({ label, head, tail });
+        }
+        int year(["year": int year]) { return year; }
+      </example>
+    </subsection>
+
+    <subsection title="Named local functions">
+      <p>A named function can be declared inside another function. Its name
+      is visible from the declaration to the end of the enclosing block, and
+      its body can refer to local variables in enclosing scopes.</p>
+
+      <p>To refer to a local function before its definition, declare a
+      prototype with a semicolon instead of a body. This makes mutually
+      recursive local functions possible:</p>
+
+      <example>
+        bool is_even(int n) {
+          bool odd(int n);
+          bool even(int n) { return n == 0 || odd(n - 1); };
+          bool odd(int n) { return n != 0 &amp;&amp; even(n - 1); };
+          return even(n);
+        }
+      </example>
+
+      <p>The definition must occur in the same block as the prototype and
+      have a compatible function type. A prototype does not create an
+      assignable function variable. Calls and function references may precede
+      the definition, but any captured variables must be initialized before
+      they are used. Local function prototypes are available in Pike 9.0.</p>
     </subsection>
 
     <subsection title="Variant functions">
@@ -275,6 +312,22 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
     a template to create objects implementing the class.</p>
 
     <subsection title="Inheritance">
+      <p>When inheriting a program from another module, the compiler can
+      defer the derived module's final compilation until the supplying
+      compilation unit has finished. References to types and declarations
+      can therefore coexist with inheritance dependencies between modules.
+      The inherited program must already have completed its first compiler
+      pass, so that its inheritance and storage layout are known. This
+      deferral is available in Pike 9.1 and later; <tt>#pike 9.0</tt> and
+      earlier compatibility modes retain the previous restrictions at the
+      inherit declaration, allowing code to be checked for compatibility
+      with older Pike versions.</p>
+
+      <p>This does not permit inheritance from unresolved placeholders or
+      cycles that require compilation units to finish before each other.
+      Nested classes share their enclosing compilation unit's completion
+      dependency; they are not independently scheduled.</p>
+
       <p>The functionality of a class may be extended by a new class
       by means of inheritance.</p>
 

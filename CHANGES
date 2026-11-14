@@ -18,35 +18,50 @@ o Syntax for default values in multi-assignment.
   Both of the above statements will assign the value 1 to
   the variable a, and the value 5 to the variable b.
 
-o Syntax for using multi-assign in function calls.
+o Rest variables in multi-assignment.
 
-  *CAVEAT* Broken in combination with default values (Issue #10169).
+  The final variable can collect the remaining array elements:
+
+    [mixed head, mixed ... tail] = values;
+
+  Existing array variables can be used with [... tail]. The rest array
+  is empty if there are no remaining elements. Defaults and rest variables
+  can also be used in function argument patterns.
+
+  Unnamed elements discard individual positions, and a bare trailing ...
+  discards the remaining elements:
+
+    [mixed a, mixed, mixed c, ...] = ({ 0, 1, 2, 3, 4, 5 });
+
+  This assigns 0 to a and 2 to c.
+
+o Mapping patterns in multi-assignment.
+
+  Keys can select the values to assign from a mapping:
+
+    ["year": int year, "mon": int mon, "mday": int mday] = localtime(time());
+
+  Patterns can contain existing lvalues, declarations, defaults, and nested
+  patterns. Missing keys supply UNDEFINED; other keys are ignored. The
+  expression returns the source mapping. Mapping patterns can also be used
+  as function arguments.
 
 
 Bug fixes
 ---------
 
-o Concurrent.Future
-
-  delay() now preserves an explicitly assigned backend throughout its
-  internal callback chain, avoiding a dependency on the default backend.
-
-o predef::backtrace()
-
-  Improved handling of frames whose arguments are not fully initialized.
-
-o predef::{en,de}code_value()
-
-  Several fixes related to encoding and decoding of programs.
-
-o Cpp
-
-  - Fixed line numbering issue when handling multi-line comments
-    in arguments to macros.
-
-  - Improved cleanup when preprocessor callbacks throw errors.
-
 o Compiler
+
+  - Correct argument types and values for functions using multi-assignment
+    with default values. Pattern locals no longer occupy incoming argument
+    slots when a default expression captures them.
+
+  - Inheritance can now delay a derived module's final compilation until an
+    inherited program's compilation unit has finished. This avoids some
+    loading-order-dependent failures when modules refer to each other's
+    types. The base must already have completed its first pass; unresolved
+    placeholders and cyclic final-pass dependencies are still rejected.
+    Pike 9.0 and earlier compatibility modes retain the old restrictions.
 
   - Keep mutable container construction visible to the normal optimizer.
     This restores array append optimizations and avoids replacing simple
@@ -115,3 +130,6 @@ Building and installing
 Issues fixed
 ------------
 
+  #10103: Support rest variables in multi-assignment.
+  #10110: Support multi-assignment from mappings.
+  #10169: Correct function argument patterns containing defaults.

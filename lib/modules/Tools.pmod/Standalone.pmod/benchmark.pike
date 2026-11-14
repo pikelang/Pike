@@ -148,7 +148,11 @@ void run_tests()
 {
   int failed;
   mixed err = catch {
-   array(string) to_run = glob(test_globs,sort(indices (tests)));
+   mapping current = results || tests;
+   array(string) to_run = glob(test_globs, sort(indices(tests)));
+   if (comparison && !json)
+     to_run = glob(test_globs,
+                   Array.uniq(sort(indices(current) + indices(comparison))));
    mapping res;
    float total_pct;
    int n_tests;
@@ -168,7 +172,15 @@ void run_tests()
 
    foreach (to_run; int i; string id)
    {
-     n_tests++;
+     if (comparison && !json && !has_index(current, id)) {
+       String.Buffer buf = String.Buffer(80);
+       buf->add(id);
+       dot_align_right(buf, "N/A", 58);
+       write("%s (was %s)\n", string_to_utf8(buf->get()),
+             comparison[id]->readable);
+       continue;
+     }
+
      if (!results || !(res = results[id])) {
        if (sync_mode) {
          res = Tools.Shoot.run_sync( tests[id], seconds_per_test );
@@ -206,6 +218,7 @@ void run_tests()
          int diff = res->n_over_time - on;
          float pct = diff*100.0 / on;
          total_pct += pct;
+         n_tests++;
          if( isatty )
            write( color( pct ) );
          String.Buffer buf = String.Buffer(80);
@@ -227,12 +240,12 @@ void run_tests()
      write( "\n}\n");
    else if( comparison )
    {
-     float pct = total_pct / n_tests;
+     float pct = n_tests ? total_pct / n_tests : 0.0;
      if( isatty ) write(color(pct));
      write("-"*66+"\n"+
-           " "*40+"%25.1f%%\n"+
+           " "*40+"%26s\n"+
            "-"*66+"\n",
-           pct);
+           n_tests ? sprintf("%.1f%%", pct) : "N/A");
      if( isatty ) write( "\e[0m" );
    }
    else

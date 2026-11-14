@@ -200,11 +200,19 @@ static void compiler_add_generic(struct pike_string *name,
                                  struct pike_type *default_type);
 static void compiler_define_implicit___create__(void);
 static void compiler_end_class(int has___create__, int parent_constant_id);
+static void push_identifier_type(node *n);
+static node *make_ignored_lvalue(struct pike_type *type);
 static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,
                                       int num_args, int num_create_args,
                                       int opt_flags);
-static void add_parent_local_function(struct pike_string *identifier, int id);
+static int compiler_declare_local_function(int modifiers,
+                                           struct pike_string *identifier,
+                                           int num_args);
+static node *compiler_define_local_function(int modifiers, int localid,
+                                            node *block, int num_args);
+static int low_islocal(struct compiler_frame *frame,
+                       struct pike_string *identifier);
 static int compiler_define_function(int modifiers,
                                     struct pike_string *identifier,
                                     struct pike_type *fun_type,
@@ -445,6 +453,12 @@ int yylex(YYSTYPE *yylval);
 %type <n> safe_lvalue
 %type <n> lvalue
 %type <n> lvalue_list
+%type <n> multi_assign_lvalue
+%type <n> multi_lvalue
+%type <n> declared_lvalue
+%type <n> mapping_lvalue
+%type <n> type_close
+%type <n> mapping_items_close
 %type <n> low_lvalue_list
 %type <n> m_expr_list
 %type <n> m_expr_list2
@@ -891,13 +905,6 @@ open_bracket_with_line_info: '['
   }
   ;
 
-close_bracket_or_missing: ']'
-  | /* empty */
-  {
-    yyerror("Missing ']'.");
-  }
-  ;
-
 /* This variant is used to start a new compiler frame for functions
  * with a declared return type.
  *
@@ -1201,18 +1208,20 @@ new_arg_name: full_type optional_dot_dot_dot
     Pike_compiler->compiler_frame->local_names[i].flags |= LOCAL_VAR_IS_USED;
     bind_local(NULL, i);
     $<number>$ = i;
+    Pike_compiler->compiler_frame->parsing_arg_pattern++;
   }
-  low_lvalue_list ']' optional_default_value
+  multi_assign_lvalue optional_default_value
   {
-    node *n = mknode(F_ARRAY_LVALUE, $3, 0);
+    node *n = $3;
     node *init;
     int i = $<number>2;
+    Pike_compiler->compiler_frame->parsing_arg_pattern--;
 
     /* Update the type for argument #i. */
     type_stack_mark();
     fix_type_field(n);
     push_finished_type(n->type);
-    if ($5) {
+    if ($4) {
       push_type(T_VOID);
       push_type(T_OR);
       free_type(n->type);
@@ -1223,11 +1232,11 @@ new_arg_name: full_type optional_dot_dot_dot
       pop_unfinished_type();
     init = mklocalnode(i, 0);
 
-    if ($5) {
-      init = mknode(F_LOR, init, $5);
+    if ($4) {
+      init = mknode(F_LOR, init, $4);
     }
     /* Redefine local #i as [ $3 ] with an initializer of
-     * orig_i || $5.
+     * orig_i || $4.
      */
     redefine_local(NULL, i, n, init);
     free_node($1);
@@ -1242,6 +1251,18 @@ func_args: '(' arguments ')'
 
 arguments: /* empty */ optional_comma { $$=0; }
   | arguments2 optional_comma
+  {
+    struct compiler_frame *frame = Pike_compiler->compiler_frame;
+    int i;
+    for (i = 0; i < frame->current_number_of_locals; i++) {
+      if (frame->local_names[i].def &&
+          (frame->local_names[i].def->token == F_ARRAY_LVALUE)) {
+        frame->local_names[i].def =
+          prepare_argument_pattern(frame->local_names[i].def);
+      }
+    }
+    $$ = $1;
+  }
   ;
 
 arguments2: new_arg_name { $$ = 1; }
@@ -1466,15 +1487,22 @@ cast: open_paren_with_line_info type ')'
     }
     ;
 
-soft_cast: open_bracket_with_line_info type ']'
-    {
-      struct pike_type *s = compiler_pop_type();
-      $$ = mktypenode(s);
-      free_type(s);
-      COPY_LINE_NUMBER_INFO($$, $1);
-      free_node ($1);
-    }
-    ;
+/* Share the closing bracket with a single unnamed pattern element. */
+type_close: type ']'
+  {
+    struct pike_type *type = compiler_pop_type();
+    $$ = mktypenode(type);
+    free_type(type);
+  }
+  ;
+
+soft_cast: open_bracket_with_line_info type_close
+  {
+    $$ = $2;
+    COPY_LINE_NUMBER_INFO($$, $1);
+    free_node($1);
+  }
+  ;
 
 /* Either a basic_type-prefixed expression, or an identifier type.
  * Value on type stack.
@@ -1594,53 +1622,7 @@ basic_type:
  */
 identifier_type: id_expr
   {
-    node *expr = $1;
-    struct array *bindings = NULL;
-    struct pike_type *obj_type;
-
-    if (expr && (expr->token == F_BIND_GENERICS)) {
-      bindings = CDR(expr)->u.sval.u.array;
-      expr = CAR(expr);
-    }
-
-    if (expr) {
-      fix_type_field(expr);
-
-      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-          !pike_types_le(expr->type, typeable_type_string, 0, 0) &&
-	  (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-	yytype_report(REPORT_WARNING,
-                      expr->current_file, expr->line_number,
-                      typeable_type_string,
-                      expr->current_file, expr->line_number, expr->type,
-		      0, "Invalid type.");
-      }
-    }
-
-    resolv_type(expr);
-
-    /* Attempt to name the type. */
-    if (Pike_compiler->last_identifier) {
-      push_type_name(Pike_compiler->last_identifier);
-    }
-
-    obj_type = get_obj_type(peek_type_stack());
-    if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
-      struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
-      struct mapping *bind = mkbindings(p, bindings, 0);
-      struct pike_type *t = compiler_apply_bindings(peek_type_stack(), bind);
-
-      compiler_discard_top_type();
-      push_finished_type(t);
-
-      free_type(t);
-      do_free_mapping(bind);
-    } else if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && bindings) {
-      yywarning("Bindings specified for non-generic type %pT.",
-                peek_type_stack());
-    }
-
-    free_node($1);
+    push_identifier_type($1);
   }
   | typeof
   {
@@ -2652,63 +2634,21 @@ lambda: optional_local_modifier TOK_LAMBDA line_number_info
 
 local_function: TOK_IDENTIFIER start_function func_args
   {
-    struct pike_string *name = get_new_name($1->u.sval.u.string);
-    node *save_attrs = Pike_compiler->current_attributes;
-    Pike_compiler->current_attributes = NULL;
-
-    $<number>$ =
-      compiler_declare_prototype(ID_PROTECTED | ID_PRIVATE |
-                                 ID_INLINE | ID_USED,
-                                 name, $3, 0,
-                                 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-    free_string(name);
-#ifdef PIKE_DEBUG
-    if (Pike_compiler->current_attributes) {
-      Pike_fatal("Unexpected attribute scope.\n");
-    }
-#endif
-    Pike_compiler->current_attributes = save_attrs;
-
-    add_parent_local_function($1->u.sval.u.string, $<number>$);
+    $<number>$ = compiler_declare_local_function(0, $1->u.sval.u.string, $3);
   }
-  failsafe_block
+  block_or_semi
   {
-    int localid;
-    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program,$<number>4);
-    int f = compiler_define_function(ID_PROTECTED | ID_PRIVATE |
-                                     ID_INLINE | ID_USED,
-                                     i->name, i->type, $5,
-                                     $3, 0,
-                                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    $$ = compiler_define_local_function(0, $<number>4, $5, $3);
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $2) {
       Pike_fatal("Lost track of compiler_frame!\n"
-		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $2,
-		 Pike_compiler->compiler_frame->previous);
+                 "  Got: %p (Expected: %p) Previous: %p\n",
+                 Pike_compiler->compiler_frame, $2,
+                 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
     free_node($1);
-
-    /* WARNING: If the local function adds more variables we are screwed */
-    /* WARNING2: if add_local_name stops adding local variables at the end,
-     *           this has to be fixed.
-     */
-
-    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
-    if(Pike_compiler->compiler_frame->local_names[localid].def)
-    {
-      $$=copy_node(Pike_compiler->compiler_frame->local_names[localid].def);
-    }else{
-      if(Pike_compiler->compiler_frame->lexical_scope &
-	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
-      {
-        $$ = mktrampolinenode(f, Pike_compiler->compiler_frame);
-      }else{
-        $$ = mkidentifiernode(f);
-      }
-    }
   }
   | TOK_IDENTIFIER start_function error
   {
@@ -2732,63 +2672,21 @@ local_function: TOK_IDENTIFIER start_function func_args
 local_restartable_function: local_modifier simple_type2 TOK_IDENTIFIER
   start_function func_args
   {
-    struct pike_string *name = get_new_name($3->u.sval.u.string);
-    node *save_attrs = Pike_compiler->current_attributes;
-    Pike_compiler->current_attributes = NULL;
-
-    $<number>$ =
-      compiler_declare_prototype($1 | ID_PROTECTED | ID_PRIVATE |
-                                 ID_INLINE | ID_USED,
-                                 name, $5, 0,
-                                 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-    free_string(name);
-#ifdef PIKE_DEBUG
-    if (Pike_compiler->current_attributes) {
-      Pike_fatal("Unexpected attribute scope.\n");
-    }
-#endif
-    Pike_compiler->current_attributes = save_attrs;
-
-    add_parent_local_function($3->u.sval.u.string, $<number>$);
+    $<number>$ = compiler_declare_local_function($1, $3->u.sval.u.string, $5);
   }
-  failsafe_block
+  block_or_semi
   {
-    int localid;
-    struct identifier *i = ID_FROM_INT(Pike_compiler->new_program, $<number>6);
-    int f = compiler_define_function($1 | ID_PROTECTED | ID_PRIVATE |
-                                     ID_INLINE | ID_USED,
-                                     i->name, i->type, $7,
-                                     $5, 0,
-                                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    $$ = compiler_define_local_function($1, $<number>6, $7, $5);
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $4) {
       Pike_fatal("Lost track of compiler_frame!\n"
-		 "  Got: %p (Expected: %p) Previous: %p\n",
+                 "  Got: %p (Expected: %p) Previous: %p\n",
                  Pike_compiler->compiler_frame, $4,
-		 Pike_compiler->compiler_frame->previous);
+                 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
     free_node($3);
-
-    /* WARNING: If the local function adds more variables we are screwed */
-    /* WARNING2: if add_local_name stops adding local variables at the end,
-     *           this has to be fixed.
-     */
-
-    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
-    if(Pike_compiler->compiler_frame->local_names[localid].def)
-    {
-      $$=copy_node(Pike_compiler->compiler_frame->local_names[localid].def);
-    }else{
-      if(Pike_compiler->compiler_frame->lexical_scope &
-	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
-      {
-	$$ = mktrampolinenode(f, Pike_compiler->compiler_frame);
-      }else{
-	$$ = mkidentifiernode(f);
-      }
-    }
   }
   | local_modifier simple_type2 TOK_IDENTIFIER start_function error
   {
@@ -3604,8 +3502,8 @@ m_expr_list: { $$=0; }
   | m_expr_list2 optional_comma
   ;
 
-m_expr_list2: assoc_pair
-  | m_expr_list2 ',' assoc_pair
+m_expr_list2: mapping_lvalue
+  | m_expr_list2 ',' mapping_lvalue
   {
     if ($3) {
       $$=mknode(F_ARG_LIST,$1,$3);
@@ -3636,9 +3534,18 @@ literal_expr: string
     }
   | open_paren_with_line_info
     open_bracket_with_line_info	/* Only to avoid shift/reduce conflicts. */
-    m_expr_list close_bracket_or_missing ')'
+    mapping_items_close ')'
     {
       /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      int i, count = count_args($3);
+      for (i = 1; i < count; i += 2) {
+        node **value = my_get_arg(&$3, i);
+        if ((*value)->token == F_VAL_LVAL) {
+          yyerror("Lvalue declaration in mapping literal.");
+          free_node(*value);
+          *value = mkintnode(0);
+        }
+      }
       $$=mkefuncallnode("aggregate_mapping",$3);
       COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
@@ -4212,16 +4119,16 @@ cond_expr: lor_expr
 assignment_expr: cond_expr
   | lor_expr assign assignment_expr  { $$=mknode($2,$1,$3); }
   | lor_expr assign error { $$=$1; reset_type_stack(); yyerrok; }
-  | open_bracket_with_line_info low_lvalue_list ']' low_assign assignment_expr
+  | open_bracket_with_line_info multi_assign_lvalue low_assign assignment_expr
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-      mark_lvalues_as_used($2);
+      mark_lvalue_as_used($2);
     }
-    $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5);
+    $$=mknode($3,$2,$4);
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node ($1);
   }
-  | open_bracket_with_line_info low_lvalue_list ']' error
+  | open_bracket_with_line_info multi_assign_lvalue error
     {
       $$=$2; free_node ($1); reset_type_stack(); yyerrok;
     }
@@ -4962,14 +4869,17 @@ lvalue: assignment_expr
   {
     $$ = make_default_lvalue($1);
   }
-  | open_bracket_with_line_info low_lvalue_list ']'
+  | open_bracket_with_line_info multi_assign_lvalue
   {
     /* NB: The optional default value is handled by assignment_expr above. */
-    $$ = mknode(F_ARRAY_LVALUE, $2, 0);
+    $$ = $2;
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node($1);
   }
-  | type2 TOK_IDENTIFIER optional_default_value
+  | declared_lvalue
+  ;
+
+declared_lvalue: type2 TOK_IDENTIFIER optional_default_value
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     /* Note: Variable intentionally not marked as used. */
@@ -4990,10 +4900,99 @@ lvalue: assignment_expr
   /* FIXME: Add production for type2 ==> constant type svalue here? */
   ;
 
-low_lvalue_list: lvalue lvalue_list
+/* The second child of F_ARRAY_LVALUE is either NULL (an array pattern),
+ * or the array of keys to select (a mapping pattern).
+ */
+multi_assign_lvalue: low_lvalue_list
+  { $$ = mknode(F_ARRAY_LVALUE, $1, NULL); }
+  | mapping_items_close
   {
-    $$=mknode(F_LVALUE_LIST,$1,$2);
+    node *args = $1, *keys = NULL, *values = NULL;
+    int count = count_args(args), i;
+    if (!count) yyerror("Empty mapping pattern.");
+    for (i = count - 2; i >= 0; i -= 2) {
+      node **key = my_get_arg(&args, i);
+      node **value = my_get_arg(&args, i + 1);
+      keys = mknode(F_ARG_LIST, copy_node(*key), keys);
+      node *lval = *value;
+      if (lval->token == F_VAL_LVAL) lval = CDR(lval);
+      values = mknode(F_LVALUE_LIST,
+                      make_default_lvalue(copy_node(lval)), values);
+    }
+    if (count) {
+      $$ = mknode(F_ARRAY_LVALUE, values, mkefuncallnode("aggregate", keys));
+    } else {
+      $$ = mkintnode(0);
+    }
+    free_node(args);
   }
+  ;
+
+/* Share parsing with mapping literals through the closing bracket. This
+ * distinguishes ([key: value]) from ([key: value] = mapping) without extra
+ * lookahead. F_VAL_LVAL marks destinations that are invalid in a literal.
+ */
+mapping_lvalue: assoc_pair
+  | assignment_expr expected_colon declared_lvalue
+  { $$ = mknode(F_ARG_LIST, $1, mknode(F_VAL_LVAL, NULL, $3)); }
+  | assignment_expr expected_colon open_bracket_with_line_info multi_assign_lvalue
+  {
+    $$ = mknode(F_ARG_LIST, $1, mknode(F_VAL_LVAL, NULL, $4));
+    free_node($3);
+  }
+  ;
+
+mapping_items_close: m_expr_list ']' { $$ = $1; }
+  ;
+
+/* Use the expression reduction for identifier types here, since ... is
+ * also accepted after expressions in case ranges.
+ */
+rest_type: type
+  | postfix_expr { push_identifier_type($1); }
+  ;
+
+multi_lvalue: lvalue
+  | TOK_DOT_DOT_DOT
+  {
+    $$ = mknode(F_DOT_DOT_DOT, make_ignored_lvalue(array_type_string), NULL);
+  }
+  | TOK_DOT_DOT_DOT lvalue { $$ = mknode(F_DOT_DOT_DOT, $2, NULL); }
+  | rest_type TOK_DOT_DOT_DOT TOK_IDENTIFIER
+  {
+    int id;
+    push_unlimited_array_type(T_ARRAY);
+    id = add_local_name($3->u.sval.u.string, compiler_pop_type(), NULL);
+    $$ = id < 0 ? NULL :
+      mknode(F_DOT_DOT_DOT,
+             mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL), NULL);
+    free_node($3);
+  }
+  ;
+
+low_lvalue_list: multi_lvalue ']'
+  { $$ = mknode(F_LVALUE_LIST, $1, NULL); }
+  | type_close
+  {
+    $$ = mknode(F_LVALUE_LIST,
+                 make_ignored_lvalue($1->u.sval.u.type), NULL);
+    free_node($1);
+  }
+  | multi_lvalue ',' low_lvalue_list
+  {
+    if ($1 && ($1->token == F_DOT_DOT_DOT)) {
+      yyerror("More variables after ... in multi-assign.");
+    }
+    $$ = mknode(F_LVALUE_LIST, $1, $3);
+  }
+  | type ','
+  {
+    struct pike_type *type = compiler_pop_type();
+    $<n>$ = make_ignored_lvalue(type);
+    free_type(type);
+  }
+  low_lvalue_list
+  { $$ = mknode(F_LVALUE_LIST, $<n>3, $4); }
   ;
 
 lvalue_list: /* empty */ { $$ = 0; }
@@ -5600,6 +5599,69 @@ static void compiler_end_class(int has___create__, int parent_constant_id)
   }
 }
 
+/* Unnamed pattern elements have no source-level binding. */
+static node *make_ignored_lvalue(struct pike_type *type)
+{
+  int id;
+  add_ref(type);
+  id = add_local_name(empty_pike_string, type, NULL);
+  if (id < 0) return NULL;
+  Pike_compiler->compiler_frame->local_names[id].flags |= LOCAL_VAR_IS_USED;
+  return mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL);
+}
+
+/* Push a type named by an expression, including generic bindings. */
+static void push_identifier_type(node *n)
+{
+  node *expr = n;
+  struct array *bindings = NULL;
+  struct pike_type *obj_type;
+
+  if (expr && (expr->token == F_BIND_GENERICS)) {
+    bindings = CDR(expr)->u.sval.u.array;
+    expr = CAR(expr);
+  }
+
+  if (expr) {
+    fix_type_field(expr);
+
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+        !pike_types_le(expr->type, typeable_type_string, 0, 0) &&
+        (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+      yytype_report(REPORT_WARNING,
+                    expr->current_file, expr->line_number,
+                    typeable_type_string,
+                    expr->current_file, expr->line_number, expr->type,
+                    0, "Invalid type.");
+    }
+  }
+
+  resolv_type(expr);
+
+  /* Attempt to name the type. */
+  if (Pike_compiler->last_identifier) {
+    push_type_name(Pike_compiler->last_identifier);
+  }
+
+  obj_type = get_obj_type(peek_type_stack());
+  if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
+    struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
+    struct mapping *bind = mkbindings(p, bindings, 0);
+    struct pike_type *t = compiler_apply_bindings(peek_type_stack(), bind);
+
+    compiler_discard_top_type();
+    push_finished_type(t);
+
+    free_type(t);
+    do_free_mapping(bind);
+  } else if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && bindings) {
+    yywarning("Bindings specified for non-generic type %pT.",
+              peek_type_stack());
+  }
+
+  free_node(n);
+}
+
 static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,
                                       int num_args, int num_create_args,
@@ -5831,18 +5893,103 @@ static int compiler_declare_prototype(int modifiers,
   return id;
 }
 
-static void add_parent_local_function(struct pike_string *identifier, int id)
+/* Return the program identifier behind a named local function binding. */
+static int local_function_identifier(node *n)
 {
-  struct identifier *i = ID_FROM_INT(Pike_compiler->new_program, id);
-  node *n = NULL;
+  if (n->token == F_TRAMPOLINE) return n->u.trampoline.ident;
+  return n->u.integer.b;
+}
 
-  if(i->identifier_flags & IDENTIFIER_SCOPED)
-    n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+static int compiler_declare_local_function(int modifiers,
+                                           struct pike_string *identifier,
+                                           int num_args)
+{
+  struct compiler_frame *parent = Pike_compiler->compiler_frame->previous;
+  int localid = low_islocal(parent, identifier);
+  int id;
+  node *n;
+  node *save_attrs = Pike_compiler->current_attributes;
+  struct pike_string *name;
+
+  if (localid >= parent->last_block_level &&
+      (parent->local_names[localid].flags & LOCAL_VAR_IS_FUNCTION)) {
+    id = local_function_identifier(parent->local_names[localid].def);
+    copy_shared_string(name, ID_FROM_INT(Pike_compiler->new_program, id)->name);
+  } else {
+    localid = -1;
+    name = get_new_name(identifier);
+  }
+
+  Pike_compiler->current_attributes = NULL;
+  id = compiler_declare_prototype(modifiers | ID_PROTECTED | ID_PRIVATE |
+                                 ID_INLINE | ID_USED,
+                                 name, num_args, 0,
+                                 OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+  free_string(name);
+#ifdef PIKE_DEBUG
+  if (Pike_compiler->current_attributes) {
+    Pike_fatal("Unexpected attribute scope.\n");
+  }
+#endif
+  Pike_compiler->current_attributes = save_attrs;
+
+  if (ID_FROM_INT(Pike_compiler->new_program, id)->identifier_flags &
+      IDENTIFIER_SCOPED)
+    n = mktrampolinenode(id, parent);
   else
     n = mkidentifiernode(id);
 
-  low_add_local_name(Pike_compiler->compiler_frame->previous,
-                     identifier, NULL, n, NULL);
+  if (localid >= 0) {
+    set_node_name(n, identifier);
+    redefine_local(parent, localid, n, NULL);
+  } else {
+    localid = low_add_local_name(parent, identifier, NULL, n, NULL);
+    if (localid >= 0)
+      parent->local_names[localid].flags |= LOCAL_VAR_IS_FUNCTION;
+  }
+  return localid;
+}
+
+static node *compiler_define_local_function(int modifiers, int localid,
+                                            node *block, int num_args)
+{
+  struct compiler_frame *parent = Pike_compiler->compiler_frame->previous;
+  struct local_name *local;
+  struct identifier *i;
+  int id;
+
+  if (localid < 0) {
+    free_node(block);
+    return mkintnode(0);
+  }
+  local = parent->local_names + localid;
+  id = local_function_identifier(local->def);
+  i = ID_FROM_INT(Pike_compiler->new_program, id);
+
+  if (block) {
+    if (local->flags & LOCAL_VAR_FUNCTION_HAS_BODY)
+      my_yyerror("Duplicate definition of local function %pS.", local->name);
+    local->flags |= LOCAL_VAR_FUNCTION_HAS_BODY;
+  }
+  compiler_define_function(modifiers | ID_PROTECTED | ID_PRIVATE |
+                           ID_INLINE | ID_USED,
+                           i->name, i->type, block, num_args, 0,
+                           OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+
+  if (!block) {
+    node *n;
+    /* A forward declaration may be used before its body's lexical
+     * dependencies are known. Always bind it to the enclosing frame.
+     */
+    ID_FROM_INT(Pike_compiler->new_program, id)->identifier_flags |=
+      IDENTIFIER_SCOPED;
+    n = mktrampolinenode(id, parent);
+    set_node_name(n, local->name);
+    redefine_local(parent, localid, n, NULL);
+    return mkintnode(0);
+  }
+
+  return copy_node(local->def);
 }
 
 static int compiler_define_function(int modifiers,
@@ -6452,6 +6599,9 @@ static void mark_lvalue_as_used(node *n)
       Pike_compiler->compiler_frame->local_names[n->u.integer.a].flags |=
         LOCAL_VAR_IS_USED;
       return;
+    case F_DOT_DOT_DOT:
+      n = CAR(n);
+      break;
     case F_ARRAY_LVALUE:
       mark_lvalues_as_used(CAR(n));
       return;

@@ -1414,7 +1414,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
               COND_FATAL(sizeof(extension_data)!=2,
                          ALERT_illegal_parameter,
                          "Illegal size of supported version extension.\n");
-              version = extension_data->read_int16();
+              version = [int(16bit)]extension_data->read_int16();
               COND_FATAL( !has_value(context->supported_versions, version),
                          ALERT_illegal_parameter,
                          "Received version not offered.\n");

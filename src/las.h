@@ -55,6 +55,10 @@ typedef struct node_s node;
 /* Var is an argument. def is used for default value. */
 #define LOCAL_VAR_IS_ARGUMENT		4
 
+/* Local function binding, optionally followed by its definition. */
+#define LOCAL_VAR_IS_FUNCTION           8
+#define LOCAL_VAR_FUNCTION_HAS_BODY     16
+
 /**
  * Represents a single mapping from symbol to local
  * definition. Usually an F_LOCAL or F_LOCAL_INDIRECT
@@ -94,6 +98,7 @@ struct compiler_frame
   int last_block_level; /* used to detect variables declared in same block */
   int num_args;
   int varargs;
+  int parsing_arg_pattern; /* Delay default accessors until arguments bind. */
   int lexical_scope;
   int current_function_number;
   int recur_label;
@@ -252,6 +257,7 @@ int dooptcode(struct pike_string *name,
 	      int modifiers);
 void resolv_type(node *n);
 node *make_default_lvalue(node *n);
+node *prepare_argument_pattern(node *n);
 void init_las(void);
 void exit_las(void);
 /* Prototypes end here */

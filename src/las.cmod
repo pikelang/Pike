@@ -2137,7 +2137,10 @@ static void low_index_node(node * const n, struct pike_string *id)
 	ref_push_string(id);
 	{
 	  JMP_BUF recovery;
+          struct compilation *compiler = THIS_COMPILATION;
+          struct pike_string *saved_identifier = compiler->resolving_identifier;
 	  STACK_LEVEL_START(2);
+          compiler->resolving_identifier = id;
 	  if (SETJMP_SP(recovery, 2)) {
             if (n->name) {
               handle_compile_exception("Error looking up '%pS' in module %pS.",
@@ -2174,6 +2177,7 @@ static void low_index_node(node * const n, struct pike_string *id)
 	  }
 	  STACK_LEVEL_DONE(1);
 	  UNSETJMP(recovery);
+          compiler->resolving_identifier = saved_identifier;
 	}
 
 	if(TYPEOF(Pike_sp[-1]) == T_INT &&
@@ -2810,6 +2814,11 @@ static void low_describe_node_tree(struct string_builder *s,
     low_describe_node_tree(s, _CDR(n), needlval);
     return;
 
+  case F_DOT_DOT_DOT:
+    string_builder_strcat(s, "... ");
+    low_describe_node_tree(s, CAR(n), 1);
+    return;
+
     case F_ARRAY_LVALUE:
       string_builder_putchar(s, '[');
       low_describe_node_tree(s, _CAR(n), 1);
@@ -3390,7 +3399,12 @@ static void find_written_vars(node *n,
     find_written_vars(CDR(n), p, 1);
     break;
 
-    case F_ARRAY_LVALUE:
+  case F_ARRAY_LVALUE:
+    find_written_vars(CAR(n), p, 1);
+    find_written_vars(CDR(n), p, 0);
+    break;
+
+  case F_DOT_DOT_DOT:
     find_written_vars(CAR(n), p, 1);
     break;
 
@@ -4265,6 +4279,13 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_DOT_DOT_DOT:
+    if (!match_types(CAR(n)->type, array_type_string)) {
+      yyerror("Rest variable in multi-assign must be an array.");
+    }
+    n->type = index_type(CAR(n)->type, int_type_string, n);
+    break;
+
   case F_ARRAY_LVALUE:
     {
       node *lval_list;
@@ -4321,9 +4342,18 @@ void fix_type_field(node *n)
           }
         } while(0);
 	type_stack_mark();
-	push_finished_type(t);
-        push_int_type(min, max);
-        push_type(T_ARRAY);
+        if (CDR(n)) {
+          struct pike_type *key_type =
+            index_type(CDR(n)->type, int_type_string, n);
+          push_finished_type(t);
+          push_finished_type(key_type);
+          free_type(key_type);
+          push_type(T_MAPPING);
+        } else {
+          push_finished_type(t);
+          push_int_type(min, max);
+          push_type(T_ARRAY);
+        }
 	free_type(t);
 	n->type = pop_unfinished_type();
       }
@@ -5699,7 +5729,8 @@ node *make_default_lvalue(node *n)
   int fun;
   node *ret;
 
-  if ((!n) || (n->token != F_ASSIGN)) return n;
+  if ((!n) || (n->token != F_ASSIGN) ||
+      Pike_compiler->compiler_frame->parsing_arg_pattern) return n;
 
   /* Rewrite V = E
    *
@@ -5781,6 +5812,32 @@ node *make_default_lvalue(node *n)
   pop_compiler_frame();
 
   return ret;
+}
+
+/* Defaults in argument patterns must not capture (and thereby bind) pattern
+ * locals until all incoming argument slots have been allocated.
+ */
+node *prepare_argument_pattern(node *n)
+{
+  if (!n) return NULL;
+  switch (n->token) {
+  case F_ASSIGN:
+    _CAR(n) = prepare_argument_pattern(CAR(n));
+    return make_default_lvalue(n);
+  case F_ARRAY_LVALUE:
+  case F_DOT_DOT_DOT:
+    _CAR(n) = prepare_argument_pattern(CAR(n));
+    break;
+  case F_LVALUE_LIST:
+    _CAR(n) = prepare_argument_pattern(CAR(n));
+    /* FALLTHRU */
+  case F_COMMA_EXPR:
+    _CDR(n) = prepare_argument_pattern(CDR(n));
+    break;
+  default:
+    break;
+  }
+  return n;
 }
 
 void init_las(void)
