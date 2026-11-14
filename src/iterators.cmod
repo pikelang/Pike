@@ -2183,6 +2183,17 @@ PIKEFUN object(Iterator) get_iterator(function|object|array|mapping|multiset|str
   }
 }
 
+/* Finalized built-in program layouts are immutable. Cache their complete
+ * storage offsets instead of following program->inherits on every step.
+ */
+static ptrdiff_t function_foreach_storage_offset;
+static ptrdiff_t mapping_foreach_storage_offset;
+static ptrdiff_t string_split_foreach_storage_offset;
+static ptrdiff_t file_line_foreach_storage_offset;
+static ptrdiff_t array_foreach_storage_offset;
+static ptrdiff_t multiset_foreach_storage_offset;
+static ptrdiff_t string_foreach_storage_offset;
+
 /* Pike_sp[-4] = index; Pike_sp[-2] = value
  *
  * FIXME: Ought to get the inherit number as an argument.
@@ -2198,7 +2209,9 @@ int foreach_iterate(struct object *o)
   if(prog->flags & PROGRAM_HAS_C_METHODS)
   {
     if(prog == function_iterator_program) {
-      struct function_iterator_struct *i = OBJ2_FUNCTION_ITERATOR(o);
+      struct function_iterator_struct *i =
+        (struct function_iterator_struct *)(o->storage +
+                                            function_foreach_storage_offset);
 
       if (IS_UNDEFINED(&(i->fun))) {
         return 0;
@@ -2230,7 +2243,9 @@ int foreach_iterate(struct object *o)
 
     else if(prog == mapping_iterator_program)
     {
-      struct mapping_iterator_struct *i=OBJ2_MAPPING_ITERATOR(o);
+      struct mapping_iterator_struct *i =
+        (struct mapping_iterator_struct *)(o->storage +
+                                           mapping_foreach_storage_offset);
 
       if (!i->current) {
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
@@ -2268,7 +2283,9 @@ int foreach_iterate(struct object *o)
 
     else if(prog == string_split_iterator_program)
     {
-      struct string_split_iterator_struct *i=OBJ2_STRING_SPLIT_ITERATOR(o);
+      struct string_split_iterator_struct *i =
+        (struct string_split_iterator_struct *)
+          (o->storage + string_split_foreach_storage_offset);
 
       find_next(i);
       if (!i->current) {
@@ -2299,7 +2316,9 @@ int foreach_iterate(struct object *o)
 
     else if(prog == file_line_iterator_program)
     {
-      struct file_line_iterator_struct *i=OBJ2_FILE_LINE_ITERATOR(o);
+      struct file_line_iterator_struct *i =
+        (struct file_line_iterator_struct *)(o->storage +
+                                             file_line_foreach_storage_offset);
 
       fl_find_next (i);
       if (!i->current) {
@@ -2330,7 +2349,9 @@ int foreach_iterate(struct object *o)
 
     else if(prog == array_iterator_program)
     {
-      struct array_iterator_struct *i=OBJ2_ARRAY_ITERATOR(o);
+      struct array_iterator_struct *i =
+        (struct array_iterator_struct *)(o->storage +
+                                         array_foreach_storage_offset);
 
       if (++i->pos >= i->a->size) {
 	i->pos = -1;
@@ -2352,7 +2373,9 @@ int foreach_iterate(struct object *o)
 
     else if(prog == multiset_iterator_program)
     {
-      struct multiset_iterator_struct *i=OBJ2_MULTISET_ITERATOR(o);
+      struct multiset_iterator_struct *i =
+        (struct multiset_iterator_struct *)(o->storage +
+                                            multiset_foreach_storage_offset);
 
       struct svalue ind;
 
@@ -2382,7 +2405,9 @@ int foreach_iterate(struct object *o)
 
     else if(prog == string_iterator_program)
     {
-      struct string_iterator_struct *i=OBJ2_STRING_ITERATOR(o);
+      struct string_iterator_struct *i =
+        (struct string_iterator_struct *)(o->storage +
+                                          string_foreach_storage_offset);
 
       if (++i->pos >= i->s->len) {
 	i->pos = -1;
@@ -2464,6 +2489,20 @@ int foreach_iterate(struct object *o)
 void init_iterators(void)
 {
   INIT;
+  function_foreach_storage_offset = function_iterator_storage_offset +
+    function_iterator_program->inherits[0].storage_offset;
+  mapping_foreach_storage_offset = mapping_iterator_storage_offset +
+    mapping_iterator_program->inherits[0].storage_offset;
+  string_split_foreach_storage_offset = string_split_iterator_storage_offset +
+    string_split_iterator_program->inherits[0].storage_offset;
+  file_line_foreach_storage_offset = file_line_iterator_storage_offset +
+    file_line_iterator_program->inherits[0].storage_offset;
+  array_foreach_storage_offset = array_iterator_storage_offset +
+    array_iterator_program->inherits[0].storage_offset;
+  multiset_foreach_storage_offset = multiset_iterator_storage_offset +
+    multiset_iterator_program->inherits[0].storage_offset;
+  string_foreach_storage_offset = string_iterator_storage_offset +
+    string_iterator_program->inherits[0].storage_offset;
   add_global_program ("Iterator", Iterator_program);
   add_global_program ("CompatIterator", CompatIterator_program);
 }
