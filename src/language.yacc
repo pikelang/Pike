@@ -414,16 +414,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> pow_expr
 %type <n> unary_expr
 %type <n> cast_expr
-%type <n> mul_expr
-%type <n> add_expr
-%type <n> shift_expr
-%type <n> rel_expr
-%type <n> eq_expr
-%type <n> and_expr
-%type <n> xor_expr
-%type <n> or_expr
-%type <n> land_expr
-%type <n> lor_expr
+%type <n> binary_expr
 %type <n> cond_expr
 %type <n> assignment_expr
 %type <n> comma_expr
@@ -4049,82 +4040,58 @@ cast_expr: unary_expr
   }
   ;
 
-mul_expr: cast_expr
-  | mul_expr '*' cast_expr { $$=mkopernode("`*",$1,$3); }
-  | mul_expr '%' cast_expr { $$=mkopernode("`%",$1,$3); }
-  | mul_expr '/' cast_expr { $$=mkopernode("`/",$1,$3); }
-  | mul_expr '*' error
-  | mul_expr '%' error
-  | mul_expr '/' error
+/* Use the precedence declarations above without reducing every operand
+ * through a separate production for each binary precedence level.
+ */
+binary_expr: cast_expr
+  | binary_expr '*' binary_expr { $$=mkopernode("`*",$1,$3); }
+  | binary_expr '%' binary_expr { $$=mkopernode("`%",$1,$3); }
+  | binary_expr '/' binary_expr { $$=mkopernode("`/",$1,$3); }
+  | binary_expr '+' binary_expr { $$=mkopernode("`+",$1,$3); }
+  | binary_expr '-' binary_expr { $$=mkopernode("`-",$1,$3); }
+  | binary_expr TOK_LSH binary_expr { $$=mkopernode("`<<",$1,$3); }
+  | binary_expr TOK_RSH binary_expr { $$=mkopernode("`>>",$1,$3); }
+  | binary_expr '>' binary_expr { $$=mkopernode("`>",$1,$3); }
+  | binary_expr TOK_GE binary_expr { $$=mkopernode("`>=",$1,$3); }
+  | binary_expr '<' binary_expr { $$=mkopernode("`<",$1,$3); }
+  | binary_expr TOK_LE binary_expr { $$=mkopernode("`<=",$1,$3); }
+  | binary_expr TOK_EQ binary_expr { $$=mkopernode("`==",$1,$3); }
+  | binary_expr TOK_NE binary_expr { $$=mkopernode("`!=",$1,$3); }
+  | binary_expr '&' binary_expr { $$=mkopernode("`&",$1,$3); }
+  | binary_expr '^' binary_expr { $$=mkopernode("`^",$1,$3); }
+  | binary_expr '|' binary_expr { $$=mkopernode("`|",$1,$3); }
+  | binary_expr TOK_LAND binary_expr { $$=mknode(F_LAND,$1,$3); }
+  | binary_expr TOK_LOR binary_expr { $$=mknode(F_LOR,$1,$3); }
+  | binary_expr '*' error
+  | binary_expr '%' error
+  | binary_expr '/' error
+  | binary_expr '+' error
+  | binary_expr '-' error
+  | binary_expr TOK_LSH error
+  | binary_expr TOK_RSH error
+  | binary_expr '>' error
+  | binary_expr TOK_GE error
+  | binary_expr '<' error
+  | binary_expr TOK_LE error
+  | binary_expr TOK_EQ error
+  | binary_expr TOK_NE error
+  | binary_expr '&' error
+  | binary_expr '^' error
+  | binary_expr '|' error
+  | binary_expr TOK_LAND error
+  | binary_expr TOK_LOR error
   ;
 
-add_expr: mul_expr
-  | add_expr '+' mul_expr { $$ = mkopernode("`+", $1, $3); }
-  | add_expr '-' mul_expr { $$ = mkopernode("`-", $1, $3); }
-  | add_expr '+' error
-  | add_expr '-' error
-  ;
-
-shift_expr: add_expr
-  | shift_expr TOK_LSH add_expr { $$ = mkopernode("`<<", $1, $3); }
-  | shift_expr TOK_RSH add_expr { $$ = mkopernode("`>>", $1, $3); }
-  | shift_expr TOK_LSH error
-  | shift_expr TOK_RSH error
-  ;
-
-rel_expr: shift_expr
-  | rel_expr '>' shift_expr    { $$ = mkopernode("`>", $1, $3); }
-  | rel_expr TOK_GE shift_expr { $$ = mkopernode("`>=", $1, $3); }
-  | rel_expr '<' shift_expr    { $$ = mkopernode("`<", $1, $3); }
-  | rel_expr TOK_LE shift_expr { $$ = mkopernode("`<=", $1, $3); }
-  | rel_expr '>' error
-  | rel_expr TOK_GE error
-  | rel_expr '<' error
-  | rel_expr TOK_LE error
-  ;
-
-eq_expr: rel_expr
-  | eq_expr TOK_EQ rel_expr { $$ = mkopernode("`==", $1, $3); }
-  | eq_expr TOK_NE rel_expr { $$ = mkopernode("`!=", $1, $3); }
-  | eq_expr TOK_EQ error
-  | eq_expr TOK_NE error
-  ;
-
-and_expr: eq_expr
-  | and_expr '&' eq_expr { $$ = mkopernode("`&",$1,$3); }
-  | and_expr '&' error
-  ;
-
-xor_expr: and_expr
-  | xor_expr '^' and_expr { $$ = mkopernode("`^", $1, $3); }
-  | xor_expr '^' error
-  ;
-
-or_expr: xor_expr
-  | or_expr '|' xor_expr { $$ = mkopernode("`|", $1, $3); }
-  | or_expr '|' error
-  ;
-
-land_expr: or_expr
-  | land_expr TOK_LAND or_expr { $$ = mknode(F_LAND, $1, $3); }
-  | land_expr TOK_LAND error
-  ;
-
-lor_expr: land_expr
-  | lor_expr TOK_LOR land_expr { $$ = mknode(F_LOR,$1,$3); }
-  | lor_expr TOK_LOR error
-  ;
-
-cond_expr: lor_expr
-  | lor_expr '?' comma_expr ':' assignment_expr
+cond_expr: binary_expr
+  | binary_expr '?' comma_expr ':' assignment_expr
   {
     $$ = mknode('?', $1, mknode(':', $3, $5));
   }
   ;
 
 assignment_expr: cond_expr
-  | lor_expr assign assignment_expr  { $$=mknode($2,$1,$3); }
-  | lor_expr assign error { $$=$1; reset_type_stack(); yyerrok; }
+  | binary_expr assign assignment_expr  { $$=mknode($2,$1,$3); }
+  | binary_expr assign error { $$=$1; reset_type_stack(); yyerrok; }
   | open_bracket_with_line_info low_lvalue_list ']' low_assign assignment_expr
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {

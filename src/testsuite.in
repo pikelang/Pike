@@ -41,6 +41,39 @@ test_eq([[compile_string("string s = \"\u00c3\u00a5\";")()->s]],
 test_eq([[compile_string("#charset utf-8\n"
                          "string s = \"\u00c3\u00a5\";")()->s]], "\u00e5")
 test_eq(0x80000000-0x80000000, 0);
+// Binary operators retain their precedence and left associativity.
+test_any([[
+  array(array) operators = ({
+    ({ "||", 1 }), ({ "&&", 2 }), ({ "|", 3 }), ({ "^", 4 }),
+    ({ "&", 5 }), ({ "==", 6 }), ({ "!=", 6 }), ({ ">", 7 }),
+    ({ ">=", 7 }), ({ "<", 7 }), ({ "<=", 7 }), ({ "<<", 8 }),
+    ({ ">>", 8 }), ({ "+", 9 }), ({ "-", 9 }), ({ "*", 10 }),
+    ({ "%", 10 }), ({ "/", 10 })
+  });
+  array(array(int)) inputs = ({
+    ({ 1, 2, 3 }), ({ 7, 5, 2 }), ({ 0, 3, 1 }),
+    ({ 255, 7, 3 }), ({ 13, 13, 2 }), ({ -7, 3, 2 })
+  });
+  foreach (operators, array first) {
+    foreach (operators, array second) {
+      string expression = "a " + first[0] + " b " + second[0] + " c";
+      string grouped = first[1] >= second[1] ?
+        "(a " + first[0] + " b) " + second[0] + " c" :
+        "a " + first[0] + " (b " + second[0] + " c)";
+      object test = compile_string(
+        "int f(int a, int b, int c) { return " + expression + "; }\n"
+        "int g(int a, int b, int c) { return " + grouped + "; }\n")();
+      foreach (inputs, array(int) args) {
+        mixed left, right;
+        mixed left_error = catch { left = test->f(@args); };
+        mixed right_error = catch { right = test->g(@args); };
+        if (!!left_error != !!right_error) return 0;
+        if (!left_error && left != right) return 0;
+      }
+    }
+  }
+  return 1;
+]], 1)
 test_eq(0xf0000000-0xf0000000, 0);
 test_eq(0x80000001-0x80000000, 1);
 test_eq(0x80000000-0x80000001,-1);
