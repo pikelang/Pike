@@ -1436,6 +1436,89 @@ test_equal([[lambda([int a, [int b, int c = 4] ], int d) {
   return ({ a, b, c, d });
 }(({ 1, ({ 2 }) }), 3)]], ({ 1, 2, 4, 3 }))
 
+dnl Issue #10103: Rest elements, with optimized and runtime assignment.
+test_any_equal([[
+  [int a, int ... tail] = ({ 1, 2, 3 });
+  return ({ a, tail });
+]], ({ 1, ({ 2, 3 }) }))
+test_any_equal([[
+  array(int) source = ({ 1, 2, 3 });
+  [int a, int ... tail] = source;
+  return ({ a, tail });
+]], ({ 1, ({ 2, 3 }) }))
+test_any_equal([[
+  [int a, int ... tail] = ({ 1 });
+  return ({ a, tail });
+]], ({ 1, ({}) }))
+test_any_equal([[
+  [mixed ... tail] = ({});
+  return tail;
+]], ({}))
+test_any_equal([[
+  [int a = 4, int ... tail] = ({});
+  return ({ a, tail });
+]], ({ 4, ({}) }))
+test_any_equal([[
+  array source = ({});
+  [int a = 4, int ... tail] = source;
+  return ({ a, tail });
+]], ({ 4, ({}) }))
+test_any_equal([[
+  [int a = 4, int b = 5, int ... tail] = ({});
+  return ({ a, b, tail });
+]], ({ 4, 5, ({}) }))
+test_any_equal([[
+  int a;
+  array(int) tail;
+  [a, ... tail] = ({ 1, 2, 3 });
+  return ({ a, tail });
+]], ({ 1, ({ 2, 3 }) }))
+test_equal([[lambda([int a, int ... tail], string end) {
+  return ({ a, tail, end });
+}(({ 1, 2, 3 }), "end")]], ({ 1, ({ 2, 3 }), "end" }))
+test_equal([[lambda([int a = 4, int ... tail], string end) {
+  return ({ a, tail, end });
+}(({}), "end")]], ({ 4, ({}), "end" }))
+test_any_equal([[
+  [ [int a, int ... tail], int b] = ({ ({ 1, 2, 3 }), 4 });
+  return ({ a, tail, b });
+]], ({ 1, ({ 2, 3 }), 4 }))
+test_any_equal([[
+  String.Buffer buffer = String.Buffer();
+  buffer->add("a");
+  [String.Buffer ... buffers] = ({ buffer });
+  return (string)buffers[0];
+]], "a")
+test_compile_error([[int main() { [int ... rest, int last] = ({ 1, 2 }); }]])
+test_compile_error([[int main() { int rest; [... rest] = ({ 1, 2 }); }]])
+
+test_equal([[typeof(lambda([int a, int ... rest]) {
+  return ({ a }) + rest;
+})]], [[typeof([function(array(1..:int):array(int))](mixed)0)]])
+test_any_equal([[
+  array(int) tail;
+  [int a = 4, ... tail] = ({});
+  return ({ a, tail });
+]], ({ 4, ({}) }))
+test_compile_error([[int main() { [int ... a, int ... b] = ({}); }]])
+test_any_equal([[
+  ADT.Queue(<int>) queue = ADT.Queue(<int>)(3);
+  [ADT.Queue(<int>) ... queues] = ({ queue });
+  return queues[0]->get();
+]], 3)
+test_any_equal([[
+  [typeof("") ... strings] = ({ "x", "y" });
+  return strings;
+]], ({ "x", "y" }))
+test_equal([[lambda([int a = 4], string b, mixed ... rest) {
+  return ({ a, b, rest });
+}(({}), "b", 5, 6)]], ({ 4, "b", ({ 5, 6 }) }))
+test_equal([[lambda([int a = 4], [string b = "b"], float c) {
+  return ({ a, b, c });
+}(({}), ({}), 3.0)]], ({ 4, "b", 3.0 }))
+test_compile_error([[int main() { [int ... rest = ({})] = ({}); }]])
+
+
 dnl bug in for loop optimization in combination with +=
 test_any([[
 array v=({1,2,3});

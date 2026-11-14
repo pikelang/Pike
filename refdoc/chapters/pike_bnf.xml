@@ -72,6 +72,7 @@ arguments            ::= ( argument ( "," argument )*
                            ( "," varargs_argument )?
                          | varargs_argument )? ","?
 argument             ::= type identifier? ( "=" assignment_expression )?
+                       | pattern ( "=" assignment_expression )?
 varargs_argument     ::= type "..." identifier?
 enum_definition      ::= modifiers attributes enum
 enum                 ::= "enum" identifier?
@@ -132,7 +133,10 @@ break                ::= "break" identifier? ";"
 continue             ::= "continue" identifier? ";"
 lvalue               ::= assignment_expression | type identifier ( "="
                            assignment_expression )?
-                       | "[" lvalue ( "," lvalue )* "]"
+                       | pattern
+pattern              ::= "[" lvalue ( "," lvalue )* ( "," rest_lvalue )? "]"
+                       | "[" rest_lvalue "]"
+rest_lvalue          ::= type "..." identifier | "..." lvalue
 </example>
 
 </section>
@@ -151,8 +155,7 @@ expression           ::= assignment_expression ( "," assignment_expression )*
 assignment_expression ::= conditional_expression
                         | logical_or_expression assignment_operator
                            assignment_expression
-                        | "[" lvalue ( "," lvalue )* "]" "="
-                           assignment_expression
+                        | pattern "=" assignment_expression
 assignment_operator  ::= "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**="
                        | "&amp;=" | "|=" | "^="
                        | "&lt;&lt;=" | "&gt;&gt;=" | "?="

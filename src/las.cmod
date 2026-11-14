@@ -2814,6 +2814,11 @@ static void low_describe_node_tree(struct string_builder *s,
     low_describe_node_tree(s, _CDR(n), needlval);
     return;
 
+  case F_DOT_DOT_DOT:
+    string_builder_strcat(s, "... ");
+    low_describe_node_tree(s, CAR(n), 1);
+    return;
+
     case F_ARRAY_LVALUE:
       string_builder_putchar(s, '[');
       low_describe_node_tree(s, _CAR(n), 1);
@@ -3394,6 +3399,7 @@ static void find_written_vars(node *n,
     find_written_vars(CDR(n), p, 1);
     break;
 
+  case F_DOT_DOT_DOT:
     case F_ARRAY_LVALUE:
     find_written_vars(CAR(n), p, 1);
     break;
@@ -4267,6 +4273,13 @@ void fix_type_field(node *n)
 	copy_pike_type(n->type, mixed_type_string);
       }
     }
+    break;
+
+  case F_DOT_DOT_DOT:
+    if (!match_types(CAR(n)->type, array_type_string)) {
+      yyerror("Rest variable in multi-assign must be an array.");
+    }
+    n->type = index_type(CAR(n)->type, int_type_string, n);
     break;
 
   case F_ARRAY_LVALUE:
@@ -5799,6 +5812,7 @@ node *prepare_argument_pattern(node *n)
     _CAR(n) = prepare_argument_pattern(CAR(n));
     return make_default_lvalue(n);
   case F_ARRAY_LVALUE:
+  case F_DOT_DOT_DOT:
     _CAR(n) = prepare_argument_pattern(CAR(n));
     break;
   case F_LVALUE_LIST:

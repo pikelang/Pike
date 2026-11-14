@@ -977,7 +977,7 @@ static int count_required_multi_assign(node *lval_list)
       lval = CAR(lval);
     }
     if (lval->token == F_DOT_DOT_DOT) {
-      res = ~pos;
+      res = ~res;
       if (lval_list) {
         yyerror("More variables after ... in multi-assign.");
         lval_list = NULL;
@@ -1105,8 +1105,8 @@ static void emit_multi_assign(node *vals, node *vars, int no)
       ins_label(label);
     }
 
-    emit_multi_assign(vals, vars, no);
   }
+  if (!aggregate_rest) emit_multi_assign(vals, vars, no);
 
   /* Emit the assign and pop opcode. */
   switch(var->token) {
@@ -1161,6 +1161,7 @@ static int do_docode2(node *n, int flags)
       case F_ASSIGN:
       case F_INITIALIZE:
       case F_ARRAY_LVALUE:
+      case F_DOT_DOT_DOT:
       case F_GET_SET_LVALUE:
       case F_LVALUE_LIST:
       case F_CLEAR_LOCAL:
@@ -3050,6 +3051,9 @@ static int do_docode2(node *n, int flags)
   case F_LVALUE_LIST:
     ret = do_docode(CAR(n), flags);
     return ret + do_docode(CDR(n), flags);
+
+  case F_DOT_DOT_DOT:
+    return do_docode(CAR(n), flags);
 
     case F_ARRAY_LVALUE:
       emit1(F_NUMBER, count_required_multi_assign(CAR(n)));

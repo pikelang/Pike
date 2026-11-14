@@ -18,6 +18,15 @@ o Syntax for default values in multi-assignment.
   Both of the above statements will assign the value 1 to
   the variable a, and the value 5 to the variable b.
 
+o Rest variables in multi-assignment.
+
+  The final variable can collect the remaining array elements:
+
+    [mixed head, mixed ... tail] = values;
+
+  Existing array variables can be used with [... tail]. The rest array
+  is empty if there are no remaining elements. Defaults and rest variables
+  can also be used in function argument patterns.
 
 
 Bug fixes
@@ -81,4 +90,5 @@ Building and installing
 Issues fixed
 ------------
 
+  #10103: Support rest variables in multi-assignment.
   #10169: Correct function argument patterns containing defaults.

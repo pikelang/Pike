@@ -706,6 +706,35 @@ here is a list of <b>lvalues</b>:</p>
 <r><c> a list of lvalues  </c><c> [ <i>lvalue</i>, <i>lvalue</i> ] </c><c> an array, first value in the array will be assigned to the first lvalue in the list, second value in the array to the second value in the list etc. </c></r>
 </matrix>
 
+<subsection title="Multi-assignment">
+
+<p>An array pattern assigns consecutive elements to its lvalues. A pattern
+can declare local variables, use existing lvalues, or contain nested patterns.
+The assignment expression evaluates to the original source array.</p>
+
+<example>
+  [int first, int second] = ({ 1, 2 });
+  [first, second] = ({ 3, 4 });
+</example>
+
+<p>A default expression supplies a value for an omitted or undefined element.
+Defaults can refer to variables earlier in the pattern. A final rest variable
+collects all remaining elements in a new array, which can be empty. In a
+rest declaration the type before <tt>...</tt> describes each element; for
+an existing array variable, put <tt>...</tt> before the lvalue.</p>
+
+<example>
+  [int first, int second = first + 4, int ... tail] = ({ 1 });
+  // first is 1, second is 5, and tail is ({}).
+  [first, ... tail] = ({ 2, 3, 4 });
+  // first is 2 and tail is ({ 3, 4 }).
+</example>
+
+<p>Without a rest variable, extra elements are an error. Elements preceding
+the rest variable remain required unless they have defaults.</p>
+
+</subsection>
+
 </section>
 
 <section title="The rest of the operators">

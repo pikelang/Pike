@@ -200,6 +200,7 @@ static void compiler_add_generic(struct pike_string *name,
                                  struct pike_type *default_type);
 static void compiler_define_implicit___create__(void);
 static void compiler_end_class(int has___create__, int parent_constant_id);
+static void push_identifier_type(node *n);
 static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,
                                       int num_args, int num_create_args,
@@ -451,6 +452,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> safe_lvalue
 %type <n> lvalue
 %type <n> lvalue_list
+%type <n> multi_lvalue
+%type <n> multi_lvalue_list
 %type <n> low_lvalue_list
 %type <n> m_expr_list
 %type <n> m_expr_list2
@@ -1614,53 +1617,7 @@ basic_type:
  */
 identifier_type: id_expr
   {
-    node *expr = $1;
-    struct array *bindings = NULL;
-    struct pike_type *obj_type;
-
-    if (expr && (expr->token == F_BIND_GENERICS)) {
-      bindings = CDR(expr)->u.sval.u.array;
-      expr = CAR(expr);
-    }
-
-    if (expr) {
-      fix_type_field(expr);
-
-      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-          !pike_types_le(expr->type, typeable_type_string, 0, 0) &&
-	  (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-	yytype_report(REPORT_WARNING,
-                      expr->current_file, expr->line_number,
-                      typeable_type_string,
-                      expr->current_file, expr->line_number, expr->type,
-		      0, "Invalid type.");
-      }
-    }
-
-    resolv_type(expr);
-
-    /* Attempt to name the type. */
-    if (Pike_compiler->last_identifier) {
-      push_type_name(Pike_compiler->last_identifier);
-    }
-
-    obj_type = get_obj_type(peek_type_stack());
-    if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
-      struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
-      struct mapping *bind = mkbindings(p, bindings, 0);
-      struct pike_type *t = compiler_apply_bindings(peek_type_stack(), bind);
-
-      compiler_discard_top_type();
-      push_finished_type(t);
-
-      free_type(t);
-      do_free_mapping(bind);
-    } else if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && bindings) {
-      yywarning("Bindings specified for non-generic type %pT.",
-                peek_type_stack());
-    }
-
-    free_node($1);
+    push_identifier_type($1);
   }
   | typeof
   {
@@ -4926,10 +4883,38 @@ lvalue: assignment_expr
   /* FIXME: Add production for type2 ==> constant type svalue here? */
   ;
 
-low_lvalue_list: lvalue lvalue_list
+/* Use the expression reduction for identifier types here, since ... is
+ * also accepted after expressions in case ranges.
+ */
+rest_type: type
+  | postfix_expr { push_identifier_type($1); }
+  ;
+
+multi_lvalue: lvalue
+  | TOK_DOT_DOT_DOT lvalue { $$ = mknode(F_DOT_DOT_DOT, $2, NULL); }
+  | rest_type TOK_DOT_DOT_DOT TOK_IDENTIFIER
   {
-    $$=mknode(F_LVALUE_LIST,$1,$2);
+    int id;
+    push_unlimited_array_type(T_ARRAY);
+    id = add_local_name($3->u.sval.u.string, compiler_pop_type(), NULL);
+    $$ = id < 0 ? NULL :
+      mknode(F_DOT_DOT_DOT,
+             mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL), NULL);
+    free_node($3);
   }
+  ;
+
+low_lvalue_list: multi_lvalue multi_lvalue_list
+  {
+    if ($1 && ($1->token == F_DOT_DOT_DOT) && $2) {
+      yyerror("More variables after ... in multi-assign.");
+    }
+    $$ = mknode(F_LVALUE_LIST, $1, $2);
+  }
+  ;
+
+multi_lvalue_list: /* empty */ { $$ = NULL; }
+  | ',' low_lvalue_list { $$ = $2; }
   ;
 
 lvalue_list: /* empty */ { $$ = 0; }
@@ -5535,6 +5520,59 @@ static void compiler_end_class(int has___create__, int parent_constant_id)
     Pike_compiler->num_parse_error = 1;
   }
 }
+
+/* Push a type named by an expression, including generic bindings. */
+static void push_identifier_type(node *n)
+{
+  node *expr = n;
+  struct array *bindings = NULL;
+  struct pike_type *obj_type;
+
+  if (expr && (expr->token == F_BIND_GENERICS)) {
+    bindings = CDR(expr)->u.sval.u.array;
+    expr = CAR(expr);
+  }
+
+  if (expr) {
+    fix_type_field(expr);
+
+    if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
+        !pike_types_le(expr->type, typeable_type_string, 0, 0) &&
+        (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+      yytype_report(REPORT_WARNING,
+                    expr->current_file, expr->line_number,
+                    typeable_type_string,
+                    expr->current_file, expr->line_number, expr->type,
+                    0, "Invalid type.");
+    }
+  }
+
+  resolv_type(expr);
+
+  /* Attempt to name the type. */
+  if (Pike_compiler->last_identifier) {
+    push_type_name(Pike_compiler->last_identifier);
+  }
+
+  obj_type = get_obj_type(peek_type_stack());
+  if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
+    struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
+    struct mapping *bind = mkbindings(p, bindings, 0);
+    struct pike_type *t = compiler_apply_bindings(peek_type_stack(), bind);
+
+    compiler_discard_top_type();
+    push_finished_type(t);
+
+    free_type(t);
+    do_free_mapping(bind);
+  } else if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && bindings) {
+    yywarning("Bindings specified for non-generic type %pT.",
+              peek_type_stack());
+  }
+
+  free_node(n);
+}
+
 
 static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,
@@ -6473,6 +6511,9 @@ static void mark_lvalue_as_used(node *n)
       Pike_compiler->compiler_frame->local_names[n->u.integer.a].flags |=
         LOCAL_VAR_IS_USED;
       return;
+    case F_DOT_DOT_DOT:
+      n = CAR(n);
+      break;
     case F_ARRAY_LVALUE:
       mark_lvalues_as_used(CAR(n));
       return;
