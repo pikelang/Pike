@@ -5703,7 +5703,8 @@ node *make_default_lvalue(node *n)
   int fun;
   node *ret;
 
-  if ((!n) || (n->token != F_ASSIGN)) return n;
+  if ((!n) || (n->token != F_ASSIGN) ||
+      Pike_compiler->compiler_frame->parsing_arg_pattern) return n;
 
   /* Rewrite V = E
    *
@@ -5785,6 +5786,31 @@ node *make_default_lvalue(node *n)
   pop_compiler_frame();
 
   return ret;
+}
+
+/* Defaults in argument patterns must not capture (and thereby bind) pattern
+ * locals until all incoming argument slots have been allocated.
+ */
+node *prepare_argument_pattern(node *n)
+{
+  if (!n) return NULL;
+  switch (n->token) {
+  case F_ASSIGN:
+    _CAR(n) = prepare_argument_pattern(CAR(n));
+    return make_default_lvalue(n);
+  case F_ARRAY_LVALUE:
+    _CAR(n) = prepare_argument_pattern(CAR(n));
+    break;
+  case F_LVALUE_LIST:
+    _CAR(n) = prepare_argument_pattern(CAR(n));
+    /* FALLTHRU */
+  case F_COMMA_EXPR:
+    _CDR(n) = prepare_argument_pattern(CDR(n));
+    break;
+  default:
+    break;
+  }
+  return n;
 }
 
 void init_las(void)

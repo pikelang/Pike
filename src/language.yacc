@@ -1207,12 +1207,14 @@ new_arg_name: full_type optional_dot_dot_dot
     Pike_compiler->compiler_frame->local_names[i].flags |= LOCAL_VAR_IS_USED;
     bind_local(NULL, i);
     $<number>$ = i;
+    Pike_compiler->compiler_frame->parsing_arg_pattern++;
   }
   low_lvalue_list ']' optional_default_value
   {
     node *n = mknode(F_ARRAY_LVALUE, $3, 0);
     node *init;
     int i = $<number>2;
+    Pike_compiler->compiler_frame->parsing_arg_pattern--;
 
     /* Update the type for argument #i. */
     type_stack_mark();
@@ -1248,6 +1250,18 @@ func_args: '(' arguments ')'
 
 arguments: /* empty */ optional_comma { $$=0; }
   | arguments2 optional_comma
+  {
+    struct compiler_frame *frame = Pike_compiler->compiler_frame;
+    int i;
+    for (i = 0; i < frame->current_number_of_locals; i++) {
+      if (frame->local_names[i].def &&
+          (frame->local_names[i].def->token == F_ARRAY_LVALUE)) {
+        frame->local_names[i].def =
+          prepare_argument_pattern(frame->local_names[i].def);
+      }
+    }
+    $$ = $1;
+  }
   ;
 
 arguments2: new_arg_name { $$ = 1; }

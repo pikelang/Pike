@@ -18,14 +18,16 @@ o Syntax for default values in multi-assignment.
   Both of the above statements will assign the value 1 to
   the variable a, and the value 5 to the variable b.
 
-  *CAVEAT* Multi-assign in function calls is broken in combination with
-  default values (Issue #10169).
 
 
 Bug fixes
 ---------
 
 o Compiler
+
+  - Correct argument types and values for functions using multi-assignment
+    with default values. Pattern locals no longer occupy incoming argument
+    slots when a default expression captures them.
 
   - Inheritance can now delay a derived module's final compilation until an
     inherited program's compilation unit has finished. This avoids some
@@ -79,3 +81,4 @@ Building and installing
 Issues fixed
 ------------
 
+  #10169: Correct function argument patterns containing defaults.

@@ -98,6 +98,7 @@ struct compiler_frame
   int last_block_level; /* used to detect variables declared in same block */
   int num_args;
   int varargs;
+  int parsing_arg_pattern; /* Delay default accessors until arguments bind. */
   int lexical_scope;
   int current_function_number;
   int recur_label;
@@ -256,6 +257,7 @@ int dooptcode(struct pike_string *name,
 	      int modifiers);
 void resolv_type(node *n);
 node *make_default_lvalue(node *n);
+node *prepare_argument_pattern(node *n);
 void init_las(void);
 void exit_las(void);
 /* Prototypes end here */

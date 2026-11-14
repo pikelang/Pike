@@ -1402,6 +1402,40 @@ test_any_equal([[
   return ({ a, b, c, d });
 ]], ({ 1, 4, 1, 4 }))
 
+dnl Issue #10169: Argument slots must precede captured pattern locals.
+test_equal([[typeof(lambda(int a, [int b, int c = 4], int d) {
+  return ({ a, b, c, d });
+})]], [[typeof([function(int, array(1..2:int), int:array(int))](mixed)0)]])
+test_equal([[lambda(int a, [int b, int c = 4], int d) {
+  return ({ a, b, c, d });
+}(1, ({ 2 }), 3)]], ({ 1, 2, 4, 3 }))
+test_equal([[lambda(string a, [int b, string c = "x"], float d) {
+  return ({ a, b, c, d });
+}("a", ({ 2 }), 3.0)]], ({ "a", 2, "x", 3.0 }))
+test_equal([[lambda(int a, [int b, int c = b + 4], int d) {
+  return ({ a, b, c, d });
+}(1, ({ 2 }), 3)]], ({ 1, 2, 6, 3 }))
+test_equal([[lambda([int b, int c = b + 4] = ({ 2 }), int d = 3) {
+  return ({ b, c, d });
+}()]], ({ 2, 6, 3 }))
+test_any_equal([[
+  class C {
+    array f(int a, [int b, int c = b + 4], int d) {
+      return ({ a, b, c, d });
+    }
+  }
+  return C()->f(1, ({ 2 }), 3);
+]], ({ 1, 2, 6, 3 }))
+test_any_equal([[
+  array f(int a, [int b, int c = b + 4], int d) {
+    return ({ a, b, c, d });
+  };
+  return f(1, ({ 2 }), 3);
+]], ({ 1, 2, 6, 3 }))
+test_equal([[lambda([int a, [int b, int c = 4] ], int d) {
+  return ({ a, b, c, d });
+}(({ 1, ({ 2 }) }), 3)]], ({ 1, 2, 4, 3 }))
+
 dnl bug in for loop optimization in combination with +=
 test_any([[
 array v=({1,2,3});
