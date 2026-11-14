@@ -1624,6 +1624,69 @@ test_any_equal([[
   return ({ pos, target });
 ]], ({ 1, ({ 3 }) }))
 
+dnl Unnamed elements and an ignored suffix in array patterns (#10103).
+test_any_equal([[
+  [mixed a, mixed, mixed c, ...] = ({ 0, 1, 2, 3, 4, 5 });
+  return ({ a, c });
+]], ({ 0, 2 }))
+test_any_equal([[
+  array source = ({ 0, 1, 2, 3, 4, 5 });
+  [mixed a, mixed, mixed c, ...] = source;
+  return ({ a, c });
+]], ({ 0, 2 }))
+test_any_equal([[
+  [int a, mixed] = ({ 1, "ignored" });
+  return a;
+]], 1)
+test_any_equal([[
+  [mixed] = ({ 1 });
+  return 1;
+]], 1)
+test_any_equal([[
+  [mixed, mixed, int c] = ({ 0, 1, 2 });
+  return c;
+]], 2)
+test_any_equal([[
+  [...] = ({});
+  [...] = ({ 1, 2, 3 });
+  return 1;
+]], 1)
+test_any_equal([[
+  [mixed, ...] = ({ 1 });
+  return 1;
+]], 1)
+test_equal([[lambda([mixed a, mixed, mixed c, ...], string end) {
+  return ({ a, c, end });
+}(({ 0, 1, 2, 3, 4, 5 }), "end")]], ({ 0, 2, "end" }))
+test_equal([[lambda([mixed], string end) { return end; }(({ 1 }), "end")]],
+           "end")
+test_equal([[lambda([...], string end) { return end; }(({}), "end")]],
+           "end")
+test_any_equal([[
+  int i;
+  [mixed, int result, ...] = ({ i++, i++, i++, i++ });
+  return ({ result, i });
+]], ({ 1, 4 }))
+test_any_equal([[
+  array source = ({});
+  return !!catch { [mixed, ...] = source; };
+]], 1)
+test_any_equal([[
+  array source = ({ 1, 2 });
+  return !!catch { [mixed] = source; };
+]], 1)
+test_compile_error([[int main() { [int] = ({ "bad" }); }]])
+test_compile_error([[int main() { [..., int a] = ({ 1 }); }]])
+test_compile_error([[int main() { [mixed] = ({}); }]])
+test_any_equal([[
+  ["items": [mixed, int value, ...] ] = (["items": ({ 0, 1, 2 })]);
+  return value;
+]], 1)
+test_any_equal([[
+  [int a = 4, mixed, ...] = ({ UNDEFINED, "ignored" });
+  return a;
+]], 4)
+
 dnl bug in for loop optimization in combination with +=
 test_any([[
 array v=({1,2,3});

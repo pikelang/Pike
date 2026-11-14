@@ -730,6 +730,19 @@ an existing array variable, put <tt>...</tt> before the lvalue.</p>
   // first is 2 and tail is ({ 3, 4 }).
 </example>
 
+<p>An unnamed type consumes one element without binding a variable. A bare
+trailing <tt>...</tt> ignores all remaining elements, including an empty
+suffix.</p>
+
+<example>
+  [mixed a, mixed, mixed c, ...] = ({ 0, 1, 2, 3, 4, 5 });
+  // a is 0 and c is 2; the other elements are ignored.
+</example>
+
+<p>Ignored positions still require an element and retain their declared type.
+For example, <tt>[int, string name, ...]</tt> requires an integer in the first
+position even though it does not bind that value to a variable.</p>
+
 <p>Without a rest variable, extra elements are an error. Elements preceding
 the rest variable remain required unless they have defaults.</p>
 

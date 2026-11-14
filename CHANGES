@@ -28,6 +28,13 @@ o Rest variables in multi-assignment.
   is empty if there are no remaining elements. Defaults and rest variables
   can also be used in function argument patterns.
 
+  Unnamed elements discard individual positions, and a bare trailing ...
+  discards the remaining elements:
+
+    [mixed a, mixed, mixed c, ...] = ({ 0, 1, 2, 3, 4, 5 });
+
+  This assigns 0 to a and 2 to c.
+
 o Mapping patterns in multi-assignment.
 
   Keys can select the values to assign from a mapping:

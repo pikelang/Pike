@@ -201,6 +201,7 @@ static void compiler_add_generic(struct pike_string *name,
 static void compiler_define_implicit___create__(void);
 static void compiler_end_class(int has___create__, int parent_constant_id);
 static void push_identifier_type(node *n);
+static node *make_ignored_lvalue(struct pike_type *type);
 static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,
                                       int num_args, int num_create_args,
@@ -456,7 +457,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> multi_lvalue
 %type <n> declared_lvalue
 %type <n> mapping_lvalue
-%type <n> multi_lvalue_list
+%type <n> type_close
 %type <n> mapping_items_close
 %type <n> low_lvalue_list
 %type <n> m_expr_list
@@ -1486,15 +1487,22 @@ cast: open_paren_with_line_info type ')'
     }
     ;
 
-soft_cast: open_bracket_with_line_info type ']'
-    {
-      struct pike_type *s = compiler_pop_type();
-      $$ = mktypenode(s);
-      free_type(s);
-      COPY_LINE_NUMBER_INFO($$, $1);
-      free_node ($1);
-    }
-    ;
+/* Share the closing bracket with a single unnamed pattern element. */
+type_close: type ']'
+  {
+    struct pike_type *type = compiler_pop_type();
+    $$ = mktypenode(type);
+    free_type(type);
+  }
+  ;
+
+soft_cast: open_bracket_with_line_info type_close
+  {
+    $$ = $2;
+    COPY_LINE_NUMBER_INFO($$, $1);
+    free_node($1);
+  }
+  ;
 
 /* Either a basic_type-prefixed expression, or an identifier type.
  * Value on type stack.
@@ -4895,7 +4903,7 @@ declared_lvalue: type2 TOK_IDENTIFIER optional_default_value
 /* The second child of F_ARRAY_LVALUE is either NULL (an array pattern),
  * or the array of keys to select (a mapping pattern).
  */
-multi_assign_lvalue: low_lvalue_list ']'
+multi_assign_lvalue: low_lvalue_list
   { $$ = mknode(F_ARRAY_LVALUE, $1, NULL); }
   | mapping_items_close
   {
@@ -4945,6 +4953,10 @@ rest_type: type
   ;
 
 multi_lvalue: lvalue
+  | TOK_DOT_DOT_DOT
+  {
+    $$ = mknode(F_DOT_DOT_DOT, make_ignored_lvalue(array_type_string), NULL);
+  }
   | TOK_DOT_DOT_DOT lvalue { $$ = mknode(F_DOT_DOT_DOT, $2, NULL); }
   | rest_type TOK_DOT_DOT_DOT TOK_IDENTIFIER
   {
@@ -4958,17 +4970,29 @@ multi_lvalue: lvalue
   }
   ;
 
-low_lvalue_list: multi_lvalue multi_lvalue_list
+low_lvalue_list: multi_lvalue ']'
+  { $$ = mknode(F_LVALUE_LIST, $1, NULL); }
+  | type_close
   {
-    if ($1 && ($1->token == F_DOT_DOT_DOT) && $2) {
+    $$ = mknode(F_LVALUE_LIST,
+                 make_ignored_lvalue($1->u.sval.u.type), NULL);
+    free_node($1);
+  }
+  | multi_lvalue ',' low_lvalue_list
+  {
+    if ($1 && ($1->token == F_DOT_DOT_DOT)) {
       yyerror("More variables after ... in multi-assign.");
     }
-    $$ = mknode(F_LVALUE_LIST, $1, $2);
+    $$ = mknode(F_LVALUE_LIST, $1, $3);
   }
-  ;
-
-multi_lvalue_list: /* empty */ { $$ = NULL; }
-  | ',' low_lvalue_list { $$ = $2; }
+  | type ','
+  {
+    struct pike_type *type = compiler_pop_type();
+    $<n>$ = make_ignored_lvalue(type);
+    free_type(type);
+  }
+  low_lvalue_list
+  { $$ = mknode(F_LVALUE_LIST, $<n>3, $4); }
   ;
 
 lvalue_list: /* empty */ { $$ = 0; }
@@ -5573,6 +5597,17 @@ static void compiler_end_class(int has___create__, int parent_constant_id)
     /* Make sure code in this class is aware that something went wrong. */
     Pike_compiler->num_parse_error = 1;
   }
+}
+
+/* Unnamed pattern elements have no source-level binding. */
+static node *make_ignored_lvalue(struct pike_type *type)
+{
+  int id;
+  add_ref(type);
+  id = add_local_name(empty_pike_string, type, NULL);
+  if (id < 0) return NULL;
+  Pike_compiler->compiler_frame->local_names[id].flags |= LOCAL_VAR_IS_USED;
+  return mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL);
 }
 
 /* Push a type named by an expression, including generic bindings. */
