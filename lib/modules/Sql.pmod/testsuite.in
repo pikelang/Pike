@@ -153,4 +153,34 @@ test_do([[
   q->seek(77);
 ]])
 
+dnl status_command_complete() on the result of a query that failed while
+dnl it executed (SELECT 1/0) should return, in a child process that must
+dnl end within 30 s. Without the fix it waits forever, on every run.
+dnl Needs PIKE_TEST_PGSQL_URL.
+cond([[!all_constants()->OMIT_SLOW_TESTS]], [[
+cond([[getenv("PIKE_TEST_PGSQL_URL")]], [[
+  test_any([[
+    string child = #{
+      object db = Sql.Sql(getenv("PIKE_TEST_PGSQL_URL"));
+      object r = db->big_query("SELECT 1/0");
+      catch { while (r->fetch_row()); };
+      r->status_command_complete();
+      return 0;
+    #};
+    Process.Process p =
+      Process.Process(RUNPIKE_ARRAY + ({ "-e", child }),
+                      ([ "stdout": Stdio.File("/dev/null", "w") ]));
+    int start = time();
+    while (!p->status() && time() - start < 30) sleep(0.1);
+    if (!p->status()) {
+      p->kill(signum("SIGKILL"));
+      p->wait();
+      return "status_command_complete() waited for 30 s";
+    }
+    if (int rc = p->wait()) return sprintf("exited with %d", rc);
+    return 0;
+  ]], 0)
+]])
+]])
+
 END_MARKER

@@ -675,10 +675,12 @@ outer:
           catch {
             foreach (runningportals; Result result; )
               if (!result.datarowtypes) {
+                void|Thread.MutexKey lock = result._ddescribemux->lock(2);
                 result.datarowtypes = ({});
                 if (result._state != PURGED && !result.delayederror)
                   result.delayederror = LOSTERROR;
                 result._ddescribe->broadcast();
+                lock = 0;
                 runningportals[result] = 0;
               } else
                 destruct(result);
@@ -971,7 +973,8 @@ class Result {
         }
         lock = 0;			// Force release before acquiring next
         lock = _ddescribemux->lock();
-        if (!statuscmdcomplete)
+        // A failed query is purged, not completed: stop waiting then too.
+        while (!statuscmdcomplete && _state < CLOSED && !delayederror)
           PT(_ddescribe->wait(lock));
       }
       if (this)		// If object already destructed, skip the next call
@@ -1723,10 +1726,13 @@ class Result {
 
   private void releaseconditions(void|int aborted) {
     _unnamedportalkey = _unnamedstatementkey = 0;
-    if (!datarowtypes) {
-      if (_state != PURGED && !delayederror)
-        delayederror = LOSTERROR;
-      datarowtypes = ({});
+    {
+      void|Thread.MutexKey lock = _ddescribemux->lock(2);
+      if (!datarowtypes) {
+        if (_state != PURGED && !delayederror)
+          delayederror = LOSTERROR;
+        datarowtypes = ({});
+      }
       _ddescribe->broadcast();
     }
     if (aborted && delayederror && pgsqlsess && !pgsqlsess.delayederror)
