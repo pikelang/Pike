@@ -1,6 +1,54 @@
 START_MARKER
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
+
+// Owned buffers can move while growing, shrinking, and changing width.
+test_any([[
+  foreach (({ "a\0\377z", "\u0100\u0200az", "\U00010000az" }),
+           string pattern) {
+    foreach (({ 1, 7, 31, 39, 40, 41, 63, 64, 65, 71, 72, 73,
+                255, 256, 4096 }),
+             int length) {
+      string source = (pattern * 2048)[..length-1] + "!";
+      string cut = source[..length-1];
+      string rebuilt = (string)(array(int))cut;
+      mapping seen = ([ cut:1 ]);
+      seen[rebuilt]++;
+      if (sizeof(cut) != length || sizeof(seen) != 1 || seen[cut] != 2)
+        return 0;
+    }
+    foreach (({ 1, 39, 40, 41, 255, 512, 4096 }), int capacity) {
+      String.Buffer b = String.Buffer(capacity);
+      string first = pattern * 300;
+      b->add(first);
+      string snapshot = b->get_copy();
+      b->add(pattern * 3000);
+      string result = b->get();
+      if (snapshot != first || result != pattern * 3300) return 0;
+      b->add("x", pattern);
+      if (b->get() != "x" + pattern) return 0;
+      b->add(pattern * 1000);
+      b->clear();
+      b->add(pattern);
+      if ((string)b != pattern) return 0;
+    }
+    string source = pattern * 1000 + "!";
+    string parent = source[..sizeof(source)-2];
+    string suffix = parent[3..];
+    string nested = suffix[3..];
+    parent += "tail";
+    if (suffix != (pattern * 1000)[3..] ||
+        nested != (pattern * 1000)[6..]) return 0;
+    source = pattern * 1000 + "!";
+    string growing = source[..sizeof(source)-2];
+    source = "";
+    growing += pattern * 2000;
+    if (growing != pattern * 3000) return 0;
+    growing = growing[..8];
+    if (growing != (pattern * 3000)[..8]) return 0;
+  }
+  return 1;
+]], 1)
 test_any([[
   String.Buffer s=String.Buffer();
   s->add("xxx");

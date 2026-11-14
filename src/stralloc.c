@@ -549,33 +549,47 @@ static void stralloc_rehash(void)
 
 #define STRING_BLOCK	2048
 
+/* Preserve the alignment malloc provides for the string contents. */
+#define COMBINED_STRING_HEADER_SIZE \
+  PIKE_ALIGNTO(sizeof(struct pike_string), 16)
+
 
 static struct block_allocator string_allocator =
   BA_INIT_PAGES(sizeof(struct pike_string), 2);
 static struct block_allocator substring_allocator =
   BA_INIT_PAGES(sizeof(struct substring_pike_string), 1);
 
-static void free_string_content(struct pike_string * s)
+/* Return nonzero when contents must be freed together with the header. */
+static int free_string_content(struct pike_string * s)
 {
+  if (LIKELY(s->alloc_type == STRING_ALLOC_BA)) {
+    ba_free(&string_allocator, s->str);
+    return 0;
+  }
   switch (s->alloc_type)
   {
    case STRING_ALLOC_STATIC:
      break;
+   case STRING_ALLOC_COMBINED:
+     return 1;
    case STRING_ALLOC_MALLOC:
      free(s->str);
      break;
    case STRING_ALLOC_BA:
-     ba_free(&string_allocator, s->str);
-     break;
+     UNREACHABLE();
    case STRING_ALLOC_SUBSTRING:
      free_string(((struct substring_pike_string*)s)->parent);
      break;
   }
+  return 0;
 }
 
 static void free_unlinked_pike_string(struct pike_string * s)
 {
-  free_string_content(s);
+  if (free_string_content(s)) {
+    free(s);
+    return;
+  }
   (void)dmalloc_unregister(s, 0);
   switch(s->struct_type)
   {
@@ -813,7 +827,8 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
     /* NB: The following is only possible if there are no substring references
      *     to the old string.
      */
-    if (!(s->flags & STRING_IS_LOCKED) && !string_is_static(s))
+    if (!(s->flags & STRING_IS_LOCKED) && !string_is_static(s) &&
+        s->alloc_type != STRING_ALLOC_COMBINED)
     {
       free_string_content(s);
       s->alloc_type = STRING_ALLOC_STATIC;
@@ -1047,6 +1062,43 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
   return tmp;
 }
 
+/* Leave the existing-string lookup path free of allocation state. */
+ATTRIBUTE((noinline))
+static struct pike_string *begin_combined_binary_string(size_t len)
+{
+  struct pike_string *s;
+  size_t bytes, total;
+  int extra = 0;
+#ifdef __NT__
+  if (!(len & 1)) extra = 1;
+#endif
+  if ((ptrdiff_t)len < 0 ||
+      DO_SIZE_T_ADD_OVERFLOW(len, 1 + extra, &bytes) ||
+      DO_SIZE_T_ADD_OVERFLOW(COMBINED_STRING_HEADER_SIZE, bytes, &total))
+    Pike_error("String is too large.\n");
+  s = xalloc(total);
+#ifdef __CHECKER__
+  memset(s, 0, sizeof(struct pike_string));
+#endif
+#ifdef PIKE_DEBUG
+  gc_fast_init_marker(s);
+#endif
+  s->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  s->alloc_type = STRING_ALLOC_COMBINED;
+  s->struct_type = STRING_STRUCT_STRING;
+  s->str = (char *)s + COMBINED_STRING_HEADER_SIZE;
+  s->refs = 0;
+  s->size_shift = eightbit;
+  s->len = len;
+  DO_IF_DEBUG(s->next = NULL);
+  add_ref(s);
+  s->str[len] = 0;
+#ifdef __NT__
+  if (extra) s->str[len + 1] = 0;
+#endif
+  return s;
+}
+
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,size_t len)
 {
   struct pike_string *s;
@@ -1055,7 +1107,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
   s = internal_findstring(str,len,0,h);
   if (!s)
   {
-    s=begin_shared_string(len);
+    s = len >= sizeof(struct pike_string) ?
+      begin_combined_binary_string(len) : begin_shared_string(len);
     memcpy(s->str, str, len);
     link_pike_string(s, h);
   } else {
@@ -1688,11 +1741,29 @@ struct pike_string *debug_realloc_unlinked_string(struct pike_string *a,
                                                   ptrdiff_t size)
 {
   char * s = NULL;
-  size_t nbytes = (size_t)(size+1) << a->size_shift;
+  size_t nbytes;
   size_t obytes = (size_t)a->len << a->size_shift;
+
+  if (size < 0 || DO_SIZE_T_ADD_OVERFLOW((size_t)size, 1, &nbytes) ||
+      DO_SIZE_T_MUL_OVERFLOW(nbytes, (size_t)1 << a->size_shift, &nbytes))
+    Pike_error("String is too large.\n");
 
   if( size < a->len && ((size_t)a->len-size)<sizeof(void*) )
     goto done;
+
+  if (a->alloc_type == STRING_ALLOC_COMBINED) {
+    size_t total;
+#ifdef __NT__
+    if (!a->size_shift && !(size & 1) &&
+        DO_SIZE_T_ADD_OVERFLOW(nbytes, 1, &nbytes))
+      Pike_error("String is too large.\n");
+#endif
+    if (DO_SIZE_T_ADD_OVERFLOW(COMBINED_STRING_HEADER_SIZE, nbytes, &total))
+      Pike_error("String is too large.\n");
+    a = xrealloc(a, total);
+    a->str = (char *)a + COMBINED_STRING_HEADER_SIZE;
+    goto done;
+  }
 
   if( nbytes < sizeof(struct pike_string) )
   {
@@ -1718,6 +1789,11 @@ struct pike_string *debug_realloc_unlinked_string(struct pike_string *a,
 done:
   a->len=size;
   low_set_index(a,size,0);
+#ifdef __NT__
+  if (a->alloc_type == STRING_ALLOC_COMBINED &&
+      !a->size_shift && !(size & 1))
+    a->str[size + 1] = 0;
+#endif
  
   return a;
 }
@@ -2438,6 +2514,7 @@ void count_string_types() {
               num_substring ++;
               break;
           case STRING_ALLOC_MALLOC:
+          case STRING_ALLOC_COMBINED:
               num_malloc ++;
               break;
           }
@@ -2463,6 +2540,9 @@ size_t count_memory_in_string(const struct pike_string * s) {
   case STRING_ALLOC_BA:
       size += sizeof(struct pike_string);
       break;
+  case STRING_ALLOC_COMBINED:
+      size = COMBINED_STRING_HEADER_SIZE;
+      /* FALLTHRU */
   case STRING_ALLOC_MALLOC:
       size += PIKE_ALIGNTO(((s->len + 1) << s->size_shift), 4);
       break;
