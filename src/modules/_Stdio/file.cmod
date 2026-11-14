@@ -221,6 +221,11 @@ struct program *file_ref_program;
 /*! @decl constant PROP_SEND_FD = 0x0040
  *!   File is capable of sending open file descriptors.
  */
+/*! @decl constant PROP_REVERSE = 0x0020
+ *!   Request reversed operation. Used as argument to @[Fd()->pipe()],
+ *!   when @[PROP_BIDIRECTIONAL] hasn't been specified, to request the
+ *!   direction of the resulting pipe to be reversed.
+ */
 /*! @decl constant PROP_BIDIRECTIONAL = 0x0010
  *!   File supports both sending and receiving.
  */
@@ -1894,7 +1899,6 @@ PIKEFUN int(-1..1) peek(int|float|void timeout_sval, int|void not_eof_sval)
 }
 
 /*! @decl int(-1..1) poke()
- *! @decl int(-1..1) poke(int|float timeout)
  *! @decl int(-1..1) poke(int|float timeout)
  *!
  *! Check if there is buffer space available to write data,
@@ -4408,9 +4412,10 @@ static void file_get_dir(INT32 args)
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 /* All A-OK.*/
 
-/*! @decl array(string) listxattr( )
+/*! @decl array(string)|zero listxattr()
  *!
- *! Return an array of all extended attributes set on the file
+ *! Return an array of all extended attributes set on the file,
+ *! or @expr{0@} (zero) on failure, setting @[errno()].
  */
 static void file_listxattr(INT32 args)
 {
@@ -4477,7 +4482,7 @@ static void file_listxattr(INT32 args)
     free( ptr );
 }
 
-/*! @decl string getxattr(string attr)
+/*! @decl string|zero getxattr(string attr)
  *!
  *! Return the value of a specified attribute, or 0 if it does not exist
  */
@@ -4541,8 +4546,11 @@ static void file_getxattr(INT32 args)
 }
 
 
-/*! @decl void removexattr( string attr )
+/*! @decl int(0..1) removexattr( string attr )
  *! Remove the specified extended attribute.
+ *!
+ *! @returns
+ *! 1 if successful, 0 otherwise, setting errno.
  */
 static void file_removexattr( INT32 args )
 {
@@ -4572,7 +4580,7 @@ static void file_removexattr( INT32 args )
   }
 }
 
-/*! @decl void setxattr( string attr, string value, int flags)
+/*! @decl int(0..1) setxattr( string attr, string value, int flags)
  *!
  *! Set the attribute @[attr] to the value @[value].
  *!
@@ -5359,8 +5367,12 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 #endif
 #endif /* !HAVE_SOCKETPAIR || !UNIX_SOCKETS_WORKS_WITH_SHUTDOWN */
 
-/*! @decl Stdio.File pipe()
- *! @decl Stdio.File pipe(int flags)
+/*! @decl Stdio.File|zero pipe()
+ *! @decl Stdio.File|zero pipe(int flags)
+ *!
+ *! @returns
+ *!   Returns the other end of the pipe on success, and @expr{0@}
+ *!   (zero) on failure, setting @[errno()].
  */
 static void file_pipe(INT32 args)
 {
@@ -5590,9 +5602,13 @@ static void file_dup2(INT32 args)
   push_int(1);
 }
 
-/*! @decl Stdio.Fd dup()
+/*! @decl Stdio.Fd|zero dup()
  *!
  *!   Duplicate the file.
+ *!
+ *! @returns
+ *!   Returns the duplicate on success, and @expr{0@} (zero) on
+ *!   failure, setting @[errno()].
  *!
  *! @seealso
  *!   @[dup2()]
@@ -5835,6 +5851,7 @@ static void file_set_keepalive(INT32 args)
     ERRNO=0;
   }
 #else /* !SO_KEEPALIVE */
+  i = -1;
 #ifdef ENOTSUP
   ERRNO = errno = ENOTSUP;
 #else /* !ENOTSUP */
@@ -6244,8 +6261,8 @@ static void file_connect(INT32 args)
   }
 }
 
-/*! @decl string query_address()
- *! @decl string query_address(int(0..1) local)
+/*! @decl string|zero query_address()
+ *! @decl string|zero query_address(int(0..1) local)
  *!
  *! Get address and port of a socket end-point.
  *!
@@ -6632,10 +6649,14 @@ static void low_file_lock(INT32 args, int flags)
 /*! @endclass
  */
 
-/*! @decl Stdio.FileLockKey lock()
- *! @decl Stdio.FileLockKey lock(int(0..1) is_recursive)
+/*! @decl Stdio.FileLockKey|zero lock()
+ *! @decl Stdio.FileLockKey|zero lock(int(0..1) is_recursive)
  *!
  *! Makes an exclusive file lock on this file.
+ *!
+ *! @returns
+ *!   Returns a key object on success, and @expr{0@} (zero) on
+ *!   failure, setting @[errno()].
  *!
  *! @seealso
  *!   @[trylock()]
@@ -6645,10 +6666,14 @@ static void file_lock(INT32 args)
   low_file_lock(args, fd_LOCK_EX);
 }
 
-/*! @decl Stdio.FileLockKey trylock()
- *! @decl Stdio.FileLockKey trylock(int(0..1) is_recursive)
+/*! @decl Stdio.FileLockKey|zero trylock()
+ *! @decl Stdio.FileLockKey|zero trylock(int(0..1) is_recursive)
  *!
  *! Attempts to place a file lock on this file.
+ *!
+ *! @returns
+ *!   Returns a key object on success, and @expr{0@} (zero) on
+ *!   failure, setting @[errno()].
  *!
  *! @seealso
  *!   @[lock()]
@@ -7352,6 +7377,14 @@ PIKE_MODULE_INIT
 #endif
 #endif
 
+  /*! @decl constant PROP_IS_NONBLOCKING
+   *!
+   *!   Returned by @[Fd()->mode()] if the file is currently in
+   *!   nonblocking mode. Has the same value as @[FILE_NONBLOCKING].
+   *!
+   *! @seealso
+   *!   @[Fd()->mode()], @[Fd()->set_nonblocking()]
+   */
   add_integer_constant("PROP_IS_NONBLOCKING", FILE_NONBLOCKING, 0);
 
   /* seek modes. These are strings to keep compatibility in seek(). */
@@ -7366,26 +7399,26 @@ PIKE_MODULE_INIT
 #endif
     };
 
-    /*! @decl constant int SEEK_CUR
-     *!   Used in @[Fd()->seek()] to specify an absolute offset
-     *!   from the beginning of the file.
-     */
-    add_string_constant( "SEEK_CUR", seek_how+0, 0 );
-
-    /*! @decl constant int SEEK_SET
+    /*! @decl constant string(8bit) SEEK_CUR
      *!   Used in @[Fd()->seek()] to specify an offset relative
      *!   to the current offset.
      */
+    add_string_constant( "SEEK_CUR", seek_how+0, 0 );
+
+    /*! @decl constant string(8bit) SEEK_SET
+     *!   Used in @[Fd()->seek()] to specify an absolute offset
+     *!   from the beginning of the file.
+     */
     add_string_constant( "SEEK_SET", seek_how+2, 0 );
 
-    /*! @decl constant int SEEK_END
+    /*! @decl constant string(8bit) SEEK_END
      *!   Used in @[Fd()->seek()] to specify an offset relative
      *!   to the end of the file.
      */
     add_string_constant( "SEEK_END", seek_how+4, 0 );
 
 #ifdef SEEK_DATA
-    /*! @decl constant int SEEK_DATA
+    /*! @decl constant string(8bit) SEEK_DATA
      *!   Used in @[Fd()->seek()] to specify an offset past the
      *!   specified absolute offset that contains data (ie is
      *!   not a hole). Seeking past the end of the file is not
@@ -7393,7 +7426,7 @@ PIKE_MODULE_INIT
      */
     add_string_constant( "SEEK_DATA", seek_how+6, 0 );
 
-    /*! @decl constant int SEEK_HOLE
+    /*! @decl constant string(8bit) SEEK_HOLE
      *!   Used in @[Fd()->seek()] to specify an offset past the
      *!   specified absolute offset that is a hole. There is an
      *!   implicit hole at the end of the file. Seeking past the
