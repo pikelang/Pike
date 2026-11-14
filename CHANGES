@@ -1167,6 +1167,9 @@ o Compiler and runtime performance
   Binary expressions now use the declared operator precedence directly,
   avoiding parser reductions through every binary precedence level.
 
+  The x86 CRC string hasher uses a fast path for strings shorter than eight
+  bytes, avoiding alignment handling while preserving hash values.
+
   Sorting now skips already ordered subranges of at least 17 elements.
   This avoids unnecessary quicksort partitioning for ordered data and
   sorted runs, including integer, string and object arrays.

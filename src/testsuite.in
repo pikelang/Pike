@@ -8444,6 +8444,27 @@ test_any([[
   return !!compile_string("#pike 7.8\nStdio.File file;\n")();
 ]], 1)
 
+// Short-string interning is independent of alignment and construction path.
+test_any([[
+  foreach (({ "a\0\377bcdef", "\u0100\u0200\u0300abcd",
+              "\U00010000\U00020000abcdef" }), string data) {
+    for (int length = 0; length <= 7; length++) {
+      string expected = length ? data[..length-1] : "";
+      for (int offset = 0; offset < 16; offset++) {
+        string container = "x" * offset + expected + "trailer";
+        string extracted = length ?
+          container[offset..offset+length-1] : "";
+        string rebuilt = (string)(array(int))expected;
+        mapping counts = ([ expected:1 ]);
+        counts[extracted]++;
+        counts[rebuilt]++;
+        if (sizeof(counts) != 1 || counts[expected] != 3) return 0;
+      }
+    }
+  }
+  return 1;
+]], 1)
+
 // String value types retain their character ranges, lengths and attributes.
 test_any([[
   array(string) strings = ({ "", "ab", "ba", "\0x", "\xff",
