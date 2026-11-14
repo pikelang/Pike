@@ -125,7 +125,10 @@ class struct {
   }
 
   //! Reads an unsigned integer from the buffer.
-  int(0..) get_uint(int(0..) len)
+  //!
+  //! Will return -1 if there is not enough buffer space available
+  //! unless error mode is set to throw errors.
+  int(-1..) get_uint(int(0..) len)
   {
     return read_int(len);
   }

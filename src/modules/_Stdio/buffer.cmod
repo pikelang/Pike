@@ -362,7 +362,7 @@ PIKECLASS Buffer
    *! doing so could result in an infinite loop (since no data is
    *! added, the range_error will be called again immediately).
    */
-  PIKEFUN int(0..1) range_error( int range )
+  PIKEFUN int(0..1) range_error( int howmuch )
       flags ID_PROTECTED;
   {
     Pike_sp[-1].u.integer = 0;
@@ -966,13 +966,19 @@ PIKECLASS Buffer
 
   /* pike functions */
 
-  /*! @decl int(-1..) input_from( Stdio.Stream f, int|void nbytes )
+  /*! @decl int(-1..) input_from( Stdio.Stream f, int|void nbytes, @
+   *!                              int|void once )
    *!
    *! Read data from @[f] into this buffer. If @[nbytes] is not
    *! specified, read until there is no more data to read (currently).
    *!
    *! Returns the amount of data that was read, or @expr{-1@} on
    *! read error.
+   *!
+   *! @param once
+   *!   If true, stop after the first (successful) read instead of
+   *!   looping to read all of @[nbytes] (or all currently available
+   *!   data if @[nbytes] is not specified).
    *!
    *! @note
    *! Please note that this funcition will read all data from the
@@ -1827,7 +1833,7 @@ PIKECLASS Buffer
     ref_push_object(THIS_OBJECT);
   }
 
-  /*! @decl object lock()
+  /*! @decl Buffer lock()
    *!
    *! Makes this buffer read only until the returned object is released.
    *!
@@ -2679,9 +2685,12 @@ PIKECLASS Buffer
     push_string( io_read_string(this, bytes ) );
   }
 
-  /*! @decl int(8bit) read_int8()
+  /*! @decl int(-1..255) read_int8()
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
    */
-  PIKEFUN int(8bit) read_int8( )
+  PIKEFUN int(-1..255) read_int8( )
   {
     Buffer *io = THIS;
     if( LIKELY(io_avail( io, 1 )) )
@@ -2690,9 +2699,12 @@ PIKECLASS Buffer
       push_int(-1);
   }
 
-  /*! @decl int(16bit) read_int16()
+  /*! @decl int(-1..65535) read_int16()
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
    */
-  PIKEFUN int(0..65535) read_int16( )
+  PIKEFUN int(-1..65535) read_int16( )
   {
     Buffer *io = THIS;
     if( LIKELY(io_avail( io, 2 )) )
@@ -2701,9 +2713,12 @@ PIKECLASS Buffer
       push_int(-1);
   }
 
-  /*! @decl int(24bit) read_int24()
+  /*! @decl int(-1..16777215) read_int24()
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
    */
-  PIKEFUN int(0..16777215) read_int24( )
+  PIKEFUN int(-1..16777215) read_int24( )
   {
     Buffer *io = THIS;
     if( LIKELY(io_avail( io, 3 )) )
@@ -2712,9 +2727,12 @@ PIKECLASS Buffer
       push_int(-1);
   }
 
-  /*! @decl int(32bit) read_int32()
+  /*! @decl int(-1..4294967295) read_int32()
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
    */
-  PIKEFUN int(0..4294967295) read_int32( )
+  PIKEFUN int(-1..4294967295) read_int32( )
   {
     Buffer *io = THIS;
     if( LIKELY(io_avail( io, 4 )) )
@@ -2744,7 +2762,7 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[read_le_int]
    */
-  PIKEFUN int(0..) read_int( int(0..) len )
+  PIKEFUN int(-1..) read_int( int(0..) len )
   {
     Buffer *io = THIS;
     struct object *o;
@@ -2777,7 +2795,7 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[read_int]
    */
-  PIKEFUN int(0..) read_le_int( int(0..) len )
+  PIKEFUN int(-1..) read_le_int( int(0..) len )
   {
     Buffer *io = THIS;
     struct object *o;
@@ -2808,7 +2826,7 @@ PIKECLASS Buffer
    *! Will return -1 if there is not enough buffer space available
    *! unless error mode is set to throw errors.
    */
-  PIKEFUN int(0..) read_hint( int(0..) size_len )
+  PIKEFUN int(-1..) read_hint( int(0..) size_len )
   {
     Buffer *io = THIS;
     ONERROR e;
@@ -3003,7 +3021,7 @@ PIKECLASS Buffer
    *! @decl void create( System.Memory|String.Buffer contents )
    *!
    *! If passed an integer or no argument, create a buffer of that
-   *! size, or if no argument is given, 226 bytes.
+   *! size, or if no argument is given, 224 bytes.
    *!
    *! If @[contents] are specified a new buffer with the contents of
    *! the given string/System.Memory or String.Buffer will be created.
