@@ -71,6 +71,20 @@ static void MKNAME(_do_sort)(PTYPE bas,
       if( CMP(bas,last) > 0) SWAP(bas,last);
       return;
     }else{
+      /* Partitioning can leave whole subranges already ordered. Avoid
+       * the extra comparisons on small partitions.
+       */
+      if (DIFF(last, bas) >= 16) {
+        b = bas;
+        while (b < last) {
+          a = STEP(b,1);
+          if (CMP(b,a) > 0) break;
+          b = a;
+        }
+        if (b == last) return;
+        a = STEP(bas,1);
+      }
+
       if(--max_recursion <= 0)
       {
 	ptrdiff_t howmany,x,y,z;

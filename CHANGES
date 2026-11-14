@@ -1164,6 +1164,10 @@ o Command-line options
 
 o Compiler and runtime performance
 
+  Sorting now skips already ordered subranges of at least 17 elements.
+  This avoids unnecessary quicksort partitioning for ordered data and
+  sorted runs, including integer, string and object arrays.
+
   Reduced type checking overhead by caching type operations and avoiding
   unnecessary temporary types and mappings. Also reduced function call
   frame allocation overhead and recursion during local variable binding.

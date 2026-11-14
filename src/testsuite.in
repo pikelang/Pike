@@ -15267,6 +15267,38 @@ test_any([[int x=time(); sleep(2); return x!=time()]],1)
 // - sort
 test_equal(sort(({1,3,2,4})),({1,2,3,4}))
 test_equal(sort(({4,3,2,1})),({1,2,3,4}))
+// Check ordered arrays and descents throughout the order scan.
+test_any([[
+  foreach (({ 0, 1, 2, 3, 15, 16, 17, 18, 32, 257 }), int size) {
+    array(int) ints = enumerate(size, 1, -size/2);
+    foreach (({ ints, (array(float))ints,
+                map(ints, lambda(int n) {
+                  return sprintf("%08x", n + 512);
+                }) }), array expected) {
+      if (!equal(sort(expected + ({})), expected)) return 0;
+      if (!equal(sort(reverse(expected)), expected)) return 0;
+      for (int i = 1; i < size; i++) {
+        array input = expected + ({});
+        mixed tmp = input[i-1];
+        input[i-1] = input[i];
+        input[i] = tmp;
+        if (!equal(sort(input), expected)) return 0;
+      }
+    }
+    if (!equal(sort(allocate(size, 17)), allocate(size, 17))) return 0;
+  }
+  return 1;
+]], 1)
+// Early returns in the index sorter must preserve equal-key order.
+test_any([[
+  array(int) order = enumerate(257);
+  array(int) keys = map(order, lambda(int n) { return n % 7; });
+  array(int) expected = ({});
+  for (int key = 0; key < 7; key++)
+    for (int i = key; i < sizeof(order); i += 7) expected += ({ i });
+  sort(keys, order);
+  return equal(order, expected);
+]], 1)
 test_equal(sort(({({1, 4}), ({3, 2}), ({2, 3}), ({4, 1})})),
 		({({1, 4}), ({2, 3}), ({3, 2}), ({4, 1})}))
 test_equal(sort(({({4, 1}), ({2, 3}), ({3, 2}), ({1, 4})})),
