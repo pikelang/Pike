@@ -1167,6 +1167,9 @@ o Compiler and runtime performance
   Binary expressions now use the declared operator precedence directly,
   avoiding parser reductions through every binary precedence level.
 
+  Parser.HTML uses cached delimiter and whitespace tables to speed up
+  scans of byte strings. Wide-string scans retain the general scanner.
+
   The x86 CRC string hasher uses a fast path for strings shorter than eight
   bytes, avoiding alignment handling while preserving hash values.
 

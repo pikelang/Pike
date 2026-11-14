@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 3; -*- */
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
@@ -235,6 +236,9 @@ static const p_wchar2 argq_start[] = {DEF_ARGQ_STARTS};
 static const p_wchar2 argq_stop[] = {DEF_ARGQ_STOPS};
 static const p_wchar2 lazy_entity_ends[] = {DEF_LAZY_EENDS};
 static const p_wchar2 whitespace[] = {DEF_WS};
+#ifndef CONFIGURABLE_MARKUP
+static unsigned char whitespace_8bit[256];
+#endif
 
 #ifdef CONFIGURABLE_MARKUP
 
@@ -289,6 +293,7 @@ struct calc_chars		/* Calculated char sets. */
    p_wchar2 arg_break_chars[N_WS(0) + 4 + NARGQ(0) + 2];
 #endif
    size_t n_arg_break_chars;
+   unsigned char arg_break_chars_8bit[256];
 
    /* end argument ('=', '>' and '/') + start quote */
    p_wchar2 look_for_start[MAX_ARGQ+5];
@@ -303,6 +308,7 @@ struct calc_chars		/* Calculated char sets. */
 
 #define ARG_BREAK_CHARS(this) (this->cc.arg_break_chars)
 #define N_ARG_BREAK_CHARS(this) (this->cc.n_arg_break_chars)
+#define ARG_BREAK_CHARS_8BIT(this) (this->cc.arg_break_chars_8bit)
 #define LOOK_FOR_START(this) (this->cc.look_for_start)
 #define NUM_LOOK_FOR_START(this) (this->cc.num_look_for_start)
 #define LOOK_FOR_END(this) (this->cc.look_for_end)
@@ -323,6 +329,7 @@ static struct calc_chars char_variants[ 1 << 3];
 
 #define ARG_BREAK_CHARS(this) (this->cc->arg_break_chars)
 #define N_ARG_BREAK_CHARS(this) (this->cc->n_arg_break_chars)
+#define ARG_BREAK_CHARS_8BIT(this) (this->cc->arg_break_chars_8bit)
 #define LOOK_FOR_START(this) (this->cc->look_for_start)
 #define NUM_LOOK_FOR_START(this) (this->cc->num_look_for_start)
 #define LOOK_FOR_END(this) (this->cc->look_for_end)
@@ -675,6 +682,12 @@ found_start:
    CC->arg_break_chars[CC->n_arg_break_chars-1] = ENTITY_START (this);
    if ((FLAGS & FLAG_IGNORE_COMMENTS))
       CC->arg_break_chars[CC->n_arg_break_chars-2] = TAG_COMMENT (this);
+
+   memset(CC->arg_break_chars_8bit, 0, sizeof(CC->arg_break_chars_8bit));
+   for (i = 0; i < CC->n_arg_break_chars; i++) {
+     if ((unsigned INT32)CC->arg_break_chars[i] < 256)
+       CC->arg_break_chars_8bit[CC->arg_break_chars[i]] = 1;
+   }
 }
 #undef CC
 #undef FLAGS
@@ -695,6 +708,8 @@ found_start:
 static inline void init_calc_chars(void)
 {
   int i;
+  for (i = 0; i < (int)NELEM(whitespace); i++)
+    whitespace_8bit[whitespace[i]] = 1;
   for (i = 0; i < 1 << 3; i++)
     calculate_chars (char_variants + i,
 		     ((i & 1) ? FLAG_STRICT_TAGS : 0) |
@@ -1668,7 +1683,49 @@ static p_wchar2 next_character(struct piece *feed,
 /* ------------------------------ */
 /* scan forward for certain chars */
 
-static int scan_forward(struct piece *feed,
+/* Return -1 at the first wide feed piece so the caller can continue
+ * with the general scanner. Both search modes stop at the matching byte.
+ */
+static int scan_forward_8bit(struct piece *feed, ptrdiff_t c,
+                            struct piece **destp, ptrdiff_t *d_p,
+                            const unsigned char *char_set, int reverse)
+{
+   while (c >= feed->s->len) {
+     c -= feed->s->len;
+     if (!feed->next) {
+       *destp = feed;
+       *d_p = feed->s->len;
+       return 0;
+     }
+     feed = feed->next;
+   }
+   for (;;) {
+     p_wchar0 *str, *end;
+     if (feed->s->size_shift) {
+       *destp = feed;
+       *d_p = c;
+       return -1;
+     }
+     str = STR0(feed->s) + c;
+     end = STR0(feed->s) + feed->s->len;
+     while (str < end) {
+       if (char_set[*str++] != reverse) {
+         *destp = feed;
+         *d_p = str - STR0(feed->s) - 1;
+         return 1;
+       }
+     }
+     if (!feed->next) {
+       *destp = feed;
+       *d_p = feed->s->len;
+       return 0;
+     }
+     feed = feed->next;
+     c = 0;
+   }
+}
+
+static int scan_forward_general(struct piece *feed,
 			ptrdiff_t c,
 			struct piece **destp,
 			ptrdiff_t *d_p,
@@ -1797,6 +1854,40 @@ found:
    return 1;
 }
 
+/* Inline the choice so fixed whitespace scans call the byte scanner
+ * directly; general searches keep the original scanner and argument list.
+ */
+static inline int scan_forward(struct piece *feed, ptrdiff_t c,
+                               struct piece **destp, ptrdiff_t *d_p,
+                               const p_wchar2 *look_for,
+                               ptrdiff_t num_look_for)
+{
+#ifndef CONFIGURABLE_MARKUP
+   if (look_for == whitespace &&
+       (num_look_for == (ptrdiff_t)NELEM(whitespace) ||
+        num_look_for == -(ptrdiff_t)NELEM(whitespace))) {
+     int result = scan_forward_8bit(feed, c, destp, d_p,
+                                   whitespace_8bit, num_look_for < 0);
+     if (result >= 0) return result;
+     feed = *destp;
+     c = *d_p;
+   }
+#endif
+   return scan_forward_general(feed, c, destp, d_p,
+                               look_for, num_look_for);
+}
+
+static inline int scan_arg_break(struct parser_html_storage *this,
+                                 struct piece *feed, ptrdiff_t c,
+                                 struct piece **destp, ptrdiff_t *d_p)
+{
+   int result = scan_forward_8bit(feed, c, destp, d_p,
+                                 ARG_BREAK_CHARS_8BIT(this), 0);
+   if (result >= 0) return result;
+   return scan_forward(*destp, *d_p, destp, d_p,
+                       ARG_BREAK_CHARS(this), N_ARG_BREAK_CHARS(this));
+}
+
 static int scan_for_string (struct parser_html_storage *UNUSED(this),
 			    struct piece *feed,
 			    ptrdiff_t c,
@@ -1901,9 +1992,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 
       DEBUG_MARK_SPOT("scan_forward_arg: loop",feed,c);
 
-      res=scan_forward(feed,c,destp,d_p,
-		       ARG_BREAK_CHARS (this),
-		       N_ARG_BREAK_CHARS (this));
+      res=scan_arg_break(this,feed,c,destp,d_p);
 
 retryloop:
       if (res)
