@@ -332,7 +332,9 @@ PMOD_EXPORT void init_interpreter(void)
  * object[index] : { object, index } (external object indexing)
  * local variable : { svalue pointer (T_SVALUE_PTR), nothing (T_VOID) }
  * global variable : { object, identifier index (T_OBJ_INDEX) } (internal object indexing)
- * lvalue array: { T_ARRAY_LVALUE, array with lvalue pairs }
+ * lvalue array: { T_ARRAY_LVALUE, array with header and lvalue pairs }
+ *   An integer header encodes the required array length and a rest variable.
+ *   An array header contains the keys to select from a mapping instead.
  * raw getter/setter: { function (T_FUNCTION), reserved (T_VOID) }
  *
  * Notes:
@@ -352,10 +354,26 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
       struct array *a;
       TYPE_FIELD types = 0;
       ONERROR err;
+      struct svalue *lvals = ITEM(lval[1].u.array);
+      int header = lval[1].u.array->size & 1;
+      if (header && (TYPEOF(lvals[0]) == T_ARRAY)) {
+        struct array *keys = lvals[0].u.array;
+        struct mapping *m = allocate_mapping(keys->size);
+        push_mapping(m);
+        for (e = 0; e < keys->size; e++) {
+          push_int(0);
+          lvalue_to_svalue_no_free(Pike_sp - 1, lvals + 1 + (e<<1));
+          mapping_insert(m, ITEM(keys) + e, Pike_sp - 1);
+          pop_stack();
+        }
+        move_svalue(to, --Pike_sp);
+        break;
+      }
+      lvals += header;
       a=allocate_array(lval[1].u.array->size>>1);
       SET_ONERROR(err, do_free_array, a);
       for(e=0;e<a->size;e++) {
-	lvalue_to_svalue_no_free(ITEM(a)+e, ITEM(lval[1].u.array)+(e<<1));
+        lvalue_to_svalue_no_free(ITEM(a)+e, lvals+(e<<1));
 	types |= 1 << TYPEOF(ITEM(a)[e]);
       }
       a->type_field = types;
@@ -501,8 +519,29 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
       int max_len;
       int more = 0;
       struct svalue *lvals;
+      lvals = ITEM(lval[1].u.array);
+      if ((lval[1].u.array->size & 1) && (TYPEOF(lvals[0]) == T_ARRAY)) {
+        struct array *keys = lvals[0].u.array;
+        struct array *values;
+        if (TYPEOF(*from) != T_MAPPING) {
+          Pike_error("Trying to assign mapping pattern from non-mapping.\n");
+        }
+        /* Snapshot all selected values before assigning any lvalue. */
+        values = allocate_array(keys->size);
+        values->type_field = BIT_MIXED;
+        push_array(values);
+        for (e = 0; e < keys->size; e++) {
+          mapping_index_no_free(ITEM(values) + e, from->u.mapping,
+                                ITEM(keys) + e);
+        }
+        for (e = 0; e < keys->size; e++) {
+          assign_lvalue(lvals + 1 + (e<<1), ITEM(values) + e);
+        }
+        pop_stack();
+        break;
+      }
       if(TYPEOF(*from) != T_ARRAY)
-	Pike_error("Trying to assign combined lvalue from non-array.\n");
+        Pike_error("Trying to assign combined lvalue from non-array.\n");
 
       min_len = lval[1].u.array->size;
       max_len = min_len >> 1;

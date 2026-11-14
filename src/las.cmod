@@ -3399,8 +3399,12 @@ static void find_written_vars(node *n,
     find_written_vars(CDR(n), p, 1);
     break;
 
+  case F_ARRAY_LVALUE:
+    find_written_vars(CAR(n), p, 1);
+    find_written_vars(CDR(n), p, 0);
+    break;
+
   case F_DOT_DOT_DOT:
-    case F_ARRAY_LVALUE:
     find_written_vars(CAR(n), p, 1);
     break;
 
@@ -4338,9 +4342,18 @@ void fix_type_field(node *n)
           }
         } while(0);
 	type_stack_mark();
-	push_finished_type(t);
-        push_int_type(min, max);
-        push_type(T_ARRAY);
+        if (CDR(n)) {
+          struct pike_type *key_type =
+            index_type(CDR(n)->type, int_type_string, n);
+          push_finished_type(t);
+          push_finished_type(key_type);
+          free_type(key_type);
+          push_type(T_MAPPING);
+        } else {
+          push_finished_type(t);
+          push_int_type(min, max);
+          push_type(T_ARRAY);
+        }
 	free_type(t);
 	n->type = pop_unfinished_type();
       }

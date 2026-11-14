@@ -134,9 +134,12 @@ continue             ::= "continue" identifier? ";"
 lvalue               ::= assignment_expression | type identifier ( "="
                            assignment_expression )?
                        | pattern
-pattern              ::= "[" lvalue ( "," lvalue )* ( "," rest_lvalue )? "]"
-                       | "[" rest_lvalue "]"
+pattern              ::= "[" array_pattern "]" | "[" mapping_pattern "]"
+array_pattern        ::= lvalue ( "," lvalue )* ( "," rest_lvalue )?
+                       | rest_lvalue
 rest_lvalue          ::= type "..." identifier | "..." lvalue
+mapping_pattern      ::= mapping_binding ( "," mapping_binding )* ","?
+mapping_binding      ::= assignment_expression ":" lvalue
 </example>
 
 </section>

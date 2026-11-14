@@ -28,6 +28,17 @@ o Rest variables in multi-assignment.
   is empty if there are no remaining elements. Defaults and rest variables
   can also be used in function argument patterns.
 
+o Mapping patterns in multi-assignment.
+
+  Keys can select the values to assign from a mapping:
+
+    ["year": int year, "mon": int mon, "mday": int mday] = localtime(time());
+
+  Patterns can contain existing lvalues, declarations, defaults, and nested
+  patterns. Missing keys supply UNDEFINED; other keys are ignored. The
+  expression returns the source mapping. Mapping patterns can also be used
+  as function arguments.
+
 
 Bug fixes
 ---------
@@ -91,4 +102,5 @@ Issues fixed
 ------------
 
   #10103: Support rest variables in multi-assignment.
+  #10110: Support multi-assignment from mappings.
   #10169: Correct function argument patterns containing defaults.

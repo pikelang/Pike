@@ -3056,8 +3056,12 @@ static int do_docode2(node *n, int flags)
     return do_docode(CAR(n), flags);
 
     case F_ARRAY_LVALUE:
-      emit1(F_NUMBER, count_required_multi_assign(CAR(n)));
-      tmp1 = do_docode(CAR(n), flags);
+      if (CDR(n)) {
+        code_expression(CDR(n), 0, "Mapping pattern keys");
+      } else {
+        emit1(F_NUMBER, count_required_multi_assign(CAR(n)));
+      }
+      tmp1 = do_docode(CAR(n), DO_LVALUE);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");

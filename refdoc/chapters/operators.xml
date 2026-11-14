@@ -733,6 +733,22 @@ an existing array variable, put <tt>...</tt> before the lvalue.</p>
 <p>Without a rest variable, extra elements are an error. Elements preceding
 the rest variable remain required unless they have defaults.</p>
 
+<p>A mapping pattern uses <tt>key: lvalue</tt> pairs instead of positions.
+It selects all the named values before assigning the lvalues in source order.
+Missing keys yield <tt>UNDEFINED</tt>, which activates a default if one is
+specified. Additional keys are ignored. Keys can be expressions; each key
+and the source mapping is evaluated once. The assignment expression evaluates
+to the original mapping.</p>
+
+<example>
+  ["year": int year, "mon": int mon, "mday": int day] = localtime(time());
+  ["name": string name = "anonymous", "items": [mixed head, mixed ... tail]] =
+    (["items": ({ 1, 2, 3 })]);
+</example>
+
+<p>Mapping patterns must contain at least one pair. A rest variable belongs
+to an array pattern; mapping patterns select only their listed keys.</p>
+
 </subsection>
 
 </section>

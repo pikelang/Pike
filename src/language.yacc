@@ -452,8 +452,12 @@ int yylex(YYSTYPE *yylval);
 %type <n> safe_lvalue
 %type <n> lvalue
 %type <n> lvalue_list
+%type <n> multi_assign_lvalue
 %type <n> multi_lvalue
+%type <n> declared_lvalue
+%type <n> mapping_lvalue
 %type <n> multi_lvalue_list
+%type <n> mapping_items_close
 %type <n> low_lvalue_list
 %type <n> m_expr_list
 %type <n> m_expr_list2
@@ -900,13 +904,6 @@ open_bracket_with_line_info: '['
   }
   ;
 
-close_bracket_or_missing: ']'
-  | /* empty */
-  {
-    yyerror("Missing ']'.");
-  }
-  ;
-
 /* This variant is used to start a new compiler frame for functions
  * with a declared return type.
  *
@@ -1212,9 +1209,9 @@ new_arg_name: full_type optional_dot_dot_dot
     $<number>$ = i;
     Pike_compiler->compiler_frame->parsing_arg_pattern++;
   }
-  low_lvalue_list ']' optional_default_value
+  multi_assign_lvalue optional_default_value
   {
-    node *n = mknode(F_ARRAY_LVALUE, $3, 0);
+    node *n = $3;
     node *init;
     int i = $<number>2;
     Pike_compiler->compiler_frame->parsing_arg_pattern--;
@@ -1223,7 +1220,7 @@ new_arg_name: full_type optional_dot_dot_dot
     type_stack_mark();
     fix_type_field(n);
     push_finished_type(n->type);
-    if ($5) {
+    if ($4) {
       push_type(T_VOID);
       push_type(T_OR);
       free_type(n->type);
@@ -1234,11 +1231,11 @@ new_arg_name: full_type optional_dot_dot_dot
       pop_unfinished_type();
     init = mklocalnode(i, 0);
 
-    if ($5) {
-      init = mknode(F_LOR, init, $5);
+    if ($4) {
+      init = mknode(F_LOR, init, $4);
     }
     /* Redefine local #i as [ $3 ] with an initializer of
-     * orig_i || $5.
+     * orig_i || $4.
      */
     redefine_local(NULL, i, n, init);
     free_node($1);
@@ -3497,8 +3494,8 @@ m_expr_list: { $$=0; }
   | m_expr_list2 optional_comma
   ;
 
-m_expr_list2: assoc_pair
-  | m_expr_list2 ',' assoc_pair
+m_expr_list2: mapping_lvalue
+  | m_expr_list2 ',' mapping_lvalue
   {
     if ($3) {
       $$=mknode(F_ARG_LIST,$1,$3);
@@ -3529,9 +3526,18 @@ literal_expr: string
     }
   | open_paren_with_line_info
     open_bracket_with_line_info	/* Only to avoid shift/reduce conflicts. */
-    m_expr_list close_bracket_or_missing ')'
+    mapping_items_close ')'
     {
       /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      int i, count = count_args($3);
+      for (i = 1; i < count; i += 2) {
+        node **value = my_get_arg(&$3, i);
+        if ((*value)->token == F_VAL_LVAL) {
+          yyerror("Lvalue declaration in mapping literal.");
+          free_node(*value);
+          *value = mkintnode(0);
+        }
+      }
       $$=mkefuncallnode("aggregate_mapping",$3);
       COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
@@ -4105,16 +4111,16 @@ cond_expr: lor_expr
 assignment_expr: cond_expr
   | lor_expr assign assignment_expr  { $$=mknode($2,$1,$3); }
   | lor_expr assign error { $$=$1; reset_type_stack(); yyerrok; }
-  | open_bracket_with_line_info low_lvalue_list ']' low_assign assignment_expr
+  | open_bracket_with_line_info multi_assign_lvalue low_assign assignment_expr
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-      mark_lvalues_as_used($2);
+      mark_lvalue_as_used($2);
     }
-    $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5);
+    $$=mknode($3,$2,$4);
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node ($1);
   }
-  | open_bracket_with_line_info low_lvalue_list ']' error
+  | open_bracket_with_line_info multi_assign_lvalue error
     {
       $$=$2; free_node ($1); reset_type_stack(); yyerrok;
     }
@@ -4855,14 +4861,17 @@ lvalue: assignment_expr
   {
     $$ = make_default_lvalue($1);
   }
-  | open_bracket_with_line_info low_lvalue_list ']'
+  | open_bracket_with_line_info multi_assign_lvalue
   {
     /* NB: The optional default value is handled by assignment_expr above. */
-    $$ = mknode(F_ARRAY_LVALUE, $2, 0);
+    $$ = $2;
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node($1);
   }
-  | type2 TOK_IDENTIFIER optional_default_value
+  | declared_lvalue
+  ;
+
+declared_lvalue: type2 TOK_IDENTIFIER optional_default_value
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     /* Note: Variable intentionally not marked as used. */
@@ -4881,6 +4890,51 @@ lvalue: assignment_expr
     free_node($2);
   }
   /* FIXME: Add production for type2 ==> constant type svalue here? */
+  ;
+
+/* The second child of F_ARRAY_LVALUE is either NULL (an array pattern),
+ * or the array of keys to select (a mapping pattern).
+ */
+multi_assign_lvalue: low_lvalue_list ']'
+  { $$ = mknode(F_ARRAY_LVALUE, $1, NULL); }
+  | mapping_items_close
+  {
+    node *args = $1, *keys = NULL, *values = NULL;
+    int count = count_args(args), i;
+    if (!count) yyerror("Empty mapping pattern.");
+    for (i = count - 2; i >= 0; i -= 2) {
+      node **key = my_get_arg(&args, i);
+      node **value = my_get_arg(&args, i + 1);
+      keys = mknode(F_ARG_LIST, copy_node(*key), keys);
+      node *lval = *value;
+      if (lval->token == F_VAL_LVAL) lval = CDR(lval);
+      values = mknode(F_LVALUE_LIST,
+                      make_default_lvalue(copy_node(lval)), values);
+    }
+    if (count) {
+      $$ = mknode(F_ARRAY_LVALUE, values, mkefuncallnode("aggregate", keys));
+    } else {
+      $$ = mkintnode(0);
+    }
+    free_node(args);
+  }
+  ;
+
+/* Share parsing with mapping literals through the closing bracket. This
+ * distinguishes ([key: value]) from ([key: value] = mapping) without extra
+ * lookahead. F_VAL_LVAL marks destinations that are invalid in a literal.
+ */
+mapping_lvalue: assoc_pair
+  | assignment_expr expected_colon declared_lvalue
+  { $$ = mknode(F_ARG_LIST, $1, mknode(F_VAL_LVAL, NULL, $3)); }
+  | assignment_expr expected_colon open_bracket_with_line_info multi_assign_lvalue
+  {
+    $$ = mknode(F_ARG_LIST, $1, mknode(F_VAL_LVAL, NULL, $4));
+    free_node($3);
+  }
+  ;
+
+mapping_items_close: m_expr_list ']' { $$ = $1; }
   ;
 
 /* Use the expression reduction for identifier types here, since ... is
@@ -5572,7 +5626,6 @@ static void push_identifier_type(node *n)
 
   free_node(n);
 }
-
 
 static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,

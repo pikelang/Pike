@@ -174,7 +174,7 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
         }
       </example>
 
-      <p>Function arguments can also use array patterns, with
+      <p>Function arguments can also use array or mapping patterns, with
       the same defaults, rest variables, and nesting as multi-assignment.
       Each pattern consumes one argument. Pattern variables are available
       in the function body.</p>
@@ -183,6 +183,7 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
         array split([mixed head, mixed ... tail], string label) {
           return ({ label, head, tail });
         }
+        int year(["year": int year]) { return year; }
       </example>
     </subsection>
 
