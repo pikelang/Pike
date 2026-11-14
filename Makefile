@@ -246,6 +246,9 @@ valgrind_just_verify:
 verify:
 	@$(DO_MAKE) "METATARGET=verify" _make_in_builddir
 
+verify_all:
+	@$(DO_MAKE) "METATARGET=verify_all" _make_in_builddir
+
 valgrind_verify:
 	@$(DO_MAKE) "METATARGET=valgrind_verify" _make_in_builddir
 
