@@ -2120,6 +2120,10 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
   return (r-haystack->str)>>haystack->size_shift;
 }
 
+/* Inlining the allocator forces string_slice to preserve allocation
+ * state even on paths that only look up or copy string contents.
+ */
+ATTRIBUTE((noinline))
 static struct pike_string *make_shared_substring( struct pike_string *s,
 						  ptrdiff_t start,
 						  ptrdiff_t len,

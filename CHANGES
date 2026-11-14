@@ -1164,6 +1164,9 @@ o Command-line options
 
 o Compiler and runtime performance
 
+  String slicing keeps suffix allocation out of the common lookup and
+  copying path, avoiding unnecessary register saves during ordinary slices.
+
   Binary expressions now use the declared operator precedence directly,
   avoiding parser reductions through every binary precedence level.
 
