@@ -688,6 +688,7 @@ int main(int argc, array(string) argv)
     ({"trace",Getopt.HAS_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
     ({"omit-slow-tests",Getopt.NO_ARG,({"-S","--omit-slow-tests"})}),
+    ({"run-very-slow-tests",Getopt.NO_ARG,({"--run-very-slow-tests"})}),
 #if constant(Debug.assembler_debug)
     ({"asm",Getopt.MAY_HAVE_ARG,({"--assembler-debug"})}),
 #endif
@@ -728,6 +729,10 @@ int main(int argc, array(string) argv)
 
         case "omit-slow-tests":
           add_constant("OMIT_SLOW_TESTS", 1);
+          break;
+
+        case "run-very-slow-tests":
+          add_constant("RUN_VERY_SLOW_TESTS", 1);
           break;
 
 	case "verbose": verbose+=foo(opt[1]); break;
@@ -857,6 +862,8 @@ int main(int argc, array(string) argv)
     // auto already handled.
     if (failed_cond) forked += ({ "--failed-cond" });
     if (all_constants()["OMIT_SLOW_TESTS"]) forked += ({ "--omit-slow-tests" });
+    if (all_constants()["RUN_VERY_SLOW_TESTS"])
+      forked += ({ "--run-very-slow-tests" });
     forked += ({"--subprocess"});
     // debug port not propagated.
     //log_msg("forked:%O\n", forked);
@@ -1743,6 +1750,13 @@ Usage: test_pike [args] [testfiles]
                         every test.
                     X<0 For values below zero, _verify_internals will be run
                         before every n:th test, where n=abs(X).
+-S, --omit-slow-tests
+                    Skip or shorten the slow tests (OMIT_SLOW_TESTS). Set
+                    automatically by make verify and the other test targets
+                    if configure finds the build system slow.
+--run-very-slow-tests
+                    Also run the very slow tests (RUN_VERY_SLOW_TESTS), which
+                    are skipped by default.
 -m, --mem, --memory Print out memory allocations after the tests.
 -a, --auto[=dir]    Let the test program find the testsuites automatically.
 -T, --notty         Format output for non-tty.

@@ -57,6 +57,8 @@ install_interactive Interactive install.
 tinstall            Test install, i.e. install in build directory.
 verify              Do a test install and run the testsuite with the
                     installed Pike.
+verify_all          As verify, with every test. Even the very slow
+                    and the slow ones, and even on a slow system.
 just_verify         Run the testsuite directly with the Pike binary in
                     the build tree.
 run_hilfe           Run hilfe without installing Pike.

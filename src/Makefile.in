@@ -866,6 +866,17 @@ verify: testsuites tinstall
 	  fi \
 	fi
 
+# verify with every test: the slow and very slow ones too,
+# even if configure found the build system slow or TESTARGS omits them.
+verify_all:
+	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_FORK)" ; else \
+	  args="" ; \
+	  for a in $(TESTARGS) ; do \
+	    case "$$a" in -S|--omit-slow-tests) ;; *) args="$$args $$a" ;; esac ; \
+	  done ; \
+	fi; \
+	$(MAKE) $(MAKE_FLAGS) SLOW_PIKE= "TESTARGS=--run-very-slow-tests $$args" verify
+
 valgrind_verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK)" ; else \
