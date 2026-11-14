@@ -693,7 +693,7 @@ static void not_mem( enum amd64_reg reg, int off )
 static void add_reg_imm( enum amd64_reg reg, int imm32 )
 {
   if( !imm32 ) return;
-  if( imm32 < 0 )
+  if( imm32 < 0 && !INT32_NEG_OVERFLOW(imm32) )
   {
     /* This makes the disassembly easier to read. */
     sub_reg_imm( reg, -imm32 );
@@ -789,7 +789,7 @@ static void sub_reg_imm( enum amd64_reg reg, int imm32 )
 {
   if( !imm32 ) return;
 
-  if( imm32 < 0 )
+  if( imm32 < 0 && !INT32_NEG_OVERFLOW(imm32) )
     /* This makes the disassembly easier to read. */
     return add_reg_imm( reg, -imm32 );
 
@@ -3540,6 +3540,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   case F_SUBTRACT_INT:
   case F_ADD_NEG_INT:
+    /* Negation must fit the signed immediate. Keep INT32_MIN on its C
+     * path rather than wrapping it into an ADD of the wrong sign. */
+    if (INT32_NEG_OVERFLOW(b)) break;
     b = -b;
 
     /* FALLTHRU */

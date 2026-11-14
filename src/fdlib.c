@@ -3188,11 +3188,48 @@ PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 }
 
 
+/* Duplicate sockets through Winsock so that their provider state is copied
+ * along with the handle. DuplicateHandle alone is not sufficient.
+ */
+static HANDLE duplicate_fd_handle(HANDLE h, int type)
+{
+  HANDLE copy;
+  HANDLE process = GetCurrentProcess();
+
+  if (type == FD_SOCKET) {
+    WSAPROTOCOL_INFOA protocol_info;
+    SOCKET socket_copy;
+
+    if (WSADuplicateSocketA((SOCKET)h, GetCurrentProcessId(),
+                           &protocol_info)) {
+      set_errno_from_win32_error(WSAGetLastError());
+      return INVALID_HANDLE_VALUE;
+    }
+    socket_copy = WSASocketA(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO,
+                            FROM_PROTOCOL_INFO, &protocol_info, 0,
+                            WSA_FLAG_OVERLAPPED);
+    if (socket_copy == INVALID_SOCKET) {
+      set_errno_from_win32_error(WSAGetLastError());
+      return INVALID_HANDLE_VALUE;
+    }
+    copy = (HANDLE)socket_copy;
+    SetHandleInformation(copy, HANDLE_FLAG_INHERIT, 0);
+    return copy;
+  }
+
+  if (!DuplicateHandle(process, h, process, &copy, 0, 0,
+                       DUPLICATE_SAME_ACCESS)) {
+    set_errno_from_win32_error(GetLastError());
+    return INVALID_HANDLE_VALUE;
+  }
+  return copy;
+}
+
 PMOD_EXPORT FD debug_fd_dup(FD from)
 {
   FD fd;
   int type;
-  HANDLE h,x,p=GetCurrentProcess();
+  HANDLE h, x;
 
   FDDEBUG(fprintf(stderr, "fd_dup(%d)...\n", from));
 
@@ -3218,12 +3255,12 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 		   (type == FD_SOCKET)?
 		   (HANDLE)INVALID_SOCKET:INVALID_HANDLE_VALUE);
 
-  if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS))
-  {
-    DWORD err = GetLastError();
+  x = duplicate_fd_handle(h, type);
+  if (x == INVALID_HANDLE_VALUE) {
+    int saved_errno = errno;
     free_fd(fd);
     release_fd(from);
-    set_errno_from_win32_error(err);
+    errno = saved_errno;
     return -1;
   }
 
@@ -3245,7 +3282,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   struct object *box_obj = NULL;
   int box_events = 0;
   int type;
-  HANDLE h,x,p=GetCurrentProcess();
+  HANDLE h, x;
 
   if ((from == to) || (to < 0) || (to >= FD_SETSIZE)) {
     errno = EINVAL;
@@ -3267,10 +3304,14 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
     add_ref(pty);
     pty->fd_refs++;
     x = h;
-  } else if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS)) {
-    release_fd(from);
-    set_errno_from_win32_error (GetLastError());
-    return -1;
+  } else {
+    x = duplicate_fd_handle(h, type);
+    if (x == INVALID_HANDLE_VALUE) {
+      int saved_errno = errno;
+      release_fd(from);
+      errno = saved_errno;
+      return -1;
+    }
   }
 
   release_fd(from);
