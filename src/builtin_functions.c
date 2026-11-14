@@ -8567,12 +8567,21 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
         case PIKE_T_MULTISET:
             res = sizeof(struct multiset) + sizeof(struct multiset_data);
             node_ref = multiset_last( s->u.multiset );
-            while( node_ref != -1 )
+            if( node_ref != -1 )
             {
-                res += rec_size_svalue( get_multiset_value (s->u.multiset, node_ref), m )
-                    /* each node has the index and left/right node pointers. */
-                    + sizeof(struct svalue) + (sizeof(void*)*2);
-                node_ref = multiset_prev( s->u.multiset, node_ref );
+                /* multiset_last() took a node reference, which
+                 * multiset_prev() keeps: give it back at the end. */
+                ONERROR uwp;
+                SET_ONERROR( uwp, do_sub_msnode_ref, s->u.multiset );
+                while( node_ref != -1 )
+                {
+                    res += rec_size_svalue( get_multiset_value (s->u.multiset, node_ref), m )
+                        /* each node has the index and left/right node pointers. */
+                        + sizeof(struct svalue) + (sizeof(void*)*2);
+                    node_ref = multiset_prev( s->u.multiset, node_ref );
+                }
+                UNSET_ONERROR( uwp );
+                sub_msnode_ref( s->u.multiset );
             }
             break;
 
