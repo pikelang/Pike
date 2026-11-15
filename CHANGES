@@ -1666,6 +1666,9 @@ o Tools.Hilfe
 
 o Tools.Shoot and Tools.Standalone.benchmark
 
+  - Warm up the allocator during benchmark module initialization, reducing
+    sensitivity to its initial heap-trimming policy in all run modes.
+
   - Added run_sync() and the --single-process/--sync option to run
     benchmarks in the current process.
 
