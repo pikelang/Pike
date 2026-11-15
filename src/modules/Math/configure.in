@@ -15,6 +15,8 @@ then
   AC_DEFINE(HAS_MPI, 1, [Whether MPI is available]),
 fi
 
+PIKE_FEATURE(Math.Transforms.FFT,[no (disabled)])
+
 if test x$with_fftw = xyes ; then
   dnl Checks for header files.
 
@@ -22,27 +24,21 @@ if test x$with_fftw = xyes ; then
 
   AC_CHECK_HEADERS(fftw.h rfftw.h fftw3.h)
 
-  if test "$ac_cv_header_fftw_h:$ac_cv_header_rfftw_h" = "yes:yes"; then
-    dnl Checks for libraries.
+  if test "$ac_cv_header_fftw3_h" = "yes"; then
+    PIKE_FEATURE(Math.Transforms.FFT,[no (fftw 3.x library not found)])
+    AC_CHECK_LIB(fftw3, fftw_plan_r2r_1d,,,-lm)
+    if test "$ac_cv_lib_fftw3_fftw_plan_r2r_1d" = "yes"; then
+      PIKE_FEATURE(Math.Transforms.FFT,[yes (fftw 3.x)])
+    fi
+  fi
 
+  if test "$ac_cv_lib_fftw3_fftw_plan_r2r_1d" != "yes" -a \
+          "$ac_cv_header_fftw_h:$ac_cv_header_rfftw_h" = "yes:yes"; then
     PIKE_FEATURE(Math.Transforms.FFT,[no (fftw 2.x libraries not found)])
-
     AC_CHECK_LIB(fftw, fftw,,,-lm)
     AC_CHECK_LIB(rfftw, rfftw,,,-lm)
-
-    if test "$ac_cv_lib_rfftw_rfftw" = "yes" -a \
-            "$ac_cv_lib_fftw_fftw" = "yes"; then
-        PIKE_FEATURE(Math.Transforms.FFT,[yes (fftw)])
-    fi
-  elif test "$ac_cv_header_fftw3_h" = "yes"; then
-    dnl Checks for libraries.
-
-    PIKE_FEATURE(Math.Transforms.FFT,[no (fftw 3.x library not found)])
-
-    AC_CHECK_LIB(fftw3, fftw_execute,,,-lm)
-
-    if test "$ac_cv_lib_fftw3_fftw_execute" = "yes"; then
-        PIKE_FEATURE(Math.Transforms.FFT,[no (fftw 3.x not supported (yet))])
+    if test "$ac_cv_lib_rfftw_rfftw:$ac_cv_lib_fftw_fftw" = "yes:yes"; then
+      PIKE_FEATURE(Math.Transforms.FFT,[yes (fftw 2.x)])
     fi
   fi
 fi
