@@ -57,6 +57,11 @@ if [ "x$REMOTE_METHOD" = "xwine" ]; then
         echo 'init_nt: REMOTE_METHOD=wine requires wine in PATH.' >&2
         exit 1
     fi
+    # VC10 fatal errors crash with Wine 11's built-in msvcr100, adding
+    # about 20 seconds of error reporting to failed configure probes.
+    # Prefer the native runtime, with a fallback when it is not installed.
+    WINEDLLOVERRIDES=${WINEDLLOVERRIDES-msvcr100=n,b}
+    export WINEDLLOVERRIDES
     # Default to using the default wine filesystem mapping.
     NTDRIVE=${NTDRIVE-z:}
     NTMOUNT=${NTMOUNT-/}
