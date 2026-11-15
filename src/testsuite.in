@@ -11122,6 +11122,74 @@ test_any_equal([[
   return a;
 ]],({}))
 
+// Local object addition must preserve aliases and assignment results.
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  b = b + "\400";
+  string result = (string)(b += "\200000");
+  return ({ (string)b, result });
+]], ({ "a\400\200000", "a\400\200000" }))
+
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  String.Buffer alias = b;
+  b += "b";
+  return ({ (string)b, (string)alias });
+]], ({ "ab", "a" }))
+
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  b += b;
+  return (string)b;
+]], "aa")
+
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  function rhs = lambda() { error("rhs failed\n"); return "b"; };
+  mixed failure = catch { b += rhs(); };
+  return ({ !!failure, (string)b });
+]], ({ 1, "a" }))
+
+test_any_equal([[
+  class Holder {
+    String.Buffer value = String.Buffer();
+    int reads, writes;
+    protected mixed `[](mixed index) { reads++; return value; }
+    protected void `[]=(mixed index, mixed new_value) {
+      writes++;
+      value = new_value;
+    }
+  }
+  object h = Holder();
+  h[0] += "a";
+  return ({ (string)h->value, h->reads, h->writes });
+]], ({ "a", 1, 1 }))
+
+test_any_equal([[
+  class Failing {
+    int value = 17;
+    protected mixed `+(mixed rhs) { error("addition failed\n"); }
+  }
+  object b = Failing();
+  mixed rhs = "a";
+  mixed failure = catch { b += rhs; };
+  return ({ !!failure, b->value });
+]], ({ 1, 17 }))
+
+test_any_equal([[
+  class Failing {
+    int value = 17;
+    protected mixed `+(mixed rhs) { error("addition failed\n"); }
+  }
+  object b = Failing();
+  mixed failure = catch { b += 2; };
+  return ({ !!failure, b->value });
+]], ({ 1, 17 }))
+
 // testing -=
 test_any(int a=1; a-=10; return a,-9)
 test_do([[ add_constant("FOO", class {

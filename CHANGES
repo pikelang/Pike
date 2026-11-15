@@ -1171,6 +1171,9 @@ o Command-line options
 
 o Compiler and runtime performance
 
+  Addition to local object variables can use destructive addition when
+  unaliased. This avoids repeated buffer copying in String.Buffer loops.
+
   String slicing keeps suffix allocation out of the common lookup and
   copying path, avoiding unnecessary register saves during ordinary slices.
 
