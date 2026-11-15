@@ -41,6 +41,39 @@ test_eq([[compile_string("string s = \"\u00c3\u00a5\";")()->s]],
 test_eq([[compile_string("#charset utf-8\n"
                          "string s = \"\u00c3\u00a5\";")()->s]], "\u00e5")
 test_eq(0x80000000-0x80000000, 0);
+// Binary operators retain their precedence and left associativity.
+test_any([[
+  array(array) operators = ({
+    ({ "||", 1 }), ({ "&&", 2 }), ({ "|", 3 }), ({ "^", 4 }),
+    ({ "&", 5 }), ({ "==", 6 }), ({ "!=", 6 }), ({ ">", 7 }),
+    ({ ">=", 7 }), ({ "<", 7 }), ({ "<=", 7 }), ({ "<<", 8 }),
+    ({ ">>", 8 }), ({ "+", 9 }), ({ "-", 9 }), ({ "*", 10 }),
+    ({ "%", 10 }), ({ "/", 10 })
+  });
+  array(array(int)) inputs = ({
+    ({ 1, 2, 3 }), ({ 7, 5, 2 }), ({ 0, 3, 1 }),
+    ({ 255, 7, 3 }), ({ 13, 13, 2 }), ({ -7, 3, 2 })
+  });
+  foreach (operators, array first) {
+    foreach (operators, array second) {
+      string expression = "a " + first[0] + " b " + second[0] + " c";
+      string grouped = first[1] >= second[1] ?
+        "(a " + first[0] + " b) " + second[0] + " c" :
+        "a " + first[0] + " (b " + second[0] + " c)";
+      object test = compile_string(
+        "int f(int a, int b, int c) { return " + expression + "; }\n"
+        "int g(int a, int b, int c) { return " + grouped + "; }\n")();
+      foreach (inputs, array(int) args) {
+        mixed left, right;
+        mixed left_error = catch { left = test->f(@args); };
+        mixed right_error = catch { right = test->g(@args); };
+        if (!!left_error != !!right_error) return 0;
+        if (!left_error && left != right) return 0;
+      }
+    }
+  }
+  return 1;
+]], 1)
 test_eq(0xf0000000-0xf0000000, 0);
 test_eq(0x80000001-0x80000000, 1);
 test_eq(0x80000000-0x80000001,-1);
@@ -8712,6 +8745,27 @@ test_any([[
   return !!compile_string("#pike 7.8\nStdio.File file;\n")();
 ]], 1)
 
+// Short-string interning is independent of alignment and construction path.
+test_any([[
+  foreach (({ "a\0\377bcdef", "\u0100\u0200\u0300abcd",
+              "\U00010000\U00020000abcdef" }), string data) {
+    for (int length = 0; length <= 7; length++) {
+      string expected = length ? data[..length-1] : "";
+      for (int offset = 0; offset < 16; offset++) {
+        string container = "x" * offset + expected + "trailer";
+        string extracted = length ?
+          container[offset..offset+length-1] : "";
+        string rebuilt = (string)(array(int))expected;
+        mapping counts = ([ expected:1 ]);
+        counts[extracted]++;
+        counts[rebuilt]++;
+        if (sizeof(counts) != 1 || counts[expected] != 3) return 0;
+      }
+    }
+  }
+  return 1;
+]], 1)
+
 // String value types retain their character ranges, lengths and attributes.
 test_any([[
   array(string) strings = ({ "", "ab", "ba", "\0x", "\xff",
@@ -15610,6 +15664,38 @@ test_any([[int x=time(); sleep(2); return x!=time()]],1)
 // - sort
 test_equal(sort(({1,3,2,4})),({1,2,3,4}))
 test_equal(sort(({4,3,2,1})),({1,2,3,4}))
+// Check ordered arrays and descents throughout the order scan.
+test_any([[
+  foreach (({ 0, 1, 2, 3, 15, 16, 17, 18, 32, 257 }), int size) {
+    array(int) ints = enumerate(size, 1, -size/2);
+    foreach (({ ints, (array(float))ints,
+                map(ints, lambda(int n) {
+                  return sprintf("%08x", n + 512);
+                }) }), array expected) {
+      if (!equal(sort(expected + ({})), expected)) return 0;
+      if (!equal(sort(reverse(expected)), expected)) return 0;
+      for (int i = 1; i < size; i++) {
+        array input = expected + ({});
+        mixed tmp = input[i-1];
+        input[i-1] = input[i];
+        input[i] = tmp;
+        if (!equal(sort(input), expected)) return 0;
+      }
+    }
+    if (!equal(sort(allocate(size, 17)), allocate(size, 17))) return 0;
+  }
+  return 1;
+]], 1)
+// Early returns in the index sorter must preserve equal-key order.
+test_any([[
+  array(int) order = enumerate(257);
+  array(int) keys = map(order, lambda(int n) { return n % 7; });
+  array(int) expected = ({});
+  for (int key = 0; key < 7; key++)
+    for (int i = key; i < sizeof(order); i += 7) expected += ({ i });
+  sort(keys, order);
+  return equal(order, expected);
+]], 1)
 test_equal(sort(({({1, 4}), ({3, 2}), ({2, 3}), ({4, 1})})),
 		({({1, 4}), ({2, 3}), ({3, 2}), ({4, 1})}))
 test_equal(sort(({({4, 1}), ({2, 3}), ({3, 2}), ({1, 4})})),

@@ -17,9 +17,12 @@ int main()
 #if constant(alarm)
   alarm(60);
 #endif
-  string directory = combine_path(getenv("TMPDIR") || "/tmp",
+  string directory = combine_path(
+    getenv("TMPDIR") || getenv("TEMP") || getenv("TMP") || getcwd(),
     sprintf("pike-inherit-diagnostics-%d-%d", getpid(), random(1000000000)));
-  if (!mkdir(directory)) error("Cannot create test directory.\n");
+  if (!mkdir(directory))
+    error("Cannot create test directory %O: %s\n",
+          directory, strerror(errno()));
   int passed, failed, sequence;
   function test = lambda(string name, mapping(string:string) sources,
                          string first, array(string) expected) {

@@ -18,19 +18,57 @@
 #include "builtin_functions.h"
 #include "config.h"
 
-#if defined(HAVE_FFTW_H) && defined(HAVE_LIBFFTW) && defined(HAVE_RFFTW_H) && defined(HAVE_LIBRFFTW)
+#if defined(HAVE_FFTW3_H) && defined(HAVE_LIBFFTW3)
+#include <fftw3.h>
+#define HAVE_RFFTW
+
+typedef double fftw_real;
+typedef fftw_plan rfftw_plan;
+#define FFTW_REAL_TO_COMPLEX FFTW_R2HC
+#define FFTW_COMPLEX_TO_REAL FFTW_HC2R
+#define rfftw_destroy_plan fftw_destroy_plan
+#define rfftw_one fftw_execute_r2r
+
+/* FFTW 3 plans normally bind their buffers. Use the new-array interface
+ * with unaligned buffers to retain FFTW 2's plan reuse semantics.
+ * Measurement is done on scratch space, never on the caller's input.
+ */
+static rfftw_plan rfftw_create_plan(int n, fftw_r2r_kind direction,
+                                  unsigned flags)
+{
+  double *in = calloc(n, sizeof(double));
+  double *out = calloc(n, sizeof(double));
+  fftw_plan plan;
+  if (!in || !out) {
+    free(in);
+    free(out);
+    Pike_error("Out of memory preparing FFT.\n");
+  }
+  plan = fftw_plan_r2r_1d(n, in, out, direction, flags | FFTW_UNALIGNED);
+  free(in);
+  free(out);
+  return plan;
+}
+#elif defined(HAVE_FFTW_H) && defined(HAVE_LIBFFTW) && \
+      defined(HAVE_RFFTW_H) && defined(HAVE_LIBRFFTW)
+#include <fftw.h>
+#include <rfftw.h>
 #define HAVE_RFFTW
 #endif
 
 #ifdef HAVE_RFFTW
 
-#ifdef HAVE_FFTW_H
-#include <fftw.h>
-#endif
-
-#ifdef HAVE_RFFTW_H
-#include <rfftw.h>
-#endif
+static fftw_real fft_input_number(struct svalue *value)
+{
+  switch (TYPEOF(*value)) {
+  case PIKE_T_INT:
+    return (fftw_real)value->u.integer;
+  case PIKE_T_FLOAT:
+    return (fftw_real)value->u.float_number;
+  default:
+    Pike_error("FFT input elements must be integers or floats.\n");
+  }
+}
 
 DECLARATIONS
 
@@ -56,11 +94,11 @@ PIKECLASS FFT
    *!
    *!   Returns the FFT of the input array.
    *!   The input must be real and the output is complex.
-   *!   The output consists of an array. It's first element is the amplitudes and the
-   *!   second element is the phases.
+   *!   The output consists of two arrays, containing the real and imaginary
+   *!   parts of the complex frequency bins, respectively.
    *!
    *! @param real_input
-   *!   The array of floats and/or ints to transform.
+   *!   The nonempty array of floats and/or ints to transform.
    *!
    *! @note
    *!   rIFFT(rFFT()) returns the input array scaled by n=sizeof(input array).
@@ -71,74 +109,51 @@ PIKECLASS FFT
    */
   PIKEFUN array rFFT(array myarray)
     {
-      int i, j;
+      struct array *a = myarray;
+      int n = a->size;
+      int i;
 
-      if (args!=1)
-        SIMPLE_WRONG_NUM_ARGS_ERROR("rFFT", 1);
+      if (!n) Pike_error("rFFT() requires a nonempty array.\n");
 
-      if (TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY)
-	{
-	  struct array *a = Pike_sp[-args].u.array;
-	  int n = a->size;
-	  THIS->r_in = calloc(n, sizeof(fftw_real));
+      free(THIS->r_in);
+      THIS->r_in = NULL;
+      THIS->r_in = xcalloc(n, sizeof(fftw_real));
+      for (i = 0; i < n; i++)
+        THIS->r_in[i] = fft_input_number(ITEM(a) + i);
 
-	  for(i=0; i<n; i++)
-	    {
-	      if (TYPEOF(a->item[i]) == PIKE_T_INT)
-		THIS->r_in[i] = (fftw_real)a->item[i].u.integer;
+      free(THIS->r_out);
+      THIS->r_out = NULL;
+      THIS->r_out = xcalloc(n, sizeof(fftw_real));
 
-	      if (TYPEOF(a->item[i]) == PIKE_T_FLOAT)
-		THIS->r_in[i] = (fftw_real)a->item[i].u.float_number;
-	    };
+      if (THIS->r_rc_plan_size != n) {
+        if (THIS->r_rc_plan) rfftw_destroy_plan(THIS->r_rc_plan);
+        THIS->r_rc_plan = NULL;
+        THIS->r_rc_plan_size = 0;
+        THIS->r_rc_plan =
+          rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
+        if (!THIS->r_rc_plan) Pike_error("Failed to create FFT plan.\n");
+        THIS->r_rc_plan_size = n;
+      }
+      rfftw_one(THIS->r_rc_plan, THIS->r_in, THIS->r_out);
+      pop_n_elems(args);
 
-	  THIS->r_out = calloc(n, sizeof(fftw_real));
+      /* Expand halfcomplex storage to the full Hermitian spectrum. */
+      check_stack((INT64)n + 2);
+      for (i = 0; i < n; i++)
+        push_float(THIS->r_out[i <= n/2 ? i : n-i]);
+      f_aggregate(n);
+      for (i = 0; i < n; i++) {
+        if (!i || (!(n & 1) && i == n/2)) push_float(0.0);
+        else if (i <= n/2) push_float(THIS->r_out[n-i]);
+        else push_float(-THIS->r_out[i]);
+      }
+      f_aggregate(n);
+      f_aggregate(2);
 
-	  if (THIS->r_rc_plan_size != n)
-	    {
-	      if (THIS->r_rc_plan_size > 0)
-		rfftw_destroy_plan(THIS->r_rc_plan);
-	      THIS->r_rc_plan =
-		rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
-	      THIS->r_rc_plan_size = n;
-	    };
-	  rfftw_one(THIS->r_rc_plan, THIS->r_in, THIS->r_out);
-
-	  pop_n_elems(args);
-
-	  i = (n+1)/2;
-	  for(j=0; j<i; j++)
-	    push_float((float)THIS->r_out[j]);
-
-	  if (n%2==0) i++;
-
-	  for(j=1; j<i; j++)
-	    push_float((float)THIS->r_out[j]);
-
-	  f_aggregate(n);
-
-
-	  i = (n+1)/2;
-
-	  push_float((float)0);
-	  for(j=1; j<i; j++)
-	    push_float((float)THIS->r_out[n-j]);
-
-	  if (n%2==0)
-	    push_float((float)0);
-
-	  for(j=1; j<i; j++)
-	    push_float((float) -(THIS->r_out[n-j]));
-
-	  f_aggregate(n);
-	  f_aggregate(2);
-
-	  free(THIS->r_out);
-	  THIS->r_out = NULL;
-	  free(THIS->r_in);
-	  THIS->r_in = NULL;
-	}
-      else
-	pop_n_elems(args);
+      free(THIS->r_out);
+      THIS->r_out = NULL;
+      free(THIS->r_in);
+      THIS->r_in = NULL;
     }
 
   /*! @decl array(float) rIFFT(array(array(float)) input)
@@ -146,12 +161,12 @@ PIKECLASS FFT
    *!   Returns the inverse FFT of the input array.
    *!   The input must be complex and guaranteed to generate a real output.
    *!
-   *!   The input is an array. It's first element is the amplitudes and the
-   *!   second element is the phases.
+   *!   The input consists of two equally sized, nonempty arrays, containing
+   *!   the real and imaginary parts of a Hermitian spectrum, respectively.
    *!
    *!   The output is an array of the real values for the iFFT.
-   *! @param real_input
-   *!   The array of floats and/or ints to transform.
+   *! @param input
+   *!   The real and imaginary arrays of floats and/or ints to transform.
    *!
    *! @note
    *!   rIFFT(rFFT()) returns the input array scaled by n=sizeof(input array).
@@ -162,68 +177,52 @@ PIKECLASS FFT
    */
   PIKEFUN array rIFFT(array myarray)
     {
-      int i, j=1;
-      struct array *r;
-      struct array *p;
-      int n;
+      struct array *r, *p;
+      int n, i;
 
-      if (TYPEOF(myarray->item[0]) != PIKE_T_ARRAY ||
-	  TYPEOF(myarray->item[1]) != PIKE_T_ARRAY ||
-	  myarray->item[0].u.array->size != myarray->item[1].u.array->size)
-	Pike_error("Argument error!\n");
-
+      if (myarray->size != 2 ||
+          TYPEOF(myarray->item[0]) != PIKE_T_ARRAY ||
+          TYPEOF(myarray->item[1]) != PIKE_T_ARRAY ||
+          myarray->item[0].u.array->size != myarray->item[1].u.array->size)
+        Pike_error("rIFFT() requires two equally sized arrays.\n");
       r = myarray->item[0].u.array;
       p = myarray->item[1].u.array;
       n = r->size;
+      if (!n) Pike_error("rIFFT() requires nonempty arrays.\n");
 
       free(THIS->r_in);
-      THIS->r_in = NULL; /* Needs to be NULL if xcalloc throws */
-      THIS->r_in = xcalloc(sizeof(fftw_real), n);
-
-      for(i=0; i<=n/2; i++)
-	{
-	  if (TYPEOF(r->item[i]) == PIKE_T_INT)
-	    THIS->r_in[i] = (fftw_real)r->item[i].u.integer;
-	  else if (TYPEOF(r->item[i]) == PIKE_T_FLOAT)
-	    THIS->r_in[i] = (fftw_real)r->item[i].u.float_number;
-	  else Pike_error("Invalid type in array!\n");
-	}
-
-      for(;i<n;i++, j++)
-	{
-	  if (TYPEOF(p->item[j]) == PIKE_T_INT)
-	    THIS->r_in[n-j] = (fftw_real)p->item[j].u.integer;
-	  else if (TYPEOF(p->item[j]) == PIKE_T_FLOAT)
-	    THIS->r_in[n-j] = (fftw_real)p->item[j].u.float_number;
-	  else Pike_error("Invalid type in array!\n");
-	}
+      THIS->r_in = NULL;
+      THIS->r_in = xcalloc(n, sizeof(fftw_real));
+      for (i = 0; i < n; i++) {
+        fftw_real real = fft_input_number(ITEM(r) + i);
+        fftw_real imag = fft_input_number(ITEM(p) + i);
+        if (i <= n/2) THIS->r_in[i] = real;
+        if (i && i <= (n-1)/2) THIS->r_in[n-i] = imag;
+      }
 
       free(THIS->r_out);
-      THIS->r_out = NULL; /* Needs to be NULL if xcalloc throws */
-      THIS->r_out = xcalloc(sizeof(fftw_real), n);
-
-      if (THIS->r_cr_plan_size!=n)
-	{
-	  if (THIS->r_cr_plan_size > 0)
-	    rfftw_destroy_plan(THIS->r_cr_plan);
-	  THIS->r_cr_plan =
-	    rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);
-	  THIS->r_cr_plan_size = n;
-	}
-
+      THIS->r_out = NULL;
+      THIS->r_out = xcalloc(n, sizeof(fftw_real));
+      if (THIS->r_cr_plan_size != n) {
+        if (THIS->r_cr_plan) rfftw_destroy_plan(THIS->r_cr_plan);
+        THIS->r_cr_plan = NULL;
+        THIS->r_cr_plan_size = 0;
+        THIS->r_cr_plan =
+          rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);
+        if (!THIS->r_cr_plan)
+          Pike_error("Failed to create inverse FFT plan.\n");
+        THIS->r_cr_plan_size = n;
+      }
       rfftw_one(THIS->r_cr_plan, THIS->r_in, THIS->r_out);
-
       pop_n_elems(args);
-
-      for(i=0;i<n;i++)
-	push_float((float)THIS->r_out[i]);
-
+      check_stack(n);
+      for (i = 0; i < n; i++) push_float(THIS->r_out[i]);
       f_aggregate(n);
 
       free(THIS->r_out);
       THIS->r_out = NULL;
       free(THIS->r_in);
-      THIS->r_out = NULL;
+      THIS->r_in = NULL;
     }
 
   /*! @decl void create(void|int n, void|int(0..1) exact)
@@ -231,56 +230,51 @@ PIKECLASS FFT
    *!  is created for transformations of n-size arrays.
    *!
    *! @param n
-   *!   Size of the transform to be preformed. Note that the transform object
+   *!   Size of the transform to be performed. Note that the transform object
    *!   will be initialized for this size, but if an array of different size is
    *!   sent to the object, it will be reinitialized. This can be used to gain
-   *!   preformace if all transforms will be of a given size.
+   *!   performance if all transforms will be of a given size.
    *!
    *! @param exact
    *!   If exact is 1, a "better" plan for the transform will be created. This
-   *!   will take more time though. Use only if preformance is needed.
+   *!   will take more time though. Use only if performance is needed.
    */
   PIKEFUN void create(void|int no, void|int(0..1) exact)
     type function(void|int, void|int(0..1):void);
     flags ID_PROTECTED;
   {
-    int t = FFTW_ESTIMATE;
-    int n = 0;
-    switch(args)
-      {
-      case 2:
-	if (Pike_sp[1-args].u.integer!=0)
-	  t=FFTW_MEASURE;
-      case 1:
-	n = Pike_sp[-args].u.integer;
-	break;
-      case 0:
-	break;
-      default:
-	Pike_error("Invalid number of arguments\n");
-      }
+    int t = exact && exact->u.integer ? FFTW_MEASURE : FFTW_ESTIMATE;
+    INT_TYPE n = no ? no->u.integer : 0;
 
-    THIS->r_rc_plan_size = n;
-    THIS->r_cr_plan_size = n;
-    if (n>0)
-      {
-	THIS->r_rc_plan = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, t);
-	THIS->r_cr_plan = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, t);
-      }
+    if (n < 0 || n > INT_MAX)
+      Pike_error("FFT size must be between 0 and %d.\n", INT_MAX);
+    if (THIS->r_rc_plan) rfftw_destroy_plan(THIS->r_rc_plan);
+    if (THIS->r_cr_plan) rfftw_destroy_plan(THIS->r_cr_plan);
+    THIS->r_rc_plan = THIS->r_cr_plan = NULL;
+    THIS->r_rc_plan_size = THIS->r_cr_plan_size = 0;
+    if (n > 0) {
+      THIS->r_rc_plan = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, t);
+      if (!THIS->r_rc_plan) Pike_error("Failed to create FFT plan.\n");
+      THIS->r_rc_plan_size = n;
+      THIS->r_cr_plan = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, t);
+      if (!THIS->r_cr_plan) Pike_error("Failed to create inverse FFT plan.\n");
+      THIS->r_cr_plan_size = n;
+    }
   }
 
   INIT
     {
-      THIS->r_in=NULL;
-      THIS->r_out=NULL;
+      THIS->r_in = THIS->r_out = NULL;
+      THIS->r_rc_plan = THIS->r_cr_plan = NULL;
+      THIS->r_rc_plan_size = THIS->r_cr_plan_size = 0;
     }
 
   EXIT
     gc_trivial;
     {
-      if (THIS->r_cr_plan_size>0)
+      if (THIS->r_cr_plan)
 	rfftw_destroy_plan(THIS->r_cr_plan);
-      if (THIS->r_rc_plan_size>0)
+      if (THIS->r_rc_plan)
 	rfftw_destroy_plan(THIS->r_rc_plan);
       free(THIS->r_out);
       free(THIS->r_in);
