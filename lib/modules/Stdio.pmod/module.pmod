@@ -1021,9 +1021,9 @@ class File
   }
 
 #if constant(_Stdio.__HAVE_OPENAT__)
-  //! @decl File openat(string(8bit) filename)
-  //! @decl File openat(string(8bit) filename, string(7bit) mode)
-  //! @decl File openat(string(8bit) filename, string(7bit) mode, int mask)
+  //! @decl File|zero openat(string(8bit) filename)
+  //! @decl File|zero openat(string(8bit) filename, string(7bit) mode)
+  //! @decl File|zero openat(string(8bit) filename, string(7bit) mode, int mask)
   //!
   //! Open a file relative to an open directory.
   //!
@@ -1746,7 +1746,7 @@ class File
   //! @decl read_oob_callback_t query_read_oob_callback()
   //! @decl write_oob_callback_t query_write_oob_callback()
   //! @decl close_callback_t query_close_callback()
-  //! @decl array(function(mixed,void|string(8bit):int)|zero) query_callbacks()
+  //! @decl array(function(mixed,void|string(8bit)|Buffer:int)|zero) query_callbacks()
   //!
   //! These functions return the currently installed callbacks for the
   //! respective events.
@@ -2392,7 +2392,7 @@ class FILE
   //!
   //! @seealso
   //!   @[Stdio.File()->pipe()]
-  FILE pipe(void|int flags)
+  object(FILE)|zero pipe(void|int flags)
   {
     bpos=0; cached_lines=({}); lp=0;
     b="";
@@ -2400,9 +2400,9 @@ class FILE
   }
 
 #if constant(_Stdio.__HAVE_OPENAT__)
-  //! @decl FILE openat(string(8bit) filename)
-  //! @decl FILE openat(string(8bit) filename, string(7bit) mode)
-  //! @decl FILE openat(string(8bit) filename, string(7bit) mode, int mask)
+  //! @decl FILE|zero openat(string(8bit) filename)
+  //! @decl FILE|zero openat(string(8bit) filename, string(7bit) mode)
+  //! @decl FILE|zero openat(string(8bit) filename, string(7bit) mode, int mask)
   //!
   //! Same as @[Stdio.File()->openat()], but returns an @[Stdio.FILE]
   //! object.
@@ -2632,7 +2632,7 @@ class FILE
 //!   @[predef::werror()]
 FILE stderr=FILE("stderr");
 
-//! An instance of @tt{FILE("stdout")@}, the standatd output stream. Use this
+//! An instance of @tt{FILE("stdout")@}, the standard output stream. Use this
 //! when you want to write anything to the standard output.
 //!
 //! @seealso
@@ -2733,8 +2733,8 @@ void report_file_open_places (string file)
 }
 #endif
 
-//! @decl string read_file(string filename)
-//! @decl string read_file(string filename, int start, int len)
+//! @decl string|zero read_file(string filename)
+//! @decl string|zero read_file(string filename, int start, int len)
 //!
 //! Read @[len] lines from a regular file @[filename] after skipping
 //! @[start] lines and return those lines as a string. If both
@@ -2817,9 +2817,9 @@ string(0..255)|zero read_file(string filename,void|int start,void|int len)
   return ret;
 }
 
-//! @decl string read_bytes(string filename, int start, int len)
-//! @decl string read_bytes(string filename, int start)
-//! @decl string read_bytes(string filename)
+//! @decl string|zero read_bytes(string filename, int start, int len)
+//! @decl string|zero read_bytes(string filename, int start)
+//! @decl string|zero read_bytes(string filename)
 //!
 //! Read @[len] number of bytes from a regular file @[filename]
 //! starting at byte @[start], and return it as a string.
