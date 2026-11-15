@@ -1002,6 +1002,14 @@ PIKE_MODULE_INIT
   struct program *nt_program = NULL;
   struct object *nt_object = NULL;
 #endif /* __NT__ */
+#ifdef HAVE_LIBHOGWEED
+  /* Static GMP libraries can have separate allocator callbacks in Pike
+   * and this module. Integers pass between them, so both must use the
+   * same allocator, including when Pike uses dlmalloc on Windows.
+   * Do this before initialization can allocate any GMP limb storage.
+   */
+  mp_set_memory_functions(pike_mp_alloc, pike_mp_realloc, pike_mp_free);
+#endif
   INIT;
 #ifdef HAVE_LIBNETTLE
   hash_init();

@@ -476,6 +476,10 @@ o Stdio.File
 
 o Nettle
 
+  Fixed allocator mismatches when Pike and Nettle link separate static
+  GMP instances. Both now use Pike's GMP memory callbacks, preventing
+  crashes in elliptic-curve operations and TLS on Windows with dlmalloc.
+
   Added support for Nettle 4.0, including its changed digest and HMAC
   interfaces, SHA3 initialization, and removal of generic AES contexts.
   Pike's truncated digest and authentication-tag APIs remain supported.

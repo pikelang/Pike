@@ -2377,7 +2377,7 @@ static void gc_recurse_mpz (struct object *o)
     mc_counted_bytes += ALIMBS(THIS) * sizeof(mp_limb_t) + sizeof(mpz_t);
 }
 
-static void *pike_mp_alloc (size_t alloc_size)
+PMOD_EXPORT void *pike_mp_alloc (size_t alloc_size)
 {
   void *ret = malloc (alloc_size);
   if (!ret)
@@ -2388,7 +2388,7 @@ static void *pike_mp_alloc (size_t alloc_size)
   return ret;
 }
 
-static void *pike_mp_realloc (void *ptr, size_t old_size, size_t new_size)
+PMOD_EXPORT void *pike_mp_realloc (void *ptr, size_t old_size, size_t new_size)
 {
   void *ret = realloc (ptr, new_size);
   if (!ret)
@@ -2399,7 +2399,7 @@ static void *pike_mp_realloc (void *ptr, size_t old_size, size_t new_size)
   return ret;
 }
 
-static void pike_mp_free (void *ptr, size_t UNUSED(size))
+PMOD_EXPORT void pike_mp_free (void *ptr, size_t UNUSED(size))
 {
   free (ptr);
 }
