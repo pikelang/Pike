@@ -466,6 +466,9 @@ o Gmp
 
 o Stdio.File
 
+  Successful reads and EOF no longer report stale errno values. Reads
+  into buffers now preserve actual read errors and retry interrupted reads.
+
   Fixed socket duplication on Windows to use the Winsock duplication
   API. This prevents close errors and missing EOF notifications that
   could hang subprocess output handling, notably under Wine.

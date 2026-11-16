@@ -983,6 +983,7 @@ static struct pike_string *do_read(int fd,
       }
 
       bytes_read = fd_read(fd, buffer_alloc_unsafe(&buf, len), len);
+      e = bytes_read < 0 ? errno : 0;
 
       if (LIKELY(bytes_read >= 0)) {
         /* if less than len were read, rewind the buffer to
@@ -1053,8 +1054,8 @@ static ptrdiff_t do_read_into_buffer(int fd,
     e = 0;
     bytes_read = fd_read(fd, ptr, len);
 
-    if (UNLIKELY(bytes_read == 0)) {
-      e=errno;
+    if (UNLIKELY(bytes_read < 0)) {
+      e = errno;
     }
 
     /* NB: This is needed in case check_threads_etc() below
@@ -1064,7 +1065,7 @@ static ptrdiff_t do_read_into_buffer(int fd,
     check_threads_etc();
   } while (e == EINTR);
 
-  if (e && !bytes_read) {
+  if (bytes_read < 0) {
     *err = e;
     return -1;
   }
@@ -1659,7 +1660,7 @@ PIKEFUN string(8bit) read(int(0..)|void len, int(0..1)|void not_all)
  *!     The number of bytes read. Returns @expr{-1@} on error and
  *!     @[errno()] will return the corresponding error code.
  */
-PIKEFUN int(0..) read(object o, int(0..)|void offset)
+PIKEFUN int(-1..) read(object o, int(0..)|void offset)
 {
   struct my_file *file = THIS;
 
