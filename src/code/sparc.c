@@ -335,6 +335,7 @@ static ptrdiff_t sparc_function_start;
 static int sparc_ssa_integer_regions, sparc_ssa_no_integer_stack;
 static int sparc_ssa_no_integer_stack_exits;
 static int sparc_ssa_no_integer_subtract;
+static int sparc_ssa_no_integer_bitwise;
 static struct {
   unsigned long loads[PIKE_SSA_SLOT_COUNT];
   unsigned long defs[PIKE_SSA_SLOT_COUNT];
@@ -344,7 +345,7 @@ static struct {
   unsigned long calls, code_bytes;
   unsigned long integer_regions, integer_ops, integer_values;
   unsigned long integer_stack_regions;
-  unsigned long integer_stack_exits, integer_subtract_ops;
+  unsigned long integer_stack_exits, integer_subtract_ops, integer_bitwise_ops;
   unsigned long integer_loads_avoided, integer_stores_avoided;
 } sparc_stats;
 
@@ -513,12 +514,12 @@ static void sparc_ssa_report(void)
           sparc_stats.calls, sparc_stats.code_bytes, !sparc_ssa_no_joins);
   fprintf(stderr, "SSA SPARC integers: regions=%lu ops=%lu values=%lu "
           "loads avoided=%lu stores avoided=%lu stack regions=%lu "
-          "stack exits=%lu subtract ops=%lu; enabled=%d\n",
+          "stack exits=%lu subtract ops=%lu bitwise ops=%lu; enabled=%d\n",
           sparc_stats.integer_regions, sparc_stats.integer_ops,
           sparc_stats.integer_values, sparc_stats.integer_loads_avoided,
           sparc_stats.integer_stores_avoided, sparc_stats.integer_stack_regions,
           sparc_stats.integer_stack_exits, sparc_stats.integer_subtract_ops,
-          sparc_integer_regions_enabled());
+          sparc_stats.integer_bitwise_ops, sparc_integer_regions_enabled());
 }
 
 void sparc_start_function(int UNUSED(store_lines))
@@ -533,6 +534,8 @@ void sparc_start_function(int UNUSED(store_lines))
       getenv("PIKE_SSA_NO_INTEGER_STACK_EXITS") != NULL;
     sparc_ssa_no_integer_subtract =
       getenv("PIKE_SSA_NO_INTEGER_SUBTRACT") != NULL;
+    sparc_ssa_no_integer_bitwise =
+      getenv("PIKE_SSA_NO_INTEGER_BITWISE") != NULL;
     if (sparc_ssa_stats) atexit(sparc_ssa_report);
   }
   sparc_function_start = Pike_compiler->new_program->num_program;

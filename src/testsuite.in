@@ -513,6 +513,64 @@ test_any([[
   return 1;
 ]], 1)
 
+// Masked arithmetic and logical results must commit as ordinary integers,
+// including zero results, with signed and bignum operands.
+test_any([[
+  array(int) f(int a, int b) {
+    a = (a + b) & 0xffffff; b = (a ^ b) | 17;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int x = a + b;
+    x &= 0xffffff;
+    int y = x ^ b;
+    y |= 17;
+    if (!equal(f(a, b), ({ x, y, 0, 0 }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Arithmetic overflow after logical steps must publish their versions,
+// including a value retained before the preincrement changes its local.
+test_any([[
+  array(int) f(int a, int b) {
+    a = (a & b) ^ -32768; a = a + ++a; a -= b;
+    return ({ a, b, zero_type(b) });
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int expected = a & b;
+    expected ^= -32768;
+    int retained = expected;
+    expected++;
+    expected += retained;
+    expected -= b;
+    if (!equal(f(a, b), ({ expected, b, zero_type(b) }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Logical results clear UNDEFINED, while a read-only source keeps its tag.
+test_any([[
+  array(int) f(int a, int b) {
+    a = (a & b) ^ b;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array(int) values = ({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+                        Int.NATIVE_MAX, 1 << 90 });
+  foreach (values, int a) foreach (values, int b) {
+    int expected = a & b;
+    expected ^= b;
+    if (!equal(f(a, b), ({ expected, b, 0, zero_type(b) }))) return 0;
+  }
+  return 1;
+]], 1)
+
 test_any([[
   // bug 2690
   array(function) foo(void|int b)

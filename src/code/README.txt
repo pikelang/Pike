@@ -14,12 +14,12 @@ The integer value pass is enabled by default in SSA-enabled builds on
 backends that implement it for the configured Pike integer width. Set
 PIKE_SSA_NO_INTEGER_REGIONS=1 to disable it for comparisons or
 debugging. The former PIKE_SSA_INTEGER_REGIONS flag is no longer needed.
-The pass recognizes up to eight additions, increments, or subtractions
-using at most three locals on one source line. The original planner
-supports local updates and local/stack/add/assignment units that leave
-the Pike stack at its original depth. Labels, debug directives, and
-unsupported operations end a run. Tracing and disassembly use the
-ordinary emitter.
+The pass recognizes up to eight integer operations: additions,
+increments, subtractions, and bitwise AND/OR/XOR using at most three
+locals on one source line. The original planner supports local updates
+and local/stack/add/assignment units that leave the Pike stack at its
+original depth. Labels, debug directives, and unsupported operations end
+a run. Tracing and disassembly use the ordinary emitter.
 
 The shared planners in ssa_integer.[ch] assign SSA versions to integer
 loads and arithmetic results and allocate logical value banks. The
@@ -71,14 +71,23 @@ subtraction immediate without signed negation in the planner. Set
 PIKE_SSA_NO_INTEGER_SUBTRACT=1 to restore the previous subtraction
 handling; the original balanced-unit planner is unchanged.
 
-Integer statistics count regions, arithmetic operations, SSA values,
+The stack-aware planner also lowers variable and immediate AND, OR, and
+XOR. Guarded native integer operands produce native-width logical
+results without overflow, so these steps need no overflow branch or side
+exit. Arithmetic before or after them retains its exact snapshots.
+Logical results have ordinary integer tags, including zero; read-only
+inputs keep their original subtype tags. Logical assignments can end a
+balanced region without retaining a stack value. Set
+PIKE_SSA_NO_INTEGER_BITWISE=1 to restore previous region handling.
+
+Integer statistics count regions, value operations, SSA values,
 reused logical operand reads, deferred local writes, stack-aware
-regions, successful exits with live stack values, and native
-subtractions. Reused operand reads and deferred writes are IR counts,
-not hardware load/store counts. Use perf and repeated runtime tests for
-performance claims. Tools.Shoot.AdjacentArithmetics exercises adjacent
-updates while masking results back into the native integer range. For a
-paired comparison, run -x benchmark --json -s1 with
+regions, successful exits with live stack values, native subtractions,
+and bitwise operations. Reused operand reads and deferred writes are IR
+counts, not hardware load/store counts. Use perf and repeated runtime
+tests for performance claims. Tools.Shoot.AdjacentArithmetics exercises
+adjacent updates while masking results back into the native integer
+range. For a paired comparison, run -x benchmark --json -s1 with
 -t'Adjacent arithmetics (locals)' with PIKE_SSA_NO_INTEGER_REGIONS unset
 and set.
 

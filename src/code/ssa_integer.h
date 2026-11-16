@@ -12,7 +12,8 @@
 #define PIKE_SSA_INTEGER_VALUES (PIKE_SSA_INTEGER_LOCALS + PIKE_SSA_INTEGER_LIMIT)
 
 enum pikecode_ssa_integer_kind {
-  PIKE_SSA_INTEGER_LOAD, PIKE_SSA_INTEGER_ADD, PIKE_SSA_INTEGER_SUBTRACT
+  PIKE_SSA_INTEGER_LOAD, PIKE_SSA_INTEGER_ADD, PIKE_SSA_INTEGER_SUBTRACT,
+  PIKE_SSA_INTEGER_AND, PIKE_SSA_INTEGER_OR, PIKE_SSA_INTEGER_XOR
 };
 struct pikecode_ssa_integer_value {
   enum pikecode_ssa_integer_kind kind;
@@ -31,9 +32,9 @@ struct pikecode_ssa_integer_plan {
   struct pikecode_ssa_integer_value value[PIKE_SSA_INTEGER_VALUES + 1];
 };
 
-/* The stack extension retains at most two virtual stack operands. Every
- * snapshot is taken before an arithmetic opcode, while all its versions
- * are still resident. Final snapshots may publish live stack operands.
+/* The stack extension retains at most two virtual stack operands. Overflow
+ * snapshots precede arithmetic while all operand versions remain resident.
+ * Final snapshots may publish live stack operands.
  */
 #define PIKE_SSA_INTEGER_STACK 2
 #define PIKE_SSA_INTEGER_CODE 32
@@ -48,6 +49,7 @@ struct pikecode_ssa_integer_step {
 };
 struct pikecode_ssa_integer_stack_plan {
   unsigned int locals, values, count, consumed, loads, writes, retained;
+  unsigned int bitwise;
   INT32 local[PIKE_SSA_INTEGER_LOCALS];
   struct pikecode_ssa_integer_value value[PIKE_SSA_INTEGER_VALUES + 1];
   struct pikecode_ssa_integer_step step[PIKE_SSA_INTEGER_LIMIT];
@@ -61,5 +63,5 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *plan,
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *plan,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
-    int stack_exits, int subtract);
+    int stack_exits, int subtract, int bitwise);
 #endif

@@ -136,7 +136,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   if (sparc_ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue),
-        !sparc_ssa_no_integer_stack_exits, !sparc_ssa_no_integer_subtract))
+        !sparc_ssa_no_integer_stack_exits, !sparc_ssa_no_integer_subtract,
+        !sparc_ssa_no_integer_bitwise))
     return 0;
   sparc_flush_codegen_state();
   sparc_update_pc();
@@ -161,10 +162,17 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
       SET_REG(SPARC_REG_O5, v->imm);
       right = SPARC_REG_O5;
     }
-    SPARC_ALU_OP(v->kind == PIKE_SSA_INTEGER_SUBTRACT ?
-                 SPARC_OP3_SUBcc : SPARC_OP3_ADDcc, SPARC_REG_O3,
-                 sparc_integer_reg(&p.value[v->left]), right, 0);
-    sparc_integer_branch(&overflow[i], SPARC_INTEGER_BVS);
+    if (integer_stack_bitwise(v->kind)) {
+      unsigned int op3 = v->kind == PIKE_SSA_INTEGER_AND ? 0x01 :
+        v->kind == PIKE_SSA_INTEGER_OR ? 0x02 : 0x03;
+      SPARC_ALU_OP(op3, SPARC_REG_O3,
+                   sparc_integer_reg(&p.value[v->left]), right, 0);
+    } else {
+      SPARC_ALU_OP(v->kind == PIKE_SSA_INTEGER_SUBTRACT ?
+                   SPARC_OP3_SUBcc : SPARC_OP3_ADDcc, SPARC_REG_O3,
+                   sparc_integer_reg(&p.value[v->left]), right, 0);
+      sparc_integer_branch(&overflow[i], SPARC_INTEGER_BVS);
+    }
     SPARC_OR(sparc_integer_reg(v), SPARC_REG_O3, SPARC_REG_G0, 0);
   }
   /* Publish live results before the next ordinary opcode. The slow replay
@@ -172,6 +180,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   sparc_integer_snapshot(&p, &p.final);
   sparc_integer_branch(&done, 0x10800000);
   for (i = 0; i < p.count; i++) {
+    if (integer_stack_bitwise(p.value[p.step[i].result].kind)) continue;
     sparc_integer_bind(&overflow[i]);
     sparc_integer_snapshot(&p, &p.step[i].before);
     sparc_integer_branch(&slow[p.step[i].first], 0x10800000);
@@ -197,6 +206,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     if (p.final.depth) sparc_stats.integer_stack_exits++;
     sparc_stats.integer_ops += p.count;
     sparc_stats.integer_values += p.values;
+    sparc_stats.integer_bitwise_ops += p.bitwise;
     for (i = 0; i < p.count; i++)
       if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
         sparc_stats.integer_subtract_ops++;

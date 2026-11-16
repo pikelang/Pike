@@ -157,8 +157,16 @@ static int integer_stack_local(struct pikecode_ssa_integer_stack_plan *p,
   return p->locals - 1;
 }
 
+/* Logical operations on native integers stay within the native width.
+ * Native lowerings use this predicate to omit impossible overflow exits. */
+static int integer_stack_bitwise(enum pikecode_ssa_integer_kind kind)
+{
+  return kind == PIKE_SSA_INTEGER_AND || kind == PIKE_SSA_INTEGER_OR ||
+    kind == PIKE_SSA_INTEGER_XOR;
+}
+
 static int integer_stack_refs(const struct p_instr_s *op,
-                               INT32 *a, INT32 *b, int subtract)
+                               INT32 *a, INT32 *b, int subtract, int bitwise)
 {
   *a = *b = -1;
   switch (op->opcode) {
@@ -174,6 +182,9 @@ static int integer_stack_refs(const struct p_instr_s *op,
     return *a >= 0;
   case F_ADD_INTS: case F_ADD_INT: case F_POP_VALUE:
     return 1;
+  case F_AND: case F_OR: case F_XOR:
+  case F_AND_INT: case F_OR_INT: case F_XOR_INT:
+    return bitwise;
   case F_SUBTRACT:
     return subtract;
   case F_SUBTRACT_INT:
@@ -187,7 +198,7 @@ static int integer_stack_refs(const struct p_instr_s *op,
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *p,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
-    int stack_exits, int subtract)
+    int stack_exits, int subtract, int bitwise)
 {
   struct pikecode_ssa_integer_snapshot state;
   struct pikecode_ssa_integer_stack_plan best;
@@ -208,7 +219,7 @@ int pikecode_ssa_plan_integer_stack(
     INT32 a, b;
     int is_arithmetic;
     if (op->line != code[0].line || op->file != code[0].file ||
-        !integer_stack_refs(op, &a, &b, subtract)) break;
+        !integer_stack_refs(op, &a, &b, subtract, bitwise)) break;
     is_arithmetic = op->opcode != F_LOCAL && op->opcode != F_2_LOCALS &&
       op->opcode != F_ASSIGN_LOCAL && op->opcode != F_ASSIGN_LOCAL_AND_POP &&
       op->opcode != F_POP_VALUE;
@@ -218,8 +229,9 @@ int pikecode_ssa_plan_integer_stack(
     arithmetic += is_arithmetic;
     retained |= op->opcode == F_ASSIGN_LOCAL;
   }
-  if ((!retained && !stack_exits) || arithmetic < 2) return 0;
+  if ((!retained && !stack_exits && !bitwise) || arithmetic < 2) return 0;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
+  p->bitwise = 0;
   memset(p->value, 0, sizeof(p->value));
   memset(p->step, 0, sizeof(p->step));
   memset(&state, 0, sizeof(state));
@@ -238,7 +250,7 @@ int pikecode_ssa_plan_integer_stack(
     INT32 imm = 0, a, b;
     enum pikecode_ssa_integer_kind kind = PIKE_SSA_INTEGER_ADD;
     int dst = -1, src = -1;
-    integer_stack_refs(op, &a, &b, subtract);
+    integer_stack_refs(op, &a, &b, subtract, bitwise);
     for (i = 0; i < p->locals; i++) {
       if (p->local[i] == a) dst = i;
       if (p->local[i] == b) src = i;
@@ -266,19 +278,29 @@ int pikecode_ssa_plan_integer_stack(
       if (!state.depth) goto finished;
       state.depth--;
       goto accepted;
+    case F_AND: case F_OR: case F_XOR:
+      kind = op->opcode == F_AND ? PIKE_SSA_INTEGER_AND :
+        op->opcode == F_OR ? PIKE_SSA_INTEGER_OR : PIKE_SSA_INTEGER_XOR;
+      goto binary;
     case F_SUBTRACT:
       kind = PIKE_SSA_INTEGER_SUBTRACT;
       /* FALLTHRU */
     case F_ADD_INTS:
+    binary:
       if (state.depth < 2) goto finished;
       right = state.stack[--state.depth];
       left = state.stack[--state.depth];
       push = 1;
       break;
+    case F_AND_INT: case F_OR_INT: case F_XOR_INT:
+      kind = op->opcode == F_AND_INT ? PIKE_SSA_INTEGER_AND :
+        op->opcode == F_OR_INT ? PIKE_SSA_INTEGER_OR : PIKE_SSA_INTEGER_XOR;
+      /* FALLTHRU */
     case F_ADD_INT: case F_ADD_NEG_INT: case F_SUBTRACT_INT:
       if (!state.depth) goto finished;
       left = state.stack[--state.depth];
-      if (op->opcode == F_SUBTRACT_INT && subtract) {
+      if (integer_stack_bitwise(kind)) imm = op->arg;
+      else if (op->opcode == F_SUBTRACT_INT && subtract) {
         kind = PIKE_SSA_INTEGER_SUBTRACT;
         imm = op->arg;
       } else
@@ -326,6 +348,7 @@ int pikecode_ssa_plan_integer_stack(
       }
       if (push) state.stack[state.depth++] = p->values;
       p->loads += right ? 2 : 1;
+      p->bitwise += integer_stack_bitwise(kind);
     }
   accepted:
     if (dst >= 0) used |= 1U << dst;
@@ -334,7 +357,8 @@ int pikecode_ssa_plan_integer_stack(
     p->consumed = e + 1;
     /* Keep the longest profitable prefix, including a live-stack exit.
      * Its final snapshot is published just like an overflow snapshot. */
-    if (((!state.depth && p->retained) || (state.depth && stack_exits)) &&
+    if (((!state.depth && (p->retained || p->bitwise)) ||
+         (state.depth && stack_exits)) &&
         p->count >= 2 &&
         p->loads > p->locals) {
       best = *p;

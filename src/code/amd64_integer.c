@@ -5,9 +5,9 @@
 || for more information.
 */
 
-/* AMD64 lowering for the shared bounded integer value plan. Registers
- * remain unchanged so the extraction preserves the emitted instruction
- * sequence, guards, rollback and fallback paths. */
+/* AMD64 lowering for the shared bounded integer value plans. Three banks
+ * retain live versions; RAX holds speculative results and RDX supplies
+ * logical immediates, balanced rollback or stack publication as needed. */
 int amd64_integer_regions_enabled(void)
 {
 #if SIZEOF_INT_TYPE == 8
@@ -99,7 +99,8 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (INT32)((0x7fffffff - OFFSETOF(svalue, u.integer)) /
                 sizeof(struct svalue)),
-        !ssa_no_integer_stack_exits, !ssa_no_integer_subtract)) return 0;
+        !ssa_no_integer_stack_exits, !ssa_no_integer_subtract,
+        !ssa_no_integer_bitwise)) return 0;
   for (i = 0; i < p.count; i++) overflow[i] = (struct label){ .addr = -1 };
   for (i = 0; i < p.consumed; i++) slow[i] = (struct label){ .addr = -1 };
   amd64_flush_code_generator_state();
@@ -119,14 +120,29 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   for (i = 0; i < p.count; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[p.step[i].result];
     mov_reg_reg(amd64_integer_reg(&p.value[v->left]), P_REG_RAX);
-    if (v->right) {
-      if (v->kind == PIKE_SSA_INTEGER_SUBTRACT)
-        sub_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
-      else add_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
-    } else
-      amd64_integer_alu_imm(P_REG_RAX, v->imm,
-                            v->kind == PIKE_SSA_INTEGER_SUBTRACT);
-    jo(&overflow[i]);
+    if (integer_stack_bitwise(v->kind)) {
+      enum amd64_reg right;
+      if (v->right) right = amd64_integer_reg(&p.value[v->right]);
+      else {
+        mov_imm_reg(v->imm, P_REG_RDX);
+        right = P_REG_RDX;
+      }
+      /* All three encodings write RAX; the ordinary emitter's XOR/OR
+       * helpers use the opposite operand order to its AND helper. */
+      rex(1, P_REG_RAX, 0, right);
+      opcode(v->kind == PIKE_SSA_INTEGER_AND ? 0x23 :
+             v->kind == PIKE_SSA_INTEGER_OR ? 0x0b : 0x33);
+      modrm(3, P_REG_RAX, right);
+    } else {
+      if (v->right) {
+        if (v->kind == PIKE_SSA_INTEGER_SUBTRACT)
+          sub_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
+        else add_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
+      } else
+        amd64_integer_alu_imm(P_REG_RAX, v->imm,
+                              v->kind == PIKE_SSA_INTEGER_SUBTRACT);
+      jo(&overflow[i]);
+    }
     mov_reg_reg(P_REG_RAX, amd64_integer_reg(v));
   }
   /* Publish live results before the next ordinary opcode. The slow replay
@@ -134,6 +150,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   amd64_integer_snapshot(&p, &p.final);
   jmp(&done);
   for (i = 0; i < p.count; i++) {
+    if (integer_stack_bitwise(p.value[p.step[i].result].kind)) continue;
     label(&overflow[i]);
     amd64_integer_snapshot(&p, &p.step[i].before);
     jmp(&slow[p.step[i].first]);
@@ -158,6 +175,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     if (p.final.depth) ssa_stats.integer_stack_exits++;
     ssa_stats.integer_ops += p.count;
     ssa_stats.integer_values += p.values;
+    ssa_stats.integer_bitwise_ops += p.bitwise;
     for (i = 0; i < p.count; i++)
       if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
         ssa_stats.integer_subtract_ops++;
