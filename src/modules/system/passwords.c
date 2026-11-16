@@ -63,7 +63,7 @@ struct passwd *getpwnam(char *name)
   struct passwd *pw;
   setpwent();
   while(pw=getpwent())
-    if(strcmp(pw->pw_name,name))
+    if(!strcmp(pw->pw_name,name))
       break;
   endpwent();
   return pw;
@@ -80,7 +80,7 @@ struct passwd *getpwuid(int uid)
     if(pw->pw_uid == uid)
       break;
   endpwent();
-  return 0;
+  return pw;
 }
 #define HAVE_GETPWUID
 #endif
@@ -92,8 +92,8 @@ struct group *getgrnam(char *name)
 {
   struct group *gr;
   setgrent();
-  while(pw=getgrent())
-    if(strcmp(gr->gr_name,name))
+  while(gr=getgrent())
+    if(!strcmp(gr->gr_name,name))
       break;
   endgrent();
   return gr;
@@ -224,7 +224,7 @@ void push_grent(struct group *ent)
 #endif
 
 #ifdef HAVE_GETGRGID
-/*! @decl array(int|string|array(string)) getgrgid(int gid)
+/*! @decl array(int|string|array(string))|zero getgrgid(int gid)
  *!
  *!   Get the group entry for the group with the id @[gid] using the systemfunction
  *!   @tt{getgrid(3)@}.
@@ -268,7 +268,7 @@ void f_getgrgid(INT32 args)
 #endif /* HAVE_GETGRGID */
 
 #ifdef HAVE_GETGRNAM
-/*! @decl array(int|string|array(string)) getgrnam(string str)
+/*! @decl array(int|string|array(string))|zero getgrnam(string str)
  *!   Get the group entry for the group with the name @[str] using the
  *!   systemfunction @tt{getgrnam(3)@}.
  *!
@@ -311,7 +311,7 @@ void f_getgrnam(INT32 args)
 #endif /* HAVE_GETGRNAM */
 
 #ifdef HAVE_GETPWNAM
-/*! @decl array(int|string) getpwnam(string str)
+/*! @decl array(int|string)|zero getpwnam(string str)
  *!
  *!   Get the user entry for login @[str] using the systemfunction @tt{getpwnam(3)@}.
  *!
@@ -362,7 +362,7 @@ void f_getpwnam(INT32 args)
 #endif /* HAVE_GETPWNAM */
 
 #ifdef HAVE_GETPWUID
-/*! @decl array(int|string) getpwuid(int uid)
+/*! @decl array(int|string)|zero getpwuid(int uid)
  *!
  *!   Get the user entry for UID @[uid] using the systemfunction @tt{getpwuid(3)@}.
  *!
@@ -471,7 +471,7 @@ void f_endpwent(INT32 args)
 #endif /* HAVE_ENDPWENT */
 
 #ifdef HAVE_GETPWENT
-/*! @decl array(int|string) getpwent()
+/*! @decl array(int|string)|zero getpwent()
  *!
  *!   When first called, the @[getpwent] function opens the passwd source
  *!   and returns the first record using the systemfunction @tt{getpwent(3)@}.
@@ -503,7 +503,7 @@ void f_endpwent(INT32 args)
  *! @seealso
  *!   @[get_all_users()]
  *!   @[getpwnam()]
- *!   @[getpwent()]
+ *!   @[getpwuid()]
  *!   @[setpwent()]
  *!   @[endpwent()]
  */
@@ -629,7 +629,7 @@ void f_endgrent(INT32 args)
 #endif /* HAVE_ENDGRENT */
 
 #ifdef HAVE_GETGRENT
-/*! @decl array(int|string|array(string)) getgrent()
+/*! @decl array(int|string|array(string))|zero getgrent()
  *!
  *!   Get a group entry from /etc/groups file.
  *!   @[getgrent] interates thru the groups source and returns
@@ -731,7 +731,7 @@ void f_get_all_groups(INT32 args)
 }
 
 #ifdef HAVE_GETPWNAM
-/*! @decl array(int) get_groups_for_user(int|string user)
+/*! @decl array(int)|zero get_groups_for_user(int|string user)
  *!
  *!   Gets all groups which a given user is a member of.
  *!
@@ -843,30 +843,30 @@ void init_passwd(void)
    */
 #ifdef HAVE_GETPWNAM
 
-/* function(string:array(int|string)) */
-  ADD_EFUN("getpwnam", f_getpwnam,tFunc(tStr,tArr(tOr(tInt,tStr))),
+/* function(string:array(int|string)|zero) */
+  ADD_EFUN("getpwnam", f_getpwnam,tFunc(tStr,tOr(tArr(tOr(tInt,tStr)),tZero)),
 	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETPWUID
 
-/* function(int:array(int|string)) */
-  ADD_EFUN("getpwuid", f_getpwuid,tFunc(tInt,tArr(tOr(tInt,tStr))), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+/* function(int:array(int|string)|zero) */
+  ADD_EFUN("getpwuid", f_getpwuid,tFunc(tInt,tOr(tArr(tOr(tInt,tStr)),tZero)), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRNAM
 
-/* function(string:array(int|string|array(string))) */
-  ADD_EFUN("getgrnam", f_getgrnam,tFunc(tStr,tArr(tOr3(tInt,tStr,tArr(tStr)))),
+/* function(string:array(int|string|array(string))|zero) */
+  ADD_EFUN("getgrnam", f_getgrnam,tFunc(tStr,tOr(tArr(tOr3(tInt,tStr,tArr(tStr))),tZero)),
 	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETGRGID
 
-/* function(int:array(int|string|array(string))) */
-  ADD_EFUN("getgrgid", f_getgrgid,tFunc(tInt,tArr(tOr3(tInt,tStr,tArr(tStr)))), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+/* function(int:array(int|string|array(string))|zero) */
+  ADD_EFUN("getgrgid", f_getgrgid,tFunc(tInt,tOr(tArr(tOr3(tInt,tStr,tArr(tStr))),tZero)), OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETPWENT
 
-  /* function(void:array(int|string)) */
-  ADD_FUNCTION("getpwent", f_getpwent,tFunc(tVoid,tArr(tOr(tInt,tStr))),
+  /* function(void:array(int|string)|zero) */
+  ADD_FUNCTION("getpwent", f_getpwent,tFunc(tVoid,tOr(tArr(tOr(tInt,tStr)),tZero)),
 	       OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
 
   /* function(void:array(array(int|string))) */
@@ -887,10 +887,10 @@ void init_passwd(void)
 #endif
 #ifdef HAVE_GETGRENT
 
-  /* function(void:array(int|string|array(string))) */
+  /* function(void:array(int|string|array(string))|zero) */
   ADD_FUNCTION("getgrent", f_getgrent,
-	       tFunc(tVoid,tArr(tOr3(tInt,tStr,tArr(tStr)))),
-	       OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+               tFunc(tVoid,tOr(tArr(tOr3(tInt,tStr,tArr(tStr))),tZero)),
+               OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 
   /* function(void:array(array(int|string|array(string)))) */
   ADD_EFUN("get_all_groups", f_get_all_groups,tFunc(tVoid,tArr(tArr(tOr3(tInt,tStr,tArr(tStr))))),
@@ -898,8 +898,8 @@ void init_passwd(void)
 
 #ifdef HAVE_GETPWENT
 
-/* function(int|string:array(int)) */
-  ADD_EFUN("get_groups_for_user", f_get_groups_for_user,tFunc(tOr(tInt,tStr),tArr(tInt)),
+/* function(int|string:array(int)|zero) */
+  ADD_EFUN("get_groups_for_user", f_get_groups_for_user,tFunc(tOr(tInt,tStr),tOr(tArr(tInt),tZero)),
            OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPWENT */
 #endif
