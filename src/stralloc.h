@@ -18,6 +18,7 @@ enum string_type {
     STRING_ALLOC_MALLOC   =1,
     STRING_ALLOC_BA       =2,
     STRING_ALLOC_SUBSTRING=3,
+    STRING_ALLOC_COMBINED =4, /* Header and contents share a malloc block. */
 };
 
 
@@ -433,7 +434,8 @@ static inline int PIKE_UNUSED_ATTRIBUTE string_is_block_allocated(const struct p
 }
 
 static inline int PIKE_UNUSED_ATTRIBUTE string_is_malloced(const struct pike_string * s) {
- return (s->alloc_type == STRING_ALLOC_MALLOC);
+ return (s->alloc_type == STRING_ALLOC_MALLOC ||
+         s->alloc_type == STRING_ALLOC_COMBINED);
 }
 
 static inline int PIKE_UNUSED_ATTRIBUTE string_is_static(const struct pike_string * s) {

@@ -304,8 +304,6 @@ void f_atanh(INT32 args)
 
 /*! @decl mixed lfun::_sqrt()
  *!   Called by sqrt when the square root of an object is requested.
- *! @note
- *!   _sqrt is not a real lfun, so it must not be defined as static.
  *! @seealso
  *!   @[predef::sqrt()]
  */
@@ -378,7 +376,7 @@ void f_log(INT32 args)
 /*! @decl float exp(float|int f)
  *!
  *! Return the natural exponential of @[f].
- *! @expr{log( exp( x ) ) == x@} as long as exp(x) doesn't overflow an int.
+ *! @expr{log( exp( x ) ) == x@} as long as exp(x) doesn't overflow.
  *!
  *! @seealso
  *!   @[pow()], @[log()]

@@ -700,6 +700,16 @@ test_do([[ add_constant("AsyncResult"); ]])
 
 dnl - NetUtils
 
+// Empty interface output must not be interpreted as an IPv4 CIDR.
+test_any_equal([[
+  object net = class {
+    inherit NetUtils;
+    string ifconfig(string command) { return ""; }
+  }();
+  return net->local_interfaces();
+]], ([ "lo": ({ "::/128" }) ]))
+
+
 test_equal( NetUtils.string_to_ip( "0.0.0.0" ), 0 );
 test_equal( NetUtils.string_to_ip( "255.0.0.0" ), 0xff000000 );
 test_equal( NetUtils.string_to_ip( "0.255.0.0" ), 0x00ff0000 );

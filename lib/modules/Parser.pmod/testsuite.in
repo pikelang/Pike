@@ -118,9 +118,8 @@ dnl - Parser.Markdown
 
 cond_begin([[Parser["Markdown"] ]])
 
-dnl R()->split_string() returned 0 (not ({ subject })) when the separator
-dnl did not match, which crashed the table lexer on single-column tables
-dnl and rows with fewer cells than the header.
+dnl A single-column table parses without error, including rows that
+dnl have no column separator at all.
 test_eq(Parser.Markdown.parse("| a |\n|---|\n| 1 |\n"),
         "<table>\n"
         "<thead>\n"
@@ -135,10 +134,9 @@ test_eq(Parser.Markdown.parse("| a |\n|---|\n| 1 |\n"),
         "</tbody>\n"
         "</table>\n")
 
-dnl R()->split_string() kept the first byte of the separator in every
-dnl field but the last, which both added a stray trailing space to table
-dnl cells and broke left/center column alignment (only the last column,
-dnl terminated by end-of-string rather than a match, was unaffected).
+dnl Table column alignment (left/center/right) is applied to every
+dnl column, including the last one, with no stray whitespace left in
+dnl any cell.
 test_eq(Parser.Markdown.parse("| a | b | c |\n|:--|:-:|--:|\n| 1 | 2 | 3 |\n"),
         "<table>\n"
         "<thead>\n"
@@ -157,10 +155,8 @@ test_eq(Parser.Markdown.parse("| a | b | c |\n|:--|:-:|--:|\n| 1 | 2 | 3 |\n"),
         "</tbody>\n"
         "</table>\n")
 
-dnl Unguarded token->align[] indexing crashed whenever a header or body
-dnl row had more cells than the delimiter row had columns (an extra cell,
-dnl or a \| escape that this lexer does not honour and so splits into an
-dnl extra cell).
+dnl A body row with more cells than the header/delimiter row parses
+dnl without error; the extra cell is rendered normally, unstyled.
 test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n| 1 | 2 | 3 |\n"),
         "<table>\n"
         "<thead>\n"
@@ -178,10 +174,8 @@ test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n| 1 | 2 | 3 |\n"),
         "</tbody>\n"
         "</table>\n")
 
-dnl R()->split_string() used "c && c[0] || sizeof(subject)" to pick the
-dnl end of each field, which treated a match starting at offset 0 (an
-dnl empty leading cell) as "no more matches" and copied the rest of the
-dnl row, unsplit, into the first field.
+dnl A table row with an empty leading cell is split into the correct
+dnl number of columns.
 test_eq(Parser.Markdown.parse("| | b |\n|---|---|\n| 1 | 2 |\n"),
         "<table>\n"
         "<thead>\n"
@@ -198,9 +192,9 @@ test_eq(Parser.Markdown.parse("| | b |\n|---|---|\n| 1 | 2 |\n"),
         "</tbody>\n"
         "</table>\n")
 
-dnl Cell/header splitting didn't honour a backslash-escaped "\|", so a
-dnl cell containing one (eg. inside a code span) spilled into extra
-dnl columns instead of keeping the escaped pipe as literal content.
+dnl A backslash-escaped pipe ("\|") inside a table cell, eg. in a code
+dnl span, is kept as literal content and does not split the cell into
+dnl extra columns.
 test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n"
                                "| `x\\|y` | 2 |\n"),
         "<table>\n"
@@ -218,47 +212,45 @@ test_eq(Parser.Markdown.parse("| a | b |\n|---|---|\n"
         "</tbody>\n"
         "</table>\n")
 
-dnl image() ignored its title argument and wrote the alt text into the
-dnl title attribute instead.
+dnl image() renders both the alt text and the title attribute correctly.
 test_eq(Parser.Markdown.parse("![a](/i.png \"Real Title\")\n"),
         "<p><img alt=\"a\" src=\"/i.png\" title=\"Real Title\"></p>\n")
 
-dnl Ordered lists dropped their start number: the bullet text was
-dnl reduced to a boolean "ordered" flag, and separately the list_start
-dnl token was clobbered (by `token` being reassigned while rendering the
-dnl list's children) before being handed to the renderer.
+dnl An ordered list that starts at a number other than 1 keeps that
+dnl start number in the rendered <ol>.
 test_eq(Parser.Markdown.parse("3. three\n4. four\n"),
         "<ol start=\"3\">\n"
         "<li>three</li>\n"
         "<li>four</li>\n"
         "</ol>\n")
 
-dnl code() emitted its trailing newline inside </code></pre> instead of
-dnl after it, unlike every other block-level renderer method.
+dnl The newline that separates a fenced code block from the following
+dnl block is placed after </code></pre>, not between the closing tags.
 test_eq(Parser.Markdown.parse("```js\nx\n```\n\nSome text.\n"),
         "<pre><code class='lang-js'>x\n"
         "</code></pre>\n"
         "<p>Some text.</p>\n")
 
-dnl Heading anchor ids were built with a `[^\w]+` regexp whose `\w` only
-dnl recognizes ASCII word characters, so every non-ASCII letter was
-dnl replaced with "-" and lost entirely.
+dnl Heading anchor ids keep non-ASCII letters (eg. accented characters)
+dnl instead of replacing them with "-".
 test_eq(Parser.Markdown.parse("# \305sa \326berg\n"),
         "<h1 id=\"\345sa-\366berg\">\305sa \326berg</h1>\n")
 
-dnl Trailing punctuation left a dangling "-" instead of being stripped.
+dnl Trailing punctuation in a heading is stripped from its anchor id
+dnl instead of leaving a dangling "-".
 test_eq(Parser.Markdown.parse("# Hi there!\n"),
         "<h1 id=\"hi-there\">Hi there!</h1>\n")
 
-dnl Ids were never deduplicated: repeated headings got the same id.
+dnl Repeated headings with identical text get deduplicated anchor ids
+dnl ("foo", "foo-1", "foo-2", ...).
 test_eq(Parser.Markdown.parse("# Foo\n\n# Foo\n\n# Foo\n"),
         "<h1 id=\"foo\">Foo</h1>\n"
         "<h1 id=\"foo-1\">Foo</h1>\n"
         "<h1 id=\"foo-2\">Foo</h1>\n")
 
-dnl A heading made entirely of non-word characters slugifies to "", but
-dnl an empty id is not usable as a fragment anchor, so it falls back to
-dnl "section" (still deduplicated like any other id).
+dnl A heading made entirely of non-word characters (which would
+dnl otherwise slugify to an empty, unusable id) falls back to the
+dnl anchor id "section", still deduplicated like any other id.
 test_eq(Parser.Markdown.parse("# !!!\n\n# ???\n"),
         "<h1 id=\"section\">!!!</h1>\n"
         "<h1 id=\"section-1\">???</h1>\n")

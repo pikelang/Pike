@@ -4456,6 +4456,50 @@ void fix_type_field(node *n)
 
   case F_AUTO_MAP:
   case F_APPLY:
+    /* Integer arithmetic has no overload ambiguity. Use the same range
+     * operation as the builtin signature without expanding its object,
+     * float and container alternatives through the call checker.
+     */
+    if (n->token == F_APPLY && CAR(n) &&
+        CAR(n)->token == F_CONSTANT &&
+        TYPEOF(CAR(n)->u.sval) == T_FUNCTION &&
+        SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN &&
+        CAR(n)->type == CAR(n)->u.sval.u.efun->type &&
+        CDR(n) && CDR(n)->token == F_ARG_LIST &&
+        CADR(n) && CDDR(n) && CADR(n)->type && CDDR(n)->type &&
+        (CADR(n)->type->flags & CDDR(n)->type->flags & PT_FLAG_INT_COMPAT) &&
+        count_args(CDR(n)) == 2) {
+      c_fun fun = CAR(n)->u.sval.u.efun->function;
+      enum PIKE_TYPE op = PIKE_T_UNKNOWN;
+      if (fun == f_eq || fun == f_ne || fun == f_lt || fun == f_le ||
+          fun == f_gt || fun == f_ge) {
+        type_stack_mark();
+        push_int_type(0, 1);
+        n->type = pop_unfinished_type();
+        break;
+      }
+      /* Arithmetic unions also carry implicit-zero normalization through
+       * argument checking. Keep that path until the direct operation can
+       * preserve it; comparisons above only need the compatibility flag.
+       */
+      if (CADR(n)->type->type == T_OR || CADR(n)->type->type == T_AND ||
+          CDDR(n)->type->type == T_OR || CDDR(n)->type->type == T_AND)
+        goto general_call_check;
+      if (fun == f_add) {
+        struct pike_type *neg = type_int_op(PIKE_T_INT_OP_SUB,
+                                           zero_type_string, CDDR(n)->type);
+        n->type = type_int_op(PIKE_T_INT_OP_SUB, CADR(n)->type, neg);
+        free_type(neg);
+        if (n->type) break;
+      } else if (fun == f_minus) op = PIKE_T_INT_OP_SUB;
+      else if (fun == f_multiply) op = PIKE_T_INT_OP_MUL;
+      else if (fun == f_divide) op = PIKE_T_INT_OP_DIV;
+      if (op != PIKE_T_UNKNOWN) {
+        n->type = type_int_op(op, CADR(n)->type, CDDR(n)->type);
+        if (n->type) break;
+      }
+    }
+  general_call_check:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("Calling a void expression.");
     } else {

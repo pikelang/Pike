@@ -412,7 +412,7 @@ void f_RegGetValue(INT32 args)
   }
 }
 
-/*! @decl array(string) RegGetKeyNames(int hkey, string key)
+/*! @decl array(string)|zero RegGetKeyNames(int hkey, string key)
  *!
  *!   Get a list of value key names from the register.
  *!
@@ -511,7 +511,7 @@ void f_RegGetKeyNames(INT32 args)
   f_aggregate(i);
 }
 
-/*! @decl mapping(string:string|int|array(string)) RegGetValues(int hkey, @
+/*! @decl mapping(string:string|int|array(string))|zero RegGetValues(int hkey, @
  *!                                                             string key, @
  *!                                                 int(0..1)|void no_expand)
  *!
@@ -672,7 +672,7 @@ void f_allocconsole(INT32 UNUSED(args))
  *! Attaches calling process to a specific console.
  *!
  *! @param pid
- *   The identifier of the process whose console is to be used.
+ *!   The identifier of the process whose console is to be used.
  *!
  *! @note
  *!  Only available on certain Windows systems.
@@ -860,7 +860,7 @@ static void f_sid_account(INT32 args)
 /*! @endclass
  */
 
-/*! @decl UserToken LogonUser(string username, string|zero domain, @
+/*! @decl UserToken|zero LogonUser(string username, string|zero domain, @
  *!                           string|zero password, int|void logon_type, @
  *!                           int|void logon_provider)
  *!
@@ -2790,7 +2790,7 @@ static void f_GetFileAttributes(INT32 args)
   push_int(ret);
 }
 
-/*! @decl int SetFileAttributes(string(8bit) filename)
+/*! @decl int SetFileAttributes(string(8bit) filename, int attributes)
  *!
  *!   Set the file attributes for the specified file.
  *!
@@ -2819,8 +2819,8 @@ static void f_SetFileAttributes(INT32 args)
 /*! @decl array(mixed) LookupAccountName(string|int(0..0) sys, string account)
  *!
  *! @returns
- *!   Returns @expr{0@} (zero) if the @[account] was not found,
- *!   and an array containing the following on success:
+ *!   Returns an array with three zero elements if the @[account] was
+ *!   not found, and an array containing the following on success:
  *!
  *!   @array
  *!     @elem SID 0
@@ -3121,7 +3121,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   push_int(ret);
 }
 
-/*! @decl mapping(string:mixed) GetNamedSecurityInfo(string name, @
+/*! @decl mapping(string:mixed)|zero GetNamedSecurityInfo(string name, @
  *!                                                  int|void type, @
  *!                                                  int|void flags)
  *!
@@ -3611,7 +3611,7 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
 
 } /* end GenServerContext */
 
-/*! @decl array(string|int) gen_context(string)
+/*! @decl array(string|int)|zero gen_context(string data)
  */
 static void f_sctx_gencontext(INT32 args)
 {
@@ -3640,7 +3640,7 @@ static void f_sctx_gencontext(INT32 args)
   f_aggregate(2);
 }
 
-/*! @decl array(string|int) get_last_context()
+/*! @decl array(string|int)|zero get_last_context()
  */
 static void f_sctx_getlastcontext(INT32 args)
 {
@@ -3675,7 +3675,7 @@ static void f_sctx_type(INT32 args)
   push_utf16_text(sctx->PackageNameUTF16);
 }
 
-/*! @decl string get_username()
+/*! @decl string|zero get_username()
  */
 static void f_sctx_getusername(INT32 args)
 {
@@ -3734,7 +3734,7 @@ static void f_sctx_getlasterror(INT32 args)
 /*! @endclass
  */
 
-/*! @decl string GetComputerName()
+/*! @decl string|zero GetComputerName()
  *!
  *! Retrieves the NetBIOS name of the local computer.
  *!
@@ -3757,7 +3757,7 @@ static void f_GetComputerName(INT32 args)
   push_string(make_shared_binary_string(name, len));
 }
 
-/*! @decl string GetUserName()
+/*! @decl string|zero GetUserName()
  *!
  *! Retrieves the name of the user associated with the current thread.
  *!
@@ -3833,11 +3833,11 @@ void init_nt_system_calls(void)
 
   ADD_FUNCTION("RegGetValues", f_RegGetValues,
                tFunc(tInt tStr tOr(tVoid, tInt01),
-                     tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
+                     tOr(tMap(tStr, tOr3(tStr, tInt, tArr(tStr))), tZero)),
                OPT_EXTERNAL_DEPEND);
 
   ADD_FUNCTION("RegGetKeyNames", f_RegGetKeyNames,
-               tFunc(tInt tStr, tArr(tStr)), OPT_EXTERNAL_DEPEND);
+               tFunc(tInt tStr, tOr(tArr(tStr), tZero)), OPT_EXTERNAL_DEPEND);
 
 /* function(void:int) */
 #ifdef HAVE_FREECONSOLE
@@ -3870,7 +3870,7 @@ void init_nt_system_calls(void)
       /* function(string,string,string,int|void,void|int:object) */
       ADD_FUNCTION("LogonUser", f_LogonUser,
                    tFunc(tStr tOr(tStr, tZero) tStr tOr(tInt, tVoid)
-                         tOr(tVoid, tInt), tObj), 0);
+                         tOr(tVoid, tInt), tOr(tObj, tZero)), 0);
 
       /*! @decl constant LOGON32_LOGON_BATCH
        *! @decl constant LOGON32_LOGON_INTERACTIVE
@@ -3950,7 +3950,8 @@ void init_nt_system_calls(void)
       ADD_FUNCTION("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
                    tFunc(tStr tMap(tStr,tMix), tInt),0);
       ADD_FUNCTION("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
-		   tFunc(tStr tOr(tVoid,tInt),tMapping),0);
+                   tFunc(tStr tOr(tVoid,tInt) tOr(tVoid,tInt),
+                         tOr(tMapping,tZero)),0);
 
       /* FIXME: add ACE constants */
     }
@@ -4176,20 +4177,20 @@ void init_nt_system_calls(void)
       ADD_STORAGE(struct sctx_storage);
       ADD_FUNCTION("create",f_sctx_create,tFunc(tStr,tVoid),0);
       ADD_FUNCTION("gen_context",f_sctx_gencontext,
-		   tFunc(tStr,tArr(tOr(tStr,tInt))),0);
+                   tFunc(tStr,tOr(tArr(tOr(tStr,tInt)),tZero)),0);
       ADD_FUNCTION("get_last_context",f_sctx_getlastcontext,
-		   tFunc(tNone,tArr(tOr(tStr,tInt))),0);
+                   tFunc(tNone,tOr(tArr(tOr(tStr,tInt)),tZero)),0);
       ADD_FUNCTION("is_done",f_sctx_isdone,tFunc(tNone,tInt),0);
       ADD_FUNCTION("type",f_sctx_type,tFunc(tNone,tStr),0);
-      ADD_FUNCTION("get_username",f_sctx_getusername,tFunc(tNone,tStr),0);
+      ADD_FUNCTION("get_username",f_sctx_getusername,tFunc(tNone,tOr(tStr,tZero)),0);
       ADD_FUNCTION("get_last_error",f_sctx_getlasterror,tFunc(tNone,tInt),0);
       add_program_constant("SecurityContext",sctx_program=end_program(),0);
     }
   }
 
-  ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
+  ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tOr(tStr, tZero)), 0);
 #ifdef HAVE_GETUSERNAME
-  ADD_FUNCTION("GetUserName",f_GetUserName,tFunc(tVoid, tStr), 0);
+  ADD_FUNCTION("GetUserName",f_GetUserName,tFunc(tVoid, tOr(tStr, tZero)), 0);
 #endif /* HAVE_GETUSERNAME */
 
 }

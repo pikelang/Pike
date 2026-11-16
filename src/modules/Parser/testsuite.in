@@ -13,6 +13,24 @@ define(test_parser, [[
 ]])
 
 // Callback arguments and return values
+// Delimiter scans must agree across byte and wide feed-piece boundaries.
+test_parser([[
+  string source = "<t \t a=\0\377 b='x>y' c=\"z&u;\">" WIDENER;
+  mapping expected = ([ "a":"\0\377", "b":"x>y", "c":"z&u;" ]);
+  for (int split = 0; split <= sizeof(source); split++) {
+    mapping seen;
+    object p = Parser.HTML();
+    p->add_tag("t", lambda(object parser, mapping args) {
+      seen = args;
+      return "";
+    });
+    p->feed(split ? source[..split-1] : "");
+    p->finish(source[split..]);
+    if (!equal(seen, expected) || p->read() != WIDENER) return 0;
+  }
+  return 1;
+]], 1)
+
 test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return "<t2>";});

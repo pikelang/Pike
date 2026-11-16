@@ -113,7 +113,7 @@ struct svalue log_ident = SVALUE_INIT_FREE;
  *!
  *! Initializes the connection to syslogd.
  *!
- *! @param ident.
+ *! @param ident
  *! The @[ident] argument specifies an identifier to tag all logentries
  *! with.
  *!
@@ -247,7 +247,7 @@ void f_openlog(INT32 args)
  *!     @value 3
  *!       LOG_ERR, error conditions.
  *!     @value 4
- *!       LOG_WARNING, warnind conditions.
+ *!       LOG_WARNING, warning conditions.
  *!     @value 5
  *!       LOG_NOTICE, normal, but significant, condition.
  *!     @value 6

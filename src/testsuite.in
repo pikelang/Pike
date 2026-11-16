@@ -41,6 +41,39 @@ test_eq([[compile_string("string s = \"\u00c3\u00a5\";")()->s]],
 test_eq([[compile_string("#charset utf-8\n"
                          "string s = \"\u00c3\u00a5\";")()->s]], "\u00e5")
 test_eq(0x80000000-0x80000000, 0);
+// Binary operators retain their precedence and left associativity.
+test_any([[
+  array(array) operators = ({
+    ({ "||", 1 }), ({ "&&", 2 }), ({ "|", 3 }), ({ "^", 4 }),
+    ({ "&", 5 }), ({ "==", 6 }), ({ "!=", 6 }), ({ ">", 7 }),
+    ({ ">=", 7 }), ({ "<", 7 }), ({ "<=", 7 }), ({ "<<", 8 }),
+    ({ ">>", 8 }), ({ "+", 9 }), ({ "-", 9 }), ({ "*", 10 }),
+    ({ "%", 10 }), ({ "/", 10 })
+  });
+  array(array(int)) inputs = ({
+    ({ 1, 2, 3 }), ({ 7, 5, 2 }), ({ 0, 3, 1 }),
+    ({ 255, 7, 3 }), ({ 13, 13, 2 }), ({ -7, 3, 2 })
+  });
+  foreach (operators, array first) {
+    foreach (operators, array second) {
+      string expression = "a " + first[0] + " b " + second[0] + " c";
+      string grouped = first[1] >= second[1] ?
+        "(a " + first[0] + " b) " + second[0] + " c" :
+        "a " + first[0] + " (b " + second[0] + " c)";
+      object test = compile_string(
+        "int f(int a, int b, int c) { return " + expression + "; }\n"
+        "int g(int a, int b, int c) { return " + grouped + "; }\n")();
+      foreach (inputs, array(int) args) {
+        mixed left, right;
+        mixed left_error = catch { left = test->f(@args); };
+        mixed right_error = catch { right = test->g(@args); };
+        if (!!left_error != !!right_error) return 0;
+        if (!left_error && left != right) return 0;
+      }
+    }
+  }
+  return 1;
+]], 1)
 test_eq(0xf0000000-0xf0000000, 0);
 test_eq(0x80000001-0x80000000, 1);
 test_eq(0x80000000-0x80000001,-1);
@@ -9075,6 +9108,27 @@ test_any([[
   return !!compile_string("#pike 7.8\nStdio.File file;\n")();
 ]], 1)
 
+// Short-string interning is independent of alignment and construction path.
+test_any([[
+  foreach (({ "a\0\377bcdef", "\u0100\u0200\u0300abcd",
+              "\U00010000\U00020000abcdef" }), string data) {
+    for (int length = 0; length <= 7; length++) {
+      string expected = length ? data[..length-1] : "";
+      for (int offset = 0; offset < 16; offset++) {
+        string container = "x" * offset + expected + "trailer";
+        string extracted = length ?
+          container[offset..offset+length-1] : "";
+        string rebuilt = (string)(array(int))expected;
+        mapping counts = ([ expected:1 ]);
+        counts[extracted]++;
+        counts[rebuilt]++;
+        if (sizeof(counts) != 1 || counts[expected] != 3) return 0;
+      }
+    }
+  }
+  return 1;
+]], 1)
+
 // String value types retain their character ranges, lengths and attributes.
 test_any([[
   array(string) strings = ({ "", "ab", "ba", "\0x", "\xff",
@@ -11756,6 +11810,74 @@ test_any_equal([[
   return a;
 ]],({}))
 
+// Local object addition must preserve aliases and assignment results.
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  b = b + "\400";
+  string result = (string)(b += "\200000");
+  return ({ (string)b, result });
+]], ({ "a\400\200000", "a\400\200000" }))
+
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  String.Buffer alias = b;
+  b += "b";
+  return ({ (string)b, (string)alias });
+]], ({ "ab", "a" }))
+
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  b += b;
+  return (string)b;
+]], "aa")
+
+test_any_equal([[
+  String.Buffer b = String.Buffer();
+  b += "a";
+  function rhs = lambda() { error("rhs failed\n"); return "b"; };
+  mixed failure = catch { b += rhs(); };
+  return ({ !!failure, (string)b });
+]], ({ 1, "a" }))
+
+test_any_equal([[
+  class Holder {
+    String.Buffer value = String.Buffer();
+    int reads, writes;
+    protected mixed `[](mixed index) { reads++; return value; }
+    protected void `[]=(mixed index, mixed new_value) {
+      writes++;
+      value = new_value;
+    }
+  }
+  object h = Holder();
+  h[0] += "a";
+  return ({ (string)h->value, h->reads, h->writes });
+]], ({ "a", 1, 1 }))
+
+test_any_equal([[
+  class Failing {
+    int value = 17;
+    protected mixed `+(mixed rhs) { error("addition failed\n"); }
+  }
+  object b = Failing();
+  mixed rhs = "a";
+  mixed failure = catch { b += rhs; };
+  return ({ !!failure, b->value });
+]], ({ 1, 17 }))
+
+test_any_equal([[
+  class Failing {
+    int value = 17;
+    protected mixed `+(mixed rhs) { error("addition failed\n"); }
+  }
+  object b = Failing();
+  mixed failure = catch { b += 2; };
+  return ({ !!failure, b->value });
+]], ({ 1, 17 }))
+
 // testing -=
 test_any(int a=1; a-=10; return a,-9)
 test_do([[ add_constant("FOO", class {
@@ -14003,6 +14125,67 @@ test_eq(`%(Gmp.mpz(4), 1.5), Gmp.mpz(0))
 test_eq(`%(4.5, Gmp.mpz(2)), Gmp.mpz(0))
 
 
+// Integer arithmetic keeps its range information when overload resolution
+// is skipped. Include calls with extra and spliced arguments too.
+test_any([[
+  foreach (({
+    ({ "int(2..4)", "int(6..8)", "a+b", "int(8..12)", 3, 7, 10 }),
+    ({ "int(2..4)", "int(6..8)", "a-b", "int(-6..-2)", 3, 7, -4 }),
+    ({ "int(2..4)", "int(6..8)", "a*b", "int(12..32)", 3, 7, 21 }),
+    ({ "int(2..4)", "int(6..8)", "a/b", "zero", 3, 7, 0 }),
+    ({ "int(-10..-1)", "int(2..3)", "a+b", "int(-8..2)", -7, 3, -4 }),
+    ({ "int(-10..-1)", "int(2..3)", "a-b", "int(-13..-3)", -7, 3, -10 }),
+    ({ "int(-10..-1)", "int(2..3)", "a*b", "int(-30..-2)", -7, 3, -21 }),
+    ({ "int(-10..-1)", "int(2..3)", "a/b", "int(-5..-1)", -7, 3, -3 }),
+    ({ "zero", "int(6..8)", "a+b", "int(6..8)", 0, 7, 7 }),
+    ({ "zero", "int(6..8)", "a-b", "int(-8..-6)", 0, 7, -7 }),
+    ({ "zero", "int(6..8)", "a*b", "zero", 0, 7, 0 }),
+    ({ "zero", "int(6..8)", "a/b", "zero", 0, 7, 0 }),
+    ({ "zero", "int(1..3)|void", "a+b", "int(1..3)", 0, 2, 2 }),
+    ({ "zero", "int(1..3)|zero", "a/b", "zero", 0, 2, 0 }),
+    ({ "int(2..4)", "int(6..8)", "`+(a,b,100)", "int(108..112)",
+       3, 7, 110 }),
+    ({ "int(2..4)", "int(6..8)", "`*(a,b,100)", "int(1200..3200)",
+       3, 7, 2100 }),
+    ({ "int(2..4)", "int(6..8)", "`+(a,@({b,100}))", "int(108..112)",
+       3, 7, 110 }),
+  }), array c) {
+    string args = c[0] + " a, " + c[1] + " b";
+    object o = compile_string("auto f(" + args + ") { return " + c[2] +
+                              "; } mixed t(" + args + ") { return typeof(" +
+                              c[2] + "); }")();
+    if (sprintf("%O", o->t(c[4], c[5])) != c[3] ||
+        o->f(c[4], c[5]) != c[6]) return 0;
+  }
+  return 1;
+]], 1)
+
+test_any([[
+  foreach (({ "int", "zero", "int|void", "int(1..3)|int(8..10)" }),
+           string argtype) {
+    foreach (({ "==", "!=", "<", "<=", ">", ">=" }), string op) {
+      object o = compile_string("auto f(" + argtype + " a, int b) { "
+                                "return a" + op + "b; } "
+                                "mixed t(" + argtype + " a, int b) { "
+                                "return typeof(a" + op + "b); }")();
+      int a = argtype == "zero" ? 0 : 1;
+      int b = 9;
+      int expected;
+      switch (op) {
+      case "==": expected = a == b; break;
+      case "!=": expected = a != b; break;
+      case "<": expected = a < b; break;
+      case "<=": expected = a <= b; break;
+      case ">": expected = a > b; break;
+      case ">=": expected = a >= b; break;
+      }
+      if (o->t(a, b) != typeof(a == b) || o->f(a, b) != expected)
+        return 0;
+    }
+  }
+  return 1;
+]], 1)
+
 // - `&
 
 test_any([[
@@ -15997,6 +16180,38 @@ test_any([[int x=time(); sleep(2); return x!=time()]],1)
 // - sort
 test_equal(sort(({1,3,2,4})),({1,2,3,4}))
 test_equal(sort(({4,3,2,1})),({1,2,3,4}))
+// Check ordered arrays and descents throughout the order scan.
+test_any([[
+  foreach (({ 0, 1, 2, 3, 15, 16, 17, 18, 32, 257 }), int size) {
+    array(int) ints = enumerate(size, 1, -size/2);
+    foreach (({ ints, (array(float))ints,
+                map(ints, lambda(int n) {
+                  return sprintf("%08x", n + 512);
+                }) }), array expected) {
+      if (!equal(sort(expected + ({})), expected)) return 0;
+      if (!equal(sort(reverse(expected)), expected)) return 0;
+      for (int i = 1; i < size; i++) {
+        array input = expected + ({});
+        mixed tmp = input[i-1];
+        input[i-1] = input[i];
+        input[i] = tmp;
+        if (!equal(sort(input), expected)) return 0;
+      }
+    }
+    if (!equal(sort(allocate(size, 17)), allocate(size, 17))) return 0;
+  }
+  return 1;
+]], 1)
+// Early returns in the index sorter must preserve equal-key order.
+test_any([[
+  array(int) order = enumerate(257);
+  array(int) keys = map(order, lambda(int n) { return n % 7; });
+  array(int) expected = ({});
+  for (int key = 0; key < 7; key++)
+    for (int i = key; i < sizeof(order); i += 7) expected += ({ i });
+  sort(keys, order);
+  return equal(order, expected);
+]], 1)
 test_equal(sort(({({1, 4}), ({3, 2}), ({2, 3}), ({4, 1})})),
 		({({1, 4}), ({2, 3}), ({3, 2}), ({4, 1})}))
 test_equal(sort(({({4, 1}), ({2, 3}), ({3, 2}), ({1, 4})})),

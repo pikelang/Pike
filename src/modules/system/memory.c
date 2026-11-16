@@ -144,13 +144,13 @@ static void exit_memory(struct object *UNUSED(o))
 
 /*! @decl void create()
  *! @decl void create(string|Stdio.File filename_to_mmap)
- *! @decl void create(int shmkey, int shmsize, int shmflg)
+ *! @decl void create(int shmkey, int shmsize)
  *! @decl void create(int bytes_to_allocate)
  *!
- *!	Will call @[mmap()] or @[allocate()]
- *!	depending on argument, either @tt{mmap@}'ing a file
- *!	(in shared mode, writeable if possible) or allocating
- *!	a chunk of memory.
+ *!   Will call @[mmap()], @[shmat()] or @[allocate()]
+ *!   depending on argument: either @tt{mmap@}'ing a file
+ *!   (in shared mode, writeable if possible), attaching a System V
+ *!   shared memory segment, or allocating a chunk of memory.
  */
 static void memory_create(INT32 args)
 {
@@ -532,9 +532,10 @@ static void memory_writeable(INT32 args)
    push_int(!!(THIS->flags&MEM_WRITE));
 }
 
-/*! @decl string|array cast(string to)
+/*! @decl mixed cast(string to)
  *!
- *!	Cast to string or array.
+ *!   Cast to string or array. Returns @expr{UNDEFINED@} for any
+ *!   other requested type.
  *!
  *! @note
  *!   Throws if not allocated.
@@ -829,7 +830,7 @@ static void memory_index(INT32 args)
    {
       rpos=(size_t)pos;
 
-      if (rpos>THIS->size)
+      if (rpos>=THIS->size)
          Pike_error("Index is out of range.\n");
    }
 
@@ -910,7 +911,7 @@ static void memory_index_write(INT32 args)
    {
       rpos=(size_t)pos;
 
-      if (rpos>THIS->size)
+      if (rpos>=THIS->size)
          Pike_error("Index is out of range.\n");
    }
    if (ch<0 || ch>255)
@@ -939,14 +940,24 @@ void init_system_memory(void)
    ADD_STORAGE(struct memory_storage);
 
    ADD_FUNCTION("create",
-		memory_create,
-		tOr3(tFunc(tVoid,tVoid),
+                memory_create,
+                tOr4(tFunc(tVoid,tVoid),
                      tFunc(tOr(tStr8,tObj)
-			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
-		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)),
-		ID_PROTECTED);
+                           tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
+                     tFunc(tIntPos,tVoid),
+                     tFunc(tInt tInt,tVoid)),
+                ID_PROTECTED);
 
 #if defined(HAVE_SYS_SHM_H) || defined(WIN32SHM)
+   /*! @decl int(0..1) shmat(int shmkey, int shmsize)
+    *!
+    *!   Attach a System V (or emulated) shared memory segment identified
+    *!   by @[shmkey], creating it with size @[shmsize] if it doesn't
+    *!   already exist.
+    *!
+    *!   @seealso
+    *!     @[create()]
+    */
    ADD_FUNCTION("shmat", memory_shm, tFunc(tInt tInt, tInt), 0 );
 #endif
 
@@ -972,7 +983,7 @@ void init_system_memory(void)
 
    ADD_FUNCTION("_sizeof", memory__sizeof, tFunc(tVoid,tIntPos), ID_PROTECTED);
    ADD_FUNCTION("cast",memory_cast,
-		tFunc(tStr,tOr(tArr(tInt),tStr)), ID_PROTECTED);
+                tFunc(tStr,tMix), ID_PROTECTED);
 
    ADD_FUNCTION("`[]", memory_index, tFunc(tInt, tInt8bit), ID_PROTECTED);
    ADD_FUNCTION("`[..]", memory_range, tFunc(tInt tInt tInt tInt, tStr8), ID_PROTECTED);
@@ -985,8 +996,8 @@ void init_system_memory(void)
    ADD_FUNCTION("pread32",memory_pread32,tFunc(tInt tInt,tStr),0);
    ADD_FUNCTION("pread16i",memory_pread16i,tFunc(tInt tInt,tStr16),0);
    ADD_FUNCTION("pread32i",memory_pread32i,tFunc(tInt tInt,tStr),0);
-   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tStr,tStr16),0);
-   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tStr,tStr),0);
+   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tInt,tStr16),0);
+   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tInt,tStr),0);
 
    ADD_FUNCTION("pwrite",memory_pwrite,tFunc(tInt tStr8,tInt),0);
    ADD_FUNCTION("pwrite16",memory_pwrite16,tFunc(tInt tStr16,tInt),0);

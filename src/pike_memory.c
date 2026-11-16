@@ -222,6 +222,26 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 
   if (UNLIKELY(!len)) return h;
 
+  /* Short strings need neither alignment peeling nor sampled hashing. */
+  if (nbytes >= len && len < 8) {
+    nbytes = len;
+    if (nbytes >= 4) {
+      unsigned int word;
+      memcpy(&word, c, sizeof(word));
+      CRC32SI(h, &word);
+      c += 4;
+      nbytes -= 4;
+    }
+    if (nbytes) {
+      CRC32SQ(h, c++);
+      if (nbytes > 1) {
+        CRC32SQ(h, c++);
+        if (nbytes > 2) CRC32SQ(h, c);
+      }
+    }
+    goto done;
+  }
+
   if( nbytes >= len )
   {
     /* Hash the whole memory area */
@@ -281,6 +301,7 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
     CRC32SI(h, p);
   }
 
+done:
 #if SIZEOF_CHAR_P > 4
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.

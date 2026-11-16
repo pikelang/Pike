@@ -893,7 +893,7 @@ Terminfo getTerminfo(string term)
 //! hardcoded entry for "dumb" will be used.
 //!
 //! @seealso
-//!  Stdio.Terminfo.getTerminfo, Stdio.Terminfo.getTermcap, Stdio.getFallbackTerm
+//!  Stdio.Terminfo.getTerminfo, Stdio.Terminfo.getTermcap, Stdio.Terminfo.getFallbackTerm
 Termcap getTerm(string|void term)
 {
   if (!term) {

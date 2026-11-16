@@ -356,7 +356,10 @@ void f_readlink(INT32 args)
  *!
  *!   This function resolves all symbolic links, extra ``/'' characters and
  *!   references to /./ and /../ in @[path], and returns the resulting
- *!   absolute path, or @tt{0@} (zero) if an error occurs.
+ *!   absolute path.
+ *!
+ *! @throws
+ *!   Throws an error if the path could not be resolved.
  *!
  *! @note
  *!   This function is not available on all platforms.
@@ -371,7 +374,10 @@ void f_readlink(INT32 args)
  *!
  *!   This function resolves all symbolic links, extra ``/'' characters and
  *!   references to /./ and /../ in @[path], and returns the resulting
- *!   absolute path, or @tt{0@} (zero) if an error occurs.
+ *!   absolute path.
+ *!
+ *! @throws
+ *!   Throws an error if the path could not be resolved.
  *!
  *! @note
  *!   This function is not available on all platforms.
@@ -1165,6 +1171,10 @@ void f_innetgr(INT32 args)
 /*! @decl int setuid(int uid)
  *!
  *! Sets the real user ID, effective user ID and saved user ID to @[uid].
+ *! If @[uid] is @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @throws
+ *! Throws an error if there is no "nobody" user when @[uid] is @expr{-1@}.
  *!
  *! @returns
  *!   Returns the current errno.
@@ -1180,6 +1190,10 @@ void f_innetgr(INT32 args)
  *! @belongs _static_modules._system
  *!
  *! Sets the real user ID, effective user ID and saved user ID to @[uid].
+ *! If @[uid] is @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @throws
+ *! Throws an error if there is no "nobody" user when @[uid] is @expr{-1@}.
  *!
  *! @returns
  *!   Returns the current errno.
@@ -1217,7 +1231,7 @@ void f_setuid(INT32 args)
 /*! @decl int setgid(int gid)
  *!
  *! Sets the real group ID, effective group ID and saved group ID to @[gid].
- *! If @[gid] is @expr{-1@} the uid for "nobody" will be used.
+ *! If @[gid] is @expr{-1@} the gid for "nobody" will be used.
  *!
  *! @throws
  *! Throws an error if no "nobody" user when @[gid] is @expr{-1@}.
@@ -1236,7 +1250,7 @@ void f_setuid(INT32 args)
  *! @belongs _static_modules._system
  *!
  *! Sets the real group ID, effective group ID and saved group ID to @[gid].
- *! If @[gid] is @expr{-1@} the uid for "nobody" will be used.
+ *! If @[gid] is @expr{-1@} the gid for "nobody" will be used.
  *!
  *! @throws
  *! Throws an error if no "nobody" user when @[gid] is @expr{-1@}.
@@ -1337,7 +1351,7 @@ void f_seteuid(INT32 args)
 /*! @decl int setegid(int egid)
  *!
  *! Set the effective group ID to @[egid]. If @[egid] is
- *! @expr{-1@} the uid for "nobody" will be used.
+ *! @expr{-1@} the gid for "nobody" will be used.
  *!
  *! @returns
  *! Returns the current errno.
@@ -1353,7 +1367,7 @@ void f_seteuid(INT32 args)
  *! @belongs _static_modules._system
  *!
  *! Set the effective group ID to @[egid]. If @[egid] is
- *! @expr{-1@} the uid for "nobody" will be used.
+ *! @expr{-1@} the gid for "nobody" will be used.
  *!
  *! @returns
  *! Returns the current errno.
@@ -1573,8 +1587,8 @@ void f_setsid(INT32 args)
  *!   @endint
  *!
  *! @returns
- *!   Returns @expr{1@} if this process currently is capable of dumping core,
- *!   and @expr{0@} (zero) if not.
+ *!   Returns @expr{1@} if this process was capable of dumping core prior
+ *!   to this call, and @expr{0@} (zero) if not.
  *!
  *! @note
  *!   This function is currently only available on some versions of Linux.
@@ -1941,7 +1955,7 @@ static const struct {
  *!     @member string "architecture"
  *!       Basic instruction set architecture.
  *!     @member string "isalist"
- *!       List of upported instruction set architectures.
+ *!       List of supported instruction set architectures.
  *!       Usually space-separated.
  *!     @member string "platform"
  *!       Specific model of hardware.
@@ -1980,7 +1994,7 @@ static const struct {
  *!     @member string "architecture"
  *!       Basic instruction set architecture.
  *!     @member string "isalist"
- *!       List of upported instruction set architectures.
+ *!       List of supported instruction set architectures.
  *!       Usually space-separated.
  *!     @member string "platform"
  *!       Specific model of hardware.
@@ -2626,7 +2640,7 @@ static void describe_hostent(struct hostent *hp)
   f_aggregate(3);
 }
 
-/*! @decl array(string|array(string)) gethostbyaddr(string addr)
+/*! @decl array(string|array(string))|zero gethostbyaddr(string addr)
  *!
  *! Returns an array with information about the specified IP address.
  *!
@@ -2641,7 +2655,7 @@ static void describe_hostent(struct hostent *hp)
  *! @seealso
  *!   @[gethostbyname()]
  */
-/*! @decl array(string|array(string)) gethostbyaddr(string addr)
+/*! @decl array(string|array(string))|zero gethostbyaddr(string addr)
  *! @belongs _static_modules._system
  *!
  *! Returns an array with information about the specified IP address.
@@ -2682,7 +2696,7 @@ void f_gethostbyaddr(INT32 args)
   describe_hostent(ret);
 }
 
-/*! @decl array(string|array(string)) gethostbyname(string hostname)
+/*! @decl array(string|array(string))|zero gethostbyname(string hostname)
  *!
  *! Returns an array with information about the specified host.
  *!
@@ -2704,7 +2718,7 @@ void f_gethostbyaddr(INT32 args)
  *! @seealso
  *!   @[gethostbyaddr()]
  */
-/*! @decl array(string|array(string)) gethostbyname(string hostname)
+/*! @decl array(string|array(string))|zero gethostbyname(string hostname)
  *! @belongs _static_modules._system
  *!
  *! Returns an array with information about the specified host.
@@ -3286,7 +3300,7 @@ void f_system_getitimer(INT32 args)
 #endif
 
 #ifdef HAVE_NETINFO_NI_H
-/*! @decl array(string) get_netinfo_property(string domain, string path, @
+/*! @decl array(string)|zero get_netinfo_property(string domain, string path, @
  *!                                          string property)
  *!
  *! Queries a NetInfo server for property values at the given path.
@@ -3303,7 +3317,7 @@ void f_system_getitimer(INT32 args)
  *!  is not found or cannot be queried an exception is thrown.
  *!
  *! @example
- *!   system.get_netinfo_property(".", "/locations/resolver", "domain");
+ *!   System.get_netinfo_property(".", "/locations/resolver", "domain");
  *!   ({
  *!      "idonex.se"
  *!   })
@@ -3417,7 +3431,7 @@ struct timeval
 
 /*! @decl array(int) gettimeofday()
  *! Calls gettimeofday(); the result is an array of
- *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
+ *! seconds, microseconds, and possible tz_minuteswest, tz_dsttime
  *! as given by the gettimeofday(2) system call
  *! (read the man page).
  *!
@@ -3899,7 +3913,7 @@ PIKE_MODULE_INIT
            tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt01),
            OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("innetgr", f_innetgr,
-           tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
+           tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt01),
            0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_INNETGR */
 #ifdef HAVE_SETUID
@@ -4048,16 +4062,16 @@ PIKE_MODULE_INIT
 
 #ifdef GETHOST_DECLARE
 
-/* function(string:array) */
-  ADD_EFUN("gethostbyname", f_gethostbyname,tFunc(tStr,tArray),
+/* function(string:array|zero) */
+  ADD_EFUN("gethostbyname", f_gethostbyname,tFunc(tStr,tOr(tArray,tZero)),
            OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("gethostbyname", f_gethostbyname,tFunc(tStr,tArray), 0,
+  ADD_FUNCTION2("gethostbyname", f_gethostbyname,tFunc(tStr,tOr(tArray,tZero)), 0,
            OPT_EXTERNAL_DEPEND);
 
-/* function(string:array) */
-  ADD_EFUN("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray),
+/* function(string:array|zero) */
+  ADD_EFUN("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tOr(tArray,tZero)),
            OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray), 0,
+  ADD_FUNCTION2("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tOr(tArray,tZero)), 0,
            OPT_EXTERNAL_DEPEND);
 #endif /* GETHOST_DECLARE */
 
@@ -4238,10 +4252,10 @@ PIKE_MODULE_INIT
   add_integer_constant ("REAL_TIME_RESOLUTION", get_real_time_res(), 0);
 
 #ifdef HAVE_NETINFO_NI_H
-  /* array(string) get_netinfo_property(string domain, string path,
+  /* array(string)|zero get_netinfo_property(string domain, string path,
                                         string property) */
   ADD_FUNCTION("get_netinfo_property", f_get_netinfo_property,
-               tFunc(tStr tStr tStr, tArray), 0);
+               tFunc(tStr tStr tStr, tOr(tArray,tZero)), 0);
 #endif /* NETINFO */
 
 #ifdef HAVE_GETLOADAVG
@@ -4280,887 +4294,887 @@ PIKE_MODULE_INIT
   /*! @module System
    */
   /*! @decl constant B_ALREADY_RUNNING
-   *!   Hurd Errno: Already running
+   *!   Haiku Errno: Already running
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_AMBIGUOUS_APP_LAUNCH
-   *!   Hurd Errno: Ambiguous app launch
+   *!   Haiku Errno: Ambiguous app launch
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_APP_ERROR_BASE
-   *!   Hurd Errno: Base for application errors
+   *!   Haiku Errno: Base for application errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_ADDRESS
-   *!   Hurd Errno: Bad address
+   *!   Haiku Errno: Bad address
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_DATA
-   *!   Hurd Errno: Bad data
+   *!   Haiku Errno: Bad data
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_HANDLER
-   *!   Hurd Errno: Bad handler
+   *!   Haiku Errno: Bad handler
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_IMAGE_ID
-   *!   Hurd Errno: Bad image ID
+   *!   Haiku Errno: Bad image ID
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_INDEX
-   *!   Hurd Errno: Index not in range for the data set
+   *!   Haiku Errno: Index not in range for the data set
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_MIME_SNIFFER_RULE
-   *!   Hurd Errno: Bad sniffer rule
+   *!   Haiku Errno: Bad sniffer rule
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_PORT_ID
-   *!   Hurd Errno: Bad port ID
+   *!   Haiku Errno: Bad port ID
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_REPLY
-   *!   Hurd Errno: Invalid or unwanted reply
+   *!   Haiku Errno: Invalid or unwanted reply
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_SCRIPT_SYNTAX
-   *!   Hurd Errno: Bad script syntax
+   *!   Haiku Errno: Bad script syntax
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_SEM_ID
-   *!   Hurd Errno: Bad semaphore ID
+   *!   Haiku Errno: Bad semaphore ID
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_SUBSCRIBER
-   *!   Hurd Errno: Bad subscriber
+   *!   Haiku Errno: Bad subscriber
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_TEAM_ID
-   *!   Hurd Errno: Operation on invalid team
+   *!   Haiku Errno: Operation on invalid team
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_THREAD_ID
-   *!   Hurd Errno: Bad thread ID
+   *!   Haiku Errno: Bad thread ID
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_THREAD_STATE
-   *!   Hurd Errno: Thread is in inappropriate state
+   *!   Haiku Errno: Thread is in inappropriate state
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_TYPE
-   *!   Hurd Errno: Bad argument type passed to function
+   *!   Haiku Errno: Bad argument type passed to function
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BAD_VALUE
-   *!   Hurd Errno: Invalid argument
+   *!   Haiku Errno: Invalid argument
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BUFFER_NOT_AVAILABLE
-   *!   Hurd Errno: Buffer not available
+   *!   Haiku Errno: Buffer not available
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BUFFER_OVERFLOW
-   *!   Hurd Errno: Value too large for defined type
+   *!   Haiku Errno: Value too large for defined type
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BUSTED_PIPE
-   *!   Hurd Errno: Broken pipe
+   *!   Haiku Errno: Broken pipe
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_BUSY
-   *!   Hurd Errno: Device/File/Resource busy
+   *!   Haiku Errno: Device/File/Resource busy
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_CANCELED
-   *!   Hurd Errno: Operation canceled
+   *!   Haiku Errno: Operation canceled
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_CROSS_DEVICE_LINK
-   *!   Hurd Errno: Cross-device link
+   *!   Haiku Errno: Cross-device link
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEBUGGER_ALREADY_INSTALLED
-   *!   Hurd Errno: Debugger already installed for this team
+   *!   Haiku Errno: Debugger already installed for this team
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEVICE_ERROR_BASE
-   *!   Hurd Errno: Base for device driver errors
+   *!   Haiku Errno: Base for device driver errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEVICE_FULL
-   *!   Hurd Errno: No space left on device
+   *!   Haiku Errno: No space left on device
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEVICE_NOT_FOUND
-   *!   Hurd Errno: No such device
+   *!   Haiku Errno: No such device
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_BAD_DRIVE_NUM
-   *!   Hurd Errno: Bad drive number
+   *!   Haiku Errno: Bad drive number
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_BAD_PID
-   *!   Hurd Errno: Bad device PID
+   *!   Haiku Errno: Bad device PID
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_CONFIGURATION_ERROR
-   *!   Hurd Errno: Configuration error
+   *!   Haiku Errno: Configuration error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_CRC_ERROR
-   *!   Hurd Errno: Device check-sum error
+   *!   Haiku Errno: Device check-sum error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_DATA_OVERRUN
-   *!   Hurd Errno: Device data overrun
+   *!   Haiku Errno: Device data overrun
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_DATA_UNDERRUN
-   *!   Hurd Errno: Device data underrun
+   *!   Haiku Errno: Device data underrun
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_DISABLED_BY_USER
-   *!   Hurd Errno: Disabled by user
+   *!   Haiku Errno: Disabled by user
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_DOOR_OPEN
-   *!   Hurd Errno: Drive door open
+   *!   Haiku Errno: Drive door open
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_FIFO_OVERRUN
-   *!   Hurd Errno: Device FIFO overrun
+   *!   Haiku Errno: Device FIFO overrun
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_FIFO_UNDERRUN
-   *!   Hurd Errno: Device FIFO underrun
+   *!   Haiku Errno: Device FIFO underrun
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_FORMAT_ERROR
-   *!   Hurd Errno: Device format error
+   *!   Haiku Errno: Device format error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_ID_ERROR
-   *!   Hurd Errno: Device ID error
+   *!   Haiku Errno: Device ID error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_INVALID_IOCTL
-   *!   Hurd Errno: Invalid device ioctl
+   *!   Haiku Errno: Invalid device ioctl
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_INVALID_PIPE
-   *!   Hurd Errno: Invalid device pipe
+   *!   Haiku Errno: Invalid device pipe
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_MEDIA_CHANGED
-   *!   Hurd Errno: Device media changed
+   *!   Haiku Errno: Device media changed
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_MEDIA_CHANGE_REQUESTED
-   *!   Hurd Errno: Device media change requested
+   *!   Haiku Errno: Device media change requested
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_MULTIPLE_ERRORS
-   *!   Hurd Errno: Multiple device errors
+   *!   Haiku Errno: Multiple device errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_NOT_READY
-   *!   Hurd Errno: Device not ready
+   *!   Haiku Errno: Device not ready
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_NO_MEDIA
-   *!   Hurd Errno: No media present
+   *!   Haiku Errno: No media present
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_NO_MEMORY
-   *!   Hurd Errno: No device memory
+   *!   Haiku Errno: No device memory
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_PENDING
-   *!   Hurd Errno: Device pending
+   *!   Haiku Errno: Device pending
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_READ_ERROR
-   *!   Hurd Errno: Device read error
+   *!   Haiku Errno: Device read error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_RECALIBRATE_ERROR
-   *!   Hurd Errno: Device recalibrate error
+   *!   Haiku Errno: Device recalibrate error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_RESOURCE_CONFLICT
-   *!   Hurd Errno: Resource conflict
+   *!   Haiku Errno: Resource conflict
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_SEEK_ERROR
-   *!   Hurd Errno: Device seek error
+   *!   Haiku Errno: Device seek error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_STALLED
-   *!   Hurd Errno: Device stalled
+   *!   Haiku Errno: Device stalled
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_TIMEOUT
-   *!   Hurd Errno: Device timeout
+   *!   Haiku Errno: Device timeout
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_TOO_LATE
-   *!   Hurd Errno: Device too late
+   *!   Haiku Errno: Device too late
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_UNEXPECTED_PID
-   *!   Hurd Errno: Unexpected device PID
+   *!   Haiku Errno: Unexpected device PID
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_UNREADABLE
-   *!   Hurd Errno: Device unreadable
+   *!   Haiku Errno: Device unreadable
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DEV_WRITE_ERROR
-   *!   Hurd Errno: Device write error
+   *!   Haiku Errno: Device write error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DIRECTORY_NOT_EMPTY
-   *!   Hurd Errno: Directory not empty
+   *!   Haiku Errno: Directory not empty
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DONT_DO_THAT
-   *!   Hurd Errno: No, really don't do that
+   *!   Haiku Errno: No, really don't do that
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_DUPLICATE_REPLY
-   *!   Hurd Errno: Duplicate reply
+   *!   Haiku Errno: Duplicate reply
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_ENTRY_NOT_FOUND
-   *!   Hurd Errno: No such file or directory
+   *!   Haiku Errno: No such file or directory
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_ERROR
-   *!   Hurd Errno: General system error
+   *!   Haiku Errno: General system error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_ERRORS_END
-   *!   Hurd Errno: End marker for errors
+   *!   Haiku Errno: End marker for errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_FILE_ERROR
-   *!   Hurd Errno: Bad file descriptor
+   *!   Haiku Errno: Bad file descriptor
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_FILE_EXISTS
-   *!   Hurd Errno: File or Directory already exists
+   *!   Haiku Errno: File or Directory already exists
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_FILE_NOT_FOUND
-   *!   Hurd Errno: No such file or directory
+   *!   Haiku Errno: No such file or directory
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_FILE_TOO_LARGE
-   *!   Hurd Errno: File too large
+   *!   Haiku Errno: File too large
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_GENERAL_ERROR_BASE
-   *!   Hurd Errno: Base for general (and all) errors
+   *!   Haiku Errno: Base for general (and all) errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_ILLEGAL_DATA
-   *!   Hurd Errno: Illegal data
+   *!   Haiku Errno: Illegal data
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_INTERFACE_ERROR_BASE
-   *!   Hurd Errno: Base for user interface errors
+   *!   Haiku Errno: Base for user interface errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_INTERRUPTED
-   *!   Hurd Errno: Interrupted system call
+   *!   Haiku Errno: Interrupted system call
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_IO_ERROR
-   *!   Hurd Errno: I/O error
+   *!   Haiku Errno: I/O error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_IS_A_DIRECTORY
-   *!   Hurd Errno: Is a directory
+   *!   Haiku Errno: Is a directory
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAST_BUFFER_ERROR
-   *!   Hurd Errno: Last buffer
+   *!   Haiku Errno: Last buffer
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAUNCH_FAILED
-   *!   Hurd Errno: Launch failed
+   *!   Haiku Errno: Launch failed
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAUNCH_FAILED_APP_IN_TRASH
-   *!   Hurd Errno: Application is in the trash
+   *!   Haiku Errno: Application is in the trash
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAUNCH_FAILED_APP_NOT_FOUND
-   *!   Hurd Errno: Application could not be found
+   *!   Haiku Errno: Application could not be found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAUNCH_FAILED_EXECUTABLE
-   *!   Hurd Errno: File is mistakenly marked as executable
+   *!   Haiku Errno: File is mistakenly marked as executable
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAUNCH_FAILED_FILES_APP_NOT_FOUND
-   *!   Hurd Errno: This file has a preferred app, but it could not be found
+   *!   Haiku Errno: This file has a preferred app, but it could not be found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAUNCH_FAILED_NO_PREFERRED_APP
-   *!   Hurd Errno: There is no preferred application for this type of file
+   *!   Haiku Errno: There is no preferred application for this type of file
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LAUNCH_FAILED_NO_RESOLVE_LINK
-   *!   Hurd Errno: Could not resolve a link
+   *!   Haiku Errno: Could not resolve a link
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LEGACY_EXECUTABLE
-   *!   Hurd Errno: Unsupported legacy executable
+   *!   Haiku Errno: Unsupported legacy executable
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_LINK_LIMIT
-   *!   Hurd Errno: Too many symbolic links
+   *!   Haiku Errno: Too many symbolic links
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_ACCESS_ERROR
-   *!   Hurd Errno: Mail access error
+   *!   Haiku Errno: Mail access error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_ERROR_BASE
-   *!   Hurd Errno: Base for mail errors
+   *!   Haiku Errno: Base for mail errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_INVALID_MAIL
-   *!   Hurd Errno: Invalid mail
+   *!   Haiku Errno: Invalid mail
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_NO_DAEMON
-   *!   Hurd Errno: No mail daemon
+   *!   Haiku Errno: No mail daemon
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_NO_RECIPIENT
-   *!   Hurd Errno: No mail recipient
+   *!   Haiku Errno: No mail recipient
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_UNKNOWN_FIELD
-   *!   Hurd Errno: Unknown mail field
+   *!   Haiku Errno: Unknown mail field
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_UNKNOWN_HOST
-   *!   Hurd Errno: Mail unknown host
+   *!   Haiku Errno: Mail unknown host
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_UNKNOWN_USER
-   *!   Hurd Errno: Unknown mail user
+   *!   Haiku Errno: Unknown mail user
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MAIL_WRONG_PASSWORD
-   *!   Hurd Errno: Wrong password (mail)
+   *!   Haiku Errno: Wrong password (mail)
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_ADDON_DISABLED
-   *!   Hurd Errno: Media addon disabled
+   *!   Haiku Errno: Media addon disabled
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_ADDON_FAILED
-   *!   Hurd Errno: Media addon failed
+   *!   Haiku Errno: Media addon failed
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_ADDON_RESTRICTED
-   *!   Hurd Errno: Media addon restricted
+   *!   Haiku Errno: Media addon restricted
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_ALREADY_CONNECTED
-   *!   Hurd Errno: Already connected
+   *!   Haiku Errno: Already connected
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_APP_ALREADY_REGISTERED
-   *!   Hurd Errno: Application already registered
+   *!   Haiku Errno: Application already registered
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_APP_NOT_REGISTERED
-   *!   Hurd Errno: Application not registered
+   *!   Haiku Errno: Application not registered
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BAD_BUFFER
-   *!   Hurd Errno: Bad buffer
+   *!   Haiku Errno: Bad buffer
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BAD_CLIP_FORMAT
-   *!   Hurd Errno: Bad clipping format
+   *!   Haiku Errno: Bad clipping format
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BAD_DESTINATION
-   *!   Hurd Errno: Bad destination
+   *!   Haiku Errno: Bad destination
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BAD_FORMAT
-   *!   Hurd Errno: Bad media format
+   *!   Haiku Errno: Bad media format
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BAD_NODE
-   *!   Hurd Errno: Bad media node
+   *!   Haiku Errno: Bad media node
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BAD_SOURCE
-   *!   Hurd Errno: Bad source
+   *!   Haiku Errno: Bad source
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BUFFERS_NOT_RECLAIMED
-   *!   Hurd Errno: Buffers not reclaimed
+   *!   Haiku Errno: Buffers not reclaimed
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_BUFFER_ALREADY_EXISTS
-   *!   Hurd Errno: Buffer already exists
+   *!   Haiku Errno: Buffer already exists
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_CANNOT_CHANGE_RUN_MODE
-   *!   Hurd Errno: Cannot change run mode
+   *!   Haiku Errno: Cannot change run mode
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_CANNOT_RECLAIM_BUFFERS
-   *!   Hurd Errno: Cannot reclaim buffers
+   *!   Haiku Errno: Cannot reclaim buffers
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_CANNOT_SEEK
-   *!   Hurd Errno: Cannot seek
+   *!   Haiku Errno: Cannot seek
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_CHANGE_IN_PROGRESS
-   *!   Hurd Errno: Change in progress
+   *!   Haiku Errno: Change in progress
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_DUPLICATE_FORMAT
-   *!   Hurd Errno: Duplicate format
+   *!   Haiku Errno: Duplicate format
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_ERROR_BASE
-   *!   Hurd Errno: Base for media errors
+   *!   Haiku Errno: Base for media errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_NODE_ALREADY_EXISTS
-   *!   Hurd Errno: Media node already exists
+   *!   Haiku Errno: Media node already exists
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_NODE_BUSY
-   *!   Hurd Errno: Media node busy
+   *!   Haiku Errno: Media node busy
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_NOT_CONNECTED
-   *!   Hurd Errno: Not connected
+   *!   Haiku Errno: Not connected
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_NO_HANDLER
-   *!   Hurd Errno: No handler
+   *!   Haiku Errno: No handler
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_REALTIME_DISABLED
-   *!   Hurd Errno: Realtime disabled
+   *!   Haiku Errno: Realtime disabled
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_REALTIME_UNAVAILABLE
-   *!   Hurd Errno: Realtime unavailable
+   *!   Haiku Errno: Realtime unavailable
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_STALE_CHANGE_COUNT
-   *!   Hurd Errno: Stale change count
+   *!   Haiku Errno: Stale change count
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_SYSTEM_FAILURE
-   *!   Hurd Errno: System failure
+   *!   Haiku Errno: System failure
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_TIME_SOURCE_BUSY
-   *!   Hurd Errno: Time source busy
+   *!   Haiku Errno: Time source busy
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_TIME_SOURCE_STOPPED
-   *!   Hurd Errno: Time source stopped
+   *!   Haiku Errno: Time source stopped
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_TOO_MANY_BUFFERS
-   *!   Hurd Errno: Too many buffers
+   *!   Haiku Errno: Too many buffers
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MEDIA_TOO_MANY_NODES
-   *!   Hurd Errno: Too many nodes
+   *!   Haiku Errno: Too many nodes
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MESSAGE_TO_SELF
-   *!   Hurd Errno: Can't send message to self
+   *!   Haiku Errno: Can't send message to self
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MIDI_ERROR_BASE
-   *!   Hurd Errno: Base for MIDI errors
+   *!   Haiku Errno: Base for MIDI errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MISMATCHED_VALUES
-   *!   Hurd Errno: Mismatched values passed to function
+   *!   Haiku Errno: Mismatched values passed to function
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MISSING_LIBRARY
-   *!   Hurd Errno: Missing library
+   *!   Haiku Errno: Missing library
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_MISSING_SYMBOL
-   *!   Hurd Errno: Symbol not found
+   *!   Haiku Errno: Symbol not found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NAME_IN_USE
-   *!   Hurd Errno: Name in use
+   *!   Haiku Errno: Name in use
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NAME_NOT_FOUND
-   *!   Hurd Errno: Name not found
+   *!   Haiku Errno: Name not found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NAME_TOO_LONG
-   *!   Hurd Errno: File name too long
+   *!   Haiku Errno: File name too long
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NOT_ALLOWED
-   *!   Hurd Errno: Operation not allowed
+   *!   Haiku Errno: Operation not allowed
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NOT_AN_EXECUTABLE
-   *!   Hurd Errno: Not an executable
+   *!   Haiku Errno: Not an executable
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NOT_A_DIRECTORY
-   *!   Hurd Errno: Not a directory
+   *!   Haiku Errno: Not a directory
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NOT_A_MESSAGE
-   *!   Hurd Errno: Data is not a message
+   *!   Haiku Errno: Data is not a message
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NOT_INITIALIZED
-   *!   Hurd Errno: Initialization failed
+   *!   Haiku Errno: Initialization failed
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NOT_SUPPORTED
-   *!   Hurd Errno: Operation not supported
+   *!   Haiku Errno: Operation not supported
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_ERROR
-   *!   Hurd Errno: No error
+   *!   Haiku Errno: No error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_INIT
-   *!   Hurd Errno: Initialization failed
+   *!   Haiku Errno: Initialization failed
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_MEMORY
-   *!   Hurd Errno: Out of memory
+   *!   Haiku Errno: Out of memory
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_MORE_FDS
-   *!   Hurd Errno: Too many open files
+   *!   Haiku Errno: Too many open files
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_MORE_PORTS
-   *!   Hurd Errno: No more ports available
+   *!   Haiku Errno: No more ports available
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_MORE_SEMS
-   *!   Hurd Errno: No more semaphores
+   *!   Haiku Errno: No more semaphores
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_MORE_TEAMS
-   *!   Hurd Errno: No more teams
+   *!   Haiku Errno: No more teams
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_MORE_THREADS
-   *!   Hurd Errno: No more threads
+   *!   Haiku Errno: No more threads
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_PRINT_SERVER
-   *!   Hurd Errno: No print server
+   *!   Haiku Errno: No print server
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_NO_TRANSLATOR
-   *!   Hurd Errno: No translator found
+   *!   Haiku Errno: No translator found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_OK
-   *!   Hurd Errno: No error
+   *!   Haiku Errno: No error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_OS_ERROR_BASE
-   *!   Hurd Errno: # Base for OS errors
+   *!   Haiku Errno: # Base for OS errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_PARTIAL_READ
-   *!   Hurd Errno: Data read partially
+   *!   Haiku Errno: Data read partially
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_PARTIAL_WRITE
-   *!   Hurd Errno: Data written partially
+   *!   Haiku Errno: Data written partially
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_PARTITION_TOO_SMALL
-   *!   Hurd Errno: Partition too small to contain filesystem
+   *!   Haiku Errno: Partition too small to contain filesystem
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_PERMISSION_DENIED
-   *!   Hurd Errno: Permission denied
+   *!   Haiku Errno: Permission denied
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_POSIX_ERROR_BASE
-   *!   Hurd Errno: Base for POSIX errors
+   *!   Haiku Errno: Base for POSIX errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_PRINT_ERROR_BASE
-   *!   Hurd Errno: Base for printer errors
+   *!   Haiku Errno: Base for printer errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_READ_ONLY_DEVICE
-   *!   Hurd Errno: Read-only file system
+   *!   Haiku Errno: Read-only file system
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_RESOURCE_NOT_FOUND
-   *!   Hurd Errno: Resource not found
+   *!   Haiku Errno: Resource not found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_RESOURCE_UNAVAILABLE
-   *!   Hurd Errno: Resource unavailable
+   *!   Haiku Errno: Resource unavailable
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_RESULT_NOT_REPRESENTABLE
-   *!   Hurd Errno: Range Error
+   *!   Haiku Errno: Range Error
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_SERVER_NOT_FOUND
-   *!   Hurd Errno: Server not found
+   *!   Haiku Errno: Server not found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_SHUTDOWN_CANCELLED
-   *!   Hurd Errno: System shutdown cancelled
+   *!   Haiku Errno: System shutdown cancelled
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_SHUTTING_DOWN
-   *!   Hurd Errno: System shutting down
+   *!   Haiku Errno: System shutting down
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_STORAGE_ERROR_BASE
-   *!   Hurd Errno: Base for filesystem errors
+   *!   Haiku Errno: Base for filesystem errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_STREAM_NOT_FOUND
-   *!   Hurd Errno: Stream not found
+   *!   Haiku Errno: Stream not found
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_SUBSCRIBER_NOT_ENTERED
-   *!   Hurd Errno: Subscriber not entered
+   *!   Haiku Errno: Subscriber not entered
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_TIMED_OUT
-   *!   Hurd Errno: Operation timed out
+   *!   Haiku Errno: Operation timed out
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_TOO_MANY_ARGS
-   *!   Hurd Errno: Argument too big
+   *!   Haiku Errno: Argument too big
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_TRANSLATION_BASE_ERROR
-   *!   Hurd Errno: Base for locale errors (alt name)
+   *!   Haiku Errno: Base for locale errors (alt name)
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_TRANSLATION_ERROR_BASE
-   *!   Hurd Errno: Base for locale errors
+   *!   Haiku Errno: Base for locale errors
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_UNKNOWN_EXECUTABLE
-   *!   Hurd Errno: Unknown executable format
+   *!   Haiku Errno: Unknown executable format
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_UNKNOWN_MIME_TYPE
-   *!   Hurd Errno: Unknown MIME type
+   *!   Haiku Errno: Unknown MIME type
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_UNSUPPORTED
-   *!   Hurd Errno: Operation not supported
+   *!   Haiku Errno: Operation not supported
    *! @seealso
    *!   @[errno()]
    */
   /*! @decl constant B_WOULD_BLOCK
-   *!   Hurd Errno: Operation would block
+   *!   Haiku Errno: Operation would block
    *! @seealso
    *!   @[errno()]
    */
@@ -5593,7 +5607,7 @@ PIKE_MODULE_INIT
    *!   @[errno()]
    */
   /*! @decl constant EDIRTY
-   *!   Errno: Mounting a dirty file system with out force
+   *!   Errno: Mounting a dirty file system without force
    *! @seealso
    *!   @[errno()]
    */
@@ -5623,7 +5637,7 @@ PIKE_MODULE_INIT
    *!   @[errno()]
    */
   /*! @decl constant EDOTDOT
-   *!   Errno: RFC specific error
+   *!   Errno: RFS specific error
    *! @seealso
    *!   @[errno()]
    */
@@ -6503,13 +6517,28 @@ PIKE_MODULE_INIT
    *!   @[errno()]
    */
   /*! @decl constant ERESTARTNOHAND
-ERESTARTNOINTR
-ERESTARTSYS
-ERFKILL
-*!   Errno: Operation not possible due to RF-kill
-*! @seealso
-*!   @[errno()]
-*/
+   *!   Errno: Restart the interrupted system call once the signal
+   *!   handler returns (Linux kernel-internal; not seen in userspace).
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERESTARTNOINTR
+   *!   Errno: Restart the interrupted system call once the signal
+   *!   handler returns (Linux kernel-internal; not seen in userspace).
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERESTARTSYS
+   *!   Errno: Restart the interrupted system call once the signal
+   *!   handler returns (Linux kernel-internal; not seen in userspace).
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ERFKILL
+   *!   Errno: Operation not possible due to RF-kill
+   *! @seealso
+   *!   @[errno()]
+   */
   /*! @decl constant EROFS
    *!   Errno: Read-only filesystem
    *! @seealso
@@ -6521,11 +6550,15 @@ ERFKILL
    *!   @[errno()]
    */
   /*! @decl constant ERREMOTE
-ESAD
-*!   Errno: Security authentication denied
-*! @seealso
-*!   @[errno()]
-*/
+   *!   Errno: Object is remote
+   *! @seealso
+   *!   @[errno()]
+   */
+  /*! @decl constant ESAD
+   *!   Errno: Security authentication denied
+   *! @seealso
+   *!   @[errno()]
+   */
   /*! @decl constant ESHLIBVERS
    *!   Errno: Shared library version mismatch
    *! @seealso
