@@ -646,6 +646,68 @@ test_any([[
   return 1;
 ]], 1)
 
+// Binary additions must preserve all-undefined results through every planner.
+test_any([[
+  int chain(int a, int b) { return a + b + b; }
+  int retained(int a, int b) { return (a += b) + b; }
+  mixed inplace(mixed a, mixed b) { a += b; a += b; return a; }
+  array balanced(mixed a, mixed b) {
+    a += b;
+    b++;
+    b++;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array computed(int a, int b) {
+    a++;
+    a++;
+    b += a;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array alias(mixed a, mixed b) {
+    a += a;
+    a += a;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array(int) values = ({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90, -(1 << 90) });
+  foreach (values, int a) foreach (values, int b) {
+    int expected = (int)(Gmp.mpz(a) + 2 * Gmp.mpz(b));
+    int tag = !!zero_type(a) && !!zero_type(b);
+    foreach (({ chain, retained, inplace }), function f) {
+      int result = f(a, b);
+      if (result != expected || zero_type(result) != tag) return 0;
+    }
+    if (!equal(balanced(a, b),
+               ({ (int)(Gmp.mpz(a) + Gmp.mpz(b)),
+                  (int)(Gmp.mpz(b) + 2), tag, 0 }))) return 0;
+    if (!equal(computed(a, b),
+               ({ (int)(Gmp.mpz(a) + 2),
+                  (int)(Gmp.mpz(a) + Gmp.mpz(b) + 2), 0, 0 }))) return 0;
+    if (!equal(alias(a, b), ({ (int)(4 * Gmp.mpz(a)), b,
+                              !!zero_type(a), zero_type(b) }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Both the stored lvalue and the retained += result keep undefined tags.
+test_any([[
+  array indexed(int a, int b) {
+    array box = ({ a });
+    mixed result = (box[0] += b);
+    box[0] += b;
+    return ({ box[0], result, zero_type(box[0]), zero_type(result) });
+  }
+  foreach (({ UNDEFINED, 0, 1, -1, Int.NATIVE_MAX, 1 << 90 }), int a)
+    foreach (({ UNDEFINED, 0, 1, -1 }), int b) {
+      int tag = !!zero_type(a) && !!zero_type(b);
+      if (!equal(indexed(a, b),
+                 ({ (int)(Gmp.mpz(a) + 2 * Gmp.mpz(b)),
+                    (int)(Gmp.mpz(a) + Gmp.mpz(b)), tag, tag }))) return 0;
+    }
+  return 1;
+]], 1)
+
 // A genuine n-ary addition preserves all-UNDEFINED results and source tags.
 test_any([[
   array(mixed) f(int a, int b) {

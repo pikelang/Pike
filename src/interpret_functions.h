@@ -632,7 +632,9 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", I_ARG_T_LOCAL|I_ARG2_T_LOCAL,
   if( (TYPEOF(*dst)|TYPEOF(*src)) == PIKE_T_INT
       && !INT_TYPE_ADD_OVERFLOW(src->u.integer,dst->u.integer) )
   {
-    SET_SVAL_SUBTYPE(*dst,NUMBER_NUMBER);
+    SET_SVAL_SUBTYPE(*dst,
+      SUBTYPEOF(*dst) && SUBTYPEOF(*src) &&
+      !dst->u.integer && !src->u.integer ? NUMBER_UNDEFINED : NUMBER_NUMBER);
     dst->u.integer += src->u.integer;
   }
   else if(TYPEOF(*dst) == TYPEOF(*src) && TYPEOF(*dst) == PIKE_T_STRING )
@@ -944,12 +946,16 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
     if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
+      int subtype = SUBTYPEOF(Pike_sp[-1]) && SUBTYPEOF(Pike_sp[-2]) &&
+        !Pike_sp[-1].u.integer && !Pike_sp[-2].u.integer ?
+        NUMBER_UNDEFINED : NUMBER_NUMBER;
       INT_TYPE val = (Pike_sp[-1].u.integer += Pike_sp[-2].u.integer);
-      SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+      SET_SVAL_SUBTYPE(Pike_sp[-1], subtype);
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
       pop_2_elems();
       push_int(val);
+      SET_SVAL_SUBTYPE(Pike_sp[-1], subtype);
       goto add_to_done;
     }
   }
@@ -1010,7 +1016,10 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
-      SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+      SET_SVAL_SUBTYPE(Pike_sp[-1],
+        SUBTYPEOF(Pike_sp[-1]) && SUBTYPEOF(Pike_sp[-2]) &&
+        !Pike_sp[-1].u.integer && !Pike_sp[-2].u.integer ?
+        NUMBER_UNDEFINED : NUMBER_NUMBER);
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
       pop_2_elems();
@@ -1943,7 +1952,11 @@ OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
      && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
   {
     Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
-    SET_SVAL_SUBTYPE(Pike_sp[-2], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
+    /* Match f_add(), including undefined and destructed zero subtypes. */
+    SET_SVAL_SUBTYPE(Pike_sp[-2],
+      SUBTYPEOF(Pike_sp[-2]) && SUBTYPEOF(Pike_sp[-1]) &&
+      !Pike_sp[-2].u.integer && !Pike_sp[-1].u.integer ?
+      NUMBER_UNDEFINED : NUMBER_NUMBER);
     dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
   }else{

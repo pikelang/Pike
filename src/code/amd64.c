@@ -5019,11 +5019,11 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       /* arg1 = dst
          arg2 = src
       */
-      mov_sval_type( ARG1_REG, P_REG_RAX );
-      mov_sval_type( ARG2_REG, P_REG_RBX );
-      shl_reg_imm( P_REG_RAX, 8 );
-      add_reg_reg( P_REG_RAX, P_REG_RBX );
-      cmp_reg32_imm( P_REG_RAX, (PIKE_T_INT<<8) | PIKE_T_INT );
+      /* Nonordinary zero tags need the subtype-preserving C fallback. */
+      mov_mem32_reg(ARG1_REG, OFFSETOF(svalue, tu.t.type), P_REG_RAX);
+      mov_mem32_reg(ARG2_REG, OFFSETOF(svalue, tu.t.type), P_REG_RBX);
+      or_reg_reg(P_REG_RBX, P_REG_RAX);
+      cmp_reg32_imm(P_REG_RAX, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
       jne(&label_A); /* Fallback */
       mov_mem_reg( ARG2_REG, OFFSETOF(svalue,u.integer), P_REG_RAX );
       add_reg_mem( P_REG_RAX, ARG1_REG, OFFSETOF(svalue,u.integer));

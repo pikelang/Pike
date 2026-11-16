@@ -285,6 +285,11 @@ replay the unit from a balanced Pike stack. No fast-path operation calls
 C or exposes an uncommitted value to a callback. Source locals that were
 only read retain their original subtype tags.
 
+Computed versions have ordinary integer tags. When a binary addition has
+two untouched input versions, an entry guard requires one to have an
+ordinary tag; otherwise replay preserves the all-UNDEFINED result. The
+ordinary-tag check also checks the integer type in the same guard.
+
 The stack-aware planner is enabled by default. It extends the original
 path through retained local assignments (F_ASSIGN_LOCAL), with bounded
 virtual Pike-stack operands and three shared value banks. Banks are
@@ -346,7 +351,7 @@ Negation checks native signed overflow. A sum checks each partial addition
 before publishing its result; any overflow restores all original arguments
 and replays the entire builtin call, including bignum promotion and later
 cancellation. If every argument could be an untouched UNDEFINED input, an
-extra subtype guard requires one ordinary integer; otherwise replay retains
+entry tag guard requires one ordinary integer; otherwise replay retains
 the builtin's all-UNDEFINED result. Read-only source subtypes are unchanged.
 
 Set PIKE_SSA_NO_INTEGER_EXPRESSIONS=1 to disable these expression forms.

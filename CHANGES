@@ -52,6 +52,9 @@ Bug fixes
 
 o Compiler
 
+  - Integer addition and += preserve UNDEFINED when all operands are
+    undefined, including optimized integer regions and C opcode fast paths.
+
   - Correct argument types and values for functions using multi-assignment
     with default values. Pattern locals no longer occupy incoming argument
     slots when a default expression captures them.

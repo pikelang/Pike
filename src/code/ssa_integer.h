@@ -27,7 +27,7 @@ struct pikecode_ssa_integer_unit {
   unsigned int first, length, count, result[2], dirty_before;
 };
 struct pikecode_ssa_integer_plan {
-  unsigned int units, count, consumed, locals, values, dirty, loads;
+  unsigned int units, count, consumed, locals, values, dirty, loads, normal;
   INT32 local[PIKE_SSA_INTEGER_LOCALS];
   unsigned int current[PIKE_SSA_INTEGER_LOCALS];
   struct pikecode_ssa_integer_unit unit[PIKE_SSA_INTEGER_LIMIT];

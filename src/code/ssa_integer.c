@@ -137,6 +137,11 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
       v->local = local;
       v->imm = src < 0 ? imm[i] : 0;
       v->bank = p->value[v->left].bank;
+      /* Computed versions are ordinary integers. Two initial nonordinary
+       * zeroes need replay to preserve the addition's UNDEFINED result. */
+      if (v->right && p->value[v->left].kind == PIKE_SSA_INTEGER_LOAD &&
+          p->value[v->right].kind == PIKE_SSA_INTEGER_LOAD)
+        p->normal |= 1U << p->value[v->left].bank;
       p->current[dst] = p->values;
       u->result[i] = p->values;
       p->loads += src < 0 ? 1 : 2;
@@ -423,6 +428,11 @@ int pikecode_ssa_plan_integer_stack(
       state.local[dst] = 0;
       break;
     }
+    /* Only initial loads can retain a nonordinary zero subtype. */
+    if (kind == PIKE_SSA_INTEGER_ADD && right &&
+        p->value[left].kind == PIKE_SSA_INTEGER_LOAD &&
+        p->value[right].kind == PIKE_SSA_INTEGER_LOAD)
+      p->normal |= 1U << p->value[left].bank;
     for (i = 0; i < p->locals; i++)
       if (state.local[i]) live |= 1U << p->value[state.local[i]].bank;
     for (i = 0; i < state.depth; i++)

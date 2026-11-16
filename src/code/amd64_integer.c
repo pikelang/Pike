@@ -148,15 +148,15 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   for (i = 1; i <= p.locals; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[i];
     ptrdiff_t off = v->local * sizeof(struct svalue);
-    mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type), P_REG_RAX);
+    /* Ordinary integer type and subtype form a zero tag word. */
+    if (p.normal & (1U << (i - 1)))
+      mov_mem32_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type),
+                    P_REG_RAX);
+    else
+      mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type),
+                    P_REG_RAX);
     cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
     jne(profile ? &guard : &slow[0]);
-    if (p.normal & (1U << (i - 1))) {
-      mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.subtype),
-                    P_REG_RAX);
-      cmp_reg32_imm(P_REG_RAX, NUMBER_NUMBER);
-      jne(profile ? &guard : &slow[0]);
-    }
     mov_mem_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, u.integer),
                 amd64_integer_reg(v));
   }
@@ -304,7 +304,12 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
     struct pikecode_ssa_integer_value *v = &p.value[i];
     ptrdiff_t off = v->local * sizeof(struct svalue);
     if (v->kind != PIKE_SSA_INTEGER_LOAD) continue;
-    mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type), P_REG_RAX);
+    if (p.normal & (1U << v->bank))
+      mov_mem32_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type),
+                    P_REG_RAX);
+    else
+      mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type),
+                    P_REG_RAX);
     cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
     jne(profile ? &guard : &slow[0]);
     mov_mem_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, u.integer),

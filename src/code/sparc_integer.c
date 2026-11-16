@@ -201,17 +201,16 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   for (i = 1; i <= p.locals; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[i];
     ptrdiff_t off = v->local * sizeof(struct svalue);
-    SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
-               off + OFFSETOF(svalue, tu.t.type), 1);
+    /* Ordinary integer type and subtype form a zero tag word. */
+    if (p.normal & (1U << (i - 1)))
+      SPARC_LDUW(SPARC_REG_O3, SPARC_REG_L5,
+                 off + OFFSETOF(svalue, tu.t.type), 1);
+    else
+      SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
+                 off + OFFSETOF(svalue, tu.t.type), 1);
     SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
     /* bne %icc */
     sparc_integer_branch(profile ? &guard : &slow[0], 0x12800000);
-    if (p.normal & (1U << (i - 1))) {
-      SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
-                 off + OFFSETOF(svalue, tu.t.subtype), 1);
-      SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, NUMBER_NUMBER, 1);
-      sparc_integer_branch(profile ? &guard : &slow[0], 0x12800000);
-    }
     SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
                      off + OFFSETOF(svalue, u.integer), 1);
   }
@@ -340,8 +339,12 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
     const struct pikecode_ssa_integer_value *v = &p.value[i];
     ptrdiff_t off = v->local * sizeof(struct svalue);
     if (v->kind != PIKE_SSA_INTEGER_LOAD) continue;
-    SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
-               off + OFFSETOF(svalue, tu.t.type), 1);
+    if (p.normal & (1U << v->bank))
+      SPARC_LDUW(SPARC_REG_O3, SPARC_REG_L5,
+                 off + OFFSETOF(svalue, tu.t.type), 1);
+    else
+      SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
+                 off + OFFSETOF(svalue, tu.t.type), 1);
     SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
     /* bne %icc */
     sparc_integer_branch(profile ? &guard : &slow[0], 0x12800000);
