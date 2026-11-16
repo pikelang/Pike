@@ -4,6 +4,11 @@
 || for more information.
 */
 
+/* Fixed-arity builtin calls use the generic two-argument opcode emitter.
+ * This capability is independent of SSA and does not enable APPLY_N or
+ * CALL_LFUN_N. Unknown argument counts continue to use the mark stack. */
+#define USE_CALL_BUILTIN_N
+
 #define PIKE_OPCODE_ALIGN	4
 
 #if defined(__arch64__) || defined(__sparcv9)

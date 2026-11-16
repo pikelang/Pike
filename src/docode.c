@@ -2237,8 +2237,8 @@ static int do_docode2(node *n, int flags)
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				  CAR(n)->name);
               emit1(F_CALL_BUILTIN1, (INT32)tmp1);
-#ifdef USE_APPLY_N
-	    }else if(args>0){
+#if defined(USE_APPLY_N) || defined(USE_CALL_BUILTIN_N)
+            } else if (args > 0) {
 	      do_docode(CDR(n),0);
 	      tmp1=store_constant(& CAR(n)->u.sval,
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
