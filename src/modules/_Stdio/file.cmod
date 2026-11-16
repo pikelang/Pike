@@ -7227,6 +7227,68 @@ static void f_gethostip(INT32 args) {
   push_mapping(m);
 }
 
+#if defined(HAVE_WINSOCK2_H) && defined(SIO_GET_INTERFACE_LIST)
+/*! @decl array(array(string)) get_interface_addresses()
+ *!
+ *! Returns IPv4 address and netmask pairs for interfaces that are up,
+ *! including loopback interfaces. Used by @[NetUtils] on Windows.
+ *!
+ *! @note
+ *!   This function is only available on Windows.
+ */
+static void f_get_interface_addresses(INT32 args)
+{
+  SOCKET sock;
+  INTERFACE_INFO *info, *larger;
+  DWORD size = 16 * sizeof(INTERFACE_INFO), bytes, error;
+  unsigned int i, count = 0;
+  ONERROR cleanup;
+
+  pop_n_elems(args);
+  info = malloc(size);
+  if (!info) Pike_error("Out of memory for interface addresses.\n");
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if (sock == INVALID_SOCKET) {
+    error = WSAGetLastError();
+    free(info);
+    set_errno_from_win32_error(error);
+    Pike_error("Failed to open interface query socket: %s.\n",
+               strerror(errno));
+  }
+  while (WSAIoctl(sock, SIO_GET_INTERFACE_LIST, NULL, 0,
+                  info, size, &bytes, NULL, NULL) == SOCKET_ERROR) {
+    error = WSAGetLastError();
+    if (error != WSAEFAULT || size > 0x3fffffff) {
+      closesocket(sock);
+      free(info);
+      set_errno_from_win32_error(error);
+      Pike_error("Failed to query interface addresses: %s.\n",
+                 strerror(errno));
+    }
+    size *= 2;
+    larger = realloc(info, size);
+    if (!larger) {
+      closesocket(sock);
+      free(info);
+      Pike_error("Out of memory for interface addresses.\n");
+    }
+    info = larger;
+  }
+  closesocket(sock);
+  SET_ONERROR(cleanup, debug_xfree, info);
+  for (i = 0; i < bytes / sizeof(INTERFACE_INFO); i++) {
+    if (!(info[i].iiFlags & IFF_UP) ||
+        info[i].iiAddress.Address.sa_family != AF_INET) continue;
+    push_text(inet_ntoa(info[i].iiAddress.AddressIn.sin_addr));
+    push_text(inet_ntoa(info[i].iiNetmask.AddressIn.sin_addr));
+    f_aggregate(2);
+    count++;
+  }
+  f_aggregate(count);
+  CALL_AND_UNSET_ONERROR(cleanup);
+}
+#endif
+
 /*! @decl int getprotobyname(string(8bit) name)
  *!
  *! Returns the protocol number of the protocol @expr{name@}.
@@ -7522,6 +7584,11 @@ PIKE_MODULE_INIT
   /* function(void:mapping) */
   ADD_FUNCTION2("gethostip", f_gethostip, tFunc(tNone,tMapping),
 		0, OPT_EXTERNAL_DEPEND);
+
+#if defined(HAVE_WINSOCK2_H) && defined(SIO_GET_INTERFACE_LIST)
+  ADD_FUNCTION2("get_interface_addresses", f_get_interface_addresses,
+                tFunc(tNone,tArr(tArr(tStr))), 0, OPT_EXTERNAL_DEPEND);
+#endif
 
   ADD_FUNCTION2("getprotobyname", f_getprotobyname, tFunc(tStr8,tInt), 0, 0);
 }

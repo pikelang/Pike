@@ -477,6 +477,12 @@ o Stdio.File
   file I/O. Busy-thread cleanup now handles exceptions from interrupt
   checks without unlinking the thread twice.
 
+o NetUtils
+
+  Windows interface discovery now uses Winsock address and netmask queries
+  instead of relying on netstat output, which is unavailable under Wine.
+  Empty interface output is also handled without an indexing error.
+
 o Nettle
 
   Fixed allocator mismatches when Pike and Nettle link separate static

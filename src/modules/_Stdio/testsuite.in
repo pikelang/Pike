@@ -35,6 +35,16 @@ test_any([[
   return result == -1 && error != 0;
 ]], 1)
 
+cond_resolv(_Stdio.get_interface_addresses, [[
+  test_any([[
+    foreach (_Stdio.get_interface_addresses(), array(string) iface) {
+      if (sizeof(iface) != 2 || NetUtils.string_to_ip(iface[0]) < 0 ||
+          NetUtils.string_to_ip(iface[1]) < 0) return 0;
+    }
+    return 1;
+  ]], 1)
+]])
+
 dnl - mkdir
 test_any([[
   Stdio.Stat st = file_stat("/tmp");
