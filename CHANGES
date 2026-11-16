@@ -1175,6 +1175,12 @@ o Command-line options
 
 o Compiler and runtime performance
 
+  Builtin arithmetic on two known integers computes its result type
+  directly, preserving integer ranges while avoiding general overload
+  resolution during compilation. Integer comparisons also bypass overload
+  resolution, including unions and intersections known to be compatible
+  with integers.
+
   Addition to local object variables can use destructive addition when
   unaliased. This avoids repeated buffer copying in String.Buffer loops.
 

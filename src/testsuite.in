@@ -13437,6 +13437,67 @@ test_eq(`%(Gmp.mpz(4), 1.5), Gmp.mpz(0))
 test_eq(`%(4.5, Gmp.mpz(2)), Gmp.mpz(0))
 
 
+// Integer arithmetic keeps its range information when overload resolution
+// is skipped. Include calls with extra and spliced arguments too.
+test_any([[
+  foreach (({
+    ({ "int(2..4)", "int(6..8)", "a+b", "int(8..12)", 3, 7, 10 }),
+    ({ "int(2..4)", "int(6..8)", "a-b", "int(-6..-2)", 3, 7, -4 }),
+    ({ "int(2..4)", "int(6..8)", "a*b", "int(12..32)", 3, 7, 21 }),
+    ({ "int(2..4)", "int(6..8)", "a/b", "zero", 3, 7, 0 }),
+    ({ "int(-10..-1)", "int(2..3)", "a+b", "int(-8..2)", -7, 3, -4 }),
+    ({ "int(-10..-1)", "int(2..3)", "a-b", "int(-13..-3)", -7, 3, -10 }),
+    ({ "int(-10..-1)", "int(2..3)", "a*b", "int(-30..-2)", -7, 3, -21 }),
+    ({ "int(-10..-1)", "int(2..3)", "a/b", "int(-5..-1)", -7, 3, -3 }),
+    ({ "zero", "int(6..8)", "a+b", "int(6..8)", 0, 7, 7 }),
+    ({ "zero", "int(6..8)", "a-b", "int(-8..-6)", 0, 7, -7 }),
+    ({ "zero", "int(6..8)", "a*b", "zero", 0, 7, 0 }),
+    ({ "zero", "int(6..8)", "a/b", "zero", 0, 7, 0 }),
+    ({ "zero", "int(1..3)|void", "a+b", "int(1..3)", 0, 2, 2 }),
+    ({ "zero", "int(1..3)|zero", "a/b", "zero", 0, 2, 0 }),
+    ({ "int(2..4)", "int(6..8)", "`+(a,b,100)", "int(108..112)",
+       3, 7, 110 }),
+    ({ "int(2..4)", "int(6..8)", "`*(a,b,100)", "int(1200..3200)",
+       3, 7, 2100 }),
+    ({ "int(2..4)", "int(6..8)", "`+(a,@({b,100}))", "int(108..112)",
+       3, 7, 110 }),
+  }), array c) {
+    string args = c[0] + " a, " + c[1] + " b";
+    object o = compile_string("auto f(" + args + ") { return " + c[2] +
+                              "; } mixed t(" + args + ") { return typeof(" +
+                              c[2] + "); }")();
+    if (sprintf("%O", o->t(c[4], c[5])) != c[3] ||
+        o->f(c[4], c[5]) != c[6]) return 0;
+  }
+  return 1;
+]], 1)
+
+test_any([[
+  foreach (({ "int", "zero", "int|void", "int(1..3)|int(8..10)" }),
+           string argtype) {
+    foreach (({ "==", "!=", "<", "<=", ">", ">=" }), string op) {
+      object o = compile_string("auto f(" + argtype + " a, int b) { "
+                                "return a" + op + "b; } "
+                                "mixed t(" + argtype + " a, int b) { "
+                                "return typeof(a" + op + "b); }")();
+      int a = argtype == "zero" ? 0 : 1;
+      int b = 9;
+      int expected;
+      switch (op) {
+      case "==": expected = a == b; break;
+      case "!=": expected = a != b; break;
+      case "<": expected = a < b; break;
+      case "<=": expected = a <= b; break;
+      case ">": expected = a > b; break;
+      case ">=": expected = a >= b; break;
+      }
+      if (o->t(a, b) != typeof(a == b) || o->f(a, b) != expected)
+        return 0;
+    }
+  }
+  return 1;
+]], 1)
+
 // - `&
 
 test_any([[
