@@ -5,10 +5,15 @@
 || for more information.
 */
 
+#include "constants.h"
+#include "operators.h"
+
 /* Included by pikecode.c. These planners contain no native registers,
  * instruction encodings or branch fixups. The balanced planner coalesces
  * each local's versions; the stack planner shares banks by liveness. */
 #ifdef CODE_GENERATOR_INTEGER_RUN
+#include "ssa_integer_profile.c"
+
 /* Source records follow the caller's per-function setting. */
 static void pikecode_ssa_integer_source(const struct p_instr_s *op,
                                        int store_lines)
@@ -184,10 +189,53 @@ static int integer_stack_bitwise(enum pikecode_ssa_integer_kind kind)
     kind == PIKE_SSA_INTEGER_XOR;
 }
 
+/* Only the immutable builtin addition is eligible, never an arbitrary call.
+ * Arguments are native integers guarded at region entry. A failed partial
+ * sum publishes the original argument snapshot and replays the entire call.
+ */
+static int integer_stack_expressions(void)
+{
+  static int enabled = -1;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_NO_INTEGER_EXPRESSIONS") == NULL;
+  return enabled;
+}
+
+static int integer_stack_sum(const struct p_instr_s *op)
+{
+  const struct svalue *f;
+  struct program *p;
+  if (op->opcode != F_CALL_BUILTIN_N || op->arg2 < 2 ||
+      op->arg2 > PIKE_SSA_INTEGER_LIMIT || !Pike_compiler) return 0;
+  p = Pike_compiler->new_program;
+  if (op->arg < 0 || op->arg >= p->num_constants) return 0;
+  f = &p->constants[op->arg].sval;
+  return TYPEOF(*f) == PIKE_T_FUNCTION &&
+    SUBTYPEOF(*f) == FUNCTION_BUILTIN && f->u.efun->function == f_add;
+}
+
+static int integer_stack_constant(const struct p_instr_s *op, INT32 *imm)
+{
+  switch (op->opcode) {
+  case F_CONST0: *imm = 0; return 1;
+  case F_CONST1: *imm = 1; return 1;
+  case F_CONST_1: *imm = -1; return 1;
+  case F_NUMBER: *imm = op->arg; return 1;
+  case F_NEG_NUMBER:
+    if (INT32_NEG_OVERFLOW(op->arg)) return 0;
+    *imm = -op->arg; return 1;
+  }
+  return 0;
+}
+
 static int integer_stack_refs(const struct p_instr_s *op,
                                INT32 *a, INT32 *b, int subtract, int bitwise)
 {
+  INT32 imm;
   *a = *b = -1;
+  if (integer_stack_expressions() &&
+      (op->opcode == F_NEGATE || integer_stack_constant(op, &imm) ||
+       integer_stack_sum(op))) return 1;
   switch (op->opcode) {
   case F_2_LOCALS: case F_ADD_LOCALS_AND_POP:
     *b = op->arg2;
@@ -221,6 +269,8 @@ int pikecode_ssa_plan_integer_stack(
 {
   struct pikecode_ssa_integer_snapshot state;
   struct pikecode_ssa_integer_stack_plan best;
+  unsigned int stack_limit = integer_stack_expressions() ?
+    PIKE_SSA_INTEGER_STACK : 2;
   unsigned int n, e, i, arithmetic = 0, retained = 0, used = 0, best_used = 0;
   if (available <= 0) return 0;
   switch (code[0].opcode) {
@@ -237,12 +287,15 @@ int pikecode_ssa_plan_integer_stack(
     const struct p_instr_s *op = &code[n];
     INT32 a, b;
     int is_arithmetic;
+    INT32 imm;
     if (op->file != code[0].file ||
         !integer_stack_refs(op, &a, &b, subtract, bitwise)) break;
     is_arithmetic = op->opcode != F_LOCAL && op->opcode != F_2_LOCALS &&
       op->opcode != F_ASSIGN_LOCAL && op->opcode != F_ASSIGN_LOCAL_AND_POP &&
-      op->opcode != F_POP_VALUE;
-    if (is_arithmetic && arithmetic == PIKE_SSA_INTEGER_LIMIT) break;
+      op->opcode != F_POP_VALUE && !integer_stack_constant(op, &imm);
+    /* Count every native add in an n-ary operation against the same budget. */
+    if (op->opcode == F_CALL_BUILTIN_N) is_arithmetic = op->arg2 - 1;
+    if (arithmetic + is_arithmetic > PIKE_SSA_INTEGER_LIMIT) break;
     if (a >= 0 && integer_stack_local(p, a, max_local) < 0) break;
     if (b >= 0 && integer_stack_local(p, b, max_local) < 0) break;
     arithmetic += is_arithmetic;
@@ -250,7 +303,7 @@ int pikecode_ssa_plan_integer_stack(
   }
   if ((!retained && !stack_exits && !bitwise) || arithmetic < 2) return 0;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
-  p->bitwise = 0;
+  p->bitwise = p->normal = p->expressions = 0;
   memset(p->value, 0, sizeof(p->value));
   memset(p->step, 0, sizeof(p->step));
   memset(&state, 0, sizeof(state));
@@ -269,14 +322,45 @@ int pikecode_ssa_plan_integer_stack(
     INT32 imm = 0, a, b;
     enum pikecode_ssa_integer_kind kind = PIKE_SSA_INTEGER_ADD;
     int dst = -1, src = -1;
+    unsigned int args = 0, operand[PIKE_SSA_INTEGER_LIMIT];
     integer_stack_refs(op, &a, &b, subtract, bitwise);
     for (i = 0; i < p->locals; i++) {
       if (p->local[i] == a) dst = i;
       if (p->local[i] == b) src = i;
     }
+    if (integer_stack_constant(op, &imm)) {
+      struct pikecode_ssa_integer_value *v;
+      if (state.depth == stack_limit) goto finished;
+      v = &p->value[++p->values];
+      v->kind = PIKE_SSA_INTEGER_CONSTANT;
+      v->imm = imm;
+      state.stack[state.depth++] = p->values;
+      goto accepted;
+    }
     switch (op->opcode) {
+    case F_NEGATE:
+      if (!state.depth) goto finished;
+      left = state.stack[--state.depth];
+      kind = PIKE_SSA_INTEGER_NEGATE;
+      push = 1;
+      break;
+    case F_CALL_BUILTIN_N:
+      args = op->arg2;
+      if (state.depth < args) goto finished;
+      state.depth -= args;
+      for (i = 0; i < args; i++) operand[i] = state.stack[state.depth + i];
+      /* f_add preserves UNDEFINED only if all arguments are UNDEFINED.
+       * Any computed value or literal ensures an ordinary result. Otherwise
+       * require one original input to have the ordinary integer subtype. */
+      for (i = 0; i < args; i++)
+        if (p->value[operand[i]].kind != PIKE_SSA_INTEGER_LOAD) break;
+      if (i == args) p->normal |= 1U << p->value[operand[0]].bank;
+      left = operand[0];
+      kind = PIKE_SSA_INTEGER_SUM;
+      push = 1;
+      break;
     case F_LOCAL: case F_2_LOCALS:
-      if (state.depth + (src >= 0 ? 2 : 1) > PIKE_SSA_INTEGER_STACK)
+      if (state.depth + (src >= 0 ? 2 : 1) > stack_limit)
         goto finished;
       state.stack[state.depth++] = state.local[dst];
       if (src >= 0) state.stack[state.depth++] = state.local[src];
@@ -286,7 +370,8 @@ int pikecode_ssa_plan_integer_stack(
       left = state.stack[state.depth - 1];
       /* Bare input copies would need parallel subtype-tag moves at commit.
        * Keep those on the ordinary path; arithmetic results have tag INT/0. */
-      if (p->value[left].kind == PIKE_SSA_INTEGER_LOAD) goto finished;
+      if (p->value[left].kind == PIKE_SSA_INTEGER_LOAD ||
+          p->value[left].kind == PIKE_SSA_INTEGER_CONSTANT) goto finished;
       state.local[dst] = left;
       state.dirty |= 1U << dst;
       p->writes++;
@@ -334,14 +419,15 @@ int pikecode_ssa_plan_integer_stack(
       else imm = (op->opcode == F_INC_LOCAL ||
                   op->opcode == F_INC_LOCAL_AND_POP) ? 1 : -1;
       push = op->opcode == F_INC_LOCAL || op->opcode == F_DEC_LOCAL;
-      if (push && state.depth == PIKE_SSA_INTEGER_STACK) goto finished;
+      if (push && state.depth == stack_limit) goto finished;
       state.local[dst] = 0;
       break;
     }
     for (i = 0; i < p->locals; i++)
       if (state.local[i]) live |= 1U << p->value[state.local[i]].bank;
     for (i = 0; i < state.depth; i++)
-      live |= 1U << p->value[state.stack[i]].bank;
+      if (p->value[state.stack[i]].kind != PIKE_SSA_INTEGER_CONSTANT)
+        live |= 1U << p->value[state.stack[i]].bank;
     bank = p->value[left].bank;
     if (live & (1U << bank)) {
       for (bank = 0; bank < PIKE_SSA_INTEGER_LOCALS; bank++)
@@ -360,14 +446,18 @@ int pikecode_ssa_plan_integer_stack(
       v->imm = imm;
       v->bank = bank;
       v->local = -1;
+      v->args = args;
+      for (i = 0; i < args; i++) v->operand[i] = operand[i];
       if (write) {
         state.local[dst] = p->values;
         state.dirty |= 1U << dst;
         p->writes++;
       }
       if (push) state.stack[state.depth++] = p->values;
-      p->loads += right ? 2 : 1;
+      p->loads += args ? args : right ? 2 : 1;
       p->bitwise += integer_stack_bitwise(kind);
+      p->expressions += kind == PIKE_SSA_INTEGER_NEGATE ||
+        kind == PIKE_SSA_INTEGER_SUM;
     }
   accepted:
     if (dst >= 0) used |= 1U << dst;
@@ -376,7 +466,7 @@ int pikecode_ssa_plan_integer_stack(
     p->consumed = e + 1;
     /* Keep the longest profitable prefix, including a live-stack exit.
      * Its final snapshot is published just like an overflow snapshot. */
-    if (((!state.depth && (p->retained || p->bitwise)) ||
+    if (((!state.depth && (p->retained || p->bitwise || p->expressions)) ||
          (state.depth && stack_exits)) &&
         p->count >= 2 &&
         p->loads > p->locals) {

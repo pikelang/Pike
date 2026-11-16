@@ -24,6 +24,15 @@
  * avoid a reload, calls, and emitted code bytes. Compare the same binary with
  * the joins variable unset and set.
  *
+ * PIKE_SSA_INTEGER_PROFILE=1 emits per-region execution counters using
+ * O3/O5 after consuming branch flags, preserving O4 for rollback. SPARC32
+ * uses V7 ADDcc/ADDX for 64-bit counters; SPARC64 uses LDX/ADD/STX and full
+ * pointer materialization. Counter sites contain no calls. Unset the flag
+ * for performance measurements.
+ *
+ * Negation uses SUBcc from G0; partial sums use O3 and leave argument banks
+ * intact until every ADDcc overflow check succeeds.
+ *
  * With SSA enabled, the shared integer value pass described in README.txt
  * defaults on for 32-bit Pike integers on either ABI and 64-bit integers
  * on SPARC64. Value banks use O0..O2; O3 holds speculative results and O4
@@ -526,6 +535,7 @@ void sparc_start_function(int UNUSED(store_lines))
 {
   if (!sparc_ssa_initialized) {
     sparc_ssa_initialized = 1;
+    pikecode_ssa_integer_profile_init();
     sparc_ssa_stats = getenv("PIKE_SSA_STATS") != NULL;
     sparc_ssa_no_joins = getenv("PIKE_SSA_SPARC_JOINS") == NULL;
     sparc_ssa_integer_regions = getenv("PIKE_SSA_NO_INTEGER_REGIONS") == NULL;

@@ -637,14 +637,20 @@ PIKEFUN void dump_dmalloc_locations(string|array|mapping|multiset|function|objec
 }
 #endif /* DEBUG_MALLOC */
 
-/*! @decl mapping(string:int) get_program_layout(program p)
+/*! @decl mapping(string|int:int) get_program_layout(program p,
+ *!                                             int(0..1)|void include_base)
  *! Returns a mapping which describes the layout of compiled machine
  *! code in the program @expr{p@}. The indices of the returned mapping
  *! are function names, the values the starting address of the compiled
  *! function. The total size of the program code is stored with index
  *! @expr{0@}.
+ *!
+ *! If @[include_base] is nonzero, index @expr{-1@} contains the starting
+ *! address of the code buffer. Together with its size, this gives exact
+ *! bounds for sampling profilers, including the last function.
  */
-PIKEFUN mapping get_program_layout(program p) {
+PIKEFUN mapping get_program_layout(program p,
+                                  int(0..1)|void include_base) {
   size_t i;
   struct mapping *m = allocate_mapping(64);
 
@@ -655,7 +661,8 @@ PIKEFUN mapping get_program_layout(program p) {
 
       if ((id->identifier_flags & IDENTIFIER_TYPE_MASK)
             == IDENTIFIER_PIKE_FUNCTION
-          && !ref->inherit_offset) {
+          && !ref->inherit_offset
+          && (size_t)id->func.offset < (size_t)p->num_program) {
         PIKE_OPCODE_T *pc = p->program + id->func.offset;
         struct svalue sv;
 
@@ -673,6 +680,12 @@ PIKEFUN mapping get_program_layout(program p) {
       SET_SVAL(value, PIKE_T_INT, NUMBER_NUMBER, integer,
                p->num_program * sizeof(PIKE_OPCODE_T));
       mapping_insert(m, &key, &value);
+      if (include_base && include_base->u.integer) {
+        SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer, -1);
+        ulongest_to_svalue_no_free(&value, (UINT64)PTR_TO_INT(p->program));
+        mapping_insert(m, &key, &value);
+        free_svalue(&value);
+      }
     }
   }
 

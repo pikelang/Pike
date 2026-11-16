@@ -17,6 +17,23 @@ int amd64_integer_regions_enabled(void)
 #endif
 }
 
+/* RAX is dead at region entry, success, and cold exit labels. No call or
+ * interpreter-state publication is needed for these opt-in increments. */
+static void amd64_integer_count(struct pikecode_ssa_integer_profile *p,
+                                enum pikecode_ssa_integer_counter counter)
+{
+  unsigned INT64 addr;
+  if (!p) return;
+  addr = (size_t)&p->count[counter];
+  rex(1, 0, 0, P_REG_RAX);
+  opcode(0xb8); /* movabs counter, %rax (also correct with LLP64). */
+  id((unsigned INT32)addr);
+  id((unsigned INT32)(addr >> 32));
+  rex(1, 0, 0, P_REG_RAX);
+  opcode(0xff); /* incq (%rax), under the interpreter lock. */
+  modrm(0, 0, P_REG_RAX);
+}
+
 static enum amd64_reg
 amd64_integer_reg(const struct pikecode_ssa_integer_value *value)
 {
@@ -51,6 +68,13 @@ static void amd64_integer_commit(struct pikecode_ssa_integer_plan *p,
   }
 }
 
+static void amd64_integer_value(
+    const struct pikecode_ssa_integer_value *v, enum amd64_reg reg)
+{
+  if (v->kind == PIKE_SSA_INTEGER_CONSTANT) mov_imm_reg(v->imm, reg);
+  else mov_reg_reg(amd64_integer_reg(v), reg);
+}
+
 /* Publish a side exit before any C call. Input tags are copied before local
  * commits, since a dirty local may still hold an input's original subtype. */
 static void amd64_integer_snapshot(
@@ -64,7 +88,12 @@ static void amd64_integer_snapshot(
     for (i = 0; i < s->depth; i++) {
       const struct pikecode_ssa_integer_value *v = &p->value[s->stack[i]];
       ptrdiff_t off = i * sizeof(struct svalue);
-      mov_reg_mem(amd64_integer_reg(v), P_REG_RDX,
+      enum amd64_reg reg = amd64_integer_reg(v);
+      if (v->kind == PIKE_SSA_INTEGER_CONSTANT) {
+        amd64_integer_value(v, P_REG_RAX);
+        reg = P_REG_RAX;
+      }
+      mov_reg_mem(reg, P_REG_RDX,
                   off + OFFSETOF(svalue, u.integer));
       if (v->kind == PIKE_SSA_INTEGER_LOAD) {
         mov_mem_reg(PIKE_LOCALS_REG,
@@ -92,8 +121,10 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
                                    ptrdiff_t available, int store_lines)
 {
   struct pikecode_ssa_integer_stack_plan p;
+  struct pikecode_ssa_integer_profile *profile;
   struct label overflow[PIKE_SSA_INTEGER_LIMIT];
   struct label slow[PIKE_SSA_INTEGER_CODE], done = { .addr = -1 };
+  struct label guard = { .addr = -1 };
   unsigned int i, stores = 0;
   if (ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
@@ -101,6 +132,8 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
                 sizeof(struct svalue)),
         !ssa_no_integer_stack_exits, !ssa_no_integer_subtract,
         !ssa_no_integer_bitwise)) return 0;
+  profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
+                                             p.count, p.locals, "stack");
   for (i = 0; i < p.count; i++) overflow[i] = (struct label){ .addr = -1 };
   for (i = 0; i < p.consumed; i++) slow[i] = (struct label){ .addr = -1 };
   amd64_flush_code_generator_state();
@@ -109,6 +142,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   if (pikecode_ssa_integer_multiline(code, p.consumed))
     ssa_region.abandoned = 1;
   maybe_update_pc();
+  amd64_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
   amd64_load_fp_reg();
   mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), PIKE_LOCALS_REG);
   for (i = 1; i <= p.locals; i++) {
@@ -116,17 +150,44 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     ptrdiff_t off = v->local * sizeof(struct svalue);
     mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type), P_REG_RAX);
     cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
-    jne(&slow[0]);
+    jne(profile ? &guard : &slow[0]);
+    if (p.normal & (1U << (i - 1))) {
+      mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.subtype),
+                    P_REG_RAX);
+      cmp_reg32_imm(P_REG_RAX, NUMBER_NUMBER);
+      jne(profile ? &guard : &slow[0]);
+    }
     mov_mem_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, u.integer),
                 amd64_integer_reg(v));
   }
   for (i = 0; i < p.count; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[p.step[i].result];
     pikecode_ssa_integer_source(&code[p.step[i].first], store_lines);
-    mov_reg_reg(amd64_integer_reg(&p.value[v->left]), P_REG_RAX);
-    if (integer_stack_bitwise(v->kind)) {
+    amd64_integer_value(&p.value[v->left], P_REG_RAX);
+    if (v->kind == PIKE_SSA_INTEGER_NEGATE) {
+      rex(1, 0, 0, P_REG_RAX);
+      opcode(0xf7);
+      modrm(3, 3, P_REG_RAX); /* negq %rax */
+      jo(&overflow[i]);
+    } else if (v->kind == PIKE_SSA_INTEGER_SUM) {
+      unsigned int j;
+      for (j = 1; j < v->args; j++) {
+        const struct pikecode_ssa_integer_value *arg =
+          &p.value[v->operand[j]];
+        if (arg->kind == PIKE_SSA_INTEGER_CONSTANT)
+          amd64_integer_alu_imm(P_REG_RAX, arg->imm, 0);
+        else add_reg_reg(P_REG_RAX, amd64_integer_reg(arg));
+        jo(&overflow[i]);
+      }
+    } else if (integer_stack_bitwise(v->kind)) {
       enum amd64_reg right;
-      if (v->right) right = amd64_integer_reg(&p.value[v->right]);
+      if (v->right &&
+          p.value[v->right].kind != PIKE_SSA_INTEGER_CONSTANT)
+        right = amd64_integer_reg(&p.value[v->right]);
+      else if (v->right) {
+        amd64_integer_value(&p.value[v->right], P_REG_RDX);
+        right = P_REG_RDX;
+      }
       else {
         mov_imm_reg(v->imm, P_REG_RDX);
         right = P_REG_RDX;
@@ -139,9 +200,13 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
       modrm(3, P_REG_RAX, right);
     } else {
       if (v->right) {
-        if (v->kind == PIKE_SSA_INTEGER_SUBTRACT)
-          sub_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
-        else add_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
+        const struct pikecode_ssa_integer_value *right = &p.value[v->right];
+        if (right->kind == PIKE_SSA_INTEGER_CONSTANT)
+          amd64_integer_alu_imm(P_REG_RAX, right->imm,
+                                v->kind == PIKE_SSA_INTEGER_SUBTRACT);
+        else if (v->kind == PIKE_SSA_INTEGER_SUBTRACT)
+          sub_reg_reg(P_REG_RAX, amd64_integer_reg(right));
+        else add_reg_reg(P_REG_RAX, amd64_integer_reg(right));
       } else
         amd64_integer_alu_imm(P_REG_RAX, v->imm,
                               v->kind == PIKE_SSA_INTEGER_SUBTRACT);
@@ -152,12 +217,19 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   /* Publish live results before the next ordinary opcode. The slow replay
    * finishes at the same stack depth with empty machine caches. */
   amd64_integer_snapshot(&p, &p.final);
+  amd64_integer_count(profile, PIKE_SSA_INTEGER_FAST);
   jmp(&done);
   for (i = 0; i < p.count; i++) {
     if (integer_stack_bitwise(p.value[p.step[i].result].kind)) continue;
     label(&overflow[i]);
+    amd64_integer_count(profile, PIKE_SSA_INTEGER_OVERFLOWS);
     amd64_integer_snapshot(&p, &p.step[i].before);
     jmp(&slow[p.step[i].first]);
+  }
+  if (profile) {
+    label(&guard);
+    amd64_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
+    jmp(&slow[0]);
   }
   for (i = 0; i < p.consumed; i++) {
     unsigned int instr = code[i].opcode - F_OFFSET;
@@ -198,8 +270,10 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
                        int store_lines)
 {
   struct pikecode_ssa_integer_plan p;
+  struct pikecode_ssa_integer_profile *profile;
   struct label overflow[PIKE_SSA_INTEGER_LIMIT];
   struct label slow[PIKE_SSA_INTEGER_LIMIT], done = { .addr = -1 };
+  struct label guard = { .addr = -1 };
   unsigned int i, j;
   unsigned int stores = 0;
   if (!amd64_integer_regions_enabled()) return 0;
@@ -210,6 +284,8 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
   if (!pikecode_ssa_plan_integer(&p, code, available,
       (INT32)((0x7fffffff - OFFSETOF(svalue, u.integer)) /
               sizeof(struct svalue)))) return 0;
+  profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
+                                             p.count, p.locals, "balanced");
   for (i = 0; i < p.units; i++) {
     overflow[i] = (struct label){ .addr = -1 };
     slow[i] = (struct label){ .addr = -1 };
@@ -221,6 +297,7 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
   ssa_locals_valid = 0;
   pikecode_ssa_clobber(&ssa_state, PIKE_SSA_LOCALS);
   maybe_update_pc();
+  amd64_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
   amd64_load_fp_reg();
   mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), PIKE_LOCALS_REG);
   for (i = 1; i <= p.values; i++) {
@@ -229,7 +306,7 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
     if (v->kind != PIKE_SSA_INTEGER_LOAD) continue;
     mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type), P_REG_RAX);
     cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
-    jne(&slow[0]);
+    jne(profile ? &guard : &slow[0]);
     mov_mem_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, u.integer),
                 amd64_integer_reg(v));
   }
@@ -252,14 +329,21 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
     }
   }
   amd64_integer_commit(&p, p.dirty);
+  amd64_integer_count(profile, PIKE_SSA_INTEGER_FAST);
   jmp(&done);
   for (i = 0; i < p.units; i++) {
     struct pikecode_ssa_integer_unit *u = &p.unit[i];
     label(&overflow[i]);
+    amd64_integer_count(profile, PIKE_SSA_INTEGER_OVERFLOWS);
     if (u->count > 1)
       mov_reg_reg(P_REG_RDX, amd64_integer_reg(&p.value[u->result[0]]));
     amd64_integer_commit(&p, u->dirty_before);
     jmp(&slow[i]);
+  }
+  if (profile) {
+    label(&guard);
+    amd64_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
+    jmp(&slow[0]);
   }
   for (i = 0; i < p.units; i++) {
     struct pikecode_ssa_integer_unit *u = &p.unit[i];

@@ -79,6 +79,9 @@ Incompatible changes
 New modules and functions
 -------------------------
 
+o Debug.get_program_layout() accepts an optional flag to include the code
+  buffer base for sampling profilers. Undefined function declarations no
+  longer produce invalid addresses in its function map.
 
 
 New features
@@ -118,6 +121,15 @@ o Compiler
   - Integer regions can now span adjacent source lines, preserving source
     positions for fallback calls and exceptions. File changes, debug
     directives and labels remain region boundaries.
+
+  - SSA integer regions now lower unary negation and bounded multi-operand
+    builtin addition on AMD64, SPARC32 and SPARC64. Overflow replays each
+    original operation with its operands intact. Set
+    PIKE_SSA_NO_INTEGER_EXPRESSIONS=1 to restore previous handling.
+
+  - Set PIKE_SSA_INTEGER_PROFILE=1 to collect per-region execution counts,
+    type-guard failures and overflow exits. Summarize captured stderr with
+    tools/ssa_integer_profile.pike; ordinary runs emit no counter code.
 
 
 Deprecated symbols and modules

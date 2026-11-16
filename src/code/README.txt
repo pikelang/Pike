@@ -36,8 +36,8 @@ C or exposes an uncommitted value to a callback. Source locals that were
 only read retain their original subtype tags.
 
 The stack-aware planner is enabled by default. It extends the original
-path through retained local assignments (F_ASSIGN_LOCAL), using up to
-two virtual Pike-stack operands and three shared value banks. Banks are
+path through retained local assignments (F_ASSIGN_LOCAL), with bounded
+virtual Pike-stack operands and three shared value banks. Banks are
 reused only after their last local or stack reference disappears. Set
 PIKE_SSA_NO_INTEGER_STACK=1 to use only the original balanced-unit
 planner for comparisons. It also remains the fallback when the extended
@@ -52,10 +52,11 @@ before local commits so an original UNDEFINED subtype survives even if
 its local has been updated. The slow-path merge clears cached machine
 state before each possible entry.
 
-Successful exits may leave up to two live values above the entry stack
-pointer. The final snapshot publishes those values, their tags, the
-stack pointer, and dirty locals before the next ordinary opcode. Both
-fast and replayed paths leave machine caches empty at their merge. Set
+Successful exits may leave up to eight bounded virtual values above the
+entry stack pointer when integer expressions are enabled (otherwise two).
+The final snapshot publishes those values, their tags, the stack pointer,
+and dirty locals before the next ordinary opcode. Both fast and replayed
+paths leave machine caches empty at their merge. Set
 PIKE_SSA_NO_INTEGER_STACK_EXITS=1 to require the original entry stack
 depth at successful exits while retaining stack-aware overflow exits.
 
@@ -82,6 +83,51 @@ Logical results have ordinary integer tags, including zero; read-only
 inputs keep their original subtype tags. Logical assignments can end a
 balanced region without retaining a stack value. Set
 PIKE_SSA_NO_INTEGER_BITWISE=1 to restore previous region handling.
+
+The stack-aware planner lowers unary negation and bounded n-ary builtin
+addition. It checks the actual callee identity; arbitrary calls remain
+boundaries. Virtual integer literals need no physical register. Arguments
+and local versions still share three banks, with at most eight virtual
+stack operands and eight arithmetic operations. Every add in an n-ary sum
+counts against that operation budget. A sum is one SSA value operation in
+statistics, regardless of its number of native additions.
+
+Negation checks native signed overflow. A sum checks each partial addition
+before publishing its result; any overflow restores all original arguments
+and replays the entire builtin call, including bignum promotion and later
+cancellation. If every argument could be an untouched UNDEFINED input, an
+extra subtype guard requires one ordinary integer; otherwise replay retains
+the builtin's all-UNDEFINED result. Read-only source subtypes are unchanged.
+
+Set PIKE_SSA_NO_INTEGER_EXPRESSIONS=1 to disable these expression forms.
+Fixed-arity builtin call selection is a separate backend capability and is
+unchanged by integer-region comparison controls.
+
+Set PIKE_SSA_INTEGER_PROFILE=1 to emit execution counters for integer
+regions. Normal builds emit no counter instructions when it is unset.
+Each process reports entries, type-guard failures, overflow exits and
+successful fast exits on stderr at exit. Counters are unsigned 64-bit
+values, updated under the interpreter lock, and reset in a forked child.
+Source names and records remain allocated until process exit, even after
+their compiled programs have been reclaimed.
+
+Executed regions also produce tab-separated rows with the PID, region ID,
+program ID, escaped source file, first/last source lines, planner, operation
+and local counts, following opcode, entries, guard failures, overflows and
+fast exits. Non-ASCII/control characters in source names use ASCII escapes.
+The following opcode is a boundary clue, not a recorded rejection reason.
+The fast_ops total counts operations in successful regions; it excludes
+completed prefixes of overflowing regions and all ordinary opcodes.
+
+Summarize one or more captured stderr logs with:
+  pike tools/ssa_integer_profile.pike [--json] [--top N] log...
+Use - for standard input. The tool checks entry/exit counts and process
+totals, and combines recompilations and processes at the same source site.
+JSON includes all sites; --top limits the text output. These counters show
+which regions execute and fall back; they do not give a denominator for
+all executed Pike operations. Use uninstrumented runs for timing and
+sampling. Debug.get_program_layout(p, 1) additionally returns the code
+buffer base at index -1, allowing exact function bounds in profiler maps.
 
 Integer statistics count regions, value operations, SSA values,
 reused logical operand reads, deferred local writes, stack-aware

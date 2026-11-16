@@ -1608,6 +1608,7 @@ $(SRCDIR)/pikecode.c: \
   $(SRCDIR)/code/amd64_ssa.c \
   $(SRCDIR)/code/amd64_integer.c \
   $(SRCDIR)/code/ssa_integer.c \
+  $(SRCDIR)/code/ssa_integer_profile.c \
   $(SRCDIR)/code/sparc.c \
   $(SRCDIR)/code/sparc_integer.c \
   $(SRCDIR)/code/ppc32.c \

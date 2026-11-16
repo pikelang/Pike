@@ -20,6 +20,10 @@
  * For example, run the same Pike program with PIKE_SSA_STATS=1 alone and with
  * both variables set, then compare the reported store counts and code bytes.
  *
+ * PIKE_SSA_INTEGER_PROFILE=1 emits per-region execution counters. Counter
+ * sites use RAX only, after branch conditions have been consumed, without
+ * calls or interpreter-state publication. Unset it for performance runs.
+ *
  * PIKE_SSA_LOCALS_CACHE=1 enables an experimental read-only cache of
  * frame->locals in caller-saved R11 on amd64. PIKE_SSA_NO_LOCALS_CACHE=1
  * forces it off for paired measurements. Values and tags stay in canonical
@@ -203,7 +207,7 @@ ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc wa
 static int branch_check_threads_update_etc = 0;
 static int store_pc = 0;
 
-#define MAX_LABEL_USES 6
+#define MAX_LABEL_USES 8
 struct label {
   int n_label_uses;
   ptrdiff_t addr;
@@ -1491,6 +1495,7 @@ void amd64_start_function(int store_lines )
       getenv("PIKE_SSA_NO_INTEGER_BITWISE") != NULL;
     ssa_no_locals_cache = getenv("PIKE_SSA_LOCALS_CACHE") == NULL ||
       getenv("PIKE_SSA_NO_LOCALS_CACHE") != NULL;
+    pikecode_ssa_integer_profile_init();
     ssa_report_stats = getenv("PIKE_SSA_STATS") != NULL;
     if (ssa_report_stats) atexit(amd64_ssa_report_stats);
   }
