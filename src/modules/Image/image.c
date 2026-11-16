@@ -198,11 +198,10 @@ static void init_image_struct(struct object *UNUSED(obj))
 
 static void exit_image_struct(struct object *UNUSED(obj))
 {
-    if (THIS->img) {
-        if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
-            memset( THIS->img, 0, sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize );
-        free(THIS->img);
-    }
+    if (THIS->img)
+        image_free_later(THIS->img,
+                         (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) ?
+                         sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize : 0);
 }
 
 static void gc_recurse_image_struct(struct object *UNUSED(obj))

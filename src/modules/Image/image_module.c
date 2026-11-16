@@ -12,6 +12,7 @@
 #include "operators.h"
 #include "module_support.h"
 #include "pike_threadlib.h"
+#include "callback.h"
 
 #include "image.h"
 #include "assembly.h"
@@ -186,6 +187,58 @@ void image_wait_for_unlocked(void)
   }
   image_replace_waiting--;
 }
+
+/* The memory of images destructed while drawing loops ran without the
+ * interpreter lock, and how many bytes of each to clear. */
+static struct image_free { void *img; size_t clear; } *image_frees;
+static int image_frees_waiting, image_frees_size;
+static struct callback *image_frees_callback;
+
+static void image_free_waiting(struct callback *UNUSED(cb),
+                               void *UNUSED(a), void *UNUSED(b))
+{
+  int i;
+  if (image_threads_unlocked) return;
+  for (i = 0; i < image_frees_waiting; i++) {
+    if (image_frees[i].clear)
+      memset(image_frees[i].img, 0, image_frees[i].clear);
+    free(image_frees[i].img);
+  }
+  image_frees_waiting = 0;
+  image_replace_waiting--;
+  remove_callback(image_frees_callback);
+  image_frees_callback = NULL;
+}
+
+/* Frees an image's memory, after clearing its first CLEAR bytes. An
+ * explicit destruct() may come while another thread draws on the image
+ * without the interpreter lock, so while any drawing loop runs without
+ * it, the memory is freed later, between two steps of the evaluator
+ * once none does, when no thread can be in a drawing function. Loops
+ * that start meanwhile keep the lock, so that it happens. */
+void image_free_later(void *img, size_t clear)
+{
+  if (image_threads_unlocked) {
+    if (image_frees_waiting == image_frees_size) {
+      int n = image_frees_size ? image_frees_size * 2 : 8;
+      struct image_free *f = realloc(image_frees, n * sizeof(*f));
+      if (!f) return;	/* Rather leaked than freed in use. */
+      image_frees = f;
+      image_frees_size = n;
+    }
+    if (!image_frees_waiting) {
+      image_replace_waiting++;
+      image_frees_callback =
+        add_to_callback(&evaluator_callbacks, image_free_waiting, NULL, NULL);
+    }
+    image_frees[image_frees_waiting].img = img;
+    image_frees[image_frees_waiting].clear = clear;
+    image_frees_waiting++;
+    return;
+  }
+  if (clear) memset(img, 0, clear);
+  free(img);
+}
 #ifdef ASSEMBLY_OK
 static void init_cpuidflags( )
 {
@@ -343,4 +396,7 @@ PIKE_MODULE_EXIT
 	 free_string(submagic[i].ps);
       }
    }
+   if (image_frees_callback)
+      remove_callback(image_frees_callback);
+   free(image_frees);
 }

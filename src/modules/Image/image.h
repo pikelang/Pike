@@ -21,10 +21,12 @@ extern int image_cpuid;
  * write an image's pixels and size. _decode() and create(), which
  * replace an image's memory, wait until none does (see
  * image_wait_for_unlocked()), and loops that start meanwhile keep the
- * lock. Use these instead of THREADS_ALLOW() and THREADS_DISALLOW()
- * around code that uses an image's memory. */
+ * lock. A destructed image's memory is freed once none does. Use these
+ * instead of THREADS_ALLOW() and THREADS_DISALLOW() around code that
+ * uses an image's memory. */
 extern int image_threads_unlocked, image_replace_waiting;
 void image_wait_for_unlocked(void);
+void image_free_later(void *img, size_t clear);
 #ifdef PIKE_THREADS
 #define IMAGE_THREADS_ALLOW() do {					\
     int img_unlocked__ = !image_replace_waiting;			\
