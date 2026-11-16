@@ -10,7 +10,7 @@
  * Henrik Grubbström 20010720
  *
  * The SPARC backends track their existing deferred stores in the shared
- * machine-state SSA model described in README.txt.
+ * machine-state SSA model described in README-SSA.txt.
  *
  * On SPARC and SPARC64, PIKE_SSA_SPARC_JOINS=1 enables experimental
  * register preservation at forward joins. It is disabled by default. The
@@ -33,13 +33,13 @@
  * Negation uses SUBcc from G0; partial sums use O3 and leave argument banks
  * intact until every ADDcc overflow check succeeds.
  *
- * With SSA enabled, the shared integer value pass described in README.txt
- * defaults on for 32-bit Pike integers on either ABI and 64-bit integers
- * on SPARC64. Value banks use O0..O2; O3 holds speculative results and O4
- * saves a balanced unit's input for rollback. The stack-aware lowering
- * shares the banks between live local/stack versions and uses O4 to address
- * the Pike stack when publishing side exits. Pointer loads follow the
- * ABI, independently of integer width. Word values use word loads/stores
+ * With SSA enabled, the shared integer value pass described in
+ * README-SSA.txt defaults on for 32-bit Pike integers on either ABI and
+ * 64-bit integers on SPARC64. Value banks use O0..O2; O3 holds speculative
+ * results and O4 saves a balanced unit's input for rollback. The stack-aware
+ * lowering shares the banks between live local/stack versions and uses O4
+ * to address the Pike stack when publishing side exits. Pointer loads follow
+ * the ABI, independently of integer width. Word values use word loads/stores
  * and ICC overflow branches; doublewords use XCC branches. Word
  * arithmetic needs only V7 instructions. SPARC32 with 64-bit Pike integers
  * still uses ordinary emission. Branches use explicit delay-slot NOPs and

@@ -58,7 +58,7 @@
  * materialization/layout IR, not SSA for individual Pike local values.
  *
  * With SSA enabled and 64-bit Pike integers, the shared integer value pass
- * described in README.txt is enabled by default. Value banks use R8,
+ * described in README-SSA.txt is enabled by default. Value banks use R8,
  * R9, and R10. RAX holds speculative results; a multi-step unit saves its
  * input in RDX for balanced-unit rollback. The stack-aware lowering shares
  * the three banks between live local/stack versions and uses RDX to address
