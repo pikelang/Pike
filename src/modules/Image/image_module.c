@@ -372,6 +372,11 @@ PIKE_MODULE_INIT
    PIKE_MODULE_EXPORT(Image, image_program );
    PIKE_MODULE_EXPORT(Image, image_colortable_program);
    PIKE_MODULE_EXPORT(Image, image_layer_program );
+   /* For IMAGE_THREADS_ALLOW() in other modules. */
+   PIKE_MODULE_EXPORT_SYMBOL("Image.image_threads_unlocked",
+                             &image_threads_unlocked);
+   PIKE_MODULE_EXPORT_SYMBOL("Image.image_replace_waiting",
+                             &image_replace_waiting);
 #endif
 }
 

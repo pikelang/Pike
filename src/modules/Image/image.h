@@ -24,7 +24,9 @@ extern int image_cpuid;
  * lock. A destructed image's memory is freed once none does. Use these
  * instead of THREADS_ALLOW() and THREADS_DISALLOW() around code that
  * uses an image's memory. */
+#ifndef IMAGE_THREADS_IMPORTED
 extern int image_threads_unlocked, image_replace_waiting;
+#endif
 void image_wait_for_unlocked(void);
 void image_free_later(void *img, size_t clear);
 #ifdef PIKE_THREADS

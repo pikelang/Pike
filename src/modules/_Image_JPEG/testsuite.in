@@ -1,4 +1,41 @@
 START_MARKER
 cond_begin([[ master()->resolv("_Image_JPEG")->encode ]])
+dnl Encoding an image as JPEG in several threads while another replaces
+dnl its memory with _decode() or destructs it should not crash. Without
+dnl the fix it crashes in every run.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond_resolv(Thread.Thread, [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      Image.Image img = Image.Image(1024, 1024, 10, 20, 30);
+      int stop;
+      array(Thread.Thread) ts = map(enumerate(3), lambda(int i) {
+          return Thread.Thread(lambda() {
+              while (!stop)
+                catch { Image.JPEG.encode(img, ([ "quality": 50 ])); };
+            });
+        });
+      int t = time();
+      for (int i = 0; time() - t < 5; i++) {
+        sleep(0.002);
+        if (i & 1) {
+          Image.Image old = img;
+          img = Image.Image(1024, 1024, 10, 20, 30);
+          destruct(old);
+        } else {
+          int w = (i & 2) ? 1024 : 512;
+          img->_decode(({ w, w, "\1\2\3" * (w * w) }));
+        }
+      }
+      stop = 1;
+      ts->wait();
+      return 0;
+    #} }));
+    if (r->exitcode) return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
+
 cond_end
 END_MARKER
