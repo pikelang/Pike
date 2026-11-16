@@ -98,7 +98,7 @@ static struct pike_type int0_type_string_storage = {
   GC_HEADER_INIT(1),
   0,
   NULL,
-  0,
+  PT_FLAG_INT_COMPAT,
   T_INT,
   NULL, NULL,
 };
@@ -734,6 +734,27 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
         t->flags |= cdr->flags & (PT_FLAG_MARK_ASSIGN|PT_FLAG_MASK_GENERICS);
       }
     }
+  }
+
+  /* Compatibility describes the whole type, not whether any subtree is
+   * integer-compatible. Recompute it after flag copying and negation.
+   */
+  t->flags &= ~PT_FLAG_INT_COMPAT;
+  switch (type) {
+  case T_INT:
+  case T_ZERO:
+  case T_VOID:
+    t->flags |= PT_FLAG_INT_COMPAT;
+    break;
+  case T_OR:
+    if (car && cdr && (car->flags & cdr->flags & PT_FLAG_INT_COMPAT))
+      t->flags |= PT_FLAG_INT_COMPAT;
+    break;
+  case T_AND:
+    if ((car && (car->flags & PT_FLAG_INT_COMPAT)) ||
+        (cdr && (cdr->flags & PT_FLAG_INT_COMPAT)))
+      t->flags |= PT_FLAG_INT_COMPAT;
+    break;
   }
 
   /* This property requires all children to be invariant. Do not inherit
