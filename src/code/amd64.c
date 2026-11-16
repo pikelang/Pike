@@ -42,6 +42,8 @@
  * locals cache invalid, so a discarded terminal repair cannot affect later
  * code. Native back edges and exhausted node/value limits retain the original
  * layout. No line records or externally referenced jump offsets move.
+ * Integer value regions spanning source lines retain their original wide
+ * branches and fixed offsets so that their source records remain valid.
  *
  * PIKE_SSA_NO_REGIONS=1 with PIKE_SSA_LOCALS_CACHE=1 restores the earlier
  * unbuffered cache experiment for comparison. That emitter repairs internal

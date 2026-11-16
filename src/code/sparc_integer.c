@@ -126,7 +126,7 @@ static void sparc_integer_snapshot(
 }
 
 static int sparc_integer_stack_run(const struct p_instr_s *code,
-                                   ptrdiff_t available)
+                                   ptrdiff_t available, int store_lines)
 {
   struct pikecode_ssa_integer_stack_plan p;
   struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
@@ -157,6 +157,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   for (i = 0; i < p.count; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[p.step[i].result];
     int right;
+    pikecode_ssa_integer_source(&code[p.step[i].first], store_lines);
     if (v->right) right = sparc_integer_reg(&p.value[v->right]);
     else {
       SET_REG(SPARC_REG_O5, v->imm);
@@ -192,6 +193,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
      * exits skip them and arrive with their own canonical stack snapshot. */
     sparc_flush_codegen_state();
     sparc_integer_bind(&slow[i]);
+    pikecode_ssa_integer_source(op, store_lines);
     if (flags & I_HASARG2)
       ins_f_byte_with_2_args(op->opcode, op->arg, op->arg2);
     else if (flags & I_HASARG) ins_f_byte_with_arg(op->opcode, op->arg);
@@ -199,6 +201,10 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   }
   sparc_flush_codegen_state();
   sparc_integer_bind(&done);
+  pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
+  /* Both paths must publish a PC for the final source position: the
+   * slow-call emitter's last-location cache also describes skipped code. */
+  if (pikecode_ssa_integer_multiline(code, p.consumed)) sparc_update_pc();
   if (sparc_ssa_stats) {
     for (i = 0; i < p.locals; i++) stores += !!(p.final.dirty & (1U << i));
     sparc_stats.integer_regions++;
@@ -217,7 +223,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
 }
 #endif
 
-int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
+int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
+                       int store_lines)
 {
 #ifdef SPARC_INTEGER_LD
   struct pikecode_ssa_integer_plan p;
@@ -227,7 +234,7 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
   unsigned int i, j, stores = 0;
   if (!sparc_integer_regions_enabled()) return 0;
   {
-    int consumed = sparc_integer_stack_run(code, available);
+    int consumed = sparc_integer_stack_run(code, available, store_lines);
     if (consumed) return consumed;
   }
   if (!pikecode_ssa_plan_integer(&p, code, available,
@@ -258,6 +265,10 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
     for (j = 0; j < u->count; j++) {
       const struct pikecode_ssa_integer_value *v = &p.value[u->result[j]];
       int right;
+      /* A fused unit's final add follows its local load/increment. */
+      unsigned int source = u->first;
+      if (u->length > 1 && (u->count == 1 || j)) source++;
+      pikecode_ssa_integer_source(&code[source], store_lines);
       if (v->right) right = sparc_integer_reg(&p.value[v->right]);
       else {
         SET_REG(SPARC_REG_O5, v->imm);
@@ -286,6 +297,7 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
     for (j = 0; j < u->length; j++) {
       const struct p_instr_s *op = &code[u->first + j];
       unsigned int flags = instrs[op->opcode - F_OFFSET].flags;
+      pikecode_ssa_integer_source(op, store_lines);
       if (flags & I_HASARG2)
         ins_f_byte_with_2_args(op->opcode, op->arg, op->arg2);
       else if (flags & I_HASARG) ins_f_byte_with_arg(op->opcode, op->arg);
@@ -296,6 +308,10 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
    * both paths leave the compiler's cache description conservatively empty. */
   sparc_flush_codegen_state();
   sparc_integer_bind(&done);
+  pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
+  /* Both paths must publish a PC for the final source position: the
+   * slow-call emitter's last-location cache also describes skipped code. */
+  if (pikecode_ssa_integer_multiline(code, p.consumed)) sparc_update_pc();
   if (sparc_ssa_stats) {
     for (i = 0; i < p.locals; i++) stores += !!(p.dirty & (1U << i));
     sparc_stats.integer_regions++;
@@ -308,6 +324,7 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available)
 #else
   (void)code;
   (void)available;
+  (void)store_lines;
   return 0;
 #endif
 }

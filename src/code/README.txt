@@ -16,9 +16,9 @@ PIKE_SSA_NO_INTEGER_REGIONS=1 to disable it for comparisons or
 debugging. The former PIKE_SSA_INTEGER_REGIONS flag is no longer needed.
 The pass recognizes up to eight integer operations: additions,
 increments, subtractions, and bitwise AND/OR/XOR using at most three
-locals on one source line. The original planner supports local updates
-and local/stack/add/assignment units that leave the Pike stack at its
-original depth. Labels, debug directives, and unsupported operations end
+locals across adjacent source lines. The original planner supports local
+updates and local/stack/add/assignment units that leave the Pike stack
+at its original depth. Labels, debug directives, and unsupported operations end
 a run. Tracing and disassembly use the ordinary emitter.
 
 The shared planners in ssa_integer.[ch] assign SSA versions to integer
@@ -59,8 +59,11 @@ fast and replayed paths leave machine caches empty at their merge. Set
 PIKE_SSA_NO_INTEGER_STACK_EXITS=1 to require the original entry stack
 depth at successful exits while retaining stack-aware overflow exits.
 
-Regions still stop at source/debug boundaries and do not carry registers
-across calls or labels. Bare input assignments that need parallel
+Regions still stop at file changes, debug directives and unsupported
+opcodes, and do not carry registers across calls or labels. Native arithmetic
+and slow-path opcodes retain their source records. Slow calls publish their
+own PC, and the merge ensures a following call cannot reuse a PC from a
+skipped fallback path. Bare input assignments that need parallel
 subtype-tag moves use the ordinary path. Native encoding and register
 mappings remain backend-specific.
 

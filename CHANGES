@@ -111,6 +111,10 @@ o Compiler
   overflow checks while preserving neighboring arithmetic side exits.
   Set PIKE_SSA_NO_INTEGER_BITWISE=1 for the previous region handling.
 
+  Integer regions can now span adjacent source lines, preserving source
+  positions for fallback calls and exceptions. File changes, debug
+  directives and labels remain region boundaries.
+
 
 Deprecated symbols and modules
 ------------------------------

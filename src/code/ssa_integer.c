@@ -8,6 +8,25 @@
 /* Included by pikecode.c. These planners contain no native registers,
  * instruction encodings or branch fixups. The balanced planner coalesces
  * each local's versions; the stack planner shares banks by liveness. */
+#ifdef CODE_GENERATOR_INTEGER_RUN
+/* Source records follow the caller's per-function setting. */
+static void pikecode_ssa_integer_source(const struct p_instr_s *op,
+                                       int store_lines)
+{
+  if (store_lines) store_linenumber(op->line, op->file);
+}
+
+static int pikecode_ssa_integer_multiline(const struct p_instr_s *code,
+                                         unsigned int consumed)
+{
+  unsigned int i;
+  for (i = 1; i < consumed; i++)
+    if (code[i].line != code[0].line) return 1;
+  return 0;
+}
+
+#endif
+
 /* Each unit starts and ends at the same Pike stack depth. Its fast path
  * writes one local. Multi-step units can replay from their beginning after
  * restoring that local's input register: no partial result was published. */
@@ -93,7 +112,7 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
                                            &local, &source, imm, &steps);
     if (!length || p->count + steps > PIKE_SSA_INTEGER_LIMIT) break;
     for (i = 0; i < (unsigned int)length; i++)
-      if (op[i].line != code[0].line || op[i].file != code[0].file) break;
+      if (op[i].file != code[0].file) break;
     if (i != (unsigned int)length) break;
     dst = pikecode_ssa_integer_local(p, local, max_local);
     if (dst < 0) break;
@@ -218,7 +237,7 @@ int pikecode_ssa_plan_integer_stack(
     const struct p_instr_s *op = &code[n];
     INT32 a, b;
     int is_arithmetic;
-    if (op->line != code[0].line || op->file != code[0].file ||
+    if (op->file != code[0].file ||
         !integer_stack_refs(op, &a, &b, subtract, bitwise)) break;
     is_arithmetic = op->opcode != F_LOCAL && op->opcode != F_2_LOCALS &&
       op->opcode != F_ASSIGN_LOCAL && op->opcode != F_ASSIGN_LOCAL_AND_POP &&

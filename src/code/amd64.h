@@ -50,9 +50,11 @@ void amd64_flush_code_generator_state(void);
 #define CODE_GENERATOR_REGION_LIMIT 8
 struct p_instr_s;
 int amd64_integer_regions_enabled(void);
-int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available);
+int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
+                       int store_lines);
 #define CODE_GENERATOR_INTEGER_ENABLED() amd64_integer_regions_enabled()
-#define CODE_GENERATOR_INTEGER_RUN(CODE, N) amd64_integer_run(CODE, N)
+#define CODE_GENERATOR_INTEGER_RUN(CODE, N, LINES) \
+  amd64_integer_run(CODE, N, LINES)
 int amd64_ssa_regions_enabled(void);
 #define CODE_GENERATOR_REGIONS_ENABLED() amd64_ssa_regions_enabled()
 int amd64_ssa_region_opcode(unsigned int op);

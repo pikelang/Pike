@@ -89,7 +89,7 @@ static void amd64_integer_snapshot(
 }
 
 static int amd64_integer_stack_run(const struct p_instr_s *code,
-                                   ptrdiff_t available)
+                                   ptrdiff_t available, int store_lines)
 {
   struct pikecode_ssa_integer_stack_plan p;
   struct label overflow[PIKE_SSA_INTEGER_LIMIT];
@@ -105,6 +105,9 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   for (i = 0; i < p.consumed; i++) slow[i] = (struct label){ .addr = -1 };
   amd64_flush_code_generator_state();
   amd64_ssa_region_begin();
+  /* Keep wide branches, but do not relocate published source records. */
+  if (pikecode_ssa_integer_multiline(code, p.consumed))
+    ssa_region.abandoned = 1;
   maybe_update_pc();
   amd64_load_fp_reg();
   mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), PIKE_LOCALS_REG);
@@ -119,6 +122,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   }
   for (i = 0; i < p.count; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[p.step[i].result];
+    pikecode_ssa_integer_source(&code[p.step[i].first], store_lines);
     mov_reg_reg(amd64_integer_reg(&p.value[v->left]), P_REG_RAX);
     if (integer_stack_bitwise(v->kind)) {
       enum amd64_reg right;
@@ -161,6 +165,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
      * binding, so all entries reload from canonical interpreter state. */
     amd64_flush_code_generator_state();
     label(&slow[i]);
+    pikecode_ssa_integer_source(&code[i], store_lines);
     if (instrs[instr].flags & I_HASARG) update_arg1(code[i].arg);
     if (instrs[instr].flags & I_HASARG2) update_arg2(code[i].arg2);
     amd64_call_c_opcode(instrs[instr].address, instrs[instr].flags);
@@ -168,6 +173,9 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   amd64_flush_code_generator_state();
   label(&done);
   amd64_ssa_region_end();
+  pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
+  /* Slow calls may publish a PC which the fast branch never executed. */
+  amd64_prev_stored_pc = -1;
   if (ssa_report_stats) {
     for (i = 0; i < p.locals; i++) stores += !!(p.final.dirty & (1U << i));
     ssa_stats.integer_regions++;
@@ -185,8 +193,9 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   return p.consumed;
 }
 
-/* The caller publishes no source records inside this same-line run. */
-int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available)
+/* Source records inside multiline runs require fixed native offsets. */
+int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
+                       int store_lines)
 {
   struct pikecode_ssa_integer_plan p;
   struct label overflow[PIKE_SSA_INTEGER_LIMIT];
@@ -195,7 +204,7 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available)
   unsigned int stores = 0;
   if (!amd64_integer_regions_enabled()) return 0;
   {
-    int consumed = amd64_integer_stack_run(code, available);
+    int consumed = amd64_integer_stack_run(code, available, store_lines);
     if (consumed) return consumed;
   }
   if (!pikecode_ssa_plan_integer(&p, code, available,
@@ -206,6 +215,9 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available)
     slow[i] = (struct label){ .addr = -1 };
   }
   amd64_ssa_region_begin();
+  /* Keep wide branches, but do not relocate published source records. */
+  if (pikecode_ssa_integer_multiline(code, p.consumed))
+    ssa_region.abandoned = 1;
   ssa_locals_valid = 0;
   pikecode_ssa_clobber(&ssa_state, PIKE_SSA_LOCALS);
   maybe_update_pc();
@@ -227,6 +239,10 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available)
       mov_reg_reg(amd64_integer_reg(&p.value[u->result[0]]), P_REG_RDX);
     for (j = 0; j < u->count; j++) {
       struct pikecode_ssa_integer_value *v = &p.value[u->result[j]];
+      /* A fused unit's final add follows its local load/increment. */
+      unsigned int source = u->first;
+      if (u->length > 1 && (u->count == 1 || j)) source++;
+      pikecode_ssa_integer_source(&code[source], store_lines);
       mov_reg_reg(amd64_integer_reg(&p.value[v->left]), P_REG_RAX);
       if (v->right)
         add_reg_reg(P_REG_RAX, amd64_integer_reg(&p.value[v->right]));
@@ -247,10 +263,13 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available)
   }
   for (i = 0; i < p.units; i++) {
     struct pikecode_ssa_integer_unit *u = &p.unit[i];
+    /* A side exit can skip the preceding slow calls and their PC stores. */
+    amd64_flush_code_generator_state();
     label(&slow[i]);
     for (j = 0; j < u->length; j++) {
       const struct p_instr_s *op = &code[u->first + j];
       unsigned int instr = op->opcode - F_OFFSET;
+      pikecode_ssa_integer_source(op, store_lines);
       if (instrs[instr].flags & I_HASARG) update_arg1(op->arg);
       if (instrs[instr].flags & I_HASARG2) update_arg2(op->arg2);
       amd64_call_c_opcode(instrs[instr].address, instrs[instr].flags);
@@ -258,6 +277,9 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available)
   }
   label(&done);
   amd64_ssa_region_end();
+  pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
+  /* Slow calls may publish a PC which the fast branch never executed. */
+  amd64_prev_stored_pc = -1;
   if (ssa_report_stats) {
     for (i = 0; i < p.locals; i++) stores += !!(p.dirty & (1U << i));
     ssa_stats.integer_regions++;

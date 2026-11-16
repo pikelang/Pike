@@ -44,9 +44,11 @@ void sparc_flush_codegen_state(void);
 #ifdef PIKE_ENABLE_SSA
 struct p_instr_s;
 int sparc_integer_regions_enabled(void);
-int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available);
+int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
+                       int store_lines);
 #define CODE_GENERATOR_INTEGER_ENABLED() sparc_integer_regions_enabled()
-#define CODE_GENERATOR_INTEGER_RUN(CODE, N) sparc_integer_run(CODE, N)
+#define CODE_GENERATOR_INTEGER_RUN(CODE, N, LINES) \
+  sparc_integer_run(CODE, N, LINES)
 void sparc_start_function(int store_lines);
 void sparc_end_function(int store_lines);
 #define START_NEW_FUNCTION sparc_start_function

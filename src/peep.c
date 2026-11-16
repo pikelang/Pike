@@ -641,7 +641,8 @@ INT32 assemble(int store_linenumbers)
         && !region_left
 #endif
         ) {
-      int consumed = CODE_GENERATOR_INTEGER_RUN(c, length - e);
+      int consumed = CODE_GENERATOR_INTEGER_RUN(c, length - e,
+                                                store_linenumbers);
       if (consumed) {
 #ifdef PIKE_DEBUG
         if (store_linenumbers) {
