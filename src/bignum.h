@@ -343,6 +343,11 @@ _GEN_BINOP(MUL, unsigned INT32, UINT32, size_t, SIZE_T)
 #endif
 
 /* Prototypes begin here */
+/* Use these for all GMP instances exchanging integers with Pike. */
+PMOD_EXPORT void *pike_mp_alloc(size_t alloc_size);
+PMOD_EXPORT void *pike_mp_realloc(void *ptr, size_t old_size, size_t new_size);
+PMOD_EXPORT void pike_mp_free(void *ptr, size_t size);
+
 PMOD_EXPORT extern struct program *bignum_program;
 PMOD_EXPORT void convert_stack_top_to_bignum(void);
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void);

@@ -684,6 +684,15 @@ string ifconfig( string command )
  *   None
  */
                 {
+#if constant(_Stdio.get_interface_addresses)
+                    array(string) interfaces = ({});
+                    foreach (_Stdio.get_interface_addresses(),
+                             array(string) iface) {
+                        interfaces += ({ iface[0] + "/" +
+                                         netmask_to_cidr(iface[1]) });
+                    }
+                    return sort(Array.uniq(interfaces))*"\n";
+#else
                     // The strings in the "Interface List" above do not
                     // seem to be useable for anything (except for the
                     // interface MAC-address), so we instead return the
@@ -721,7 +730,8 @@ string ifconfig( string command )
                             }
                         }
                     }
-                    return sort(interfaces)*"\n";
+                    return sort(Array.uniq(interfaces))*"\n";
+#endif
                 }
                     // Using ipconfig:
 /* > ipconfig -all
@@ -815,7 +825,7 @@ mapping(string:array(string)) local_interfaces()
 
     mapping(string:array(string)) next__broadcast_addresses = ([]);
 #ifdef __NT__
-    foreach( ifconfig("list if" )/"\n", string iface )
+    foreach( ifconfig("list if" )/"\n" - ({ "" }), string iface )
     {
         array(string) addrs = ({ iface });
         if (!has_value(iface, ":")) {

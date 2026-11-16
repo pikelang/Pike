@@ -8,6 +8,43 @@ test_true(programp(Stdio.Port))
 test_true(objectp(Stdio.Port()))
 test_any(object o; o=Stdio.File(); destruct(o); return 1,1)
 
+dnl Successful reads and EOF must not report stale errors from other I/O.
+test_any([[
+  Stdio.Fd input = Stdio.Fd();
+  Stdio.Fd output = input->pipe(Stdio.PROP_IPC);
+  output->write("x");
+  output->close();
+  Stdio.File missing = Stdio.File();
+  missing->open("file_that_doesnt_exist", "r");
+  if (input->read(1, 1) != "x" || input->errno()) return 0;
+  missing->open("file_that_doesnt_exist", "r");
+  if (input->read(1, 1) != "" || input->errno()) return 0;
+  missing->open("file_that_doesnt_exist", "r");
+  if (input->read(Stdio.Buffer()) != 0 || input->errno()) return 0;
+  return 1;
+]], 1)
+
+// Reading the write end must preserve the read error for buffer reads.
+test_any([[
+  Stdio.Fd input = Stdio.Fd();
+  Stdio.Fd output = input->pipe(Stdio.PROP_IPC);
+  int result = output->read(Stdio.Buffer());
+  int error = output->errno();
+  input->close();
+  output->close();
+  return result == -1 && error != 0;
+]], 1)
+
+cond_resolv(_Stdio.get_interface_addresses, [[
+  test_any([[
+    foreach (_Stdio.get_interface_addresses(), array(string) iface) {
+      if (sizeof(iface) != 2 || NetUtils.string_to_ip(iface[0]) < 0 ||
+          NetUtils.string_to_ip(iface[1]) < 0) return 0;
+    }
+    return 1;
+  ]], 1)
+]])
+
 dnl - mkdir
 test_any([[
   Stdio.Stat st = file_stat("/tmp");

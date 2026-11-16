@@ -81,6 +81,9 @@ extern size_t pike_type_hash_size;
 #define PT_FLAG_NULLABLE	0x4000000
 #define PT_FLAG_MIXED		0x8000000
 
+/* Only int, zero or void values, including unions and intersections. */
+#define PT_FLAG_INT_COMPAT	0x10000000
+
 /*
  * Flags used by remap_marker{,s}():
  */
@@ -432,6 +435,9 @@ struct pike_type *or_pike_types(struct pike_type *a,
 				int zero_implied);
 struct pike_type *and_pike_types(struct pike_type *a,
 				 struct pike_type *b);
+struct pike_type *type_int_op(enum PIKE_TYPE op,
+                             struct pike_type *arg1,
+                             struct pike_type *arg2);
 struct pike_type *type_binop(enum pt_binop op,
 			     struct pike_type *a,
 			     struct pike_type *b,

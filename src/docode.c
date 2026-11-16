@@ -912,7 +912,23 @@ static int emit_ltosval_call_and_assign( node *lval, node *func, node *args )
   struct compilation *c = THIS_COMPILATION;
   node **arg;
   int no = 0;
-  int tmp1=store_constant(&func->u.sval,
+  int tmp1;
+
+  if (lval->token == F_LOCAL && !lval->u.integer.b &&
+      match_types(lval->type, object_type_string) &&
+      func->u.sval.u.efun->function == f_add && count_args(args) == 2) {
+    /* Avoid the generic builtin call's extra object reference, which
+     * prevents destructive addition. Restrict this to local variables:
+     * the object fast path in F_ADD_TO does not call a setter.
+     */
+    do_docode(lval, DO_LVALUE);
+    arg = my_get_arg(&args, 1);
+    do_docode(*arg, 0);
+    emit0(F_ADD_TO);
+    return 1;
+  }
+
+  tmp1=store_constant(&func->u.sval,
                           !(func->tree_info & OPT_EXTERNAL_DEPEND),
                           func->name);
 

@@ -663,9 +663,16 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", I_ARG_T_LOCAL|I_ARG2_T_LOCAL,
   else
   {
     *Pike_sp++ = *dst;
-    SET_SVAL_TYPE(*dst,PIKE_T_INT);
+    /* Object callbacks can inspect the local or throw. Keep its reference
+     * until addition succeeds; src can also be the same local as dst.
+     */
+    if (TYPEOF(*dst) == PIKE_T_OBJECT)
+      add_ref(dst->u.object);
+    else
+      SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_svalue( src );
     f_add(2);
+    free_svalue(dst);
     *dst = *--Pike_sp;
   }
 });
@@ -681,9 +688,16 @@ OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", I_ARG_T_LOCAL,{
   else
   {
     *Pike_sp++ = *dst;
-    SET_SVAL_TYPE(*dst,PIKE_T_INT);
+    /* Object callbacks can inspect the local or throw. Keep its reference
+     * until addition succeeds; src can also be the same local as dst.
+     */
+    if (TYPEOF(*dst) == PIKE_T_OBJECT)
+      add_ref(dst->u.object);
+    else
+      SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int( arg2 );
     f_add(2);
+    free_svalue(dst);
     *dst = *--Pike_sp;
   }
 });
@@ -700,9 +714,16 @@ OPCODE2(F_ADD_LOCAL_INT, "local += number local", I_ARG_T_LOCAL,{
   else
   {
     *Pike_sp++ = *dst;
-    SET_SVAL_TYPE(*dst,PIKE_T_INT);
+    /* Object callbacks can inspect the local or throw. Keep its reference
+     * until addition succeeds; src can also be the same local as dst.
+     */
+    if (TYPEOF(*dst) == PIKE_T_OBJECT)
+      add_ref(dst->u.object);
+    else
+      SET_SVAL_TYPE(*dst,PIKE_T_INT);
     push_int( arg2 );
     f_add(2);
+    free_svalue(dst);
     *dst = *--Pike_sp;
   }
 });

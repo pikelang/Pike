@@ -11,6 +11,15 @@
 
 import ".";
 
+protected void create()
+{
+    // Prime glibc's adaptive mmap/trim thresholds. Reserve the buffer
+    // without filling it, then release the allocation before timing.
+    String.Buffer warmup = String.Buffer(8 << 20);
+    warmup->add("x");
+    destruct(warmup);
+}
+
 
 //! Format an integer with SI-suffixes.
 string format_big_number(int i)
@@ -58,6 +67,9 @@ string format_big_number(int i)
 //!
 //! @note
 //!   This is the function that is called by @[run_sub()].
+//!
+//!   Initializing this module warms up the allocator before timing starts,
+//!   reducing sensitivity to its initial heap-trimming policy.
 //!
 //! @seealso
 //!   @[run()], @[run_sub()], @[tests()]
