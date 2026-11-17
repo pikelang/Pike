@@ -15,6 +15,7 @@ enum pikecode_ssa_integer_counter {
   PIKE_SSA_INTEGER_GUARDS,
   PIKE_SSA_INTEGER_OVERFLOWS,
   PIKE_SSA_INTEGER_FAST,
+  PIKE_SSA_INTEGER_REJECTED,
   PIKE_SSA_INTEGER_COUNTERS
 };
 
@@ -24,8 +25,9 @@ struct pikecode_ssa_integer_profile {
   unsigned long id;
   INT32 program;
   INT_TYPE line, last_line;
-  unsigned int ops, locals;
-  const char *planner, *stop;
+  unsigned int ops, locals, consumed, stop_offset;
+  INT_TYPE stop_line;
+  const char *planner, *stop, *reason, *rejection, *stop_opcode;
   char file[1];
 };
 
@@ -56,24 +58,28 @@ static void integer_profile_report(void)
   fprintf(stderr, "SSA integer runtime: pid=%ld compiled=%lu "
           "entries=%" PRINTINT64 "u guards=%" PRINTINT64 "u "
           "overflows=%" PRINTINT64 "u fast=%" PRINTINT64 "u "
-          "fast_ops=%" PRINTINT64 "u\n",
+          "fast_ops=%" PRINTINT64 "u rejected=%" PRINTINT64 "u\n",
           (long)getpid(), integer_profile_count,
           total[PIKE_SSA_INTEGER_ENTRIES], total[PIKE_SSA_INTEGER_GUARDS],
           total[PIKE_SSA_INTEGER_OVERFLOWS], total[PIKE_SSA_INTEGER_FAST],
-          fast_ops);
+          fast_ops, total[PIKE_SSA_INTEGER_REJECTED]);
   for (p = integer_profiles; p; p = p->next) {
-    if (p->count[PIKE_SSA_INTEGER_ENTRIES])
-      fprintf(stderr, "SSA integer region\t%ld\t%lu\t%d\t%s\t"
+    unsigned INT64 rejected = p->count[PIKE_SSA_INTEGER_REJECTED];
+    if (p->count[PIKE_SSA_INTEGER_ENTRIES] || rejected)
+      fprintf(stderr, "SSA integer %s\t%ld\t%lu\t%d\t%s\t"
               "%" PRINTINT64 "d\t%" PRINTINT64 "d\t%s\t%u\t%u\t%s\t"
               "%" PRINTINT64 "u\t%" PRINTINT64 "u\t"
-              "%" PRINTINT64 "u\t%" PRINTINT64 "u\n",
+              "%" PRINTINT64 "u\t%" PRINTINT64 "u\t"
+              "%s\t%u\t%s\t%" PRINTINT64 "d\t%s\t%u\n",
+              rejected ? "rejection" : "region",
               (long)getpid(), p->id, p->program, p->file,
               (INT64)p->line, (INT64)p->last_line,
               p->planner, p->ops, p->locals, p->stop,
-              p->count[PIKE_SSA_INTEGER_ENTRIES],
+              rejected ? rejected : p->count[PIKE_SSA_INTEGER_ENTRIES],
               p->count[PIKE_SSA_INTEGER_GUARDS],
               p->count[PIKE_SSA_INTEGER_OVERFLOWS],
-              p->count[PIKE_SSA_INTEGER_FAST]);
+              p->count[PIKE_SSA_INTEGER_FAST], p->reason, p->stop_offset,
+              p->stop_opcode, (INT64)p->stop_line, p->rejection, p->consumed);
   }
   /* Keep addresses valid even for embedding-host exit callbacks that run
    * JIT code after this reporter. The OS reclaims these process records. */
@@ -94,7 +100,8 @@ static struct pikecode_ssa_integer_profile *
 pikecode_ssa_integer_profile_new(const struct p_instr_s *code,
                                ptrdiff_t available, unsigned int consumed,
                                unsigned int ops, unsigned int locals,
-                               const char *planner)
+                               const char *planner,
+                               const struct pikecode_ssa_integer_stop *stop)
 {
   struct pikecode_ssa_integer_profile *p;
   struct pike_string *file = code[0].file;
@@ -123,7 +130,20 @@ pikecode_ssa_integer_profile_new(const struct p_instr_s *code,
   p->id = ++integer_profile_count;
   p->program = Pike_compiler->new_program->id;
   p->line = code[0].line;
-  p->last_line = code[consumed - 1].line;
+  p->last_line = code[consumed ? consumed - 1 :
+                            stop->offset ? stop->offset - 1 : 0].line;
+  p->consumed = consumed;
+  p->reason = stop->reason;
+  p->rejection = stop->rejection;
+  p->stop_offset = stop->offset;
+  p->stop_opcode = "end";
+  p->stop_line = p->last_line;
+  if ((ptrdiff_t)stop->offset < available) {
+    int op = code[stop->offset].opcode;
+    p->stop_line = code[stop->offset].line;
+    p->stop_opcode = op >= F_OFFSET && op < F_MAX_INSTR &&
+      instrs[op - F_OFFSET].name ? instrs[op - F_OFFSET].name : "unknown";
+  }
   p->ops = ops;
   p->locals = locals;
   p->planner = planner;

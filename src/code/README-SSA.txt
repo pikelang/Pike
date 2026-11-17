@@ -358,13 +358,39 @@ Set PIKE_SSA_NO_INTEGER_EXPRESSIONS=1 to disable these expression forms.
 Fixed-arity builtin call selection is a separate backend capability and is
 unchanged by integer-region comparison controls.
 
+Constant-local assignments
+--------------------------
+
+The stack-aware planner keeps F_ASSIGN_LOCAL_NUMBER_AND_POP and
+F_CLEAR_LOCAL inside existing regions. It also accepts retained assignments
+of supported literal values. These writes create ordinary integer constant
+versions without a physical bank or an arithmetic-operation budget charge;
+they still count against the instruction/value bounds. The balanced planner
+and region entry-opcode set are unchanged. Bare input copies still require
+parallel subtype moves and remain unsupported.
+
+All destination locals are guarded as integers at entry, including locals
+first seen as write destinations. Fast-path assignments therefore release
+no references and invoke no callbacks. Noninteger inputs replay ordinary
+opcodes, preserving free_svalue() and destructor behavior. An overflow after
+a constant assignment publishes that constant with an ordinary tag before
+replaying the failing operation. Original input tags are copied to the stack
+before dirty locals are committed, including locals replaced by constants.
+Both final and overflow snapshots materialize constants explicitly.
+
+Set PIKE_SSA_NO_INTEGER_CONSTANT_ASSIGN=1 to restore previous planning.
+The feature works independently of expression/bitwise/live-stack-exit
+controls; the existing minimum arithmetic count, three-bank limit and
+label/file/call boundaries still apply.
+
 Runtime profiling
 -----------------
 
 Set PIKE_SSA_INTEGER_PROFILE=1 to emit execution counters for integer
 regions. Normal builds emit no counter instructions when it is unset.
 Each process reports entries, type-guard failures, overflow exits and
-successful fast exits on stderr at exit. Counters are unsigned 64-bit
+successful fast exits on stderr at exit. Separate counters record entries to
+local-based candidates rejected by both planners. Counters are unsigned 64-bit
 values, updated under the interpreter lock, and reset in a forked child.
 Source names and records remain allocated until process exit, even after
 their compiled programs have been reclaimed.
@@ -373,18 +399,50 @@ Executed regions also produce tab-separated rows with the PID, region ID,
 program ID, escaped source file, first/last source lines, planner, operation
 and local counts, following opcode, entries, guard failures, overflows and
 fast exits. Non-ASCII/control characters in source names use ASCII escapes.
-The following opcode is a boundary clue, not a recorded rejection reason.
+Rows also record the planner's stop reason, scan offset, stopping opcode
+and line, rejected-prefix reason, and emitted prefix length. Stop reasons
+separate unsupported operations/calls, control-flow and label boundaries,
+source-file changes, disabled features, and operation/instruction/local/
+stack/register budgets. Rejected-prefix reasons include too few arithmetic
+operations, no load reuse, untouched inputs, and unsupported exit shapes.
+stack-underflow means the virtual plan lacks an operand, which may already
+exist on the real Pike stack; it does not indicate a runtime stack error.
+The scan can look beyond the profitable emitted prefix: next_opcode is the
+first unconsumed opcode, while stop_opcode identifies the scan failure.
+The offsets in stop_offset and consumed make this distinction explicit.
+
+Rejected candidates have their own rows and counters, even if a program
+emits no integer regions. Candidates start at the same local-load/update
+opcodes as planning; fused indexing/global operations and other starts are
+outside this count. Rejected rows use ops for the discovered arithmetic
+budget, not successful value operations. Candidate attempts may overlap.
+Their counters run at entry, without type guards: they count opportunities,
+not proven integer operations or executions of the stopping opcode. Earlier
+exceptions or replay can prevent reaching it. Profiling flushes cached state
+before rejected-candidate counters; use uninstrumented runs for timings.
+
+The balanced planner reports unbalanced-unit when its balanced local-update
+pattern does not match; the stack planner reports its finer scan constraints.
 The fast_ops total counts operations in successful regions; it excludes
 completed prefixes of overflowing regions and all ordinary opcodes.
 
 Summarize one or more captured stderr logs with:
-  pike tools/ssa_integer_profile.pike [--json] [--top N] log...
+  pike tools/ssa_integer_profile.pike [--json] [--boundaries] [--top N] log...
 Use - for standard input. The tool checks entry/exit counts and process
 totals, and combines recompilations and processes at the same source site.
-JSON includes all sites; --top limits the text output. These counters show
-which regions execute and fall back; they do not give a denominator for
-all executed Pike operations. Use uninstrumented runs for timing and
-sampling. Debug.get_program_layout(p, 1) additionally returns the code
+JSON includes all region sites, rejected sites and boundary aggregates;
+--top limits the text output. --boundaries ranks stop reasons/opcodes by
+region entries plus rejected candidate entries, keeping both counts separate
+and reporting rejection reasons. Older logs remain readable as legacy rows.
+For workload comparisons, filter by source and subtract a one-invocation
+run from a two-invocation run to exclude startup and preparation counts.
+Run the parser and runtime regression checks with:
+  pike tools/ssa_integer_profile_test.pike [pike [Pike options...]]
+
+These counters show which regions execute and fall back; they do not give
+a denominator for all executed Pike operations. Use uninstrumented runs
+for timing and sampling. Debug.get_program_layout(p, 1) additionally returns
+the code
 buffer base at index -1, allowing exact function bounds in profiler maps.
 
 Emission statistics and benchmarking

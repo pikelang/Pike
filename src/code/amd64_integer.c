@@ -108,17 +108,25 @@ static void amd64_integer_snapshot(
                 OFFSETOF(Pike_interpreter_struct, stack_pointer));
   }
   for (i = 0; i < p->locals; i++) {
+    const struct pikecode_ssa_integer_value *v;
     ptrdiff_t off = p->local[i] * sizeof(struct svalue);
+    enum amd64_reg reg;
     if (!(s->dirty & (1U << i))) continue;
-    mov_reg_mem(amd64_integer_reg(&p->value[s->local[i]]), PIKE_LOCALS_REG,
-                off + OFFSETOF(svalue, u.integer));
+    v = &p->value[s->local[i]];
+    reg = amd64_integer_reg(v);
+    if (v->kind == PIKE_SSA_INTEGER_CONSTANT) {
+      amd64_integer_value(v, P_REG_RAX);
+      reg = P_REG_RAX;
+    }
+    mov_reg_mem(reg, PIKE_LOCALS_REG, off + OFFSETOF(svalue, u.integer));
     mov_imm_mem32(PIKE_T_INT, PIKE_LOCALS_REG,
                   off + OFFSETOF(svalue, tu.t.type));
   }
 }
 
 static int amd64_integer_stack_run(const struct p_instr_s *code,
-                                   ptrdiff_t available, int store_lines)
+                                   ptrdiff_t available, int store_lines,
+                                   struct pikecode_ssa_integer_stop *stop)
 {
   struct pikecode_ssa_integer_stack_plan p;
   struct pikecode_ssa_integer_profile *profile;
@@ -131,9 +139,9 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
         (INT32)((0x7fffffff - OFFSETOF(svalue, u.integer)) /
                 sizeof(struct svalue)),
         !ssa_no_integer_stack_exits, !ssa_no_integer_subtract,
-        !ssa_no_integer_bitwise)) return 0;
+        !ssa_no_integer_bitwise, stop)) return 0;
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
-                                             p.count, p.locals, "stack");
+                                             p.count, p.locals, "stack", stop);
   for (i = 0; i < p.count; i++) overflow[i] = (struct label){ .addr = -1 };
   for (i = 0; i < p.consumed; i++) slow[i] = (struct label){ .addr = -1 };
   amd64_flush_code_generator_state();
@@ -276,16 +284,34 @@ int amd64_integer_run(const struct p_instr_s *code, ptrdiff_t available,
   struct label guard = { .addr = -1 };
   unsigned int i, j;
   unsigned int stores = 0;
+  struct pikecode_ssa_integer_stop stack_stop = {0}, stop = {0};
   if (!amd64_integer_regions_enabled()) return 0;
   {
-    int consumed = amd64_integer_stack_run(code, available, store_lines);
+    int consumed = amd64_integer_stack_run(code, available, store_lines,
+                     integer_profile_enabled ? &stack_stop : NULL);
     if (consumed) return consumed;
   }
   if (!pikecode_ssa_plan_integer(&p, code, available,
       (INT32)((0x7fffffff - OFFSETOF(svalue, u.integer)) /
-              sizeof(struct svalue)))) return 0;
+              sizeof(struct svalue)), integer_profile_enabled ? &stop : NULL)) {
+    const char *planner = "balanced";
+    if (integer_profile_enabled && stack_stop.candidate) {
+      stop = stack_stop;
+      planner = "stack";
+    }
+    if (integer_profile_enabled && stop.candidate) {
+      profile = pikecode_ssa_integer_profile_new(code, available, 0,
+                                      stop.ops, stop.locals, planner, &stop);
+      /* Ordinary opcode boundaries keep no arithmetic temporary live.
+       * Publish cached state before using the counter scratch registers. */
+      amd64_flush_code_generator_state();
+      amd64_integer_count(profile, PIKE_SSA_INTEGER_REJECTED);
+    }
+    return 0;
+  }
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
-                                             p.count, p.locals, "balanced");
+                                             p.count, p.locals, "balanced",
+                                      integer_profile_enabled ? &stop : NULL);
   for (i = 0; i < p.units; i++) {
     overflow[i] = (struct label){ .addr = -1 };
     slow[i] = (struct label){ .addr = -1 };

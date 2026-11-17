@@ -166,9 +166,13 @@ static void sparc_integer_snapshot(
                 OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);
   }
   for (i = 0; i < p->locals; i++) {
+    const struct pikecode_ssa_integer_value *v;
     ptrdiff_t off = p->local[i] * sizeof(struct svalue);
+    int reg;
     if (!(s->dirty & (1U << i))) continue;
-    SPARC_INTEGER_ST(sparc_integer_reg(&p->value[s->local[i]]), SPARC_REG_L5,
+    v = &p->value[s->local[i]];
+    reg = sparc_integer_value(v, SPARC_REG_O3);
+    SPARC_INTEGER_ST(reg, SPARC_REG_L5,
                      off + OFFSETOF(svalue, u.integer), 1);
     SPARC_STW(SPARC_REG_G0, SPARC_REG_L5,
                off + OFFSETOF(svalue, tu.t.type), 1);
@@ -176,7 +180,8 @@ static void sparc_integer_snapshot(
 }
 
 static int sparc_integer_stack_run(const struct p_instr_s *code,
-                                   ptrdiff_t available, int store_lines)
+                                   ptrdiff_t available, int store_lines,
+                                   struct pikecode_ssa_integer_stop *stop)
 {
   struct pikecode_ssa_integer_stack_plan p;
   struct pikecode_ssa_integer_profile *profile;
@@ -188,10 +193,10 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue),
         !sparc_ssa_no_integer_stack_exits, !sparc_ssa_no_integer_subtract,
-        !sparc_ssa_no_integer_bitwise))
+        !sparc_ssa_no_integer_bitwise, stop))
     return 0;
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
-                                             p.count, p.locals, "stack");
+                                             p.count, p.locals, "stack", stop);
   sparc_flush_codegen_state();
   sparc_update_pc();
   sparc_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
@@ -318,17 +323,35 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
   struct sparc_integer_label slow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
   struct sparc_integer_label done = {0}, guard = {0};
   unsigned int i, j, stores = 0;
+  struct pikecode_ssa_integer_stop stack_stop = {0}, stop = {0};
   if (!sparc_integer_regions_enabled()) return 0;
   {
-    int consumed = sparc_integer_stack_run(code, available, store_lines);
+    int consumed = sparc_integer_stack_run(code, available, store_lines,
+                     integer_profile_enabled ? &stack_stop : NULL);
     if (consumed) return consumed;
   }
   if (!pikecode_ssa_plan_integer(&p, code, available,
-        (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue)))
+        (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue),
+        integer_profile_enabled ? &stop : NULL)) {
+    const char *planner = "balanced";
+    if (integer_profile_enabled && stack_stop.candidate) {
+      stop = stack_stop;
+      planner = "stack";
+    }
+    if (integer_profile_enabled && stop.candidate) {
+      profile = pikecode_ssa_integer_profile_new(code, available, 0,
+                                      stop.ops, stop.locals, planner, &stop);
+      /* Ordinary opcode boundaries keep no arithmetic temporary live.
+       * Publish cached state before using the counter scratch registers. */
+      sparc_flush_codegen_state();
+      sparc_integer_count(profile, PIKE_SSA_INTEGER_REJECTED);
+    }
     return 0;
+  }
 
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
-                                             p.count, p.locals, "balanced");
+                                             p.count, p.locals, "balanced",
+                                      integer_profile_enabled ? &stop : NULL);
   sparc_flush_codegen_state();
   sparc_update_pc();
   sparc_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);

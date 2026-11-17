@@ -54,19 +54,30 @@ struct pikecode_ssa_integer_step {
 };
 struct pikecode_ssa_integer_stack_plan {
   unsigned int locals, values, count, consumed, loads, writes, retained;
-  unsigned int bitwise, normal, expressions;
+  unsigned int bitwise, normal, expressions, constant_assign;
   INT32 local[PIKE_SSA_INTEGER_LOCALS];
   struct pikecode_ssa_integer_value value[PIKE_SSA_INTEGER_STACK_VALUES + 1];
   struct pikecode_ssa_integer_step step[PIKE_SSA_INTEGER_LIMIT];
   struct pikecode_ssa_integer_snapshot final;
 };
 
+/* Optional planning diagnostics. offset identifies the first scan failure,
+ * which can lie beyond the emitted profitable prefix. Rejected candidates
+ * also explain why no prefix could be emitted. These contain no runtime
+ * values and do not change planning decisions. */
+struct pikecode_ssa_integer_stop {
+  const char *reason, *rejection;
+  unsigned int offset, ops, locals, candidate;
+};
+
 struct p_instr_s;
 int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *plan,
                               const struct p_instr_s *code,
-                              ptrdiff_t available, INT32 max_local);
+                              ptrdiff_t available, INT32 max_local,
+                              struct pikecode_ssa_integer_stop *stop);
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *plan,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
-    int stack_exits, int subtract, int bitwise);
+    int stack_exits, int subtract, int bitwise,
+    struct pikecode_ssa_integer_stop *stop);
 #endif

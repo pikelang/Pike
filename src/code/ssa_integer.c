@@ -32,6 +32,24 @@ static int pikecode_ssa_integer_multiline(const struct p_instr_s *code,
 
 #endif
 
+static void integer_stop(struct pikecode_ssa_integer_stop *stop,
+                          const char *reason, unsigned int offset)
+{
+  if (stop) {
+    stop->reason = reason;
+    stop->offset = offset;
+  }
+}
+
+static void integer_stop_init(struct pikecode_ssa_integer_stop *stop)
+{
+  if (stop) {
+    memset(stop, 0, sizeof(*stop));
+    stop->reason = "end";
+    stop->rejection = "none";
+  }
+}
+
 /* Each unit starts and ends at the same Pike stack depth. Its fast path
  * writes one local. Multi-step units can replay from their beginning after
  * restoring that local's input register: no partial result was published. */
@@ -93,9 +111,11 @@ static int pikecode_ssa_integer_local(struct pikecode_ssa_integer_plan *p,
 
 int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
                               const struct p_instr_s *code,
-                              ptrdiff_t available, INT32 max_local)
+                              ptrdiff_t available, INT32 max_local,
+                              struct pikecode_ssa_integer_stop *stop)
 {
   unsigned int i, j;
+  integer_stop_init(stop);
   if (available <= 0) return 0;
   switch (code[0].opcode) {
   case F_INC_LOCAL_AND_POP: case F_DEC_LOCAL_AND_POP:
@@ -105,6 +125,7 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
   default:
     return 0;
   }
+  if (stop) stop->candidate = 1;
   memset(p, 0, sizeof(*p));
   while (p->count < PIKE_SSA_INTEGER_LIMIT &&
          (ptrdiff_t)p->consumed < available) {
@@ -115,15 +136,33 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
     int dst, src = -1;
     int length = pikecode_ssa_integer_unit(op, available - p->consumed,
                                            &local, &source, imm, &steps);
-    if (!length || p->count + steps > PIKE_SSA_INTEGER_LIMIT) break;
+    if (!length) {
+      integer_stop(stop, "unbalanced-unit", p->consumed);
+      break;
+    }
+    if (p->count + steps > PIKE_SSA_INTEGER_LIMIT) {
+      integer_stop(stop, "operation-limit", p->consumed);
+      break;
+    }
     for (i = 0; i < (unsigned int)length; i++)
       if (op[i].file != code[0].file) break;
-    if (i != (unsigned int)length) break;
+    if (i != (unsigned int)length) {
+      integer_stop(stop, "file-boundary", p->consumed + i);
+      break;
+    }
     dst = pikecode_ssa_integer_local(p, local, max_local);
-    if (dst < 0) break;
+    if (dst < 0) {
+      integer_stop(stop, local < 0 || local > max_local ?
+                    "local-range" : "local-limit", p->consumed);
+      break;
+    }
     if (source >= 0) {
       src = pikecode_ssa_integer_local(p, source, max_local);
-      if (src < 0) break;
+      if (src < 0) {
+        integer_stop(stop, source > max_local ? "local-range" :
+                      "local-limit", p->consumed);
+        break;
+      }
     }
     u->first = p->consumed;
     u->length = length;
@@ -151,9 +190,20 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
     p->consumed += length;
     p->units++;
   }
+  if (stop) {
+    if (p->count == PIKE_SSA_INTEGER_LIMIT)
+      integer_stop(stop, "operation-limit", p->consumed);
+    else if ((ptrdiff_t)p->consumed == available)
+      integer_stop(stop, "end", p->consumed);
+    stop->ops = p->count;
+    stop->locals = p->locals;
+  }
   /* Do not speculate on untouched locals from an operation that exceeded
    * the register budget. A single value operation has nothing to reuse. */
-  if (p->count < 2) return 0;
+  if (p->count < 2) {
+    if (stop) stop->rejection = "too-short";
+    return 0;
+  }
   for (i = 0; i < p->locals; i++) {
     int used = 0;
     for (j = 0; j < p->units; j++) {
@@ -161,9 +211,15 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
       if (p->value[v->left].local == p->local[i] ||
           (v->right && p->value[v->right].local == p->local[i])) used = 1;
     }
-    if (!used) return 0;
+    if (!used) {
+      if (stop) stop->rejection = "unused-input";
+      return 0;
+    }
   }
-  if (p->loads <= p->locals) return 0;
+  if (p->loads <= p->locals) {
+    if (stop) stop->rejection = "no-reuse";
+    return 0;
+  }
   return p->consumed;
 }
 
@@ -206,17 +262,32 @@ static int integer_stack_expressions(void)
   return enabled;
 }
 
-static int integer_stack_sum(const struct p_instr_s *op)
+/* Integer destinations are guarded at entry, including write-only locals.
+ * Replacing them cannot release a reference or invoke a destructor. */
+static int integer_stack_constant_assign(void)
+{
+  static int enabled = -1;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_NO_INTEGER_CONSTANT_ASSIGN") == NULL;
+  return enabled;
+}
+
+static int integer_stack_addition(const struct p_instr_s *op)
 {
   const struct svalue *f;
   struct program *p;
-  if (op->opcode != F_CALL_BUILTIN_N || op->arg2 < 2 ||
-      op->arg2 > PIKE_SSA_INTEGER_LIMIT || !Pike_compiler) return 0;
+  if (op->opcode != F_CALL_BUILTIN_N || !Pike_compiler) return 0;
   p = Pike_compiler->new_program;
   if (op->arg < 0 || op->arg >= p->num_constants) return 0;
   f = &p->constants[op->arg].sval;
   return TYPEOF(*f) == PIKE_T_FUNCTION &&
     SUBTYPEOF(*f) == FUNCTION_BUILTIN && f->u.efun->function == f_add;
+}
+
+static int integer_stack_sum(const struct p_instr_s *op)
+{
+  return op->arg2 >= 2 && op->arg2 <= PIKE_SSA_INTEGER_LIMIT &&
+    integer_stack_addition(op);
 }
 
 static int integer_stack_constant(const struct p_instr_s *op, INT32 *imm)
@@ -252,6 +323,9 @@ static int integer_stack_refs(const struct p_instr_s *op,
   case F_ADD_LOCAL_INT_AND_POP:
     *a = op->arg;
     return *a >= 0;
+  case F_ASSIGN_LOCAL_NUMBER_AND_POP: case F_CLEAR_LOCAL:
+    *a = op->arg;
+    return integer_stack_constant_assign() && *a >= 0;
   case F_ADD_INTS: case F_ADD_INT: case F_POP_VALUE:
     return 1;
   case F_AND: case F_OR: case F_XOR:
@@ -270,13 +344,16 @@ static int integer_stack_refs(const struct p_instr_s *op,
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *p,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
-    int stack_exits, int subtract, int bitwise)
+    int stack_exits, int subtract, int bitwise,
+    struct pikecode_ssa_integer_stop *stop)
 {
   struct pikecode_ssa_integer_snapshot state;
   struct pikecode_ssa_integer_stack_plan best;
   unsigned int stack_limit = integer_stack_expressions() ?
     PIKE_SSA_INTEGER_STACK : 2;
   unsigned int n, e, i, arithmetic = 0, retained = 0, used = 0, best_used = 0;
+  unsigned int constants = 0;
+  integer_stop_init(stop);
   if (available <= 0) return 0;
   switch (code[0].opcode) {
   case F_LOCAL: case F_2_LOCALS: case F_INC_LOCAL: case F_DEC_LOCAL:
@@ -285,6 +362,7 @@ int pikecode_ssa_plan_integer_stack(
     break;
   default: return 0;
   }
+  if (stop) stop->candidate = 1;
   p->locals = 0;
   /* All guards run at entry. Discover initial local versions before any
    * temporary can borrow a bank, including locals first read later. */
@@ -293,22 +371,92 @@ int pikecode_ssa_plan_integer_stack(
     INT32 a, b;
     int is_arithmetic;
     INT32 imm;
-    if (op->file != code[0].file ||
-        !integer_stack_refs(op, &a, &b, subtract, bitwise)) break;
+    if (op->file != code[0].file) {
+      integer_stop(stop, "file-boundary", n);
+      break;
+    }
+    if (!integer_stack_refs(op, &a, &b, subtract, bitwise)) {
+      if (stop) {
+        const char *reason = "unsupported-opcode";
+        if (op->opcode >= F_OFFSET && op->opcode < F_MAX_INSTR) {
+          unsigned int flags = instrs[op->opcode - F_OFFSET].flags;
+          if (flags & I_BRANCH) reason = "control-flow";
+          else if (flags & I_RETURN) reason = "return-boundary";
+          else if (flags & I_JUMP) reason = "unsupported-call";
+        }
+        switch (op->opcode) {
+        case F_NEGATE: case F_CONST0: case F_CONST1: case F_CONST_1:
+        case F_NUMBER:
+          reason = "disabled-operation"; break;
+        case F_CALL_BUILTIN_N:
+          if (!integer_stack_expressions()) reason = "disabled-operation";
+          else if (integer_stack_addition(op)) reason = "arity-limit";
+          else reason = "unsupported-call";
+          break;
+        case F_ASSIGN_LOCAL_NUMBER_AND_POP: case F_CLEAR_LOCAL:
+          reason = integer_stack_constant_assign() ?
+            "local-range" : "disabled-operation";
+          break;
+        case F_LABEL: reason = "label-boundary"; break;
+        case F_CALL_BUILTIN: case F_CALL_BUILTIN_AND_POP:
+        case F_CALL_BUILTIN_AND_RETURN: case F_CALL_BUILTIN1:
+        case F_CALL_BUILTIN1_AND_POP: case F_APPLY_N:
+          reason = "unsupported-call"; break;
+        case F_SUBTRACT: case F_AND: case F_OR: case F_XOR:
+        case F_AND_INT: case F_OR_INT: case F_XOR_INT:
+          reason = "disabled-operation"; break;
+        case F_NEG_NUMBER:
+          reason = integer_stack_expressions() ?
+            "immediate-range" : "disabled-operation";
+          break;
+        case F_SUBTRACT_INT: case F_ADD_NEG_INT:
+          reason = "immediate-range"; break;
+        case F_LOCAL: case F_2_LOCALS: case F_ADD_LOCALS_AND_POP:
+        case F_INC_LOCAL: case F_DEC_LOCAL: case F_INC_LOCAL_AND_POP:
+        case F_DEC_LOCAL_AND_POP: case F_ASSIGN_LOCAL:
+        case F_ASSIGN_LOCAL_AND_POP: case F_ADD_LOCAL_INT_AND_POP:
+          reason = "local-range"; break;
+        }
+        integer_stop(stop, reason, n);
+      }
+      break;
+    }
     is_arithmetic = op->opcode != F_LOCAL && op->opcode != F_2_LOCALS &&
       op->opcode != F_ASSIGN_LOCAL && op->opcode != F_ASSIGN_LOCAL_AND_POP &&
-      op->opcode != F_POP_VALUE && !integer_stack_constant(op, &imm);
+      op->opcode != F_POP_VALUE &&
+      op->opcode != F_ASSIGN_LOCAL_NUMBER_AND_POP &&
+      op->opcode != F_CLEAR_LOCAL &&
+      !integer_stack_constant(op, &imm);
     /* Count every native add in an n-ary operation against the same budget. */
     if (op->opcode == F_CALL_BUILTIN_N) is_arithmetic = op->arg2 - 1;
-    if (arithmetic + is_arithmetic > PIKE_SSA_INTEGER_LIMIT) break;
-    if (a >= 0 && integer_stack_local(p, a, max_local) < 0) break;
-    if (b >= 0 && integer_stack_local(p, b, max_local) < 0) break;
+    if (arithmetic + is_arithmetic > PIKE_SSA_INTEGER_LIMIT) {
+      integer_stop(stop, "operation-limit", n);
+      break;
+    }
+    if ((a >= 0 && integer_stack_local(p, a, max_local) < 0) ||
+        (b >= 0 && integer_stack_local(p, b, max_local) < 0)) {
+      integer_stop(stop, a > max_local || b > max_local ?
+                    "local-range" : "local-limit", n);
+      break;
+    }
     arithmetic += is_arithmetic;
     retained |= op->opcode == F_ASSIGN_LOCAL;
+    constants |= op->opcode == F_ASSIGN_LOCAL_NUMBER_AND_POP ||
+      op->opcode == F_CLEAR_LOCAL;
   }
-  if ((!retained && !stack_exits && !bitwise) || arithmetic < 2) return 0;
+  if (stop) {
+    if ((ptrdiff_t)n == available) integer_stop(stop, "end", n);
+    else if (n == PIKE_SSA_INTEGER_CODE)
+      integer_stop(stop, "instruction-limit", n);
+    stop->ops = arithmetic;
+    stop->locals = p->locals;
+  }
+  if ((!retained && !constants && !stack_exits && !bitwise) || arithmetic < 2) {
+    if (stop) stop->rejection = arithmetic < 2 ? "too-short" : "exit-shape";
+    return 0;
+  }
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
-  p->bitwise = p->normal = p->expressions = 0;
+  p->bitwise = p->normal = p->expressions = p->constant_assign = 0;
   memset(p->value, 0, sizeof(p->value));
   memset(p->step, 0, sizeof(p->step));
   memset(&state, 0, sizeof(state));
@@ -335,7 +483,10 @@ int pikecode_ssa_plan_integer_stack(
     }
     if (integer_stack_constant(op, &imm)) {
       struct pikecode_ssa_integer_value *v;
-      if (state.depth == stack_limit) goto finished;
+      if (state.depth == stack_limit) {
+        integer_stop(stop, "stack-limit", e);
+        goto finished;
+      }
       v = &p->value[++p->values];
       v->kind = PIKE_SSA_INTEGER_CONSTANT;
       v->imm = imm;
@@ -344,14 +495,20 @@ int pikecode_ssa_plan_integer_stack(
     }
     switch (op->opcode) {
     case F_NEGATE:
-      if (!state.depth) goto finished;
+      if (!state.depth) {
+        integer_stop(stop, "stack-underflow", e);
+        goto finished;
+      }
       left = state.stack[--state.depth];
       kind = PIKE_SSA_INTEGER_NEGATE;
       push = 1;
       break;
     case F_CALL_BUILTIN_N:
       args = op->arg2;
-      if (state.depth < args) goto finished;
+      if (state.depth < args) {
+        integer_stop(stop, "stack-underflow", e);
+        goto finished;
+      }
       state.depth -= args;
       for (i = 0; i < args; i++) operand[i] = state.stack[state.depth + i];
       /* f_add preserves UNDEFINED only if all arguments are UNDEFINED.
@@ -365,26 +522,50 @@ int pikecode_ssa_plan_integer_stack(
       push = 1;
       break;
     case F_LOCAL: case F_2_LOCALS:
-      if (state.depth + (src >= 0 ? 2 : 1) > stack_limit)
+      if (state.depth + (src >= 0 ? 2 : 1) > stack_limit) {
+        integer_stop(stop, "stack-limit", e);
         goto finished;
+      }
       state.stack[state.depth++] = state.local[dst];
       if (src >= 0) state.stack[state.depth++] = state.local[src];
       goto accepted;
+    case F_ASSIGN_LOCAL_NUMBER_AND_POP: case F_CLEAR_LOCAL: {
+      struct pikecode_ssa_integer_value *v = &p->value[++p->values];
+      v->kind = PIKE_SSA_INTEGER_CONSTANT;
+      v->imm = op->opcode == F_CLEAR_LOCAL ? 0 : op->arg2;
+      state.local[dst] = p->values;
+      state.dirty |= 1U << dst;
+      p->writes++;
+      p->constant_assign++;
+      goto accepted;
+    }
     case F_ASSIGN_LOCAL: case F_ASSIGN_LOCAL_AND_POP:
-      if (!state.depth) goto finished;
+      if (!state.depth) {
+        integer_stop(stop, "stack-underflow", e);
+        goto finished;
+      }
       left = state.stack[state.depth - 1];
-      /* Bare input copies would need parallel subtype-tag moves at commit.
-       * Keep those on the ordinary path; arithmetic results have tag INT/0. */
+      /* Bare inputs need parallel subtype-tag moves; constants and
+       * computed versions instead have ordinary integer tags. */
       if (p->value[left].kind == PIKE_SSA_INTEGER_LOAD ||
-          p->value[left].kind == PIKE_SSA_INTEGER_CONSTANT) goto finished;
+          (p->value[left].kind == PIKE_SSA_INTEGER_CONSTANT &&
+           !integer_stack_constant_assign())) {
+        integer_stop(stop, "input-assignment", e);
+        goto finished;
+      }
       state.local[dst] = left;
       state.dirty |= 1U << dst;
       p->writes++;
+      if (p->value[left].kind == PIKE_SSA_INTEGER_CONSTANT)
+        p->constant_assign++;
       if (op->opcode == F_ASSIGN_LOCAL_AND_POP) state.depth--;
       else p->retained = 1;
       goto accepted;
     case F_POP_VALUE:
-      if (!state.depth) goto finished;
+      if (!state.depth) {
+        integer_stop(stop, "stack-underflow", e);
+        goto finished;
+      }
       state.depth--;
       goto accepted;
     case F_AND: case F_OR: case F_XOR:
@@ -396,7 +577,10 @@ int pikecode_ssa_plan_integer_stack(
       /* FALLTHRU */
     case F_ADD_INTS:
     binary:
-      if (state.depth < 2) goto finished;
+      if (state.depth < 2) {
+        integer_stop(stop, "stack-underflow", e);
+        goto finished;
+      }
       right = state.stack[--state.depth];
       left = state.stack[--state.depth];
       push = 1;
@@ -406,7 +590,10 @@ int pikecode_ssa_plan_integer_stack(
         op->opcode == F_OR_INT ? PIKE_SSA_INTEGER_OR : PIKE_SSA_INTEGER_XOR;
       /* FALLTHRU */
     case F_ADD_INT: case F_ADD_NEG_INT: case F_SUBTRACT_INT:
-      if (!state.depth) goto finished;
+      if (!state.depth) {
+        integer_stop(stop, "stack-underflow", e);
+        goto finished;
+      }
       left = state.stack[--state.depth];
       if (integer_stack_bitwise(kind)) imm = op->arg;
       else if (op->opcode == F_SUBTRACT_INT && subtract) {
@@ -424,7 +611,10 @@ int pikecode_ssa_plan_integer_stack(
       else imm = (op->opcode == F_INC_LOCAL ||
                   op->opcode == F_INC_LOCAL_AND_POP) ? 1 : -1;
       push = op->opcode == F_INC_LOCAL || op->opcode == F_DEC_LOCAL;
-      if (push && state.depth == stack_limit) goto finished;
+      if (push && state.depth == stack_limit) {
+        integer_stop(stop, "stack-limit", e);
+        goto finished;
+      }
       state.local[dst] = 0;
       break;
     }
@@ -434,7 +624,9 @@ int pikecode_ssa_plan_integer_stack(
         p->value[right].kind == PIKE_SSA_INTEGER_LOAD)
       p->normal |= 1U << p->value[left].bank;
     for (i = 0; i < p->locals; i++)
-      if (state.local[i]) live |= 1U << p->value[state.local[i]].bank;
+      if (state.local[i] &&
+          p->value[state.local[i]].kind != PIKE_SSA_INTEGER_CONSTANT)
+        live |= 1U << p->value[state.local[i]].bank;
     for (i = 0; i < state.depth; i++)
       if (p->value[state.stack[i]].kind != PIKE_SSA_INTEGER_CONSTANT)
         live |= 1U << p->value[state.stack[i]].bank;
@@ -442,7 +634,10 @@ int pikecode_ssa_plan_integer_stack(
     if (live & (1U << bank)) {
       for (bank = 0; bank < PIKE_SSA_INTEGER_LOCALS; bank++)
         if (!(live & (1U << bank))) break;
-      if (bank == PIKE_SSA_INTEGER_LOCALS) goto finished;
+      if (bank == PIKE_SSA_INTEGER_LOCALS) {
+        integer_stop(stop, "bank-limit", e);
+        goto finished;
+      }
     }
     {
       struct pikecode_ssa_integer_step *step = &p->step[p->count++];
@@ -476,7 +671,8 @@ int pikecode_ssa_plan_integer_stack(
     p->consumed = e + 1;
     /* Keep the longest profitable prefix, including a live-stack exit.
      * Its final snapshot is published just like an overflow snapshot. */
-    if (((!state.depth && (p->retained || p->bitwise || p->expressions)) ||
+    if (((!state.depth && (p->retained || p->bitwise || p->expressions ||
+                          p->constant_assign)) ||
          (state.depth && stack_exits)) &&
         p->count >= 2 &&
         p->loads > p->locals) {
@@ -485,7 +681,15 @@ int pikecode_ssa_plan_integer_stack(
     }
   }
  finished:
-  if (!best.consumed || best_used != (1U << best.locals) - 1) return 0;
+  if (!best.consumed || best_used != (1U << best.locals) - 1) {
+    if (stop) {
+      if (best.consumed) stop->rejection = "unused-input";
+      else if (p->count < 2) stop->rejection = "too-short";
+      else if (p->loads <= p->locals) stop->rejection = "no-reuse";
+      else stop->rejection = p->final.depth ? "live-stack" : "balanced-only";
+    }
+    return 0;
+  }
   *p = best;
   return p->consumed;
 }
