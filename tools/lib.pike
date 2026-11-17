@@ -317,6 +317,11 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 					     "stdout":o,
 					     "env":getenv() + ([
 					       "WINEDEBUG":"-all",
+                                       // Wine uses the Unix locale to map
+                                       // Unicode filenames onto the host FS.
+                                       // Build scripts often set LC_ALL=C.
+                                       "LC_ALL":getenv("NT_WINE_LOCALE") ||
+                                                "C.UTF-8",
 					     ]),
 					   ]) );
 	destruct(o);
