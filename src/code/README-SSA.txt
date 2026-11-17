@@ -403,7 +403,47 @@ boundaries retain their existing restrictions.
 
 Set PIKE_SSA_NO_INTEGER_STACK_INPUT=1 to restore previous planning. The
 extension requires the stack-aware planner. Live-stack exits still require
-the corresponding control; ordinary global accesses remain boundaries.
+the corresponding control. The direct-global extension below can include
+a leading global load. Other global accesses retain their boundaries.
+
+Direct-global integer operands
+------------------------------
+
+The direct-global extension defaults on in SSA-enabled builds on AMD64,
+SPARC32 and SPARC64. Set PIKE_SSA_NO_INTEGER_GLOBAL_INPUT=1 to disable it.
+The former positive flag PIKE_SSA_INTEGER_GLOBAL_INPUT is obsolete.
+Indirect/inherited calls retain their incoming-stack fast path.
+
+The stack planner can start at F_PRIVATE_IF_DIRECT_GLOBAL followed by an
+eligible local-based expression. It keeps that global operand virtual in
+one of the three value banks, avoiding its ordinary stack push and reload.
+The minimum arithmetic count and operation/instruction limits are unchanged.
+
+Entry guards require the current object's program to match the active
+frame context's live program, and the global svalue to have an ordinary
+integer type and subtype. A program mismatch enters indirect indexing using
+that check's object and context; it preserves virtual dispatch and the
+ordinary destructed-object error. A direct tag or local guard failure copies
+the complete svalue from the already resolved storage, preserving references
+and subtypes. Neither path repeats the program comparison. Both join the
+preceding incoming-stack arithmetic plan with fresh guards after any getter
+callback. Remaining slow operations keep ordinary replay. Direct storage
+uses the object storage and context storage offset, including offsets beyond
+the immediate load range.
+
+Successful exits publish the normal virtual stack. Overflow snapshots
+materialize the original global operand before replaying the failing
+arithmetic, without repeating the producer. These snapshots are relative
+to the untouched entry SP: this form consumes no incoming real stack slot.
+The existing guarded incoming-stack planner remains independently usable.
+Guard failures that enter its fallback produce separate profile entries;
+a failed direct-global guard can therefore be followed by fast arithmetic.
+
+Only the leading untyped direct-global load is included. Global stores,
+subsequent global accesses, typed raw storage, calls and labels retain their
+boundaries. No global write, reference count change or callback occurs on
+the fast path. PIKE_SSA_NO_INTEGER_GLOBAL_INPUT=1 forces the extension off,
+for comparisons, including when the former positive flag is set.
 
 Runtime profiling
 -----------------
@@ -435,7 +475,8 @@ The offsets in stop_offset and consumed make this distinction explicit.
 
 Rejected candidates have their own rows and counters, even if a program
 emits no integer regions. Candidates start at the same local-load/update
-opcodes as planning; fused indexing/global operations and other starts are
+opcodes or eligible direct-global prefixes as planning; fused indexing,
+other global operations and other starts are
 outside this count. Rejected rows use ops for the discovered arithmetic
 budget, not successful value operations. Candidate attempts may overlap.
 Their counters run at entry, without type guards: they count opportunities,

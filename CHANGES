@@ -141,6 +141,13 @@ o Compiler
     use native arithmetic. Set PIKE_SSA_NO_INTEGER_STACK_INPUT=1 to restore
     previous planning.
 
+  - SSA integer regions on AMD64, SPARC32 and SPARC64 now read a guarded
+    direct global integer into a value register without first pushing it
+    on the evaluation stack. Other contexts and types retain their existing
+    indexing semantics and incoming-stack fast path, reusing the initial
+    program check. Set PIKE_SSA_NO_INTEGER_GLOBAL_INPUT=1 to restore
+    previous planning.
+
   - Set PIKE_SSA_INTEGER_PROFILE=1 to collect per-region execution counts,
     type-guard failures and overflow exits. Summarize captured stderr with
     tools/ssa_integer_profile.pike; ordinary runs emit no counter code.

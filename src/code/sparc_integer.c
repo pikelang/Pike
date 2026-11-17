@@ -181,6 +181,40 @@ static void sparc_integer_snapshot(
   }
 }
 
+/* The identity guard has already selected indirect indexing. Preserve the
+ * opcode's destructed-object error and publish SP after a getter callback. */
+static void sparc_integer_global_indirect(struct object *o, ptrdiff_t index)
+{
+  if (!o->prog) object_low_set_index(o, 0, NULL);
+  low_object_index_no_free(Pike_sp, o, index);
+  Pike_sp++;
+}
+
+/* Copy the complete svalue, including padding/float payload on SPARC32.
+ * O4 is the direct storage address retained by all entry guards. */
+static void sparc_integer_push_global(void)
+{
+  struct sparc_integer_label unreferenced = {0};
+  size_t off;
+  LOAD_PIKE_SP();
+  for (off = 0; off < sizeof(struct svalue); off += 4) {
+    SPARC_LDUW(SPARC_REG_O3, SPARC_REG_O4, off, 1);
+    SPARC_STW(SPARC_REG_O3, SPARC_REG_PIKE_SP,
+               sparc_pike_sp_bias + off, 1);
+  }
+  SPARC_LDUH(SPARC_REG_O3, SPARC_REG_O4, OFFSETOF(svalue, tu.t.type), 1);
+  SPARC_ANDcc(SPARC_REG_G0, SPARC_REG_O3, MIN_REF_TYPE, 1);
+  sparc_integer_branch(&unreferenced, 0x02800000); /* be %icc */
+  PIKE_LDPTR(SPARC_REG_O5, SPARC_REG_O4, OFFSETOF(svalue, u.refs), 1);
+  SPARC_LDUW(SPARC_REG_O3, SPARC_REG_O5, OFFSETOF(pike_string, refs), 1);
+  SPARC_ADD(SPARC_REG_O3, SPARC_REG_O3, 1, 1);
+  SPARC_STW(SPARC_REG_O3, SPARC_REG_O5, OFFSETOF(pike_string, refs), 1);
+  sparc_integer_bind(&unreferenced);
+  sparc_pike_sp_bias += sizeof(struct svalue);
+  SPARC_SSA_DEFINE(SP, 1);
+  sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
+}
+
 static int sparc_integer_stack_run(const struct p_instr_s *code,
                                    ptrdiff_t available, int store_lines,
                                    struct pikecode_ssa_integer_stop *stop)
@@ -189,7 +223,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   struct pikecode_ssa_integer_profile *profile;
   struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
   struct sparc_integer_label slow[PIKE_SSA_INTEGER_CODE] = {{0}};
-  struct sparc_integer_label done = {0}, guard = {0};
+  struct sparc_integer_label done = {0}, guard = {0}, indirect = {0};
+  struct sparc_integer_label prepared = {0};
   unsigned int i, stores = 0;
   if (sparc_ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
@@ -203,6 +238,37 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   sparc_update_pc();
   sparc_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
   LOAD_PIKE_FP();
+  if (p.global_input) {
+    const struct pikecode_ssa_integer_value *v = &p.value[p.locals + 1];
+    int reg = sparc_integer_reg(v);
+    PIKE_LDPTR(SPARC_REG_O4, SPARC_REG_PIKE_FP,
+               OFFSETOF(pike_frame, current_object), 1);
+    PIKE_LDPTR(SPARC_REG_O5, SPARC_REG_PIKE_FP,
+               OFFSETOF(pike_frame, context), 1);
+    PIKE_LDPTR(SPARC_REG_O3, SPARC_REG_O4, OFFSETOF(object, prog), 1);
+    PIKE_LDPTR(reg, SPARC_REG_O5, OFFSETOF(inherit, prog), 1);
+    /* The active context program is live. Compare full pointers, even
+     * when native integer arithmetic uses narrower condition codes. */
+    SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, reg, 0);
+#ifdef PIKE_BYTECODE_SPARC64
+    sparc_integer_branch(&indirect, 0x12600000);
+#else
+    sparc_integer_branch(&indirect, 0x12800000);
+#endif
+    PIKE_LDPTR(SPARC_REG_O4, SPARC_REG_O4, OFFSETOF(object, storage), 1);
+    PIKE_LDPTR(SPARC_REG_O5, SPARC_REG_O5,
+               OFFSETOF(inherit, storage_offset), 1);
+    SPARC_ADD(SPARC_REG_O4, SPARC_REG_O4, SPARC_REG_O5, 0);
+    if (p.global_offset) {
+      SET_REG(SPARC_REG_O5, p.global_offset);
+      SPARC_ADD(SPARC_REG_O4, SPARC_REG_O4, SPARC_REG_O5, 0);
+    }
+    SPARC_LDUW(SPARC_REG_O3, SPARC_REG_O4, OFFSETOF(svalue, tu.t.type), 1);
+    SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
+    sparc_integer_branch((profile || p.global_input) ? &guard : &slow[0],
+                         0x12800000);
+    SPARC_INTEGER_LD(reg, SPARC_REG_O4, OFFSETOF(svalue, u.integer), 1);
+  }
   PIKE_LDPTR(SPARC_REG_L5, SPARC_REG_PIKE_FP,
              OFFSETOF(pike_frame, locals), 1);
   for (i = 1; i <= p.locals; i++) {
@@ -217,7 +283,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
                  off + OFFSETOF(svalue, tu.t.type), 1);
     SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
     /* bne %icc */
-    sparc_integer_branch(profile ? &guard : &slow[0], 0x12800000);
+    sparc_integer_branch((profile || p.global_input) ? &guard : &slow[0],
+                         0x12800000);
     SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
                      off + OFFSETOF(svalue, u.integer), 1);
   }
@@ -230,7 +297,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     SPARC_LDUW(SPARC_REG_O3, SPARC_REG_O4,
                off + OFFSETOF(svalue, tu.t.type), 1);
     SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
-    sparc_integer_branch(profile ? &guard : &slow[0], 0x12800000);
+    sparc_integer_branch((profile || p.global_input) ? &guard : &slow[0],
+                         0x12800000);
     SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_O4,
                      off + OFFSETOF(svalue, u.integer), 1);
   }
@@ -286,12 +354,12 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     sparc_integer_snapshot(&p, &p.step[i].before);
     sparc_integer_branch(&slow[p.step[i].first], 0x10800000);
   }
-  if (profile) {
+  if (profile && !p.global_input) {
     sparc_integer_bind(&guard);
     sparc_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
     sparc_integer_branch(&slow[0], 0x10800000);
   }
-  for (i = 0; i < p.consumed; i++) {
+  for (i = p.global_input; i < p.consumed; i++) {
     const struct p_instr_s *op = &code[i];
     unsigned int flags = instrs[op->opcode - F_OFFSET].flags;
     /* Fallthrough publishes its deferred stores before the label. Side
@@ -305,6 +373,45 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     else ins_f_byte(op->opcode);
   }
   sparc_flush_codegen_state();
+  if (p.global_input) {
+    struct pikecode_ssa_integer_stop fallback_stop = {0};
+    int consumed;
+    sparc_integer_branch(&done, 0x10800000);
+    sparc_integer_bind(&guard);
+    sparc_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
+    pikecode_ssa_integer_source(code, store_lines);
+    sparc_integer_push_global();
+    sparc_flush_codegen_state();
+    sparc_integer_branch(&prepared, 0x10800000);
+    sparc_integer_bind(&indirect);
+    /* O4/O5 still hold the object/context. Prepare arguments before the
+     * counter clobbers O5; the initial identity check needs no repetition. */
+    SPARC_OR(SPARC_REG_O0, SPARC_REG_O4, SPARC_REG_G0, 0);
+    SPARC_LDUH(SPARC_REG_O1, SPARC_REG_O5,
+               OFFSETOF(inherit, identifier_level), 1);
+    SET_REG(SPARC_REG_O2, code[0].arg2);
+    SPARC_ADD(SPARC_REG_O1, SPARC_REG_O1, SPARC_REG_O2, 0);
+    sparc_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
+    sparc_update_pc();
+    low_ins_call(sparc_integer_global_indirect, 0, I_UPDATE_SP);
+    sparc_flush_codegen_state();
+    sparc_integer_bind(&prepared);
+    /* Re-guard after any getter callback and retain the existing native
+     * arithmetic for integer values from indirect/inherited contexts. */
+    consumed = 1 + sparc_integer_stack_run(code + 1, p.consumed - 1,
+                   store_lines,
+                   integer_profile_enabled ? &fallback_stop : NULL);
+    for (i = consumed; i < p.consumed; i++) {
+      const struct p_instr_s *op = &code[i];
+      unsigned int flags = instrs[op->opcode - F_OFFSET].flags;
+      pikecode_ssa_integer_source(op, store_lines);
+      if (flags & I_HASARG2)
+        ins_f_byte_with_2_args(op->opcode, op->arg, op->arg2);
+      else if (flags & I_HASARG) ins_f_byte_with_arg(op->opcode, op->arg);
+      else ins_f_byte(op->opcode);
+    }
+    sparc_flush_codegen_state();
+  }
   sparc_integer_bind(&done);
   pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
   /* Both paths must publish a PC for the final source position: the
@@ -321,7 +428,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     for (i = 0; i < p.count; i++)
       if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
         sparc_stats.integer_subtract_ops++;
-    sparc_stats.integer_loads_avoided += p.loads - p.locals - p.inputs;
+    sparc_stats.integer_loads_avoided +=
+      p.loads - p.locals - p.inputs - p.global_input;
     sparc_stats.integer_stores_avoided += p.writes - stores;
   }
   return p.consumed;

@@ -460,6 +460,8 @@ static int integer_stack_plan(
     return 0;
   }
   p->inputs = inputs;
+  p->global_input = 0;
+  p->global_offset = 0;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
   p->bitwise = p->normal = p->expressions = p->constant_assign = 0;
   memset(p->value, 0, sizeof(p->value));
@@ -713,19 +715,50 @@ static int integer_stack_plan(
   return p->consumed;
 }
 
-/* Keep existing profitable regions unchanged. Only retry a rejected virtual
- * stack underflow with one ordinary integer already on the real stack.
- * Valid bytecode guarantees that operand exists; labels and calls still
- * bound discovery. Failed retries preserve the original diagnostics. */
+/* A guarded direct global or a rejected virtual stack underflow can supply
+ * one ordinary integer to the existing bounded stack plan. Valid bytecode
+ * guarantees an incoming real stack operand exists. Labels and calls still
+ * bound discovery; failed retries preserve the original diagnostics. */
 int pikecode_ssa_plan_integer_stack(
     struct pikecode_ssa_integer_stack_plan *p,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
     int stack_exits, int subtract, int bitwise,
     struct pikecode_ssa_integer_stop *stop)
 {
-  static int enabled = -1;
+  static int enabled = -1, global_enabled = -1;
   struct pikecode_ssa_integer_stop first, retry;
   int result;
+  if (global_enabled < 0)
+    global_enabled = getenv("PIKE_SSA_NO_INTEGER_GLOBAL_INPUT") == NULL;
+  if (global_enabled && available > 1 &&
+      code[0].opcode == F_PRIVATE_IF_DIRECT_GLOBAL &&
+      code[0].arg >= 0 && code[0].arg2 >= 0 &&
+      code[0].file == code[1].file) {
+    unsigned int i;
+    ptrdiff_t rest = available - 1;
+    if (rest >= PIKE_SSA_INTEGER_CODE) rest = PIKE_SSA_INTEGER_CODE - 1;
+    /* Reuse the one-input virtual plan, but produce the value directly
+     * from guarded global storage instead of consuming a real stack slot.
+     * Guard failure produces the operand before the existing stack plan;
+     * overflow snapshots already contain its value, so replay instead
+     * starts at the failing arithmetic. */
+    result = integer_stack_plan(p, code + 1, rest, max_local,
+                                stack_exits, subtract, bitwise, 1, &first);
+    if (available > PIKE_SSA_INTEGER_CODE &&
+        first.offset == (unsigned int)rest && !strcmp(first.reason, "end"))
+      first.reason = "instruction-limit";
+    first.offset++;
+    if (result) {
+      p->inputs = 0;
+      p->global_input = 1;
+      p->global_offset = code[0].arg;
+      p->value[p->locals + 1].kind = PIKE_SSA_INTEGER_GLOBAL_INPUT;
+      for (i = 0; i < p->count; i++) p->step[i].first++;
+      result = ++p->consumed;
+    }
+    if (stop) *stop = first;
+    return result;
+  }
   if (enabled < 0)
     enabled = getenv("PIKE_SSA_NO_INTEGER_STACK_INPUT") == NULL;
   result = integer_stack_plan(p, code, available, max_local,
