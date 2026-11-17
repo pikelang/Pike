@@ -143,13 +143,16 @@ static void MEMORY_FREE( struct memory_storage *storage )
   if (THIS->p && pike_memory_object_pinned(THISOBJ))			\
     Pike_error("The memory is used by a Stdio.Buffer.\n");
 
+static void deferred_memory_free(void *storage)
+{
+   MEMORY_FREE(storage);
+}
+
 static void exit_memory(struct object *o)
 {
    if (THIS->p && pike_memory_object_pinned(o)) {
-     /* Destructed while a buffer uses the memory: it is left to the
-      * buffer, unfreed. */
-     THIS->p = NULL;
-     THIS->flags = 0;
+     /* Buffers retain the object's storage until their final unpin. */
+     pike_defer_memory_object_free(o, deferred_memory_free, THIS);
      return;
    }
    MEMORY_FREE(THIS);

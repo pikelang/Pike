@@ -539,6 +539,59 @@ cond([[ System["__MMAP__"] ]], [[
   ]], 0)
 ]])
 
+dnl Explicit destruction must preserve memory shared by sub-buffers.
+cond([[ System["__MMAP__"] ]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      System.Memory m = System.Memory(32);
+      m[0] = 65;
+      Stdio.Buffer b = Stdio.Buffer(m);
+      Stdio.Buffer c = b->read_buffer(16);
+      destruct(m);
+      destruct(b);
+      if (c[0] != 65 || sizeof(c->read()) != 16) return 1;
+      destruct(c);
+      // Only one of several System.Memory inherits backs the buffer.
+      class Memories {
+        inherit System.Memory: first;
+        inherit System.Memory: second;
+        protected void create() {
+          first::create(32);
+          second::create(32);
+        }
+      };
+      m = Memories();
+      b = Stdio.Buffer(m);
+      destruct(m);
+      if (sizeof(b->read()) != 32) return 2;
+      destruct(b);
+      return 0;
+    #} }));
+    return r->exitcode ? sprintf("exit %d: %s", r->exitcode, r->stderr) : 0;
+  ]], 0)
+]])
+
+dnl The last buffer must unmap a destructed System.Memory. Check the
+dnl mapping directly where procfs exposes it, independently of malloc.
+cond([[ System["__MMAP__"] && Stdio.exist("/proc/self/maps") ]], [[
+  test_any([[
+    string path = sprintf("buffer_memory_mapping_%d", getpid());
+    Stdio.File f = Stdio.File(path, "wct");
+    f->truncate(4096);
+    f->close();
+    System.Memory m = System.Memory(path);
+    Stdio.Buffer b = Stdio.Buffer(m);
+    Stdio.Buffer c = b->read_buffer(32);
+    destruct(m);
+    destruct(b);
+    int mapped = search(Stdio.read_file("/proc/self/maps"), path) >= 0;
+    destruct(c);
+    int unmapped = search(Stdio.read_file("/proc/self/maps"), path) < 0;
+    rm(path);
+    return mapped && unmapped;
+  ]], 1)
+]])
+
 dnl create/add( buffer )
 test_any([[
   Stdio.Buffer a = Stdio.Buffer("buffer 1");

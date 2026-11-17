@@ -458,6 +458,11 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o System.Memory and Stdio.Buffer
+
+  Memory retained by buffers after explicit destruction of a System.Memory
+  object is now released when the last buffer stops using it.
+
 o Postgres
 
   Result references to their connections are now visible to the garbage
