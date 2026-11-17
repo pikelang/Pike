@@ -72,6 +72,7 @@
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "gc.h"
 #include "pike_types.h"
 
 /* <server/postgres_fe.h> doesn't suffice to be able to include
@@ -171,6 +172,16 @@ PIKECLASS postgres_result
 	THIS->result = NULL;
   }
 
+  GC_CHECK
+  {
+    if (THIS->pgo) debug_gc_check(THIS->pgo, " postgres result connection");
+  }
+
+  GC_RECURSE
+  {
+    if (THIS->pgo) gc_recurse_object(THIS->pgo);
+  }
+
 /*! @decl void create(object o)
  *!
  *! You can't create istances of this object yourself.
@@ -200,7 +211,7 @@ PIKEFUN void create(object o)
   PIKEFUN void _destruct(int|void reason)
     flags ID_PROTECTED;
   {
-    if (THIS->pgod) {
+    if (THIS->pgo && THIS->pgo->prog) {
       PGconn *conn = pike_get_pgconn(THIS->pgod);
       if (THIS->result) {
 	PGresult *res = THIS->result;
@@ -381,10 +392,13 @@ PIKEFUN array(string) fetch_row()
 	if (THIS->cursor>=PQntuples(THIS->result)) {
 	  PGresult * res=THIS->result;
 	  if(THIS->flags & PIKE_PG_FETCH) {
-	    PGconn * conn = pike_get_pgconn(THIS->pgod);
+            PGconn *conn;
 	    int docommit = THIS->flags & PIKE_PG_COMMIT;
 	    int dofetch=1;
 	    PQ_FETCH();
+            if (!THIS->pgo || !THIS->pgo->prog)
+              Pike_error("Postgres connection has been destructed.\n");
+            conn = pike_get_pgconn(THIS->pgod);
 	    THIS->result = NULL;
 	    /* FIXME: Race-condition on THIS->result. */
 	    THREADS_ALLOW();

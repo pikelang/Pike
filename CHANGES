@@ -458,6 +458,12 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o Postgres
+
+  Result references to their connections are now visible to the garbage
+  collector, allowing connection/result cycles to be collected. Results
+  also handle explicitly destructed connections without using their mutexes.
+
 o Gmp
 
   Fixed incorrect bignum results for overflowing negative integer products
