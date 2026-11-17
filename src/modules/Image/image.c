@@ -5172,14 +5172,12 @@ void init_image_image(void)
    set_gc_recurse_callback(gc_recurse_image_struct);
 
 
-#ifndef FAKE_DYNAMIC_LOAD
    /* Added by per: Export all functions needed by _Image_GIF */
    PIKE_MODULE_EXPORT(Image, image_lay );
    PIKE_MODULE_EXPORT(Image, image_colortable_write_rgb );
    PIKE_MODULE_EXPORT(Image, image_colortable_size );
    PIKE_MODULE_EXPORT(Image, image_colortable_index_8bit_image );
    PIKE_MODULE_EXPORT(Image, image_colortable_internal_floyd_steinberg );
-#endif
 
 
    s_red=0;

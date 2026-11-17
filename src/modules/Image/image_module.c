@@ -368,7 +368,6 @@ PIKE_MODULE_INIT
    quick_add_function("`[]",3,image_magic_index,
 		      type_of_index,CONSTANT_STRLEN(type_of_index),0,0);
 
-#ifndef FAKE_DYNAMIC_LOAD
    PIKE_MODULE_EXPORT(Image, image_program );
    PIKE_MODULE_EXPORT(Image, image_colortable_program);
    PIKE_MODULE_EXPORT(Image, image_layer_program );
@@ -377,7 +376,6 @@ PIKE_MODULE_INIT
                              &image_threads_unlocked);
    PIKE_MODULE_EXPORT_SYMBOL("Image.image_replace_waiting",
                              &image_replace_waiting);
-#endif
 }
 
 PIKE_MODULE_EXIT

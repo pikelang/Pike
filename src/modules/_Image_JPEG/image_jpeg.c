@@ -1587,7 +1587,6 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_JPEGLIB_H
-#ifndef FAKE_DYNAMIC_LOAD
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
     if(!image_program) {
        yyerror("Could not load Image module.");
@@ -1601,7 +1600,6 @@ PIKE_MODULE_INIT
        yyerror("Could not load Image module.");
        return;
     }
-#endif /* DYNAMIC_MODULE */
 
 #define tOptions tMap(tStr,tOr3(					\
     tInt,								\
