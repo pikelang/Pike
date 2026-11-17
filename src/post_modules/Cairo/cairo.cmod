@@ -2097,7 +2097,6 @@ PIKECLASS ScaledFont
     const char *utf8;
     int utf8_len;
     int i;
-    struct array *ret;
 
     f_string_to_utf8(1);
     text = Pike_sp[-1].u.string;
