@@ -128,6 +128,15 @@ struct field_info {
 
 struct Odbc_odbc_struct;
 
+/* References are held by the connection, its results and native calls.
+ * They are changed with the interpreter lock held. */
+struct pike_odbc_lock {
+  PIKE_MUTEX_T mutex;
+  void *owner;
+  int depth;
+  unsigned int refs;
+};
+
 /*
  * Defines
  */
@@ -167,24 +176,29 @@ struct Odbc_odbc_struct;
 #else
 #define ODBC_SELF() ((void *)1)
 #endif
-#define ODBC_ALLOW_ON(ODBC) do {					\
-    struct Odbc_odbc_struct *odbc_conn_ = (ODBC);			\
-    void *odbc_self_ = ODBC_SELF();					\
-    THREADS_ALLOW();							\
-    if (odbc_conn_) low_odbc_lock(odbc_conn_, odbc_self_)
-#define ODBC_DISALLOW_ON()						\
-    if (odbc_conn_) low_odbc_unlock(odbc_conn_);			\
-    THREADS_DISALLOW();							\
+#define ODBC_ALLOW_ON(ODBC) do {                                      \
+    struct Odbc_odbc_struct *odbc_conn_ = (ODBC);                     \
+    struct pike_odbc_lock *odbc_lock_ =                               \
+      (odbc_conn_ ? pike_odbc_ref_lock(odbc_conn_) : NULL);           \
+    void *odbc_self_ = ODBC_SELF();                                   \
+    THREADS_ALLOW();                                                  \
+    if (odbc_lock_) low_odbc_lock(odbc_lock_, odbc_self_)
+#define ODBC_DISALLOW_ON()                                            \
+    if (odbc_lock_) low_odbc_unlock(odbc_lock_);                      \
+    THREADS_DISALLOW();                                               \
+    pike_odbc_free_lock(odbc_lock_);                                  \
   } while (0)
 
 /*
  * Prototypes
  */
 SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc);
-void low_odbc_lock(struct Odbc_odbc_struct *odbc, void *self);
-void low_odbc_unlock(struct Odbc_odbc_struct *odbc);
-void pike_odbc_lock(struct Odbc_odbc_struct *odbc);
-void pike_odbc_unlock(void *odbc);
+struct pike_odbc_lock *pike_odbc_ref_lock(struct Odbc_odbc_struct *odbc);
+void pike_odbc_free_lock(void *lock);
+void low_odbc_lock(struct pike_odbc_lock *lock, void *self);
+void low_odbc_unlock(struct pike_odbc_lock *lock);
+void pike_odbc_lock(struct pike_odbc_lock *lock);
+void pike_odbc_unlock(void *lock);
 void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows);
 unsigned int pike_odbc_get_flags(struct Odbc_odbc_struct *odbc);
 void push_sqlwchar(SQLWCHAR *str, size_t len);

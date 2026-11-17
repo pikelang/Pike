@@ -264,12 +264,8 @@ DECLARATIONS;
 PIKECLASS odbc
 {
   CVAR SQLHDBC hdbc;
-  /* Serializes the library calls on the connection and on its results'
-   * statements (ODBC_ALLOW_ON()). Never destroyed, as a result may still
-   * use it after the connection was destructed. */
-  CVAR PIKE_MUTEX_T lock;
-  CVAR void *lock_owner;
-  CVAR int lock_depth;
+  /* Kept alive by results and native calls after explicit destruct(). */
+  CVAR struct pike_odbc_lock *lock;
   CVAR SQLLEN affected_rows;
   CVAR unsigned int flags;
   CVAR struct pike_string *last_error;
@@ -288,39 +284,49 @@ PIKECLASS odbc
   {
     return odbc->hdbc;
   }
-  /* Take the connection's lock, with the interpreter lock let go of.
-   * self is the thread's thread state. */
-  void low_odbc_lock(struct Odbc_odbc_struct *odbc, void *self)
+  struct pike_odbc_lock *pike_odbc_ref_lock(struct Odbc_odbc_struct *odbc)
   {
-    /* Only this thread sets the owner to itself, and clears it before
-     * letting go. */
-    if (odbc->lock_owner == self) {
-      odbc->lock_depth++;
+    struct pike_odbc_lock *lock = odbc->lock;
+    if (lock) lock->refs++;
+    return lock;
+  }
+  void pike_odbc_free_lock(void *arg)
+  {
+    struct pike_odbc_lock *lock = arg;
+    if (lock && !--lock->refs) {
+      mt_destroy(&lock->mutex);
+      free(lock);
+    }
+  }
+  /* These two functions run without the interpreter lock. */
+  void low_odbc_lock(struct pike_odbc_lock *lock, void *self)
+  {
+    if (lock->owner == self) {
+      lock->depth++;
       return;
     }
-    mt_lock(&odbc->lock);
-    odbc->lock_owner = self;
-    odbc->lock_depth = 1;
+    mt_lock(&lock->mutex);
+    lock->owner = self;
+    lock->depth = 1;
   }
-  void low_odbc_unlock(struct Odbc_odbc_struct *odbc)
+  void low_odbc_unlock(struct pike_odbc_lock *lock)
   {
-    if (--odbc->lock_depth) return;
-    odbc->lock_owner = NULL;
-    mt_unlock(&odbc->lock);
+    if (--lock->depth) return;
+    lock->owner = NULL;
+    mt_unlock(&lock->mutex);
   }
-  /* Hold the lock across several library calls on a results statement,
-   * with the interpreter lock, so that no call on another statement of
-   * the connection comes in between. */
-  void pike_odbc_lock(struct Odbc_odbc_struct *odbc)
+  /* The caller owns a reference, released by pike_odbc_unlock(). */
+  void pike_odbc_lock(struct pike_odbc_lock *lock)
   {
     void *self = ODBC_SELF();
     THREADS_ALLOW();
-    low_odbc_lock(odbc, self);
+    low_odbc_lock(lock, self);
     THREADS_DISALLOW();
   }
-  void pike_odbc_unlock(void *odbc)
+  void pike_odbc_unlock(void *arg)
   {
-    low_odbc_unlock(odbc);
+    low_odbc_unlock(arg);
+    pike_odbc_free_lock(arg);
   }
   void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows)
   {
@@ -438,9 +444,11 @@ INIT
   PIKE_ODBC->affected_rows = 0;
   PIKE_ODBC->flags = 0;
   PIKE_ODBC->last_error = NULL;
-  mt_init(&PIKE_ODBC->lock);
-  PIKE_ODBC->lock_owner = NULL;
-  PIKE_ODBC->lock_depth = 0;
+  PIKE_ODBC->lock = xalloc(sizeof(*PIKE_ODBC->lock));
+  mt_init(&PIKE_ODBC->lock->mutex);
+  PIKE_ODBC->lock->owner = NULL;
+  PIKE_ODBC->lock->depth = 0;
+  PIKE_ODBC->lock->refs = 1;
 
   ODBC_ALLOW_ON(PIKE_ODBC);
   code = SQLAllocConnect(odbc_henv, &hdbc);
@@ -454,7 +462,9 @@ INIT
 EXIT
 {
   SQLHDBC hdbc = PIKE_ODBC->hdbc;
+  ONERROR lock_err;
 
+  SET_ONERROR(lock_err, pike_odbc_free_lock, PIKE_ODBC->lock);
   if (hdbc != SQL_NULL_HDBC) {
     unsigned int flags = PIKE_ODBC->flags;
     RETCODE code;
@@ -481,6 +491,7 @@ EXIT
   }
 
   clean_last_error();
+  CALL_AND_UNSET_ONERROR(lock_err);
 }
 
 EXTRA

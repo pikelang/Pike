@@ -463,6 +463,12 @@ o Image
   Validate _decode() input after waiting for drawing threads, so a caller
   changing the input array during the wait cannot cause a crash.
 
+o Odbc
+
+  Release connection mutexes after their last result or active call is
+  finished, including explicit destruction and error paths. Locking
+  declarations remain compatible with older C compilers.
+
 o Gmp
 
   Fixed incorrect bignum results for overflowing negative integer products

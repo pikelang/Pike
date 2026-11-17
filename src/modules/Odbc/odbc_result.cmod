@@ -81,6 +81,7 @@ PIKECLASS Result
   program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
   CVAR struct Odbc_odbc_struct *odbc;
+  CVAR struct pike_odbc_lock *connection_lock;
   CVAR SQLHSTMT hstmt;
   CVAR SWORD num_fields;
   CVAR SQLLEN num_rows;
@@ -136,6 +137,11 @@ INIT
 
 EXIT
 {
+  ONERROR lock_err;
+  struct pike_odbc_lock *lock = PIKE_ODBC_RES->connection_lock;
+
+  PIKE_ODBC_RES->connection_lock = NULL;
+  SET_ONERROR(lock_err, pike_odbc_free_lock, lock);
   if (PIKE_ODBC_RES->hstmt != SQL_NULL_HSTMT) {
     SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
     RETCODE code;
@@ -147,6 +153,7 @@ EXIT
 		     code, (void (*)(void *))clean_sql_res, NULL);
   }
   clean_sql_res();
+  CALL_AND_UNSET_ONERROR(lock_err);
 }
 
 EXTRA
@@ -691,13 +698,16 @@ static void odbc_fix_fields(void)
 /* Hold the connection's lock from here to
  * ODBC_UNHOLD(), or an error, for methods that make several library
  * calls on the statement (hstmt). */
-#define ODBC_HOLD()							\
-  struct Odbc_odbc_struct *odbc_held_ = PIKE_ODBC_RES->odbc;		\
-  ONERROR odbc_hold_err_;						\
-  if (odbc_held_) {							\
-    pike_odbc_lock(odbc_held_);						\
-    SET_ONERROR(odbc_hold_err_, pike_odbc_unlock, odbc_held_);	\
-  }
+#define ODBC_HOLD_DECLARE()                                           \
+  struct pike_odbc_lock *odbc_held_;                                  \
+  ONERROR odbc_hold_err_
+#define ODBC_HOLD() do {                                              \
+    odbc_held_ = pike_odbc_ref_lock(PIKE_ODBC_RES->odbc);             \
+    if (odbc_held_) {                                                 \
+      pike_odbc_lock(odbc_held_);                                     \
+      SET_ONERROR(odbc_hold_err_, pike_odbc_unlock, odbc_held_);      \
+    }                                                                 \
+  } while (0)
 #define ODBC_UNHOLD() do {						\
     if (odbc_held_) CALL_AND_UNSET_ONERROR(odbc_hold_err_);		\
   } while (0)
@@ -707,6 +717,7 @@ PIKEFUN void create()
   SQLHSTMT hstmt = SQL_NULL_HSTMT;
 
   PIKE_ODBC_RES->odbc = parent_storage(1, Odbc_odbc_program);
+  PIKE_ODBC_RES->connection_lock = pike_odbc_ref_lock(PIKE_ODBC_RES->odbc);
 
   /* It's doubtful if this call really can block, but we play safe. /mast */
   {
@@ -725,8 +736,8 @@ PIKEFUN void create()
  */
 PIKEFUN int execute(string(16bit) q)
 {
-  ODBC_HOLD();
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   RETCODE code;
   const char *err_msg = NULL;
   SWORD num_fields;
@@ -734,6 +745,8 @@ PIKEFUN int execute(string(16bit) q)
   char *to_free = NULL;
   SQLWCHAR *wq = NULL;
 
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
   if ((q->size_shift > 1) && (sizeof(SQLWCHAR) == 2)) {
     SIMPLE_ARG_TYPE_ERROR("execute", 1, "string(16bit)");
   }
@@ -798,13 +811,15 @@ PIKEFUN int execute(string(16bit) q)
  */
 PIKEFUN int list_tables(string|void table_name_pattern)
 {
-  ODBC_HOLD();
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   RETCODE code;
   const char *err_msg = NULL;
   SWORD num_fields = 0;
   SQLLEN num_rows = 0;
 
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
   ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
   code = SQLTables(hstmt, NULL, 0, NULL, 0,
 		   table_name_pattern?(SQLCHAR *)table_name_pattern->str:NULL,
@@ -873,16 +888,18 @@ PIKEFUN array(int|mapping(string:mixed)) fetch_fields()
  */
 PIKEFUN int|array(string|float|int) fetch_row()
 {
-  ODBC_HOLD();
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   int i;
-  unsigned int pike_odbc_flags = pike_odbc_get_flags(PIKE_ODBC_RES->odbc);
-  unsigned int old_tds_kludge = pike_odbc_flags & PIKE_ODBC_OLD_TDS_KLUDGE;
-  unsigned int wdata_shift = (pike_odbc_flags & PIKE_ODBC_WDATA_SHIFT_MASK) >>
-    PIKE_ODBC_WDATA_SHIFT_SHIFT;
-
+  unsigned int pike_odbc_flags, old_tds_kludge, wdata_shift;
   RETCODE code;
 
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
+  pike_odbc_flags = pike_odbc_get_flags(PIKE_ODBC_RES->odbc);
+  old_tds_kludge = pike_odbc_flags & PIKE_ODBC_OLD_TDS_KLUDGE;
+  wdata_shift = (pike_odbc_flags & PIKE_ODBC_WDATA_SHIFT_MASK) >>
+    PIKE_ODBC_WDATA_SHIFT_SHIFT;
   pop_n_elems(args);
 
   ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
@@ -1233,13 +1250,16 @@ PIKECLASS TypedResult
  */
 PIKEFUN array(string|float|int|object) fetch_row()
 {
-  ODBC_HOLD();
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   int i;
-  unsigned int old_tds_kludge =
-    pike_odbc_get_flags(PIKE_ODBC_RES->odbc) & PIKE_ODBC_OLD_TDS_KLUDGE;
+  unsigned int old_tds_kludge;
   RETCODE code;
 
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
+  old_tds_kludge =
+    pike_odbc_get_flags(PIKE_ODBC_RES->odbc) & PIKE_ODBC_OLD_TDS_KLUDGE;
   pop_n_elems(args);
 
   ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
