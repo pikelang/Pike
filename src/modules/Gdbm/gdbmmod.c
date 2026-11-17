@@ -772,8 +772,8 @@ PIKE_MODULE_INIT
 	       tFunc(tStr8 tStr8 tOr(tInt01, tVoid), tInt), 0);
   /* function(string, string, int(0..1)|void: string) */
   ADD_FUNCTION("`[]=", gdbmmod_index_assign,
-	       tFunc(tStr8 tSetvar(0, tStr8) tOr(tMix, tVoid) tOr(tInt, tVoid),
-		     tVar(0)), 0);
+               tFunc(tStr8 tSetvar(0, tStr8) tOr(tMix, tVoid) tOr(tInt, tVoid),
+                     tVar(0)), 0);
   /* function(string:string) */
   ADD_FUNCTION("fetch",gdbmmod_fetch,tFunc(tStr,tStr8),0);
   /* function(string:string) */

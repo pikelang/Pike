@@ -701,11 +701,11 @@ static void low_verify_mexec_hdr(struct mexec_hdr *hdr,
     }
     if (d_flag > 1) {
       for (ptr = hdr->free; ptr; ptr = ptr->next) {
-	if (ptr->size > hdr->max_free) {
-	  Pike_fatal("%s:%ld:Free block larger than max_free: %p > %p\n",
-		     file, (long)line,
-		     (void *)ptr->size, (void *)hdr->max_free);
-	}
+        if (ptr->size > hdr->max_free) {
+          Pike_fatal("%s:%ld:Free block larger than max_free: %p > %p\n",
+                     file, (long)line,
+                     (void *)ptr->size, (void *)hdr->max_free);
+        }
 	if (ptr < (struct mexec_free_block *)(hdr+1)) {
 	  Pike_fatal("%s:%ld:Free block before start of header. %p < %p\n",
 		     file, (long)line,

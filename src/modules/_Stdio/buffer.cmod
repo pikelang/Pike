@@ -188,7 +188,7 @@ PIKECLASS Buffer
 	  break;
         }
 	case PIKE_T_OBJECT:
-	  pike_pin_memory_object(io->source.obj, -1);
+          pike_pin_memory_object(io->source.obj, -1);
 	  free_object(io->source.obj);
 	  break;
       }
@@ -647,7 +647,7 @@ PIKECLASS Buffer
           break;
 	case PIKE_T_OBJECT:
 	  add_ref(to->source.obj = io->source.obj);
-	  pike_pin_memory_object(to->source.obj, 1);
+          pike_pin_memory_object(to->source.obj, 1);
 	  break;
       }
     }
