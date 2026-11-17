@@ -383,6 +383,28 @@ The feature works independently of expression/bitwise/live-stack-exit
 controls; the existing minimum arithmetic count, three-bank limit and
 label/file/call boundaries still apply.
 
+Incoming evaluation-stack integers
+----------------------------------
+
+When the existing planner rejects a virtual-stack underflow, it can retry
+with one integer already on the evaluation stack. Existing profitable plans
+keep their handling. This exposes expressions such as a global integer plus
+a negated local without lowering the global load or store itself.
+
+The input occupies one of the three physical banks and requires an ordinary
+integer type and subtype at entry. Undefined, noninteger and bignum inputs
+replay the original instructions. The initial operand is not changed by
+speculative arithmetic. Overflow snapshots restore the operands before the
+failing operation; successful exits publish the final virtual stack.
+Snapshots use entry SP minus one as their base, so a consumed input is
+removed even when the final virtual stack is empty. Deeper slots remain
+untouched. Guards, locals, native-operation budgets and control-flow
+boundaries retain their existing restrictions.
+
+Set PIKE_SSA_NO_INTEGER_STACK_INPUT=1 to restore previous planning. The
+extension requires the stack-aware planner. Live-stack exits still require
+the corresponding control; ordinary global accesses remain boundaries.
+
 Runtime profiling
 -----------------
 

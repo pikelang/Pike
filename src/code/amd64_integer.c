@@ -82,9 +82,10 @@ static void amd64_integer_snapshot(
     const struct pikecode_ssa_integer_snapshot *s)
 {
   unsigned int i;
-  if (s->depth) {
+  if (s->depth || p->inputs) {
     mov_mem_reg(Pike_interpreter_reg,
                 OFFSETOF(Pike_interpreter_struct, stack_pointer), P_REG_RDX);
+    if (p->inputs) add_reg_imm(P_REG_RDX, -(INT32)sizeof(struct svalue));
     for (i = 0; i < s->depth; i++) {
       const struct pikecode_ssa_integer_value *v = &p->value[s->stack[i]];
       ptrdiff_t off = i * sizeof(struct svalue);
@@ -166,6 +167,19 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
     jne(profile ? &guard : &slow[0]);
     mov_mem_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, u.integer),
+                amd64_integer_reg(v));
+  }
+  if (p.inputs) {
+    const struct pikecode_ssa_integer_value *v = &p.value[p.locals + 1];
+    ptrdiff_t off = -(ptrdiff_t)sizeof(struct svalue);
+    mov_mem_reg(Pike_interpreter_reg,
+                OFFSETOF(Pike_interpreter_struct, stack_pointer), P_REG_RDX);
+    /* Require the complete ordinary tag, including subtype. Do not alter
+     * the real operand before every guard and speculative operation passes. */
+    mov_mem32_reg(P_REG_RDX, off + OFFSETOF(svalue, tu.t.type), P_REG_RAX);
+    cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
+    jne(profile ? &guard : &slow[0]);
+    mov_mem_reg(P_REG_RDX, off + OFFSETOF(svalue, u.integer),
                 amd64_integer_reg(v));
   }
   for (i = 0; i < p.count; i++) {
@@ -267,7 +281,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     for (i = 0; i < p.count; i++)
       if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
         ssa_stats.integer_subtract_ops++;
-    ssa_stats.integer_loads_avoided += p.loads - p.locals;
+    ssa_stats.integer_loads_avoided += p.loads - p.locals - p.inputs;
     ssa_stats.integer_stores_avoided += p.writes - stores;
   }
   return p.consumed;

@@ -141,9 +141,11 @@ static void sparc_integer_snapshot(
 {
   unsigned int i;
   /* Copy input tags before committing locals that might own those tags. */
-  if (s->depth) {
+  if (s->depth || p->inputs) {
     PIKE_LDPTR(SPARC_REG_O4, SPARC_REG_PIKE_IP,
                OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);
+    if (p->inputs)
+      SPARC_ADD(SPARC_REG_O4, SPARC_REG_O4, -(INT32)sizeof(struct svalue), 1);
     for (i = 0; i < s->depth; i++) {
       const struct pikecode_ssa_integer_value *v = &p->value[s->stack[i]];
       ptrdiff_t off = i * sizeof(struct svalue);
@@ -217,6 +219,19 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     /* bne %icc */
     sparc_integer_branch(profile ? &guard : &slow[0], 0x12800000);
     SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
+                     off + OFFSETOF(svalue, u.integer), 1);
+  }
+  if (p.inputs) {
+    const struct pikecode_ssa_integer_value *v = &p.value[p.locals + 1];
+    ptrdiff_t off = -(ptrdiff_t)sizeof(struct svalue);
+    PIKE_LDPTR(SPARC_REG_O4, SPARC_REG_PIKE_IP,
+               OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);
+    /* Full tag guard; the original operand remains available for replay. */
+    SPARC_LDUW(SPARC_REG_O3, SPARC_REG_O4,
+               off + OFFSETOF(svalue, tu.t.type), 1);
+    SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
+    sparc_integer_branch(profile ? &guard : &slow[0], 0x12800000);
+    SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_O4,
                      off + OFFSETOF(svalue, u.integer), 1);
   }
   for (i = 0; i < p.count; i++) {
@@ -306,7 +321,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     for (i = 0; i < p.count; i++)
       if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
         sparc_stats.integer_subtract_ops++;
-    sparc_stats.integer_loads_avoided += p.loads - p.locals;
+    sparc_stats.integer_loads_avoided += p.loads - p.locals - p.inputs;
     sparc_stats.integer_stores_avoided += p.writes - stores;
   }
   return p.consumed;

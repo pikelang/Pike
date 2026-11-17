@@ -341,10 +341,10 @@ static int integer_stack_refs(const struct p_instr_s *op,
   return 0;
 }
 
-int pikecode_ssa_plan_integer_stack(
+static int integer_stack_plan(
     struct pikecode_ssa_integer_stack_plan *p,
     const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
-    int stack_exits, int subtract, int bitwise,
+    int stack_exits, int subtract, int bitwise, unsigned int inputs,
     struct pikecode_ssa_integer_stop *stop)
 {
   struct pikecode_ssa_integer_snapshot state;
@@ -352,7 +352,7 @@ int pikecode_ssa_plan_integer_stack(
   unsigned int stack_limit = integer_stack_expressions() ?
     PIKE_SSA_INTEGER_STACK : 2;
   unsigned int n, e, i, arithmetic = 0, retained = 0, used = 0, best_used = 0;
-  unsigned int constants = 0;
+  unsigned int constants = 0, input_used = 0;
   integer_stop_init(stop);
   if (available <= 0) return 0;
   switch (code[0].opcode) {
@@ -455,6 +455,11 @@ int pikecode_ssa_plan_integer_stack(
     if (stop) stop->rejection = arithmetic < 2 ? "too-short" : "exit-shape";
     return 0;
   }
+  if (p->locals + inputs > PIKE_SSA_INTEGER_LOCALS) {
+    if (stop) stop->rejection = "input-limit";
+    return 0;
+  }
+  p->inputs = inputs;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
   p->bitwise = p->normal = p->expressions = p->constant_assign = 0;
   memset(p->value, 0, sizeof(p->value));
@@ -468,6 +473,13 @@ int pikecode_ssa_plan_integer_stack(
     v->bank = i;
     state.local[i] = p->values;
   }
+  if (inputs) {
+    struct pikecode_ssa_integer_value *v = &p->value[++p->values];
+    v->kind = PIKE_SSA_INTEGER_STACK_INPUT;
+    v->bank = p->locals;
+    v->local = -1;
+    state.stack[state.depth++] = p->values;
+  }
   for (e = 0; e < n; e++) {
     const struct p_instr_s *op = &code[e];
     struct pikecode_ssa_integer_snapshot before = state;
@@ -475,7 +487,7 @@ int pikecode_ssa_plan_integer_stack(
     INT32 imm = 0, a, b;
     enum pikecode_ssa_integer_kind kind = PIKE_SSA_INTEGER_ADD;
     int dst = -1, src = -1;
-    unsigned int args = 0, operand[PIKE_SSA_INTEGER_LIMIT];
+    unsigned int args = 0, operand[PIKE_SSA_INTEGER_LIMIT] = { 0 };
     integer_stack_refs(op, &a, &b, subtract, bitwise);
     for (i = 0; i < p->locals; i++) {
       if (p->local[i] == a) dst = i;
@@ -516,7 +528,8 @@ int pikecode_ssa_plan_integer_stack(
        * require one original input to have the ordinary integer subtype. */
       for (i = 0; i < args; i++)
         if (p->value[operand[i]].kind != PIKE_SSA_INTEGER_LOAD) break;
-      if (i == args) p->normal |= 1U << p->value[operand[0]].bank;
+      if (args && i == args)
+        p->normal |= 1U << p->value[operand[0]].bank;
       left = operand[0];
       kind = PIKE_SSA_INTEGER_SUM;
       push = 1;
@@ -545,6 +558,7 @@ int pikecode_ssa_plan_integer_stack(
         goto finished;
       }
       left = state.stack[state.depth - 1];
+      input_used |= inputs && left == p->locals + 1;
       /* Bare inputs need parallel subtype-tag moves; constants and
        * computed versions instead have ordinary integer tags. */
       if (p->value[left].kind == PIKE_SSA_INTEGER_LOAD ||
@@ -566,6 +580,7 @@ int pikecode_ssa_plan_integer_stack(
         integer_stop(stop, "stack-underflow", e);
         goto finished;
       }
+      input_used |= inputs && state.stack[state.depth - 1] == p->locals + 1;
       state.depth--;
       goto accepted;
     case F_AND: case F_OR: case F_XOR:
@@ -618,7 +633,11 @@ int pikecode_ssa_plan_integer_stack(
       state.local[dst] = 0;
       break;
     }
-    /* Only initial loads can retain a nonordinary zero subtype. */
+    input_used |= inputs && (left == p->locals + 1 ||
+                             right == p->locals + 1);
+    for (i = 0; i < args; i++)
+      input_used |= inputs && operand[i] == p->locals + 1;
+    /* Only initial local loads can retain a nonordinary zero subtype. */
     if (kind == PIKE_SSA_INTEGER_ADD && right &&
         p->value[left].kind == PIKE_SSA_INTEGER_LOAD &&
         p->value[right].kind == PIKE_SSA_INTEGER_LOAD)
@@ -675,7 +694,7 @@ int pikecode_ssa_plan_integer_stack(
                           p->constant_assign)) ||
          (state.depth && stack_exits)) &&
         p->count >= 2 &&
-        p->loads > p->locals) {
+        p->loads > p->locals + inputs && (!inputs || input_used)) {
       best = *p;
       best_used = used;
     }
@@ -685,11 +704,39 @@ int pikecode_ssa_plan_integer_stack(
     if (stop) {
       if (best.consumed) stop->rejection = "unused-input";
       else if (p->count < 2) stop->rejection = "too-short";
-      else if (p->loads <= p->locals) stop->rejection = "no-reuse";
+      else if (p->loads <= p->locals + inputs) stop->rejection = "no-reuse";
       else stop->rejection = p->final.depth ? "live-stack" : "balanced-only";
     }
     return 0;
   }
   *p = best;
   return p->consumed;
+}
+
+/* Keep existing profitable regions unchanged. Only retry a rejected virtual
+ * stack underflow with one ordinary integer already on the real stack.
+ * Valid bytecode guarantees that operand exists; labels and calls still
+ * bound discovery. Failed retries preserve the original diagnostics. */
+int pikecode_ssa_plan_integer_stack(
+    struct pikecode_ssa_integer_stack_plan *p,
+    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
+    int stack_exits, int subtract, int bitwise,
+    struct pikecode_ssa_integer_stop *stop)
+{
+  static int enabled = -1;
+  struct pikecode_ssa_integer_stop first, retry;
+  int result;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_NO_INTEGER_STACK_INPUT") == NULL;
+  result = integer_stack_plan(p, code, available, max_local,
+                              stack_exits, subtract, bitwise, 0,
+                              enabled ? &first : stop);
+  if (!enabled) return result;
+  if (!result && first.reason && !strcmp(first.reason, "stack-underflow")) {
+    result = integer_stack_plan(p, code, available, max_local,
+                                stack_exits, subtract, bitwise, 1, &retry);
+    if (result) first = retry;
+  }
+  if (stop) *stop = first;
+  return result;
 }

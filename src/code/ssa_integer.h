@@ -14,7 +14,8 @@
 enum pikecode_ssa_integer_kind {
   PIKE_SSA_INTEGER_LOAD, PIKE_SSA_INTEGER_ADD, PIKE_SSA_INTEGER_SUBTRACT,
   PIKE_SSA_INTEGER_AND, PIKE_SSA_INTEGER_OR, PIKE_SSA_INTEGER_XOR,
-  PIKE_SSA_INTEGER_CONSTANT, PIKE_SSA_INTEGER_NEGATE, PIKE_SSA_INTEGER_SUM
+  PIKE_SSA_INTEGER_CONSTANT, PIKE_SSA_INTEGER_NEGATE, PIKE_SSA_INTEGER_SUM,
+  PIKE_SSA_INTEGER_STACK_INPUT
 };
 struct pikecode_ssa_integer_value {
   enum pikecode_ssa_integer_kind kind;
@@ -37,7 +38,9 @@ struct pikecode_ssa_integer_plan {
 /* The stack extension retains bounded virtual operands. Constants need no
  * register; nonconstant versions still share three physical banks. Overflow
  * snapshots precede arithmetic while all operand versions remain resident.
- * Final snapshots may publish live stack operands.
+ * Final snapshots may publish live stack operands. A plan with inputs == 1
+ * includes the ordinary integer at entry SP[-1] as its first virtual slot;
+ * all snapshots are relative to entry SP - inputs, even when depth is zero.
  */
 #define PIKE_SSA_INTEGER_STACK PIKE_SSA_INTEGER_LIMIT
 #define PIKE_SSA_INTEGER_CODE 32
@@ -54,7 +57,7 @@ struct pikecode_ssa_integer_step {
 };
 struct pikecode_ssa_integer_stack_plan {
   unsigned int locals, values, count, consumed, loads, writes, retained;
-  unsigned int bitwise, normal, expressions, constant_assign;
+  unsigned int bitwise, normal, expressions, constant_assign, inputs;
   INT32 local[PIKE_SSA_INTEGER_LOCALS];
   struct pikecode_ssa_integer_value value[PIKE_SSA_INTEGER_STACK_VALUES + 1];
   struct pikecode_ssa_integer_step step[PIKE_SSA_INTEGER_LIMIT];

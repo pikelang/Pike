@@ -708,6 +708,129 @@ test_any([[
   return 1;
 ]], 1)
 
+// Incoming integers preserve deeper operands and replay every partial sum.
+test_any([[
+  class Test {
+    int n;
+    array sum(int a) {
+      return ({ "prefix", n, `+(n, -a, -1, 1), a,
+                zero_type(n), zero_type(a) });
+    }
+    int maximum(int a) {
+      return `+(n, -a, 1, 1, 1, 1, 1, 1);
+    }
+    array positive(int a) {
+      return ({ `+(n, -a, 1, 1), a, zero_type(a) });
+    }
+    array subtract(int a) {
+      return ({ "prefix", n, n - -a, a, zero_type(a) });
+    }
+    array bits(int a) {
+      return ({ "prefix", n, n ^ -a, a, zero_type(a) });
+    }
+    array update(int a) {
+      n = `+(n, -a, -1, 1);
+      return ({ n, a, zero_type(n), zero_type(a) });
+    }
+  }
+  object o = Test();
+  for (int i = 0; i <= 7; i++) {
+    o->n = Int.NATIVE_MAX - i;
+    if (o->maximum(0) != (int)(Gmp.mpz(o->n) + 6)) return 0;
+  }
+  o->n = Int.NATIVE_MAX;
+  if (o->maximum(-1) != (int)(Gmp.mpz(o->n) + 7) ||
+      o->maximum(Int.NATIVE_MIN) !=
+        (int)(Gmp.mpz(o->n) - Gmp.mpz(Int.NATIVE_MIN) + 6)) return 0;
+  array(int) values = ({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN,
+                        Int.NATIVE_MIN + 1, Int.NATIVE_MAX,
+                        Int.NATIVE_MAX - 1, 1 << 90, -(1 << 90) });
+  foreach (values, int n) foreach (values, int a) {
+    o->n = n;
+    int s = (int)(Gmp.mpz(n) - Gmp.mpz(a));
+    int b = (int)(Gmp.mpz(n) ^ -Gmp.mpz(a));
+    if (!equal(o->sum(a), ({ "prefix", n, s, a,
+                            zero_type(n), zero_type(a) })) ||
+        !equal(o->positive(a), ({ s + 2, a, zero_type(a) })) ||
+        !equal(o->subtract(a), ({ "prefix", n,
+                                (int)(Gmp.mpz(n) + Gmp.mpz(a)), a,
+                                zero_type(a) })) ||
+        !equal(o->bits(a), ({ "prefix", n, b, a, zero_type(a) })) ||
+        !equal(o->update(a), ({ s, a, 0, zero_type(a) }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Replaying noninteger inputs retains callbacks, deeper references and PCs.
+test_any([[
+  class Fail {
+    protected mixed `+(mixed ... args) { error("stack input callback\n"); }
+  }
+  program p = compile_string(
+    "mixed n;\n"
+    "mixed f(int a) {\n"
+    "#line 700 \"ssa-stack-input.pike\"\n"
+    " return ({ this_object(), n, `+(n, -a, -1, 1), a });\n}\n"
+    "mixed fail(int a) {\n"
+    "#line 710 \"ssa-stack-input.pike\"\n"
+    " n = `+(n, -a, -1, 1);\n"
+    "#line 730 \"ssa-stack-input.pike\"\n"
+    " error(\"after stack input\\n\");\n}\n");
+  object o = p();
+  o->n = "value";
+  array r = o->f(2);
+  if (r[0] != o || !equal(r[1..], ({ "value", "value-2-11", 2 })))
+    return 0;
+  foreach (({ ({ Fail(), 2, 710 }), ({ 3, Int.NATIVE_MIN, 730 }),
+               ({ Int.NATIVE_MIN, 1, 730 }), ({ UNDEFINED, 0, 730 }),
+               ({ 1 << 90, 2, 730 }), ({ 5, 3, 730 }) }), array args) {
+    o->n = args[0];
+    mixed err = catch { o->fail(args[1]); };
+    if (!err) return 0;
+    int found;
+    foreach (err[1], mixed frame)
+      if (frame[0] == "ssa-stack-input.pike") {
+        if (frame[1] != args[2]) return 0;
+        found++;
+      }
+    if (found != 1) return 0;
+  }
+  return 1;
+]], 1)
+
+// Consuming an input before later overflow must not restore that operand.
+test_any([[
+  class Test {
+    int n;
+    array f(int a) {
+      return ({ "prefix", n + -a, (a = 0), ++a, -a, n });
+    }
+    array retained(int a) {
+      return ({ "prefix", n + -(a = a + 1), a, zero_type(a), n });
+    }
+    array committed(int a) {
+      a = n + -a;
+      a++;
+      a++;
+      return ({ a, n, zero_type(a), zero_type(n) });
+    }
+  }
+  object o = Test();
+  foreach (({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN, Int.NATIVE_MAX,
+               1 << 90 }), int n)
+    foreach (({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN, Int.NATIVE_MAX,
+                 1 << 90 }), int a) {
+      o->n = n;
+      int s = (int)(Gmp.mpz(n) - Gmp.mpz(a));
+      if (!equal(o->committed(a), ({ s + 2, n, 0, zero_type(n) })) ||
+          !equal(o->f(a), ({ "prefix", s, 0, 1, -1, n })) ||
+          !equal(o->retained(a),
+                 ({ "prefix", (int)(Gmp.mpz(n) - Gmp.mpz(a) - 1),
+                    (int)(Gmp.mpz(a) + 1), 0, n }))) return 0;
+    }
+  return 1;
+]], 1)
+
 // Dirty constant locals must survive final commits and arithmetic replay.
 test_any([[
   array f(int a, int b) {
