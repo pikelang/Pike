@@ -256,6 +256,19 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     }
     mov_reg_reg(P_REG_RAX, amd64_integer_reg(v));
   }
+  if (p.global_store) {
+    const struct pikecode_ssa_integer_value *v = &p.value[p.global_store];
+    enum amd64_reg reg = amd64_integer_reg(v);
+    /* RBX still addresses the entry-guarded ordinary integer. No callback
+     * or global write can invalidate it before this successful commit. */
+    pikecode_ssa_integer_source(&code[p.consumed - 1 - p.global_pop],
+                                store_lines);
+    if (v->kind == PIKE_SSA_INTEGER_CONSTANT) {
+      amd64_integer_value(v, P_REG_RAX);
+      reg = P_REG_RAX;
+    }
+    mov_reg_mem(reg, P_REG_RBX, OFFSETOF(svalue, u.integer));
+  }
   /* Publish live results before the next ordinary opcode. The slow replay
    * finishes at the same stack depth with empty machine caches. */
   amd64_integer_snapshot(&p, &p.final);

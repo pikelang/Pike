@@ -460,7 +460,7 @@ static int integer_stack_plan(
     return 0;
   }
   p->inputs = inputs;
-  p->global_input = 0;
+  p->global_input = p->global_store = p->global_pop = 0;
   p->global_offset = 0;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
   p->bitwise = p->normal = p->expressions = p->constant_assign = 0;
@@ -725,11 +725,13 @@ int pikecode_ssa_plan_integer_stack(
     int stack_exits, int subtract, int bitwise,
     struct pikecode_ssa_integer_stop *stop)
 {
-  static int enabled = -1, global_enabled = -1;
+  static int enabled = -1, global_enabled = -1, store_enabled = -1;
   struct pikecode_ssa_integer_stop first, retry;
   int result;
   if (global_enabled < 0)
     global_enabled = getenv("PIKE_SSA_NO_INTEGER_GLOBAL_INPUT") == NULL;
+  if (store_enabled < 0)
+    store_enabled = getenv("PIKE_SSA_NO_INTEGER_GLOBAL_STORE") == NULL;
   if (global_enabled && available > 1 &&
       code[0].opcode == F_PRIVATE_IF_DIRECT_GLOBAL &&
       code[0].arg >= 0 && code[0].arg2 >= 0 &&
@@ -755,6 +757,36 @@ int pikecode_ssa_plan_integer_stack(
       p->value[p->locals + 1].kind = PIKE_SSA_INTEGER_GLOBAL_INPUT;
       for (i = 0; i < p->count; i++) p->step[i].first++;
       result = ++p->consumed;
+      /* No call or global write occurs in a successful region. Matching
+       * both operands proves this is the same ordinary-integer storage
+       * guarded at entry, so commit needs neither lookup nor ref release.
+       * Keep the assignment terminal, and count it (and a possible pop)
+       * against the producer-inclusive source instruction limit. */
+      if (store_enabled && result < available &&
+          result < PIKE_SSA_INTEGER_CODE && p->final.depth == 1 &&
+          code[result].file == code[0].file &&
+          code[result].opcode == F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL &&
+          code[result].arg == code[0].arg &&
+          code[result].arg2 == code[0].arg2) {
+        const struct pikecode_ssa_integer_value *v;
+        p->global_store = p->final.stack[0];
+        v = &p->value[p->global_store];
+        /* An unchanged local may still carry UNDEFINED. Force its full
+         * entry tag guard before writing an untagged integer result. */
+        if (v->kind == PIKE_SSA_INTEGER_LOAD)
+          p->normal |= 1U << (p->global_store - 1);
+        result = ++p->consumed;
+        if (result < available && result < PIKE_SSA_INTEGER_CODE &&
+            code[result].file == code[0].file &&
+            code[result].opcode == F_POP_VALUE) {
+          p->global_pop = 1;
+          p->final.depth = 0;
+          result = ++p->consumed;
+        }
+        integer_stop(&first, result == available ? "end" :
+                     result == PIKE_SSA_INTEGER_CODE ? "instruction-limit" :
+                     "terminal-global-store", result);
+      }
     }
     if (stop) *stop = first;
     return result;

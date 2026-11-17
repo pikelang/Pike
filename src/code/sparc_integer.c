@@ -342,6 +342,15 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     }
     SPARC_OR(sparc_integer_reg(v), SPARC_REG_O3, SPARC_REG_G0, 0);
   }
+  if (p.global_store) {
+    /* O4 retains the entry-guarded storage address through all arithmetic.
+     * Store before the final snapshot borrows it for stack publication. */
+    int reg;
+    pikecode_ssa_integer_source(&code[p.consumed - 1 - p.global_pop],
+                                store_lines);
+    reg = sparc_integer_value(&p.value[p.global_store], SPARC_REG_O3);
+    SPARC_INTEGER_ST(reg, SPARC_REG_O4, OFFSETOF(svalue, u.integer), 1);
+  }
   /* Publish live results before the next ordinary opcode. The slow replay
    * finishes at the same stack depth with empty machine caches. */
   sparc_integer_snapshot(&p, &p.final);
@@ -413,6 +422,13 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     sparc_flush_codegen_state();
   }
   sparc_integer_bind(&done);
+  if (p.global_store) {
+    /* Entry PC publication loads L0 on every path, and C callees preserve
+     * it. Keep this known interpreter pointer when the terminal store has
+     * moved the ordinary opcode's cache boundary inside the region. */
+    pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
+    sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET;
+  }
   pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
   /* Both paths must publish a PC for the final source position: the
    * slow-call emitter's last-location cache also describes skipped code. */

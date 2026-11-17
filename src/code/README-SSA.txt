@@ -439,11 +439,38 @@ The existing guarded incoming-stack planner remains independently usable.
 Guard failures that enter its fallback produce separate profile entries;
 a failed direct-global guard can therefore be followed by fast arithmetic.
 
-Only the leading untyped direct-global load is included. Global stores,
-subsequent global accesses, typed raw storage, calls and labels retain their
-boundaries. No global write, reference count change or callback occurs on
-the fast path. PIKE_SSA_NO_INTEGER_GLOBAL_INPUT=1 forces the extension off,
-for comparisons, including when the former positive flag is set.
+Only the leading untyped direct-global load and the terminal store below
+are included. Subsequent global reads, typed raw storage, calls and labels
+retain their boundaries. The read itself changes no reference counts and
+makes no callback on the fast path. PIKE_SSA_NO_INTEGER_GLOBAL_INPUT=1
+forces the extension off for comparisons, including when the former positive
+flag is set.
+
+Terminal stores to the same global
+----------------------------------
+
+A direct-global region can include a terminal
+F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL to the same raw offset and identifier
+index as its input. Its final virtual stack must hold exactly one result.
+An immediately following F_POP_VALUE can also be included. Both instructions
+count against the producer-inclusive 32-instruction limit; the existing
+arithmetic and bank limits remain. The store ends the region.
+
+The entry guards prove that the old global is an ordinary integer in live
+direct storage. No call or global write can intervene on the successful
+path, so the backend commits just the integer payload after all arithmetic
+checks pass. Computed and constant results are ordinary integers; storing
+an unchanged local also requires its complete ordinary-integer entry tag.
+Retained results are published normally, while popped results need no real
+stack slot. Local assignments retain their existing snapshots.
+
+Guard failures retain the incoming-stack arithmetic and original assignment.
+Overflow snapshots leave the global unmodified until ordinary replay reaches
+the assignment. Indirect setters, reference release, callbacks and destruction
+keep their ordinary handling. Other destinations and typed stores remain
+boundaries. Terminal stores default on with direct-global input. Set
+PIKE_SSA_NO_INTEGER_GLOBAL_STORE=1 to restore the preceding store boundary
+independently of the input control.
 
 Runtime profiling
 -----------------

@@ -60,7 +60,10 @@ struct pikecode_ssa_integer_step {
 struct pikecode_ssa_integer_stack_plan {
   unsigned int locals, values, count, consumed, loads, writes, retained;
   unsigned int bitwise, normal, expressions, constant_assign, inputs;
-  unsigned int global_input;
+  /* global_store names the live ordinary-integer result to commit before
+   * the final snapshot; zero means none. global_pop removes a consumed
+   * POP_VALUE from that snapshot. Slow replay retains both source opcodes. */
+  unsigned int global_input, global_store, global_pop;
   INT32 global_offset;
   INT32 local[PIKE_SSA_INTEGER_LOCALS];
   struct pikecode_ssa_integer_value value[PIKE_SSA_INTEGER_STACK_VALUES + 1];
