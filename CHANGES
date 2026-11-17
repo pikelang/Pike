@@ -469,6 +469,12 @@ o Odbc
   finished, including explicit destruction and error paths. Locking
   declarations remain compatible with older C compilers.
 
+o Signals
+
+  Preserve notifications when the signal queue fills. Child exit statuses
+  are reaped and reported in interpreter context instead of passing
+  through a bounded pipe that could lose them and leave wait() stalled.
+
 o Gmp
 
   Fixed incorrect bignum results for overflowing negative integer products
