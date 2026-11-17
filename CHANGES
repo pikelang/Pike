@@ -113,6 +113,8 @@ o Several modules have been updated to use generic types.
 
   - ADT.Heap
 
+  - ADT.Interval
+
   - ADT.List
 
   - ADT.LowLevelStack
@@ -460,14 +462,59 @@ Bug fixes
 
 o System.Memory and Stdio.Buffer
 
-  Memory retained by buffers after explicit destruction of a System.Memory
-  object is now released when the last buffer stops using it.
+  Freeing or replacing memory used by a Stdio.Buffer now raises an error,
+  preventing access to freed storage. Explicit destruction of the
+  System.Memory object preserves the memory until the last buffer stops
+  using it, at which point it is released.
 
 o Postgres
+
+  Queries returning rows now return a usable result instead of failing
+  with "Bad result.". Freeing results no longer reports "Too many arguments".
 
   Result references to their connections are now visible to the garbage
   collector, allowing connection/result cycles to be collected. Results
   also handle explicitly destructed connections without using their mutexes.
+
+o Gdbm
+
+  Assigning values through db[key] now works. indices() and values() now
+  return the database's keys and values instead of reporting an array-size
+  error.
+
+o Odbc
+
+  Connections opened with create_dsn() now detect the driver's character
+  width correctly. String columns no longer return raw UTF-16 bytes or
+  trailing garbage with affected drivers.
+
+o Parser.HTML
+
+  The garbage collector now tracks callback results waiting in the mixed
+  mode output queue. Cycles through these results, including references
+  back to the parser, can now be collected.
+
+o Debug.size_object()
+
+  Fixed a leaked node reference when traversing a nonempty multiset.
+  Freeing the multiset could subsequently abort a debug build.
+
+o predef::m_delete()
+
+  The expected-value argument is now checked for non-object values too.
+  Missing mapping entries return UNDEFINED instead of crashing.
+
+o Mappings
+
+  Destruct callbacks triggered by m_clear() now see an empty mapping
+  instead of freed values. Growth of weak mappings leaves weak-entry
+  cleanup to the garbage collector, avoiding callbacks that could see
+  or modify a partly rebuilt mapping.
+
+o Stdio.UDP
+
+  Read callbacks now receive the backend's current errno in debug builds,
+  instead of retaining an error from an earlier operation.
 
 o Gmp
 
@@ -506,6 +553,11 @@ o Nettle
   Also corrected CMAC state creation and update chaining.
 
 o GI
+
+  Constants declared with GObject or interface types now resolve to zero
+  instead of being dereferenced as object instances. This fixes crashes
+  when loading typelibs containing magic pointer constants, such as
+  Gdk 2.0's GDK_NO_BG.
 
   The installer processes GTK events through Pike's default backend when
   HAVE_BACKEND_INTEGRATION is available, avoiding context accessor
@@ -564,6 +616,13 @@ o Cpp
   - Improved cleanup when preprocessor callbacks throw errors.
 
 o Compiler
+
+  - Syntax errors in constant initializers, e.g. "constant x = ;", now
+    produce compilation errors instead of crashing during error recovery.
+
+  - Array, mapping and multiset literals no longer reuse equal mutable
+    containers obtained through compile-time lookup in another object.
+    Later changes to those containers no longer affect literal values.
 
   - Compiling arithmetic with -2147483648 no longer hangs on AMD64.
     Signed-minimum immediates are emitted without overflowing negation;
@@ -638,6 +697,10 @@ o Parser.ECMAScript
 
 o Runtime
 
+  - Fixed AMD64 machine-code array indexing with local operands, including
+    crashes on invalid operand types, out-of-bounds reads with large
+    negative indices, and leaked array references.
+
   - The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
     objects having destruct callbacks under some circumstances.
 
@@ -683,6 +746,8 @@ o ADT.OrderedMapping
 o GTK2
 
   Support GTK2.8 and earlier again.
+
+  RcStyle()->set_ythickness() now accepts its integer argument correctly.
 
 o Pike.Backend
 
@@ -812,8 +877,6 @@ o Tools.Standalone.pv
 
 Incompatible changes
 --------------------
-
-o Compatibility code for Pike 7.6 and earlier removed.
 
 o Require GMP 4.1 or later.
 
@@ -964,7 +1027,8 @@ o RegGetValue(), RegGetKeyNames(), RegGetKeyValues(), openlog(),
 
 o Some GL constants have been renamed to match the documentation.
 
-o The ZXID module has been removed.
+o See also the section about Removed features and modules.
+
 
 New modules and functions
 -------------------------
@@ -1194,6 +1258,11 @@ o Command-line options
       $ pike '-DFOO(X)=X'
 
 o Compiler and runtime performance
+
+  Executable-memory allocation now uses larger chunks and skips free
+  lists that cannot satisfy a request. This reduces compilation slowdown
+  after many programs have been compiled and freed in a long-running
+  process.
 
   Builtin arithmetic on two known integers computes its result type
   directly, preserving integer ranges while avoiding general overload
@@ -1740,9 +1809,15 @@ o Regexp.PCRE2.Widestring and Regexp.PCRE2.StudiedWidestring are
 Removed features and modules
 ----------------------------
 
+NB: No compatibility layer is provided for these removed features
+    and modules.
+
 o Compatibility for Pike versions before 7.8 is no longer available.
 
-o GTK1 library is deprecated, so glue code has been removed.
+o GTK1 library is deprecated and not available on most current platforms,
+  so its glue code has been removed.
+
+o The ZXID module has been removed.
 
 
 C-level API changes
@@ -1851,7 +1926,7 @@ Building and installing
 
 o GMP 4.1 or later is now required.
 
-o Nettle 3.5 is now supported.
+o Nettle 3.5 and 4.0 are now supported.
 
 o C99 assumed
 
@@ -1874,29 +1949,33 @@ o Added a release_checks make target for checking release data and
 o The testsuite supports multiple and nested conditional requirements
   for individual tests.
 
+o Added make verify_all to run slow and very slow tests even on systems
+  detected as slow. The test runner's --run-very-slow-tests option enables
+  the otherwise skipped very slow tests.
+
 
 Issues fixed
 ------------
 
 Github pikelang/pike: #4, #16, #25, #36, #38, #40, #49, #54, #55, #56, #70, #71
 
-Lysator pikelang/pike: #1694, #2100, #2315, #3110, #3150, #3429, #3658,
-  #3681, #4312, #4826, #4897, #4934, #5466, #7363, #7831, #8042, #10001,
-  #10003, #10004, #10006, #10012, #10017, #10018, #10021, #10022, #10023,
-  #10026, #10027, #10028, #10029, #10033, #10035, #10037, #10039, #10040,
-  #10041, #10042, #10043, #10044, #10045, #10046, #10047, #10048, #10050,
-  #10055, #10059, #10063, #10064, #10065, #10072, #10076, #10077, #10083,
-  #10084, #10085, #10086, #10089, #10090, #10094, #10096, #10097, #10098,
-  #10100, #10104, #10105, #10107, #10109, #10111, #10112, #10113, #10114,
-  #10117, #10118, #10119, #10120, #10121, #10122, #10125, #10126, #10127,
-  #10128, #10129, #10130, #10131, #10132, #10133, #10134, #10135, #10136,
-  #10137, #10139, #10141, #10142, #10143, #10144, #10146, #10147, #10149,
-  #10150, #10151, #10154, #10155, #10156, #10158, #10159, #10160, #10161,
-  #10162, #10163, #10164, #10165, #10167, #10168, #10170, #10171, #10173,
-  #10174, #10175, #10176, #10177, #10178, #10179, #10180, #10181, #10182,
-  #10183, #10184, #10185, #10186, #10187, #10188, #10189, #10191, #10192,
-  #10193, #10195, #10196, #10197, #10198, #10199, #10200, #10201, #10202,
-  #10203, #10204, #10205, #10206, #10207, #10208, #10209, #10210, #10211,
-  #10212, #10213, #10214, #10216, #10217, #10218, #10219, #10220, #10221,
-  #10222, #10223, #10224, #10225, #10227, #10228, #10231, #10233, #10234,
-  #10236
+Lysator pikelang/pike: #1694, #2100, #2315, #3110, #3150, #3429, #3658, #3681,
+  #4312, #4826, #4897, #4934, #5466, #7363, #7831, #8042, #10001, #10003,
+  #10004, #10006, #10012, #10017, #10018, #10021, #10022, #10023, #10026,
+  #10027, #10028, #10029, #10033, #10035, #10037, #10039, #10040, #10041,
+  #10042, #10043, #10044, #10045, #10046, #10047, #10048, #10050, #10055,
+  #10059, #10063, #10064, #10065, #10072, #10076, #10077, #10083, #10084,
+  #10085, #10086, #10089, #10090, #10094, #10096, #10097, #10098, #10100,
+  #10104, #10105, #10107, #10109, #10111, #10112, #10113, #10114, #10117,
+  #10118, #10119, #10120, #10121, #10122, #10125, #10126, #10127, #10128,
+  #10129, #10130, #10131, #10132, #10133, #10134, #10135, #10136, #10137,
+  #10139, #10141, #10142, #10143, #10144, #10145, #10146, #10147, #10148,
+  #10149, #10150, #10151, #10154, #10155, #10156, #10158, #10159, #10160,
+  #10161, #10162, #10163, #10164, #10165, #10167, #10168, #10170, #10171,
+  #10173, #10174, #10175, #10176, #10177, #10178, #10179, #10180, #10181,
+  #10182, #10183, #10184, #10185, #10186, #10187, #10188, #10189, #10191,
+  #10192, #10193, #10195, #10196, #10197, #10198, #10199, #10200, #10201,
+  #10202, #10203, #10204, #10205, #10206, #10207, #10208, #10209, #10210,
+  #10211, #10212, #10213, #10214, #10216, #10217, #10218, #10219, #10220,
+  #10221, #10222, #10223, #10224, #10225, #10227, #10228, #10231, #10233,
+  #10234, #10236
