@@ -3930,7 +3930,7 @@ static void low_free_gparams(struct gparams_list *gpl)
   if (names) {
     for (i = 0; i < nparam; i++)
       g_free((gchar *)names[i]);
-    g_free(names);
+    g_free((gpointer)names);
     gpl->names = NULL;
   }
   if (values) {
