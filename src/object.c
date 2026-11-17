@@ -4262,6 +4262,73 @@ PMOD_EXPORT enum memobj_type pike_get_memory_object( struct object *o, struct pi
   return MEMOBJ_NONE;
 }
 
+/* Buffers hold references to these objects, so their storage remains
+ * valid even after explicit destruction. The final unpin runs any
+ * deferred cleanup before the buffer releases its object reference. */
+struct memory_object_pin {
+  struct memory_object_pin *next;
+  struct object *object;
+  INT_TYPE refs;
+  void (*cleanup)(void *);
+  void *cleanup_data;
+};
+
+#define MEMORY_PIN_BUCKETS 128
+static struct memory_object_pin *memory_pins[MEMORY_PIN_BUCKETS];
+
+static struct memory_object_pin **find_memory_object_pin(struct object *o)
+{
+  struct memory_object_pin **pin =
+    &memory_pins[((size_t)o >> 4) & (MEMORY_PIN_BUCKETS - 1)];
+  while (*pin && (*pin)->object != o) pin = &(*pin)->next;
+  return pin;
+}
+
+PMOD_EXPORT void pike_pin_memory_object(struct object *o, int delta)
+{
+  struct memory_object_pin **slot = find_memory_object_pin(o);
+  struct memory_object_pin *pin = *slot;
+  if (!pin) {
+    if (delta <= 0) Pike_fatal("Unpinning unpinned memory object.\n");
+    pin = xalloc(sizeof(*pin));
+    pin->next = NULL;
+    pin->object = o;
+    pin->refs = 0;
+    pin->cleanup = NULL;
+    pin->cleanup_data = system_memory(o);
+    *slot = pin;
+  }
+  pin->refs += delta;
+  if (!pin->refs) {
+    *slot = pin->next;
+    if (pin->cleanup) pin->cleanup(pin->cleanup_data);
+    free(pin);
+  }
+}
+
+PMOD_EXPORT int pike_memory_object_pinned(struct object *o)
+{
+  return *find_memory_object_pin(o) != NULL;
+}
+
+PMOD_EXPORT void pike_defer_memory_object_free(struct object *o,
+                                             void (*cleanup)(void *),
+                                             void *storage)
+{
+  struct memory_object_pin *pin = *find_memory_object_pin(o);
+  if (!pin)
+    Pike_fatal("Invalid deferred memory object cleanup.\n");
+  /* Only the storage exposed by system_memory() is pinned. Other
+   * System.Memory inherits in the same object can be freed at once. */
+  if (storage != pin->cleanup_data) {
+    cleanup(storage);
+    return;
+  }
+  if (pin->cleanup)
+    Pike_fatal("Duplicate deferred memory object cleanup.\n");
+  pin->cleanup = cleanup;
+}
+
 PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr,
 						       size_t *len, int *shift )
 {

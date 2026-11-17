@@ -23,6 +23,7 @@
 #include "stralloc.h"
 #include "program_id.h"
 #include "block_allocator.h"
+#include "gc.h"
 #include <ctype.h>
 
 #include "parser.h"
@@ -810,6 +811,22 @@ static void exit_html_struct(struct object *UNUSED(o))
 #endif
 
    DEBUG((stderr,"exit_html_struct %p done\n",THIS));
+}
+
+/* The values in the output queue (what callbacks returned, in mixed
+ * mode) are references that the gc knows nothing of otherwise. */
+static void gc_check_html_struct(struct object *UNUSED(o))
+{
+   struct out_piece *f;
+   for (f = THIS->out; f; f = f->next)
+      debug_gc_check_svalues(&f->v, 1, " in the output queue of Parser.HTML");
+}
+
+static void gc_recurse_html_struct(struct object *UNUSED(o))
+{
+   struct out_piece *f;
+   for (f = THIS->out; f; f = f->next)
+      gc_recurse_svalues(&f->v, 1);
 }
 
 /****** setup callbacks *****************************/
@@ -5504,6 +5521,8 @@ void init_parser_html(void)
 
    set_init_callback(init_html_struct);
    set_exit_callback(exit_html_struct);
+   set_gc_check_callback(gc_check_html_struct);
+   set_gc_recurse_callback(gc_recurse_html_struct);
 
    ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),ID_PROTECTED);
    ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tObjImpl_PARSER_HTML),0);

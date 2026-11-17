@@ -763,7 +763,7 @@ constant_name: TOK_IDENTIFIER '=' constant_initializer
         if (!t) {
           if ((Pike_compiler->current_modifiers & ID_LOCAL) ||
               ($3->token == F_SOFT_CAST) ||
-              (($3->token == F_COMMA_EXPR) &&
+              (($3->token == F_COMMA_EXPR) && CAR($3) &&
                (CAR($3)->token == F_SOFT_CAST))) {
             /* Node type set intentionally via a soft-cast,
              * or value is not overridable via inherit.

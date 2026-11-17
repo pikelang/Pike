@@ -4819,6 +4819,76 @@ test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 
+dnl Syntax error in consts value must not leave a NULL in recovery (crash).
+test_compile_error([[ constant x = ; ]])
+test_compile_error([[ class A { constant x = ; } ]])
+
+dnl A fresh ([]), (<>) or ({ 1, 2 }) literal should stay fresh in a
+dnl program that also folds an equal container from another object at
+dnl compile time, and the folded values should still be that object's.
+test_any_equal([[
+  object h = class {
+      mapping m = ([]);
+      multiset s = (<>);
+      array a = ({ 1, 2 });
+    }();
+  add_constant("literal_folded_holder", h);
+  program p = compile_string(#"
+    mixed peek_m(mixed k) { return literal_folded_holder.m[k]; }
+    mixed peek_s(mixed k) { return literal_folded_holder.s[k]; }
+    mixed peek_a(int i) { return literal_folded_holder.a[i]; }
+    mapping fresh_mapping() { mapping x = ([]); return x; }
+    multiset fresh_multiset() { multiset x = (<>); return x; }
+    array fresh_array() { array x = ({ 1, 2 }); return x; }
+  ");
+  add_constant("literal_folded_holder");
+  object o = p();
+  h->m->key = "from the other object";
+  h->s->key = 1;
+  h->a[0] = "from the other object";
+  return ({ o->fresh_mapping(), o->fresh_multiset(), o->fresh_array(),
+            o->peek_m("key") == h->m->key && o->peek_s("key") &&
+            o->peek_a(0) == h->a[0] });
+]], ({ ([]), (<>), ({ 1, 2 }), 1 }))
+
+dnl Compiling should not slow down for good after many programs: after
+dnl 20,000 small programs, half of them dropped, a program of 50
+dnl functions must compile at most 1.5 times as slowly as before.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+test_any([[
+  string small(int i) {
+    return "int f(int x) { return x" + ("+ 1" * (1 + i % 40)) + "; }\n" +
+      "constant id = " + i + ";\n";
+  };
+  string big(int i) {
+    string s = "";
+    for (int j = 0; j < 50; j++)
+      s += "int f" + j + "(int x) { return x + " + j + " * " + i + "; }\n";
+    return s + "int f(int x) { return f0(x); }\n";
+  };
+  float ms_per_compile(int n, int base) {
+    int t0 = gethrtime();
+    for (int i = 0; i < n; i++)
+      compile_string(big(base + i))()->f(1);
+    return (gethrtime() - t0) / 1000.0 / n;
+  };
+  ms_per_compile(20, 0);
+  float before = ms_per_compile(100, 1000);
+  array(program) kept = ({}), dropped = ({});
+  for (int i = 0; i < 20000; i++) {
+    program p = compile_string(small(10000 + i));
+    if (i & 1) dropped += ({ p }); else kept += ({ p });
+    if (!(i & 1023)) __signal_watchdog();
+  }
+  dropped = ({});
+  float after = ms_per_compile(100, 50000);
+  kept = ({});
+  if (after > 1.5 * before)
+    return sprintf("a compile took %.2f ms, %.2f ms before", after, before);
+  return 0;
+]], 0)
+]])
+
 // Constant initializers must not overwrite declaration modifiers (#10236).
 test_any_equal([[
   array(array(string)) result = ({});
@@ -7545,6 +7615,78 @@ test_any([[mapping m=([]); m[1]++; return m[1];]],1)
 test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([1:1]); m[1]++; return m[1]++;]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
+
+dnl The _destruct() of values that a mapping frees while it changes
+dnl should see the mapping whole: an m_clear() of values that iterate
+dnl the mapping must not crash, and a weak mapping's freed entries must
+dnl not find kept ones missing. Objects that inherit
+dnl Pike.DestructImmediate are destructed at once.
+test_any_equal([[
+  string common = #{
+    mapping m;
+    class O {
+      inherit Pike.DestructImmediate;
+      function(:void)|zero check;
+      protected void create(function(:void)|zero c) { check = c; }
+      protected void _destruct() { if (check) check(); }
+    };
+  #};
+  string clear_case = common + #{
+    m = ([]);
+    int n;
+    for (int i = 0; i < 64; i++)
+      m[i] = O(lambda() { foreach (m; mixed k; mixed v) n++; });
+    m_clear(m);
+    write("ok\n");
+    return 0;
+  #};
+  string weak_case = common + #{
+    m = set_weak_flag(([]), Pike.WEAK_INDICES);
+    array keep = ({});
+    array(string) bad = ({});
+    function(:void) check = lambda() {
+      int missing;
+      foreach (keep, object k) if (!m[k]) missing++;
+      if (missing)
+        bad += ({ sprintf("%d of %d kept entries missing", missing,
+                          sizeof(keep)) });
+    };
+    for (int i = 0; i < 300; i++) {
+      object k = O(0);
+      keep += ({ k });
+      m[k] = 1;
+      if (i < 8) m[O(check)] = 1;
+    }
+    write("%s\n", sizeof(bad) ? bad[0] : "ok");
+    return 0;
+  #};
+  array res = ({});
+  foreach (({ clear_case, weak_case }), string code) {
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", code }));
+    res += ({ r->exitcode ? sprintf("exit %d: %s", r->exitcode, r->stderr) :
+              String.trim(r->stdout) });
+  }
+  return res;
+]], ({ "ok", "ok" }))
+
+dnl m_delete(m, index, expected) should remove the entry only if its
+dnl value equals expected, for any type of value, and not crash when
+dnl index has no entry (in a child process).
+test_any_equal([[ mapping m = ([ "a": 1 ]); m_delete(m, "a", 2); return m; ]], ([ "a": 1 ]))
+test_any_equal([[ mapping m = ([ "s": "x" ]); m_delete(m, "s", "y"); return m; ]], ([ "s": "x" ]))
+test_any_equal([[ mapping m = ([ "a": 1 ]); return ({ m_delete(m, "a", 1), m }); ]], ({ 1, ([]) }))
+test_any_equal([[ mapping m = ([ "f": 1.5 ]); return ({ m_delete(m, "f", 1.5), m }); ]], ({ 1.5, ([]) }))
+test_any([[ object o = class {}(); mapping m = ([ "o": o ]); m_delete(m, "o", 17); return m->o == o; ]], 1)
+test_any([[ object o = class {}(); mapping m = ([ "o": o ]); return m_delete(m, "o", o) == o && !sizeof(m); ]], 1)
+test_any([[
+  mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+    mapping m = ([ "a": 1 ]);
+    mixed r = m_delete(m, "b", 2);
+    write(undefinedp(r) && equal(m, ([ "a": 1 ])) ? "ok" : "wrong");
+    return 0;
+  #} }));
+  return r->exitcode ? sprintf("exit %d", r->exitcode) : r->stdout;
+]], "ok")
 
 // multiset tests
 
@@ -11102,6 +11244,32 @@ test_eval_error([[return ({1})[1];]])
 test_eval_error([[int i = 1; return ({1})[i];]])
 test_eval_error([[array a = ({ 1 }); return a[1];]])
 test_eval_error([[array a = ({ 1 }); int i = 1; return a[i];]])
+
+dnl Indexing as expr[local], local[local] and expr[expr] should give the
+dnl element, or the same errors as the interpreter, even for indices
+dnl beyond 32 bits and for an int indexed with an array, and keep the
+dnl array's reference count.
+test_any_equal([[
+  mixed id(mixed x) { return x; };
+  mixed local_local(mixed c, mixed i) { return c[i]; };
+  mixed expr_local(mixed c, mixed i) { return id(c)[i]; };
+  mixed expr_expr(mixed c, mixed i) { return id(c)[id(i)]; };
+  array a = ({ 10, 20, 30 });
+  array(string) bad = ({});
+  foreach (({ local_local, expr_local, expr_expr }); int n; function f) {
+    foreach (({ 0, 1, 2, -1, -3 }), int i)
+      if (f(a, i) != a[i]) bad += ({ sprintf("%d: a[%d] is %O", n, i, f(a, i)) });
+    foreach (({ 3, -4, 4294967296, -4294967296, -4294967295 }), int i)
+      if (!catch { f(a, i); }) bad += ({ sprintf("%d: a[%d] didn't throw", n, i) });
+    if (!catch { f(5, ({ 1, 2 })); })
+      bad += ({ sprintf("%d: 5[array] didn't throw", n) });
+  }
+  int refs = Debug.refs(a);
+  for (int i = 0; i < 1000; i++) expr_local(a, 1), local_local(a, 2);
+  if (Debug.refs(a) != refs)
+    bad += ({ sprintf("%d references before, %d after", refs, Debug.refs(a)) });
+  return bad;
+]], ({}))
 
 // index assigning
 test_any(mixed a=({1}); a[0]=2; return equal(a,({2})),1)

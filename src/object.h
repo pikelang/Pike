@@ -200,6 +200,12 @@ struct pike_memory_object {
 };
 
 PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr, size_t *len, int *shift );
+PMOD_EXPORT void pike_pin_memory_object(struct object *o, int delta);
+PMOD_EXPORT int pike_memory_object_pinned(struct object *o);
+/* storage must be a System.Memory inherit's storage in o. */
+PMOD_EXPORT void pike_defer_memory_object_free(struct object *o,
+                                             void (*cleanup)(void *),
+                                             void *storage);
 PMOD_EXPORT enum memobj_type pike_get_memory_object( struct object *o, struct pike_memory_object *m,
                                                      int writeable );
 PMOD_EXPORT int pike_advance_memory_object( struct object *o,

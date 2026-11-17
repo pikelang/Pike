@@ -188,6 +188,7 @@ PIKECLASS Buffer
 	  break;
         }
 	case PIKE_T_OBJECT:
+          pike_pin_memory_object(io->source.obj, -1);
 	  free_object(io->source.obj);
 	  break;
       }
@@ -646,6 +647,7 @@ PIKECLASS Buffer
           break;
 	case PIKE_T_OBJECT:
 	  add_ref(to->source.obj = io->source.obj);
+          pike_pin_memory_object(to->source.obj, 1);
 	  break;
       }
     }
@@ -940,6 +942,8 @@ PIKECLASS Buffer
 
           if( !io->buffer && t==MEMOBJ_SYSTEM_MEMORY )
           {
+            /* Pin before changing the buffer: the first pin allocates. */
+            pike_pin_memory_object(p->u.object, 1);
             io->buffer = ptr;
             io->len = len;
 

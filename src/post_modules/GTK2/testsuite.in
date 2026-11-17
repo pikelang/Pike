@@ -4,4 +4,15 @@ cond_begin([[ master()->resolv("GTK2")->version ]])
 test_true( arrayp(GTK2.version()) )
 
 cond_end // GTK2.version
+dnl set_xthickness() and set_ythickness() should accept an int. Needs a
+dnl display.
+cond([[getenv("DISPLAY") && master()->resolv("GTK2")]], [[
+  test_do([[
+    GTK2.setup_gtk();
+    object s = GTK2.RcStyle();
+    s->set_xthickness(3);
+    s->set_ythickness(4);
+  ]])
+]])
+
 END_MARKER

@@ -72,4 +72,25 @@ test_any_equal([[
   return sort(Debug.find_all_clones(B, 1)->sym);
 ]], ({ "B", "B", "B", "C", "C", "C", "D", "D", "D", "E", "E", "E" }))
 
+dnl Debug.size_object() on an object with a multiset should leave the
+dnl multiset freeable: a debug build must not abort with "Freeing
+dnl multiset with 1 node refs". In a child process.
+test_any([[
+  mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+    class Holder(mixed a, mixed b) {};
+    // Made at run time: a literal would be a constant, never freed.
+    object|zero o = Holder(mkmultiset(({ random(10), 10 + random(10) })), 0);
+    // Used: an unused call is optimized away.
+    if (Debug.size_object(o) <= 0) write("no size\n");
+    mixed m = o->a;
+    o = 0;
+    m = 0;
+    gc();
+    write("freed");
+    return 0;
+  #} }));
+  return r->exitcode ? sprintf("exit %d: %s", r->exitcode, r->stderr) :
+    r->stdout;
+]], "freed")
+
 END_MARKER

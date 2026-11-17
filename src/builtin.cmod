@@ -2411,9 +2411,9 @@ PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index,
             val = NULL;
           }
           pop_stack();
+        } else if (!is_eq(expected, val)) {
+          val = NULL;
         }
-      } else if (!is_eq(expected, val)) {
-        val = NULL;
       }
       if (!val) {
         pop_n_elems(args);

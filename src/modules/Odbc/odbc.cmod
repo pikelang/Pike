@@ -583,7 +583,7 @@ PIKEFUN void create_dsn(string connectstring)
       &stringlength2,
       SQL_DRIVER_NOPROMPT),
 		   NULL, NULL);
-  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
+  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED | odbc_driver_flags(PIKE_ODBC->hdbc);
 }
 
 

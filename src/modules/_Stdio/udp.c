@@ -1158,9 +1158,6 @@ void udp_sendto(INT32 args)
 static int got_udp_event (struct fd_callback_box *box, int event)
 {
   struct udp_storage *u = (struct udp_storage *) box;
-#ifdef PIKE_DEBUG
-  if (event != PIKE_FD_READ)
-#endif
 
   u->my_errno = errno;		/* Propagate backend setting. */
 
