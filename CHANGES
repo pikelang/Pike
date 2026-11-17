@@ -458,6 +458,11 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o Image
+
+  Validate _decode() input after waiting for drawing threads, so a caller
+  changing the input array during the wait cannot cause a crash.
+
 o Gmp
 
   Fixed incorrect bignum results for overflowing negative integer products

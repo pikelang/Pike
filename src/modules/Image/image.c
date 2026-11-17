@@ -4843,6 +4843,11 @@ void image__decode( INT32 args )
 {
     struct array *a;
     int w, h;
+
+    /* Waiting releases the interpreter lock. Validate the caller's array
+     * only afterwards, so another thread cannot change it between the
+     * checks below and memcpy(). */
+    image_wait_for_unlocked();
     if( args != 1 ||
 	TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY ||
 	Pike_sp[-1].u.array->size != 3 ||
@@ -4857,9 +4862,6 @@ void image__decode( INT32 args )
     if( w*h*(ptrdiff_t) sizeof(rgb_group) != a->item[2].u.string->len )
 	Pike_error("Illegal image data\n");
 
-    /* Other threads may be drawing on this image without the
-     * interpreter lock (see IMAGE_THREADS_ALLOW()). */
-    image_wait_for_unlocked();
     if( THIS->img )
 	free( THIS->img );
 

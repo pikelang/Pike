@@ -1207,4 +1207,45 @@ cond_resolv(Thread.Thread, [[
 ]])
 ]])
 
+dnl The decode array may change while _decode waits for a drawing loop.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond_resolv(Thread.Thread, [[
+  test_any([[
+    Process.Process p = Process.Process(RUNPIKE_ARRAY + ({ "-e", #{
+      Image.Image busy = Image.Image(4096, 4096);
+      Image.Image target = Image.Image(1, 1);
+      array colors = ({ ({255,0,0}), ({0,255,0}),
+                        ({0,0,255}), ({255,255,255}) });
+      for (int run = 0; run < 10; run++) {
+        array data = ({ 1, 1, "abc" });
+        int started;
+        Thread.Thread painter = Thread.Thread(lambda() {
+            started = 1;
+            busy->tuned_box(0, 0, 4095, 4095, colors);
+          });
+        while (!started) sleep(0.0001);
+        sleep(0.001);
+        Thread.Thread changer = Thread.Thread(lambda() {
+            sleep(0.001);
+            data[2] = 0;
+          });
+        mixed err = catch { target->_decode(data); };
+        if (!err && target->_encode()[2] != "abc") return 1;
+        changer->wait();
+        painter->wait();
+      }
+      return 0;
+    #} }));
+    int deadline = time() + 30;
+    while (!p->status() && time() < deadline) sleep(0.05);
+    if (!p->status()) {
+      p->kill(9);
+      p->wait();
+      return "decode-array race test timed out";
+    }
+    return p->wait();
+  ]], 0)
+]])
+]])
+
 END_MARKER
