@@ -120,16 +120,26 @@ test_any([[
 ]])
 cond_end
 cond_end
-dnl Resolving each installed typelib's namespace in GI.repository should
-dnl not crash, also for a GObject constant that is a magic pointer, not
-dnl an object (Gdk-2.0's GDK_NO_BG).
+dnl Gdk 2.0 has GObject constants that are magic pointers, not objects
+dnl (GDK_NO_BG). Select that version even if newer Gdk typelibs exist.
+cond_begin([[ master()->resolv("GI")->get_default_repository ]])
+cond([[ has_value(GI.get_default_repository()->enumerate_versions("Gdk") || ({}), "2.0") ]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      GI.get_default_repository()->namespace("Gdk", "2.0");
+      return 0;
+    #} }));
+    return r->exitcode ? sprintf("exit %d: %s", r->exitcode, r->stderr) : 0;
+  ]], 0)
+]])
+cond_end
+
+dnl Resolving each installed typelib's namespace should not crash.
 cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
 cond([[master()->resolv("GI")]], [[
 test_any_equal([[
   multiset(string) namespaces = (<>);
-  foreach (({ "/usr/lib/x86_64-linux-gnu/girepository-1.0",
-              "/usr/lib/girepository-1.0", "/usr/lib64/girepository-1.0" }),
-           string d)
+  foreach (GI.get_search_path(), string d)
     foreach (get_dir(d) || ({}), string f)
       if (has_suffix(f, ".typelib")) {
         string ns = (f / "-")[0];
