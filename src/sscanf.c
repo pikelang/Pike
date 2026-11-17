@@ -1789,6 +1789,8 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format,
  *!     Interpret the data as a signed entity. In other words,
  *!     @expr{"%+1c"@} will read @expr{"\xFF"@} as @expr{-1@} instead
  *!     of @expr{255@}, as @expr{"%1c"@} would have.
+ *!     Since Pike 9.1, this modifier also supports @tt{%b@}, @tt{%o@},
+ *!     @tt{%u@} and @tt{%x@}. In Pike 9.0 it only affects @tt{%c@}.
  *!   @value "!"
  *!     Ignore the matched characters with respect to any following
  *!     @expr{"%n"@}.

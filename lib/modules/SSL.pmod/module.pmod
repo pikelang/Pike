@@ -2,7 +2,12 @@
 #pragma strict_types
 
 //! Secure Socket Layer (SSL) version 3.0 and
-//! Transport Layer Security (TLS) versions 1.0 - 1.2.
+//! Transport Layer Security (TLS) versions 1.0 - 1.3.
+//!
+//! @note
+//!   TLS 1.3 support and its associated key-schedule, resumption and
+//!   early-data APIs were introduced in Pike 9.1. Pike 9.0 supports
+//!   protocols through TLS 1.2.
 //!
 //! @rfc{2246@} (TLS 1.0): "The primary goal of the TLS Protocol is to
 //! provide privacy and data integrity between two communicating

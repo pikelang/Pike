@@ -51,6 +51,11 @@ protected void create()
 //! @[PROTOCOL_TLS_1_3] and @[PROTOCOL_TLS_1_2].
 //!
 //! @note
+//!   These defaults apply since Pike 9.1, which introduced TLS 1.3.
+//!   Pike 9.0 defaults to @[PROTOCOL_TLS_1_2], @[PROTOCOL_TLS_1_1]
+//!   and @[PROTOCOL_TLS_1_0].
+//!
+//! @note
 //!   TLS 1.0 and TLS 1.1 are deprecated (@rfc{8996@}) and excluded
 //!   from this default per @rfc{9846@}'s Appendix E -- they are not
 //!   removed from the implementation, and a caller may still opt
@@ -1195,6 +1200,9 @@ int max_sessions = 1000;
 //!
 //! @seealso
 //!   @[max_early_data_size]
+//!
+//! @note
+//!   Available since Pike 9.1.
 int(0..1) accept_early_data = 0;
 
 //! TLS 1.3 (@rfc{8446:4.6.1@}): maximum amount of 0-RTT application
@@ -1202,6 +1210,9 @@ int(0..1) accept_early_data = 0;
 //! disables 0-RTT entirely regardless of @[accept_early_data] (no
 //! ticket we issue ever advertises @expr{max_early_data_size@}, and
 //! any @expr{early_data@} a client offers anyway is rejected).
+//!
+//! @note
+//!   Available since Pike 9.1.
 int max_early_data_size = 0;
 
 //! TLS 1.3 (@rfc{8446:4.2.10@}): tolerance, in seconds, for the
@@ -1209,6 +1220,9 @@ int max_early_data_size = 0;
 //! (ordinary, non-0-RTT PSK resumption is unaffected by this). The
 //! RFC deliberately leaves the exact tolerance unspecified ("a small
 //! tolerance, say, 10 seconds").
+//!
+//! @note
+//!   Available since Pike 9.1.
 int early_data_ticket_age_tolerance = 10;
 
 //! Cached sessions indexed by their session identifiers or tickets.

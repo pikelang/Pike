@@ -710,18 +710,23 @@ here is a list of <b>lvalues</b>:</p>
 
 <p>An array pattern assigns consecutive elements to its lvalues. A pattern
 can declare local variables, use existing lvalues, or contain nested patterns.
-The assignment expression evaluates to the original source array.</p>
+These forms are supported in Pike 9.0. The assignment expression evaluates
+to the original source array. The extensions described below require
+Pike 9.1 or later.</p>
 
 <example>
   [int first, int second] = ({ 1, 2 });
   [first, second] = ({ 3, 4 });
 </example>
 
-<p>A default expression supplies a value for an omitted or undefined element.
-Defaults can refer to variables earlier in the pattern. A final rest variable
-collects all remaining elements in a new array, which can be empty. In a
-rest declaration the type before <tt>...</tt> describes each element; for
-an existing array variable, put <tt>...</tt> before the lvalue.</p>
+<p>Pike 9.1 adds defaults for individual pattern elements. A default
+expression supplies a value for an omitted or undefined element and can
+refer to variables earlier in the pattern.</p>
+
+<p>Rest variables are also new in Pike 9.1. A final rest variable collects
+all remaining elements in a new array, which can be empty. In a rest
+declaration the type before <tt>...</tt> describes each element; for an
+existing array variable, put <tt>...</tt> before the lvalue.</p>
 
 <example>
   [int first, int second = first + 4, int ... tail] = ({ 1 });
@@ -730,9 +735,9 @@ an existing array variable, put <tt>...</tt> before the lvalue.</p>
   // first is 2 and tail is ({ 3, 4 }).
 </example>
 
-<p>An unnamed type consumes one element without binding a variable. A bare
-trailing <tt>...</tt> ignores all remaining elements, including an empty
-suffix.</p>
+<p>Since Pike 9.1, an unnamed type consumes one element without binding a
+variable. A bare trailing <tt>...</tt> ignores all remaining elements,
+including an empty suffix.</p>
 
 <example>
   [mixed a, mixed, mixed c, ...] = ({ 0, 1, 2, 3, 4, 5 });
@@ -746,7 +751,8 @@ position even though it does not bind that value to a variable.</p>
 <p>Without a rest variable, extra elements are an error. Elements preceding
 the rest variable remain required unless they have defaults.</p>
 
-<p>A mapping pattern uses <tt>key: lvalue</tt> pairs instead of positions.
+<p>Mapping patterns are new in Pike 9.1. A mapping pattern uses
+<tt>key: lvalue</tt> pairs instead of positions.
 It selects all the named values before assigning the lvalues in source order.
 Missing keys yield <tt>UNDEFINED</tt>, which activates a default if one is
 specified. Additional keys are ignored. Keys can be expressions; each key

@@ -10,6 +10,9 @@
 //! This class holds that running state for a single connection.
 //!
 //! @note
+//!   Introduced in Pike 9.1; it is not available in Pike 9.0.
+//!
+//! @note
 //!   This only implements the key-schedule arithmetic itself --
 //!   deciding *when* to call each step, and with which running
 //!   transcript hash, is the handshake state machine's job.

@@ -1,6 +1,6 @@
 <chapter title="Pike BNF">
 
-<p><b>Caveat lector:</b> This is a simplified grammar for Pike 9.0 and is
+<p><b>Caveat lector:</b> This is a simplified grammar for Pike 9.1 and is
 <b>NOT</b> the normative grammar. The compiler grammar is maintained in
 <tt>src/language.yacc</tt>; it takes precedence over this overview.</p>
 
@@ -15,6 +15,12 @@ punctuation has its literal meaning. Whitespace between tokens is omitted.</p>
 a parser. Name lookup, constant-expression requirements, valid assignment
 destinations, type constraints and context restrictions are checked separately.
 Preprocessor directives are handled before this grammar is applied.</p>
+
+<p>Most productions also describe Pike 9.0. The pattern productions below
+include Pike 9.1 extensions: defaults for individual elements, unnamed
+elements, rest variables, and mapping patterns. Simple positional array
+patterns, including nested patterns and a default for an entire function
+argument, are already supported in Pike 9.0.</p>
 
 </section>
 
@@ -143,6 +149,11 @@ rest_lvalue          ::= type "..." identifier | "..." lvalue | "..."
 mapping_pattern      ::= mapping_binding ( "," mapping_binding )* ","?
 mapping_binding      ::= assignment_expression ":" lvalue
 </example>
+
+<p>In the pattern productions above, <tt>mapping_pattern</tt>,
+<tt>rest_lvalue</tt>, and the unnamed <tt>type</tt> alternative of
+<tt>array_binding</tt> require Pike 9.1 or later. Defaults on individual
+<tt>lvalue</tt> elements also require Pike 9.1.</p>
 
 </section>
 
