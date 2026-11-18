@@ -115,6 +115,7 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
                               struct pikecode_ssa_integer_stop *stop)
 {
   unsigned int i, j;
+  int single_update = 0;
   integer_stop_init(stop);
   if (available <= 0) return 0;
   switch (code[0].opcode) {
@@ -198,9 +199,20 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
     stop->ops = p->count;
     stop->locals = p->locals;
   }
+  /* One explicit local/local add followed by assignment/pop can eliminate
+   * both operand copies even without reuse. Keep this exception narrower
+   * than the usual balanced units: no lone increments or immediate adds,
+   * and no relaxation of the stack planner's profitability rules. */
+  if (p->count == 1 && p->units == 1 && p->unit[0].length == 3 &&
+      code[0].opcode == F_2_LOCALS) {
+    static int enabled = -1;
+    if (enabled < 0)
+      enabled = getenv("PIKE_SSA_NO_INTEGER_SINGLE_UPDATE") == NULL;
+    single_update = enabled;
+  }
   /* Do not speculate on untouched locals from an operation that exceeded
-   * the register budget. A single value operation has nothing to reuse. */
-  if (p->count < 2) {
+   * the register budget. Other single operations have nothing to reuse. */
+  if (p->count < 2 && !single_update) {
     if (stop) stop->rejection = "too-short";
     return 0;
   }
@@ -216,7 +228,7 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
       return 0;
     }
   }
-  if (p->loads <= p->locals) {
+  if (p->loads <= p->locals && !single_update) {
     if (stop) stop->rejection = "no-reuse";
     return 0;
   }

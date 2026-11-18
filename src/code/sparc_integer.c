@@ -9,6 +9,11 @@
  * integer values. L5 holds locals, O0..O2 hold value banks, O3 a speculative
  * result, O4 a multi-step unit's input and O5 an immediate operand.
  *
+ * Balanced regions keep proven L0/L1 values through their entry flush and
+ * retain L0 at the replay merge. A single-step overflow with no completed
+ * writes uses the guard replay entry when execution counters are disabled.
+ * Rollback and profiled exits retain their separate paths.
+ *
  * Pointer width follows the ABI; integer loads, stores and condition
  * codes follow Pike's native integer width. Word arithmetic needs only V7
  * instructions. Doubleword values currently require the SPARC64 backend. */
@@ -491,7 +496,21 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
                                              p.count, p.locals, "balanced",
                                       integer_profile_enabled ? &stop : NULL);
-  sparc_flush_codegen_state();
+  {
+    unsigned int keep = sparc_codegen_state &
+      (SPARC_CODEGEN_IP_IS_SET | SPARC_CODEGEN_FP_IS_SET);
+    /* Publish dirty stack state without forgetting unchanged L0/L1.
+     * This is a local flush, independent of optional forward joins. */
+    sparc_flush_codegen_state();
+    if (keep & SPARC_CODEGEN_IP_IS_SET)
+      pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
+    if (keep & SPARC_CODEGEN_FP_IS_SET)
+      pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_FP);
+    sparc_codegen_state |= keep;
+  }
+  /* FP can be known without IP at an incoming join. Establish L0 on every
+   * path so it can also remain known after the replay/fast merge. */
+  LOAD_PIKE_INTERPRETER();
   sparc_update_pc();
   sparc_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
   LOAD_PIKE_FP();
@@ -532,7 +551,8 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
       }
       SPARC_ALU_OP(0x10, SPARC_REG_O3,
                    sparc_integer_reg(&p.value[v->left]), right, 0); /* addcc */
-      sparc_integer_branch(&overflow[i], SPARC_INTEGER_BVS);
+      sparc_integer_branch(!profile && u->count == 1 && !u->dirty_before ?
+                            &slow[i] : &overflow[i], SPARC_INTEGER_BVS);
       SPARC_OR(sparc_integer_reg(v), SPARC_REG_O3, SPARC_REG_G0, 0);
     }
   }
@@ -541,6 +561,9 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
   sparc_integer_branch(&done, 0x10800000); /* ba */
   for (i = 0; i < p.units; i++) {
     const struct pikecode_ssa_integer_unit *u = &p.unit[i];
+    /* No bank needs restoration and no completed local needs publishing.
+     * Keep separate exits when collecting guard/overflow counters. */
+    if (!profile && u->count == 1 && !u->dirty_before) continue;
     sparc_integer_bind(&overflow[i]);
     sparc_integer_count(profile, PIKE_SSA_INTEGER_OVERFLOWS);
     if (u->count > 1)
@@ -568,9 +591,13 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
     }
   }
   /* Flush only on the slow fallthrough. The fast branch skips this code;
-   * both paths leave the compiler's cache description conservatively empty. */
+   * invalidate callback-sensitive state on both paths at the merge. */
   sparc_flush_codegen_state();
   sparc_integer_bind(&done);
+  /* Entry established L0 and every returning C opcode preserves it.
+   * FP/SP/locals remain invalid: replay may have invoked Pike callbacks. */
+  pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
+  sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET;
   pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
   /* Both paths must publish a PC for the final source position: the
    * slow-call emitter's last-location cache also describes skipped code. */

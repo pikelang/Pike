@@ -290,6 +290,16 @@ two untouched input versions, an entry guard requires one to have an
 ordinary tag; otherwise replay preserves the all-UNDEFINED result. The
 ordinary-tag check also checks the integer type in the same guard.
 
+The balanced single-update path is enabled by default. Set
+PIKE_SSA_NO_INTEGER_SINGLE_UPDATE=1 to disable it for comparisons. It
+accepts one F_2_LOCALS / F_ADD_INTS / F_ASSIGN_LOCAL_AND_POP unit when the
+assignment targets the left input.
+The existing type/subtype guards and overflow replay apply; successful
+updates avoid all operand/result Pike-stack copies. Lone increments,
+immediate additions, arbitrary destinations and live-stack exits retain
+the existing two-operation/reuse thresholds. The former positive
+PIKE_SSA_INTEGER_SINGLE_UPDATE flag is ignored.
+
 The stack-aware planner is enabled by default. It extends the original
 path through retained local assignments (F_ASSIGN_LOCAL), with bounded
 virtual Pike-stack operands and three shared value banks. Banks are

@@ -708,6 +708,109 @@ test_any([[
   return 1;
 ]], 1)
 
+// A lone local/local update keeps tags and replays overflow exactly once.
+test_any([[
+  void boundary() {}
+  array update(int a, int b) {
+    a = a + b;
+    boundary();
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array alias(int a) {
+    a = a + a;
+    boundary();
+    return ({ a, zero_type(a) });
+  }
+  array(int) values = ({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN,
+    Int.NATIVE_MIN+1, Int.NATIVE_MAX, Int.NATIVE_MAX-1,
+    1<<90, -(1<<90) });
+  foreach (values, int a) {
+    foreach (values, int b) {
+      int expected = (int)(Gmp.mpz(a) + Gmp.mpz(b));
+      if (!equal(update(a, b), ({ expected, b,
+            !!zero_type(a) && !!zero_type(b), zero_type(b) }))) return 0;
+    }
+    if (!equal(alias(a), ({ (int)(2*Gmp.mpz(a)),
+                            zero_type(a) }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Guards leave reference values and operator callbacks to ordinary replay.
+test_any([[
+  void boundary() {}
+  array update(int a, int b) {
+    a = a + b;
+    boundary();
+    return ({ a, b });
+  }
+  class Value {
+    int calls;
+    mixed result;
+    protected mixed `+(mixed other) { calls++; return result; }
+  }
+  class Reverse {
+    int calls;
+    protected mixed ``+(mixed other) { calls++; return "reverse"; }
+  }
+  function f = update;
+  if (!equal(f("left", "right"), ({ "leftright", "right" }))) return 0;
+  if (!equal(f(({1}), ({2})), ({ ({1,2}), ({2}) }))) return 0;
+  if (!equal(f(1.25, 2.5), ({ 3.75, 2.5 }))) return 0;
+  Value v = Value();
+  v->result = ({ "from callback" });
+  if (!equal(f(v, 1), ({ v->result, 1 })) || v->calls != 1) return 0;
+  Reverse r = Reverse();
+  if (!equal(f(1, r), ({ "reverse", r })) || r->calls != 1) return 0;
+  return 1;
+]], 1)
+
+// Slow operator errors retain the original arithmetic source position.
+test_any([[
+  class Boom {
+    protected mixed `+(mixed other) { error("single-update error\n"); }
+  }
+  program p = compile_string(
+    "void boundary() {}\narray update(int a,int b) {\n"
+    "#line 900 \"ssa-single-error.pike\"\n"
+    "a=a+b;\nboundary();\nreturn ({a,b});\n}\n",
+    "ssa-single-error.pike");
+  mixed e = catch { function f = p()->update; f(Boom(), 1); };
+  if (!e || !has_prefix(e[0], "single-update error\n")) return 0;
+  foreach (e[1], mixed frame)
+    if (arrayp(frame) && sizeof(frame) > 1 &&
+        frame[0] == "ssa-single-error.pike" && frame[1] == 900) return 1;
+  return 0;
+]], 1)
+
+// Balanced replay must not repeat completed updates or skip fused steps.
+test_any([[
+  void boundary() {}
+  array fused(int a, int b) {
+    a++;
+    a += 2;
+    boundary();
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array dirty(int a, int b) {
+    b++;
+    a++;
+    a += 2;
+    boundary();
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array(int) values = ({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN,
+    Int.NATIVE_MIN+1, Int.NATIVE_MAX, Int.NATIVE_MAX-1,
+    Int.NATIVE_MAX-2, 1<<90, -(1<<90) });
+  foreach (values, int a) foreach (values, int b) {
+    int expected = (int)(Gmp.mpz(a) + 3);
+    if (!equal(fused(a, b), ({ expected, b, 0, zero_type(b) }))) return 0;
+    if (!equal(dirty(a, b),
+               ({ expected, (int)(Gmp.mpz(b)+1), 0, 0 }))) return 0;
+  }
+  return 1;
+]], 1)
+
 // Same-global stores commit after all arithmetic, with precise local snapshots.
 test_any([[
   class Base {

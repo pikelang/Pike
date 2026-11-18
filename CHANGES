@@ -154,6 +154,13 @@ o Compiler
     noninteger values retain ordinary replay. Set
     PIKE_SSA_NO_INTEGER_GLOBAL_STORE=1 to restore previous store handling.
 
+  - SSA-enabled builds optimize an isolated local/local addition followed
+    by assignment/pop on AMD64, SPARC32 and SPARC64 by default. Set
+    PIKE_SSA_NO_INTEGER_SINGLE_UPDATE=1 to disable this optimization.
+    Other short regions retain their existing profitability limits.
+    SPARC balanced integer regions also avoid redundant pointer reloads
+    and empty overflow branches to reduce generated code size.
+
   - Set PIKE_SSA_INTEGER_PROFILE=1 to collect per-region execution counts,
     type-guard failures and overflow exits. Summarize captured stderr with
     tools/ssa_integer_profile.pike; ordinary runs emit no counter code.
