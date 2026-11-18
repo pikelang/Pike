@@ -969,6 +969,22 @@ test_any([[
   return 1;
 ]], 1)
 
+// Invalid tags must not cancel across inputs or the old destination.
+test_any([[
+  void boundary() {}
+  array assign(int a, int b, int c) {
+    c = a + b;
+    boundary();
+    return ({ a, b, c, zero_type(a), zero_type(b), zero_type(c) });
+  }
+  function f = assign;
+  foreach (({ UNDEFINED, 0, 1.25 }), mixed old)
+    if (!equal(f(UNDEFINED, 1.25, old),
+               ({ UNDEFINED, 1.25, 1.25, 1, 0, 0 }))) return 0;
+  mixed e = catch { f(1, ({ 2 }), ({ "old" })); };
+  return !!e;
+]], 1)
+
 // Balanced replay must not repeat completed updates or skip fused steps.
 test_any([[
   void boundary() {}

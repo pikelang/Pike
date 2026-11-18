@@ -15,11 +15,11 @@
  * when execution counters are disabled.
  * Rollback and profiled exits retain their separate paths.
  *
- * Isolated separate-local additions fill every branch delay slot: payload
- * loads after operand guards, ADDcc after the nonreference destination
- * guard, a move into the free result bank after the overflow branch, and
- * the final tag store after the success branch. No annulment is needed;
- * failed guards/overflow still leave the original locals and stack intact.
+ * Isolated separate-local additions combine both source tags and the
+ * destination reference bit into one guard branch. Every branch delay
+ * slot is useful: an operand load after the guard, a move into the free
+ * result bank after overflow, and the tag store after success. No annulment
+ * is needed; failed guards/overflow leave the original locals and stack intact.
  * Replay starts with unchanged entry IP/FP and canonical stack state;
  * ordinary opcodes handle cache invalidation without extra per-opcode
  * flushes. Only IP is retained after callbacks. Other plans retain their
@@ -270,29 +270,36 @@ static void sparc_integer_single_assign(
     &p->value[p->step[0].result];
   unsigned int i, dst = p->locals - 1;
   ptrdiff_t off = p->local[dst] * sizeof(struct svalue);
+  /* An ordinary integer tag is zero. OR the source tags with the
+   * destination's reference bit: every failure uses the same replay entry.
+   * Only the first source needs a full tag to preserve UNDEFINED sums. */
   for (i = 1; i < p->locals; i++) {
     const struct pikecode_ssa_integer_value *v = &p->value[i];
     ptrdiff_t input = v->local * sizeof(struct svalue);
+    int reg = i == 1 ? SPARC_REG_O3 : SPARC_REG_O5;
     if (p->normal & (1U << (i - 1)))
-      SPARC_LDUW(SPARC_REG_O3, SPARC_REG_L5,
+      SPARC_LDUW(reg, SPARC_REG_L5,
                  input + OFFSETOF(svalue, tu.t.type), 1);
     else
-      SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
+      SPARC_LDUH(reg, SPARC_REG_L5,
                  input + OFFSETOF(svalue, tu.t.type), 1);
-    SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
-    sparc_integer_branch_start(guard, 0x12800000); /* bne %icc */
-    /* Reading the payload is harmless even when its type guard fails. */
-    SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
-                     input + OFFSETOF(svalue, u.integer), 1);
+    if (i != 1) SPARC_OR(SPARC_REG_O3, SPARC_REG_O3, reg, 0);
   }
   pikecode_ssa_integer_source(&code[p->step[0].first], store_lines);
-  SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
+  SPARC_LDUH(SPARC_REG_O5, SPARC_REG_L5,
              off + OFFSETOF(svalue, tu.t.type), 1);
-  SPARC_ANDcc(SPARC_REG_G0, SPARC_REG_O3, MIN_REF_TYPE, 1);
+  SPARC_ANDcc(SPARC_REG_O5, SPARC_REG_O5, MIN_REF_TYPE, 1);
+  SPARC_ALU_OP(SPARC_OP3_ORcc, SPARC_REG_G0, SPARC_REG_O3,
+               SPARC_REG_O5, 0);
   sparc_integer_branch_start(guard, 0x12800000); /* bne %icc */
-  /* The branch samples the old ICC before this add sets ICC/XCC. Both
-   * numeric inputs are already guarded; a failed destination guard still
-   * leaves all original values intact for reference-release replay. */
+  /* Reading unused payload bits is harmless if any tag check fails. */
+  SPARC_INTEGER_LD(sparc_integer_reg(&p->value[result->left]), SPARC_REG_L5,
+                   p->value[result->left].local * sizeof(struct svalue) +
+                   OFFSETOF(svalue, u.integer), 1);
+  if (result->right != result->left)
+    SPARC_INTEGER_LD(sparc_integer_reg(&p->value[result->right]), SPARC_REG_L5,
+                     p->value[result->right].local * sizeof(struct svalue) +
+                     OFFSETOF(svalue, u.integer), 1);
   SPARC_ALU_OP(SPARC_OP3_ADDcc, SPARC_REG_O3,
                sparc_integer_reg(&p->value[result->left]),
                sparc_integer_reg(&p->value[result->right]), 0);
