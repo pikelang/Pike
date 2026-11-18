@@ -1169,10 +1169,13 @@ test_any([[
 #if constant(_Stdio.__HAVE_SEND_FD__)
       if (operation >= 5) {
         reader = ReceivingFile();
-        writer = reader->pipe(Stdio.PROP_IPC | Stdio.PROP_SEND_FD);
+        writer = reader->pipe(Stdio.PROP_IPC | Stdio.PROP_SEND_FD |
+                              Stdio.PROP_INTERRUPTIBLE);
       } else
 #endif
-        writer = reader->pipe();
+        writer = reader->pipe(Stdio.PROP_INTERRUPTIBLE);
+      if (!(reader->mode() & Stdio.PROP_INTERRUPTIBLE) ||
+          !(writer->mode() & Stdio.PROP_INTERRUPTIBLE)) return -1;
       Thread.Queue ready = Thread.Queue();
       Thread.Thread worker = Thread.Thread(lambda() {
         mixed failure = catch {
@@ -1200,6 +1203,39 @@ test_any([[
       } else if (failed || result != 1) return operation + 1;
       reader->close();
       writer->close();
+    }
+  }
+  return 0;
+]], 0)
+
+test_any([[
+  // An interrupt just before read() must not be lost. Once handled, it
+  // must not cancel a subsequent read on the same thread.
+  foreach (({ 0.0, 0.05 }), float delay) {
+    for (int i = 0; i < 10; i++) {
+      Stdio.File reader = Stdio.File();
+      Stdio.File writer = reader->pipe(Stdio.PROP_INTERRUPTIBLE);
+      if (!(reader->mode() & Stdio.PROP_INTERRUPTIBLE) ||
+          !(writer->mode() & Stdio.PROP_INTERRUPTIBLE)) return -1;
+      Thread.Queue ready = Thread.Queue();
+      int handled;
+      Thread.Thread worker = Thread.Thread(lambda() {
+        mixed interrupted = catch {
+          ready->write(1);
+          reader->read(1);
+        };
+        handled = 1;
+        return ({ !!interrupted, reader->read(1) });
+      });
+      ready->read();
+      sleep(delay);
+      worker->interrupt();
+      while (!handled) sleep(0.001);
+      writer->write("x");
+      mixed result = worker->wait();
+      reader->close();
+      writer->close();
+      if (!equal(result, ({ 1, "x" }))) return result;
     }
   }
   return 0;

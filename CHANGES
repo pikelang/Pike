@@ -1224,12 +1224,20 @@ o System
 
   Added set_file_atime() and set_file_mtime() as per documentation.
 
+o Stdio.PROP_INTERRUPTIBLE
+
+  New pipe capability requiring support for interrupting blocking I/O.
+  On Windows this selects native pipes using CancelSynchronousIo(),
+  available starting with Vista / Server 2008. Socket-based pipes do not
+  provide this capability there. Existing pipe() defaults are unchanged.
+
 o Thread.THREAD_SUPPORTS_IO_INTERRUPTS
 
-  Recognition constant for thread implementations that can signal a thread
+  Recognition constant for thread implementations that can wake a thread
   blocked in interruptible I/O. Thread.Thread()->interrupt() and
   Thread.Thread()->kill() can then wake such operations instead of waiting
-  for I/O to complete.
+  for I/O to complete. On Windows this uses CancelSynchronousIo(), detected
+  at runtime and available starting with Vista / Server 2008.
 
 o Thread.Mutex
 

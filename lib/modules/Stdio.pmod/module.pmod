@@ -959,6 +959,13 @@ class File
   //!       The resulting pipe may be used for inter process communication.
   //!     @value PROP_NONBLOCK
   //!       The resulting pipe supports nonblocking I/O.
+  //!     @value PROP_INTERRUPTIBLE
+  //!       Blocking I/O on the resulting pipe can be interrupted by
+  //!       @[Thread.Thread()->interrupt()] or @[Thread.Thread()->kill()].
+  //!       On Windows this selects a native pipe and requires Vista /
+  //!       Server 2008 or later. Socket-based pipes do not provide this
+  //!       property there. Other requested properties must also be
+  //!       supported by the selected implementation.
   //!     @value PROP_SHUTDOWN
   //!       The resulting pipe supports shutting down transmission in either
   //!       direction (see @[close()]).
@@ -998,7 +1005,7 @@ class File
   //!   @[Process.create_process()], @[send_fd()], @[receive_fd()],
   //!   @[PROP_IPC], @[PROP_NONBLOCK], @[PROP_SEND_FD],
   //!   @[PROP_SHUTDOWN], @[PROP_BUFFERED], @[PROP_REVERSE],
-  //!   @[PROP_BIDIRECTIONAL], @[PROP_TTY]
+  //!   @[PROP_BIDIRECTIONAL], @[PROP_TTY], @[PROP_INTERRUPTIBLE]
   //!
   object(File)|zero pipe(void|int required_properties)
   {
