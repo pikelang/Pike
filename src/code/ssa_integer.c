@@ -748,28 +748,40 @@ static int integer_stack_single_assign(
     struct pikecode_ssa_integer_stop *stop)
 {
   static int enabled = -1;
-  unsigned int i, dst, result, right;
+  unsigned int i, dst, result, right, addition = 1, length = 3;
+  INT32 second;
   struct pikecode_ssa_integer_value *v;
   if (enabled < 0)
     enabled = getenv("PIKE_SSA_INTEGER_SINGLE_ASSIGN") != NULL;
-  if (!enabled || available < 3 || code[0].opcode != F_2_LOCALS ||
-      code[1].opcode != F_ADD_INTS ||
-      code[2].opcode != F_ASSIGN_LOCAL_AND_POP ||
-      code[0].file != code[1].file || code[0].file != code[2].file ||
+  if (!enabled || available < 3) return 0;
+  if (code[0].opcode == F_2_LOCALS) second = code[0].arg2;
+  else if (available >= 4 && code[0].opcode == F_LOCAL &&
+           code[1].opcode == F_DUP && code[1].arg == 0) {
+    /* Peepholing equal local operands replaces F_2_LOCALS with LOCAL/DUP.
+     * Both virtual operands still name the same guarded input version. */
+    second = code[0].arg;
+    addition = 2;
+    length = 4;
+  } else return 0;
+  if (code[addition].opcode != F_ADD_INTS ||
+      code[addition + 1].opcode != F_ASSIGN_LOCAL_AND_POP ||
       code[0].arg < 0 || code[0].arg > max_local ||
-      code[0].arg2 < 0 || code[0].arg2 > max_local ||
-      code[2].arg < 0 || code[2].arg > max_local ||
-      code[2].arg == code[0].arg || code[2].arg == code[0].arg2)
+      second < 0 || second > max_local ||
+      code[addition + 1].arg < 0 || code[addition + 1].arg > max_local ||
+      code[addition + 1].arg == code[0].arg ||
+      code[addition + 1].arg == second)
     return 0;
+  for (i = 1; i < length; i++)
+    if (code[i].file != code[0].file) return 0;
   memset(p, 0, sizeof(*p));
   p->local[p->locals++] = code[0].arg;
   right = 1;
-  if (code[0].arg2 != code[0].arg) {
-    p->local[p->locals++] = code[0].arg2;
+  if (second != code[0].arg) {
+    p->local[p->locals++] = second;
     right = 2;
   }
   dst = p->locals++;
-  p->local[dst] = code[2].arg;
+  p->local[dst] = code[addition + 1].arg;
   p->write_only = 1U << dst;
   for (i = 0; i < p->locals; i++) {
     v = &p->value[++p->values];
@@ -782,7 +794,7 @@ static int integer_stack_single_assign(
   p->step[0].before.depth = 2;
   p->step[0].before.stack[0] = 1;
   p->step[0].before.stack[1] = right;
-  p->step[0].first = 1;
+  p->step[0].first = addition;
   result = ++p->values;
   p->step[0].result = result;
   v = &p->value[result];
@@ -796,15 +808,17 @@ static int integer_stack_single_assign(
   p->normal = 1;  /* All-UNDEFINED addition must replay with its subtype. */
   p->count = p->writes = 1;
   p->loads = 2;
-  p->consumed = 3;
+  p->consumed = length;
   integer_stop_init(stop);
   if (stop) {
     stop->candidate = 1;
     stop->ops = 1;
     stop->locals = p->locals;
   }
-  integer_stop(stop, available == 3 ? "end" : "single-assignment", 3);
-  return 3;
+  integer_stop(stop, available == (ptrdiff_t)length ? "end" :
+                "single-assignment",
+                length);
+  return length;
 }
 
 /* A guarded direct global or a rejected virtual stack underflow can supply

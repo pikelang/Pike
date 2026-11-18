@@ -305,9 +305,14 @@ PIKE_SSA_INTEGER_SINGLE_UPDATE flag is ignored.
 
 Set PIKE_SSA_INTEGER_SINGLE_ASSIGN=1 to experiment with an isolated
 F_2_LOCALS / F_ADD_INTS / F_ASSIGN_LOCAL_AND_POP assigning a third local,
-such as c=a+b. Longer profitable stack plans retain priority. This exact
-exception requires the stack-aware planner but no live-stack exit. It does
-not relax other single-operation profitability limits.
+such as c=a+b. It also accepts LOCAL / DUP(0) / ADD_INTS /
+ASSIGN_LOCAL_AND_POP for c=a+a, using one guarded input version for both
+operands. The arithmetic snapshot/source offset follows ADD_INTS after the
+duplicate; replay retains all four original instructions. Other DUP depths
+and assignments back to the input retain their existing handling.
+Longer profitable stack plans retain priority. This exact exception requires
+the stack-aware planner but no live-stack exit. It does not relax other
+single-operation profitability limits.
 
 Only the source locals are loaded as numeric inputs. The write_only mask
 marks the separate destination slot: its entry guard checks only that the

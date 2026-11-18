@@ -985,6 +985,112 @@ test_any([[
   return !!e;
 ]], 1)
 
+// Duplicate operands retain input tags and replay overflow into another local.
+test_any([[
+  void boundary() {}
+  array alias(int a, int c) {
+    c = a + a;
+    boundary();
+    return ({ a, c, zero_type(a), zero_type(c) });
+  }
+  function f = alias;
+  foreach (({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN, Int.NATIVE_MIN+1,
+               Int.NATIVE_MAX, Int.NATIVE_MAX-1, 1<<90, -(1<<90) }), int a)
+    foreach (({ UNDEFINED, 1.25, ({ "old" }) }), mixed old)
+      if (!equal(f(a, old),
+                 ({ a, (int)(2*Gmp.mpz(a)), zero_type(a), zero_type(a) })))
+        return 0;
+  return 1;
+]], 1)
+
+// LOCAL/DUP replay preserves concatenation and calls overloaded addition once.
+test_any([[
+  void boundary() {}
+  array alias(int a, int c) {
+    c = a + a;
+    boundary();
+    return ({ a, c });
+  }
+  class Value {
+    int calls;
+    protected mixed `+(mixed other) {
+      if (other != this_object()) error("duplicate argument changed\n");
+      calls++;
+      return ({ "value" });
+    }
+  }
+  function f = alias;
+  foreach (({ UNDEFINED, 17, 1.25, "old", ({}), ([]), (<>) }), mixed old) {
+    if (!equal(f("xy", old), ({ "xy", "xyxy" }))) return 0;
+    if (!equal(f(({1,2}), old), ({ ({1,2}), ({1,2,1,2}) }))) return 0;
+    if (!equal(f(1.25, old), ({ 1.25, 2.5 }))) return 0;
+    Value v = Value();
+    if (!equal(f(v, old), ({ v, ({ "value" }) })) || v->calls != 1)
+      return 0;
+  }
+  return 1;
+]], 1)
+
+// Old references are released after addition, including zero/overflow sums.
+test_any([[
+  array events = ({ ({}) });
+  void boundary() { events[0] += ({ "boundary" }); }
+  int alias(int a, int c) {
+    c = a + a;
+    boundary();
+    return c;
+  }
+  class Old {
+    array events;
+    protected void create(array e) { events = e; }
+    protected void _destruct() { events[0] += ({ "destroy" }); }
+  }
+  class Value {
+    array events;
+    protected void create(array e) { events = e; }
+    protected int `+(mixed other) {
+      if (other != this_object()) error("duplicate argument changed\n");
+      events[0] += ({ "add" });
+      return 28;
+    }
+  }
+  function f = alias;
+  foreach (({ 11, 0, Int.NATIVE_MAX }), int a) {
+    events[0] = ({});
+    if (f(a, Old(events)) != (int)(2*Gmp.mpz(a)) ||
+        !equal(events[0], ({ "destroy", "boundary" }))) return 0;
+  }
+  events[0] = ({});
+  if (f(Value(events), Old(events)) != 28 ||
+      !equal(events[0], ({ "add", "destroy", "boundary" }))) return 0;
+  return 1;
+]], 1)
+
+// The arithmetic error PC belongs to ADD_INTS, after LOCAL and DUP.
+test_any([[
+  class Boom {
+    int calls;
+    protected mixed `+(mixed other) {
+      if (other != this_object()) error("duplicate argument changed\n");
+      calls++;
+      error("duplicate-add error\n");
+    }
+  }
+  program p = compile_string(
+    "void boundary() {}\narray alias(int a,int c) {\n"
+    "#line 900 \"ssa-duplicate-error.pike\"\n"
+    "c=a+a;\nboundary();\nreturn ({a,c});\n}\n",
+    "ssa-duplicate-error.pike");
+  Boom b = Boom();
+  mixed e = catch { function f = p()->alias; f(b, 0); };
+  if (!e || !has_prefix(e[0], "duplicate-add error\n") || b->calls != 1)
+    return 0;
+  foreach (e[1], mixed frame)
+    if (arrayp(frame) && sizeof(frame) > 1 &&
+        frame[0] == "ssa-duplicate-error.pike" && frame[1] == 900) return 1;
+  return 0;
+]], 1)
+
 // Balanced replay must not repeat completed updates or skip fused steps.
 test_any([[
   void boundary() {}

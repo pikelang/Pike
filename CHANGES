@@ -164,10 +164,10 @@ o Compiler
     and empty overflow branches to reduce generated code size.
 
   - Set PIKE_SSA_INTEGER_SINGLE_ASSIGN=1 to experiment with isolated
-    addition into a separate local (c=a+b) in SSA-enabled builds on AMD64,
-    SPARC32 and SPARC64. The old destination needs no numeric load; reference
-    values retain ordinary assignment and release through replay. SPARC
-    combines entry guards, fills branch delay slots and avoids redundant
+    addition into a separate local (c=a+b or c=a+a) in SSA-enabled builds on
+    AMD64, SPARC32 and SPARC64. The old destination needs no numeric load;
+    reference values retain ordinary assignment and release through replay.
+    SPARC combines entry guards, fills branch delay slots and avoids redundant
     pointer reloads through entry and ordinary replay to reduce generated code.
 
   - Set PIKE_SSA_INTEGER_PROFILE=1 to collect per-region execution counts,
