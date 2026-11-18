@@ -3512,6 +3512,45 @@ static int lower_or_pike_types(struct pike_type *t1,
   return ret;
 }
 
+/* Find an input tail whose members exactly match the normalized stack
+ * suffix. Comparing after the merge preserves all normalization rules.
+ * Only fallback comparisons need the input length; the merge can track
+ * reusable tails without keeping input-length counters live.
+ * The returned tail is borrowed from the input.
+ */
+static struct pike_type *matching_or_tail(struct pike_type *input,
+                                        struct pike_type **items,
+                                        int count, int *matched)
+{
+  struct pike_type *t, *tail = NULL;
+  int remaining = 0;
+  *matched = 0;
+  if (!input || input->type != T_OR) return NULL;
+  for (t = input; t; t = t->type == T_OR ? t->cdr : NULL)
+    remaining++;
+  while (remaining > count) {
+    input = input->cdr;
+    remaining--;
+  }
+  items += count - remaining;
+  for (t = input; t; t = t->type == T_OR ? t->cdr : NULL) {
+    struct pike_type *item = t->type == T_OR ? t->car : t;
+    if (item != *items++) {
+      tail = NULL;
+      *matched = 0;
+    } else if (!tail) {
+      tail = t;
+      *matched = remaining;
+    }
+    remaining--;
+  }
+  if (*matched < 2) {
+    *matched = 0;
+    return NULL;
+  }
+  return tail;
+}
+
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
 			      int zero_implied)
@@ -3581,8 +3620,11 @@ static void low_or_pike_types(struct pike_type *t1,
   }
   else if ((t1->type == T_OR) || (t2->type == T_OR)) {
     int on_stack = 0;
+    struct pike_type *left = t1, *right = t2;
+    struct pike_type *tail = NULL;
+    int matched = 0;
     type_stack_mark();
-    while (t1 || t2) {
+    while (t1 && t2) {
       struct pike_type *a = t1;
       struct pike_type *b = t2;
       struct pike_type *n1 = NULL;
@@ -3615,7 +3657,69 @@ static void low_or_pike_types(struct pike_type *t1,
       if (val >= 0) t2 = n2;
       on_stack = 1;
     }
+    {
+      struct pike_type *rest = t1 ? t1 : t2;
+      /* Once one input is exhausted, remember a run of members that the
+       * merge appends unchanged. A replacement breaks the run; subsequent
+       * unchanged members can start a new reusable tail.
+       */
+      while (rest) {
+        struct pike_type *item = rest;
+        struct pike_type *next = NULL;
+        struct pike_type **before = Pike_compiler->type_stackp;
+        if (rest->type == T_OR) {
+          item = rest->car;
+          next = rest->cdr;
+        }
+        lower_or_pike_types(item, NULL, zero_implied, on_stack);
+        if (*Pike_compiler->type_stackp == item) {
+          if (matched && Pike_compiler->type_stackp == before + 1) {
+            matched++;
+          } else {
+            tail = rest;
+            matched = 1;
+          }
+        } else {
+          tail = NULL;
+          matched = 0;
+        }
+        rest = next;
+        on_stack = 1;
+      }
+    }
     on_stack = pop_stack_mark();
+    if (on_stack > 1) {
+      struct pike_type **items = Pike_compiler->type_stackp - on_stack + 1;
+      /* Any unchanged suffix can be reused; it need not be the longest.
+       * Compare both inputs only if tracking cannot save a join.
+       */
+      if (matched < 2) {
+        struct pike_type *other;
+        int other_matched;
+        tail = matching_or_tail(left, items, on_stack, &matched);
+        other = matching_or_tail(right, items, on_stack, &other_matched);
+        if (other_matched > matched) {
+          tail = other;
+          matched = other_matched;
+        }
+      }
+#ifdef PIKE_DEBUG
+      else {
+        int checked;
+        if (matching_or_tail(tail, items, on_stack, &checked) != tail ||
+            checked != matched)
+          Pike_fatal("Incorrect tracked union tail.\n");
+      }
+#endif
+      if (tail) {
+        int i;
+        add_ref(tail);
+        for (i = 0; i < matched; i++)
+          free_type(*(Pike_compiler->type_stackp--));
+        *(++Pike_compiler->type_stackp) = tail;
+        on_stack -= matched - 1;
+      }
+    }
     while (on_stack > 1) {
       push_reverse_joiner_type(T_OR);
       on_stack--;
