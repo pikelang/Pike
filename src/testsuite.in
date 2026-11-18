@@ -820,6 +820,123 @@ test_any([[
   return 1;
 ]], 1)
 
+// Separate destinations preserve inputs, result tags and overflow replay.
+test_any([[
+  void boundary() {}
+  array assign(int a, int b, int c) {
+    c = a + b;
+    boundary();
+    return ({ a, b, c, zero_type(a), zero_type(b), zero_type(c) });
+  }
+  array alias(int a, int c) {
+    c = a + a;
+    boundary();
+    return ({ a, c, zero_type(a), zero_type(c) });
+  }
+  array(int) values = ({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN,
+    Int.NATIVE_MIN+1, Int.NATIVE_MAX, Int.NATIVE_MAX-1,
+    1<<90, -(1<<90) });
+  foreach (values, int a) {
+    foreach (values, int b)
+      if (!equal(assign(a, b, UNDEFINED),
+                 ({ a, b, (int)(Gmp.mpz(a)+Gmp.mpz(b)), zero_type(a),
+                    zero_type(b), !!zero_type(a) && !!zero_type(b) })))
+        return 0;
+    if (!equal(alias(a, 77),
+               ({ a, (int)(2*Gmp.mpz(a)), zero_type(a), zero_type(a) })))
+      return 0;
+  }
+  return 1;
+]], 1)
+
+// Old destination values need no numeric guard; references use replay.
+test_any([[
+  void boundary() {}
+  array assign(int a, int b, int c) {
+    c = a + b;
+    boundary();
+    return ({ a, b, c });
+  }
+  class Value {
+    int calls;
+    protected mixed `+(mixed other) { calls++; return ({ "+" }); }
+  }
+  class Reverse {
+    int calls;
+    protected mixed ``+(mixed other) { calls++; return "reverse"; }
+  }
+  function f = assign;
+  foreach (({ UNDEFINED, -99, 1<<90, 1.25, "old", ({}), ([]), (<>),
+              Value, Value(), f }), mixed old) {
+    if (!equal(f(11, 17, old), ({ 11, 17, 28 }))) return 0;
+    if (!equal(f("left", "right", old),
+               ({ "left", "right", "leftright" }))) return 0;
+    if (!equal(f(({1}), ({2}), old),
+               ({ ({1}), ({2}), ({1,2}) }))) return 0;
+    if (!equal(f(1.25, 2.5, old), ({ 1.25, 2.5, 3.75 }))) return 0;
+    Value v = Value();
+    if (!equal(f(v, 1, old), ({ v, 1, ({ "+" }) })) || v->calls != 1)
+      return 0;
+    Reverse r = Reverse();
+    if (!equal(f(1, r, old), ({ 1, r, "reverse" })) || r->calls != 1)
+      return 0;
+  }
+  return 1;
+]], 1)
+
+// Releasing the old destination happens after addition and before the call.
+test_any([[
+  array events = ({ ({}) });
+  void boundary() { events[0] += ({ "boundary" }); }
+  int assign(int a, int b, int c) {
+    c = a + b;
+    boundary();
+    return c;
+  }
+  class Old {
+    array events;
+    protected void create(array e) { events = e; }
+    protected void _destruct() { events[0] += ({ "destroy" }); }
+  }
+  class Value {
+    array events;
+    protected void create(array e) { events = e; }
+    protected int `+(mixed other) { events[0] += ({ "add" }); return 28; }
+  }
+  function f = assign;
+  if (f(11, 17, Old(events)) != 28 ||
+      !equal(events[0], ({ "destroy", "boundary" }))) return 0;
+  events[0] = ({});
+  if (f(Value(events), 1, Old(events)) != 28 ||
+      !equal(events[0], ({ "add", "destroy", "boundary" }))) return 0;
+  events[0] = ({});
+  if (f(-11, 11, Old(events)) != 0 ||
+      !equal(events[0], ({ "destroy", "boundary" }))) return 0;
+  events[0] = ({});
+  if (f(Int.NATIVE_MAX, 1, Old(events)) !=
+        (int)(Gmp.mpz(Int.NATIVE_MAX)+1) ||
+      !equal(events[0], ({ "destroy", "boundary" }))) return 0;
+  return 1;
+]], 1)
+
+// Failed separate assignment preserves the original arithmetic error PC.
+test_any([[
+  class Boom {
+    protected mixed `+(mixed other) { error("single-assign error\n"); }
+  }
+  program p = compile_string(
+    "void boundary() {}\narray assign(int a,int b,int c) {\n"
+    "#line 900 \"ssa-single-assign-error.pike\"\n"
+    "c=a+b;\nboundary();\nreturn ({a,b,c});\n}\n",
+    "ssa-single-assign-error.pike");
+  mixed e = catch { function f = p()->assign; f(Boom(), 1, 0); };
+  if (!e || !has_prefix(e[0], "single-assign error\n")) return 0;
+  foreach (e[1], mixed frame)
+    if (arrayp(frame) && sizeof(frame) > 1 &&
+        frame[0] == "ssa-single-assign-error.pike" && frame[1] == 900) return 1;
+  return 0;
+]], 1)
+
 // Balanced replay must not repeat completed updates or skip fused steps.
 test_any([[
   void boundary() {}

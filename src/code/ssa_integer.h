@@ -60,6 +60,11 @@ struct pikecode_ssa_integer_step {
 struct pikecode_ssa_integer_stack_plan {
   unsigned int locals, values, count, consumed, loads, writes, retained;
   unsigned int bitwise, normal, expressions, constant_assign, inputs;
+  /* Nonzero only for an isolated balanced assignment with no earlier
+   * effects, so overflow may replay the entire unit. These destination
+   * slots require a nonreference tag guard but no numeric input load.
+   * Their initial versions never occur in a snapshot. */
+  unsigned int write_only;
   /* global_store names the live ordinary-integer result to commit before
    * the final snapshot; zero means none. global_pop removes a consumed
    * POP_VALUE from that snapshot. Slow replay retains both source opcodes. */

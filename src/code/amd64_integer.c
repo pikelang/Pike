@@ -135,7 +135,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   struct label slow[PIKE_SSA_INTEGER_CODE], done = { .addr = -1 };
   struct label guard = { .addr = -1 }, indirect = { .addr = -1 };
   struct label prepared = { .addr = -1 };
-  unsigned int i, stores = 0;
+  unsigned int i, stores = 0, write_only = 0;
   if (ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (INT32)((0x7fffffff - OFFSETOF(svalue, u.integer)) /
@@ -177,6 +177,14 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   for (i = 1; i <= p.locals; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[i];
     ptrdiff_t off = v->local * sizeof(struct svalue);
+    if (p.write_only & (1U << (i - 1))) {
+      /* Assignment must release reference values through ordinary replay. */
+      mov_mem8_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type),
+                    P_REG_RAX);
+      and_reg32_imm(P_REG_RAX, MIN_REF_TYPE);
+      jne(profile ? &guard : &slow[0]);
+      continue;
+    }
     /* Ordinary integer type and subtype form a zero tag word. */
     if (p.normal & (1U << (i - 1)))
       mov_mem32_reg(PIKE_LOCALS_REG, off + OFFSETOF(svalue, tu.t.type),
@@ -252,7 +260,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
       } else
         amd64_integer_alu_imm(P_REG_RAX, v->imm,
                               v->kind == PIKE_SSA_INTEGER_SUBTRACT);
-      jo(&overflow[i]);
+      jo(!profile && p.write_only ? &slow[0] : &overflow[i]);
     }
     mov_reg_reg(P_REG_RAX, amd64_integer_reg(v));
   }
@@ -276,8 +284,15 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   jmp(&done);
   for (i = 0; i < p.count; i++) {
     if (integer_stack_bitwise(p.value[p.step[i].result].kind)) continue;
+    if (p.write_only && !profile) continue;
     label(&overflow[i]);
     amd64_integer_count(profile, PIKE_SSA_INTEGER_OVERFLOWS);
+    if (p.write_only) {
+      /* The separate assignment has not changed any local or real stack
+       * slot. Replay its loads instead of materializing virtual operands. */
+      jmp(&slow[0]);
+      continue;
+    }
     amd64_integer_snapshot(&p, &p.step[i].before);
     jmp(&slow[p.step[i].first]);
   }
@@ -348,7 +363,10 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   /* Slow calls may publish a PC which the fast branch never executed. */
   amd64_prev_stored_pc = -1;
   if (ssa_report_stats) {
-    for (i = 0; i < p.locals; i++) stores += !!(p.final.dirty & (1U << i));
+    for (i = 0; i < p.locals; i++) {
+      stores += !!(p.final.dirty & (1U << i));
+      write_only += !!(p.write_only & (1U << i));
+    }
     ssa_stats.integer_regions++;
     ssa_stats.integer_stack_regions++;
     if (p.final.depth) ssa_stats.integer_stack_exits++;
@@ -359,7 +377,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
       if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
         ssa_stats.integer_subtract_ops++;
     ssa_stats.integer_loads_avoided +=
-      p.loads - p.locals - p.inputs - p.global_input;
+      p.loads + write_only - p.locals - p.inputs - p.global_input;
     ssa_stats.integer_stores_avoided += p.writes - stores;
   }
   return p.consumed;

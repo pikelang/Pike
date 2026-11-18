@@ -163,6 +163,12 @@ o Compiler
     SPARC balanced integer regions also avoid redundant pointer reloads
     and empty overflow branches to reduce generated code size.
 
+  - Set PIKE_SSA_INTEGER_SINGLE_ASSIGN=1 to experiment with isolated
+    addition into a separate local (c=a+b) in SSA-enabled builds on AMD64,
+    SPARC32 and SPARC64. The old destination needs no numeric load; reference
+    values retain ordinary assignment and release through replay. SPARC
+    fills the branch delay slots in this path to reduce generated code.
+
   - Set PIKE_SSA_INTEGER_PROFILE=1 to collect per-region execution counts,
     type-guard failures and overflow exits. Summarize captured stderr with
     tools/ssa_integer_profile.pike; ordinary runs emit no counter code.

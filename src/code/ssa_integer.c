@@ -483,6 +483,7 @@ static int integer_stack_plan(
     return 0;
   }
   p->inputs = inputs;
+  p->write_only = 0;
   p->global_input = p->global_store = p->global_pop = 0;
   p->global_offset = 0;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
@@ -738,6 +739,74 @@ static int integer_stack_plan(
   return p->consumed;
 }
 
+/* A separate assignment destination needs no numeric input. Keep this
+ * exception exact and use the existing stack snapshots for overflow replay;
+ * longer profitable regions still take precedence. */
+static int integer_stack_single_assign(
+    struct pikecode_ssa_integer_stack_plan *p,
+    const struct p_instr_s *code, ptrdiff_t available, INT32 max_local,
+    struct pikecode_ssa_integer_stop *stop)
+{
+  static int enabled = -1;
+  unsigned int i, dst, result, right;
+  struct pikecode_ssa_integer_value *v;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_INTEGER_SINGLE_ASSIGN") != NULL;
+  if (!enabled || available < 3 || code[0].opcode != F_2_LOCALS ||
+      code[1].opcode != F_ADD_INTS ||
+      code[2].opcode != F_ASSIGN_LOCAL_AND_POP ||
+      code[0].file != code[1].file || code[0].file != code[2].file ||
+      code[0].arg < 0 || code[0].arg > max_local ||
+      code[0].arg2 < 0 || code[0].arg2 > max_local ||
+      code[2].arg < 0 || code[2].arg > max_local ||
+      code[2].arg == code[0].arg || code[2].arg == code[0].arg2)
+    return 0;
+  memset(p, 0, sizeof(*p));
+  p->local[p->locals++] = code[0].arg;
+  right = 1;
+  if (code[0].arg2 != code[0].arg) {
+    p->local[p->locals++] = code[0].arg2;
+    right = 2;
+  }
+  dst = p->locals++;
+  p->local[dst] = code[2].arg;
+  p->write_only = 1U << dst;
+  for (i = 0; i < p->locals; i++) {
+    v = &p->value[++p->values];
+    v->kind = PIKE_SSA_INTEGER_LOAD;
+    v->local = p->local[i];
+    v->bank = i;
+    if (i != dst) p->final.local[i] = i + 1;
+  }
+  p->step[0].before = p->final;
+  p->step[0].before.depth = 2;
+  p->step[0].before.stack[0] = 1;
+  p->step[0].before.stack[1] = right;
+  p->step[0].first = 1;
+  result = ++p->values;
+  p->step[0].result = result;
+  v = &p->value[result];
+  v->kind = PIKE_SSA_INTEGER_ADD;
+  v->left = 1;
+  v->right = right;
+  v->bank = dst;
+  v->local = -1;
+  p->final.local[dst] = result;
+  p->final.dirty = 1U << dst;
+  p->normal = 1;  /* All-UNDEFINED addition must replay with its subtype. */
+  p->count = p->writes = 1;
+  p->loads = 2;
+  p->consumed = 3;
+  integer_stop_init(stop);
+  if (stop) {
+    stop->candidate = 1;
+    stop->ops = 1;
+    stop->locals = p->locals;
+  }
+  integer_stop(stop, available == 3 ? "end" : "single-assignment", 3);
+  return 3;
+}
+
 /* A guarded direct global or a rejected virtual stack underflow can supply
  * one ordinary integer to the existing bounded stack plan. Valid bytecode
  * guarantees an incoming real stack operand exists. Labels and calls still
@@ -819,12 +888,18 @@ int pikecode_ssa_plan_integer_stack(
   result = integer_stack_plan(p, code, available, max_local,
                               stack_exits, subtract, bitwise, 0,
                               enabled ? &first : stop);
-  if (!enabled) return result;
+  if (!enabled) {
+    if (!result)
+      result = integer_stack_single_assign(p, code, available, max_local, stop);
+    return result;
+  }
   if (!result && first.reason && !strcmp(first.reason, "stack-underflow")) {
     result = integer_stack_plan(p, code, available, max_local,
                                 stack_exits, subtract, bitwise, 1, &retry);
     if (result) first = retry;
   }
+  if (!result)
+    result = integer_stack_single_assign(p, code, available, max_local, &first);
   if (stop) *stop = first;
   return result;
 }

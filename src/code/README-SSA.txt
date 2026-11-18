@@ -303,6 +303,23 @@ immediate additions, arbitrary destinations and live-stack exits retain
 the existing two-operation/reuse thresholds. The former positive
 PIKE_SSA_INTEGER_SINGLE_UPDATE flag is ignored.
 
+Set PIKE_SSA_INTEGER_SINGLE_ASSIGN=1 to experiment with an isolated
+F_2_LOCALS / F_ADD_INTS / F_ASSIGN_LOCAL_AND_POP assigning a third local,
+such as c=a+b. Longer profitable stack plans retain priority. This exact
+exception requires the stack-aware planner but no live-stack exit. It does
+not relax other single-operation profitability limits.
+
+Only the source locals are loaded as numeric inputs. The write_only mask
+marks the separate destination slot: its entry guard checks only that the
+old value owns no reference. Float and UNDEFINED destinations may take the
+fast path; reference values replay ordinary assignment so their release
+and possible destructor callbacks keep their original ordering. The dummy
+initial destination version is absent from all snapshots. The result uses
+its free bank, and only that destination is dirty at the successful exit.
+An overflow may replay the whole source unit without materializing stack
+operands, since neither locals nor the real stack have changed. Ordinary
+source order, subtype guards and arithmetic error locations are preserved.
+
 The stack-aware planner is enabled by default. It extends the original
 path through retained local assignments (F_ASSIGN_LOCAL), with bounded
 virtual Pike-stack operands and three shared value banks. Banks are

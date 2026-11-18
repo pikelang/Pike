@@ -14,6 +14,13 @@
  * writes uses the guard replay entry when execution counters are disabled.
  * Rollback and profiled exits retain their separate paths.
  *
+ * Isolated separate-local additions fill every branch delay slot: payload
+ * loads after operand guards, ADDcc after the nonreference destination
+ * guard, a move into the free result bank after the overflow branch, and
+ * the final tag store after the success branch. No annulment is needed;
+ * failed guards/overflow still leave the original locals and stack intact.
+ * Other plans retain conservative NOP slots around live intermediate banks.
+ *
  * Pointer width follows the ABI; integer loads, stores and condition
  * codes follow Pike's native integer width. Word arithmetic needs only V7
  * instructions. Doubleword values currently require the SPARC64 backend. */
@@ -88,14 +95,21 @@ static int sparc_integer_reg(const struct pikecode_ssa_integer_value *value)
   return SPARC_REG_O0 + value->bank;
 }
 
-static void sparc_integer_branch(struct sparc_integer_label *target,
-                                 unsigned INT32 instruction)
+/* The caller must emit exactly one instruction in the delay slot. */
+static void sparc_integer_branch_start(struct sparc_integer_label *target,
+                                       unsigned INT32 instruction)
 {
   if (target->count == NELEM(target->use))
     Pike_fatal("Too many SPARC integer branch references.\n");
   target->use[target->count++] = Pike_compiler->new_program->num_program;
   add_to_program(instruction);
-  /* The speculative result must not overwrite its input in a delay slot. */
+}
+
+static void sparc_integer_branch(struct sparc_integer_label *target,
+                                 unsigned INT32 instruction)
+{
+  sparc_integer_branch_start(target, instruction);
+  /* General plans can still need every input bank on a side exit. */
   SPARC_NOOP();
 }
 
@@ -220,6 +234,57 @@ static void sparc_integer_push_global(void)
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
+/* This isolated assignment has two guarded operands and a free result
+ * bank. Every guard/overflow exit replays the whole untouched source unit,
+ * so speculative register writes are safe in its branch delay slots. */
+static void sparc_integer_single_assign(
+    const struct pikecode_ssa_integer_stack_plan *p,
+    struct pikecode_ssa_integer_profile *profile,
+    struct sparc_integer_label *guard, struct sparc_integer_label *overflow,
+    struct sparc_integer_label *done, const struct p_instr_s *code,
+    int store_lines)
+{
+  const struct pikecode_ssa_integer_value *result =
+    &p->value[p->step[0].result];
+  unsigned int i, dst = p->locals - 1;
+  ptrdiff_t off = p->local[dst] * sizeof(struct svalue);
+  for (i = 1; i < p->locals; i++) {
+    const struct pikecode_ssa_integer_value *v = &p->value[i];
+    ptrdiff_t input = v->local * sizeof(struct svalue);
+    if (p->normal & (1U << (i - 1)))
+      SPARC_LDUW(SPARC_REG_O3, SPARC_REG_L5,
+                 input + OFFSETOF(svalue, tu.t.type), 1);
+    else
+      SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
+                 input + OFFSETOF(svalue, tu.t.type), 1);
+    SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
+    sparc_integer_branch_start(guard, 0x12800000); /* bne %icc */
+    /* Reading the payload is harmless even when its type guard fails. */
+    SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
+                     input + OFFSETOF(svalue, u.integer), 1);
+  }
+  pikecode_ssa_integer_source(&code[p->step[0].first], store_lines);
+  SPARC_LDUH(SPARC_REG_O3, SPARC_REG_L5,
+             off + OFFSETOF(svalue, tu.t.type), 1);
+  SPARC_ANDcc(SPARC_REG_G0, SPARC_REG_O3, MIN_REF_TYPE, 1);
+  sparc_integer_branch_start(guard, 0x12800000); /* bne %icc */
+  /* The branch samples the old ICC before this add sets ICC/XCC. Both
+   * numeric inputs are already guarded; a failed destination guard still
+   * leaves all original values intact for reference-release replay. */
+  SPARC_ALU_OP(SPARC_OP3_ADDcc, SPARC_REG_O3,
+               sparc_integer_reg(&p->value[result->left]),
+               sparc_integer_reg(&p->value[result->right]), 0);
+  sparc_integer_branch_start(overflow, SPARC_INTEGER_BVS);
+  /* The free result bank is never read by guard or overflow replay. */
+  SPARC_OR(sparc_integer_reg(result), SPARC_REG_O3, SPARC_REG_G0, 0);
+  SPARC_INTEGER_ST(sparc_integer_reg(result), SPARC_REG_L5,
+                   off + OFFSETOF(svalue, u.integer), 1);
+  sparc_integer_count(profile, PIKE_SSA_INTEGER_FAST);
+  sparc_integer_branch_start(done, 0x10800000);
+  SPARC_STW(SPARC_REG_G0, SPARC_REG_L5,
+             off + OFFSETOF(svalue, tu.t.type), 1);
+}
+
 static int sparc_integer_stack_run(const struct p_instr_s *code,
                                    ptrdiff_t available, int store_lines,
                                    struct pikecode_ssa_integer_stop *stop)
@@ -230,7 +295,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   struct sparc_integer_label slow[PIKE_SSA_INTEGER_CODE] = {{0}};
   struct sparc_integer_label done = {0}, guard = {0}, indirect = {0};
   struct sparc_integer_label prepared = {0};
-  unsigned int i, stores = 0;
+  unsigned int i, stores = 0, write_only = 0;
   if (sparc_ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
         (4095 - OFFSETOF(svalue, u.integer)) / sizeof(struct svalue),
@@ -276,6 +341,12 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   }
   PIKE_LDPTR(SPARC_REG_L5, SPARC_REG_PIKE_FP,
              OFFSETOF(pike_frame, locals), 1);
+  if (p.write_only) {
+    sparc_integer_single_assign(&p, profile, profile ? &guard : &slow[0],
+                                profile ? &overflow[0] : &slow[0], &done,
+                                code, store_lines);
+    goto overflow_exits;
+  }
   for (i = 1; i <= p.locals; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[i];
     ptrdiff_t off = v->local * sizeof(struct svalue);
@@ -361,10 +432,17 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   sparc_integer_snapshot(&p, &p.final);
   sparc_integer_count(profile, PIKE_SSA_INTEGER_FAST);
   sparc_integer_branch(&done, 0x10800000);
+ overflow_exits:
   for (i = 0; i < p.count; i++) {
     if (integer_stack_bitwise(p.value[p.step[i].result].kind)) continue;
+    if (p.write_only && !profile) continue;
     sparc_integer_bind(&overflow[i]);
     sparc_integer_count(profile, PIKE_SSA_INTEGER_OVERFLOWS);
+    if (p.write_only) {
+      /* No local or real stack slot has changed; replay the source loads. */
+      sparc_integer_branch(&slow[0], 0x10800000);
+      continue;
+    }
     sparc_integer_snapshot(&p, &p.step[i].before);
     sparc_integer_branch(&slow[p.step[i].first], 0x10800000);
   }
@@ -439,7 +517,10 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
    * slow-call emitter's last-location cache also describes skipped code. */
   if (pikecode_ssa_integer_multiline(code, p.consumed)) sparc_update_pc();
   if (sparc_ssa_stats) {
-    for (i = 0; i < p.locals; i++) stores += !!(p.final.dirty & (1U << i));
+    for (i = 0; i < p.locals; i++) {
+      stores += !!(p.final.dirty & (1U << i));
+      write_only += !!(p.write_only & (1U << i));
+    }
     sparc_stats.integer_regions++;
     sparc_stats.integer_stack_regions++;
     if (p.final.depth) sparc_stats.integer_stack_exits++;
@@ -450,7 +531,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
       if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_SUBTRACT)
         sparc_stats.integer_subtract_ops++;
     sparc_stats.integer_loads_avoided +=
-      p.loads - p.locals - p.inputs - p.global_input;
+      p.loads + write_only - p.locals - p.inputs - p.global_input;
     sparc_stats.integer_stores_avoided += p.writes - stores;
   }
   return p.consumed;
