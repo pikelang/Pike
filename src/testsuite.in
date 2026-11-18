@@ -16899,6 +16899,36 @@ test_any_equal([[
   return counts;
 ]], ({ 0, 0, 1 }))
 
+dnl Cached attributed comparisons must still invoke warning handlers on every
+dnl use, including after compilations with the warnings suppressed.
+test_any_equal([[
+  class Handler {
+    array(string) warnings = ({});
+    void compile_warning(string file, int line, string message) {
+      warnings += ({ message });
+    }
+  }
+  array(int) counts = ({});
+  foreach (({ "deprecated", "experimental" }), string attribute) {
+    string suppression = attribute == "deprecated" ?
+      "no_deprecation_warnings" : "no_experimental_warnings";
+    foreach (({
+      "int a() { return value; } int b() { return value; }",
+      "void a() { value = 1; } void b() { value = 1; }"
+    }), string uses) {
+      foreach (({ "", "#pragma " + suppression + "\n", "" }),
+               string pragma) {
+        Handler handler = Handler();
+        compile_string(pragma + "typedef __attribute__(\"" + attribute +
+                       "\", int) T; T value; " + uses,
+                       "cached_type_attributes", handler);
+        counts += ({ sizeof(handler->warnings) });
+      }
+    }
+  }
+  return counts;
+]], ({ 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2 }))
+
 test_any_equal([[
   class Handler {
     array(string) warnings = ({});
