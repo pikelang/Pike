@@ -617,6 +617,10 @@ o Cpp
 
 o Compiler
 
+  - Preserve inferred type-variable bindings from fully matching union
+    branches. This fixes lost character ranges in string joins involving
+    both wide and ASCII strings.
+
   - Syntax errors in constant initializers, e.g. "constant x = ;", now
     produce compilation errors instead of crashing during error recovery.
 

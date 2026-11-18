@@ -10650,6 +10650,16 @@ test_eq([[({})*""]],"")
 test_eq([[({"foo",0,"bar"})*"-"]],"foo-bar")
 test_eq([[({"f","o","o"})*""]],"foo")
 
+dnl Successful subtraction must preserve bindings from every union branch.
+test_equal([[typeof(({"f\u01ff", "bar"}) * "-");]],
+           [[typeof([string(45 | 97..511)](mixed)0);]])
+test_equal([[typeof(({"f\u01ff", "bar"}) * "");]],
+           [[typeof([string(97..511)](mixed)0);]])
+test_equal([[typeof(({"f\U001fffff", "bar"}) * "-");]],
+           [[typeof([string(45 | 97..0x1fffff)](mixed)0);]])
+test_equal([[typeof(({"f\u01ff", "b\u0100"}) * "-");]],
+           [[typeof([string(45 | 98..511)](mixed)0);]])
+
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
 test_eq(({"f\777\777","bar","gaz\777nk"})*"-","f\777\777-bar-gaz\777nk")
 test_eq(({"f\7777777\7777777","bar","gaz\7777777nk"})*"-","f\7777777\7777777-bar-gaz\7777777nk")

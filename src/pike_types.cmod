@@ -5502,7 +5502,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
         remap->markers[marker_set ^ 1] = copy_mapping(orig_markers_other);
       }
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
-      if (remap && !tmp) {
+      if (remap && ((op == PT_BINOP_AND && !tmp) ||
+                    (op == PT_BINOP_MINUS && tmp == a->car))) {
         /* Unification failed, discard other side marker changes */
         do_free_mapping(remap->markers[marker_set ^ 1]);
         remap->markers[marker_set ^ 1] = orig_markers_other;
@@ -5617,7 +5618,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
-      if (remap && !tmp) {
+      if (remap && ((op == PT_BINOP_AND && !tmp) ||
+                    (op == PT_BINOP_MINUS && tmp == a))) {
         /* Unification failed, discard other side marker changes */
         do_free_mapping(remap->markers[marker_set ^ 1]);
         remap->markers[marker_set ^ 1] = orig_markers_other;
