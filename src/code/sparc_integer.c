@@ -9,9 +9,10 @@
  * integer values. L5 holds locals, O0..O2 hold value banks, O3 a speculative
  * result, O4 a multi-step unit's input and O5 an immediate operand.
  *
- * Balanced regions keep proven L0/L1 values through their entry flush and
- * retain L0 at the replay merge. A single-step overflow with no completed
- * writes uses the guard replay entry when execution counters are disabled.
+ * Balanced regions and isolated separate-local additions keep proven L0/L1
+ * values through their entry flush and retain L0 at the replay merge. A
+ * single-step overflow with no completed writes uses the guard replay entry
+ * when execution counters are disabled.
  * Rollback and profiled exits retain their separate paths.
  *
  * Isolated separate-local additions fill every branch delay slot: payload
@@ -19,7 +20,10 @@
  * guard, a move into the free result bank after the overflow branch, and
  * the final tag store after the success branch. No annulment is needed;
  * failed guards/overflow still leave the original locals and stack intact.
- * Other plans retain conservative NOP slots around live intermediate banks.
+ * Replay starts with unchanged entry IP/FP and canonical stack state;
+ * ordinary opcodes handle cache invalidation without extra per-opcode
+ * flushes. Only IP is retained after callbacks. Other plans retain their
+ * snapshot flushes and conservative NOP slots around live intermediate banks.
  *
  * Pointer width follows the ABI; integer loads, stores and condition
  * codes follow Pike's native integer width. Word arithmetic needs only V7
@@ -234,6 +238,24 @@ static void sparc_integer_push_global(void)
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
+/* Publish stack state while retaining proven callee-saved pointers. */
+static void sparc_integer_balanced_entry(void)
+{
+  unsigned int keep = sparc_codegen_state &
+    (SPARC_CODEGEN_IP_IS_SET | SPARC_CODEGEN_FP_IS_SET);
+  /* Publish dirty stack state without forgetting unchanged L0/L1.
+   * This is a local flush, independent of optional forward joins. */
+  sparc_flush_codegen_state();
+  if (keep & SPARC_CODEGEN_IP_IS_SET)
+    pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
+  if (keep & SPARC_CODEGEN_FP_IS_SET)
+    pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_FP);
+  sparc_codegen_state |= keep;
+  /* FP can be known without IP at an incoming join. Establish L0 on every
+   * path so it can also remain known after the replay/fast merge. */
+  LOAD_PIKE_INTERPRETER();
+}
+
 /* This isolated assignment has two guarded operands and a free result
  * bank. Every guard/overflow exit replays the whole untouched source unit,
  * so speculative register writes are safe in its branch delay slots. */
@@ -304,7 +326,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     return 0;
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
                                              p.count, p.locals, "stack", stop);
-  sparc_flush_codegen_state();
+  if (p.write_only) sparc_integer_balanced_entry();
+  else sparc_flush_codegen_state();
   sparc_update_pc();
   sparc_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
   LOAD_PIKE_FP();
@@ -454,9 +477,11 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   for (i = p.global_input; i < p.consumed; i++) {
     const struct p_instr_s *op = &code[i];
     unsigned int flags = instrs[op->opcode - F_OFFSET].flags;
-    /* Fallthrough publishes its deferred stores before the label. Side
-     * exits skip them and arrive with their own canonical stack snapshot. */
-    sparc_flush_codegen_state();
+    /* Other plans enter with different stack snapshots. The isolated
+     * assignment has no stack changes and every edge preserves entry
+     * IP/FP. Let ordinary replay invalidate caches as its opcodes require;
+     * no side exit enters between those opcodes. */
+    if (!p.write_only) sparc_flush_codegen_state();
     sparc_integer_bind(&slow[i]);
     pikecode_ssa_integer_source(op, store_lines);
     if (flags & I_HASARG2)
@@ -505,10 +530,9 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     sparc_flush_codegen_state();
   }
   sparc_integer_bind(&done);
-  if (p.global_store) {
-    /* Entry PC publication loads L0 on every path, and C callees preserve
-     * it. Keep this known interpreter pointer when the terminal store has
-     * moved the ordinary opcode's cache boundary inside the region. */
+  if (p.global_store || p.write_only) {
+    /* Entry establishes L0 on every path, and C callees preserve it.
+     * Only IP is common after callbacks in ordinary replay. */
     pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
     sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET;
   }
@@ -577,21 +601,7 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
                                              p.count, p.locals, "balanced",
                                       integer_profile_enabled ? &stop : NULL);
-  {
-    unsigned int keep = sparc_codegen_state &
-      (SPARC_CODEGEN_IP_IS_SET | SPARC_CODEGEN_FP_IS_SET);
-    /* Publish dirty stack state without forgetting unchanged L0/L1.
-     * This is a local flush, independent of optional forward joins. */
-    sparc_flush_codegen_state();
-    if (keep & SPARC_CODEGEN_IP_IS_SET)
-      pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
-    if (keep & SPARC_CODEGEN_FP_IS_SET)
-      pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_FP);
-    sparc_codegen_state |= keep;
-  }
-  /* FP can be known without IP at an incoming join. Establish L0 on every
-   * path so it can also remain known after the replay/fast merge. */
-  LOAD_PIKE_INTERPRETER();
+  sparc_integer_balanced_entry();
   sparc_update_pc();
   sparc_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
   LOAD_PIKE_FP();

@@ -937,6 +937,38 @@ test_any([[
   return 0;
 ]], 1)
 
+// Isolated assignment preserves pending array values and mark-stack state.
+test_any([[
+  void boundary() {}
+  array assign(int a, int b, int c) {
+    return ({ ({ "prefix" }),
+              (c = a + b, boundary(),
+               ({ a, b, c, zero_type(a), zero_type(b), zero_type(c) })),
+              ({ "suffix" }) });
+  }
+  array after_join(int a, int b, int c, int invoke) {
+    if (invoke) boundary();
+    c = a + b;
+    boundary();
+    return ({ a, b, c, zero_type(a), zero_type(b), zero_type(c) });
+  }
+  function f = assign;
+  function g = after_join;
+  array(int) values = ({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN,
+                        Int.NATIVE_MAX, 1<<90, -(1<<90) });
+  foreach (values, int a) foreach (values, int b)
+    foreach (({ UNDEFINED, 1.25, ({ "old" }) }), mixed old) {
+      array expected = ({ a, b, (int)(Gmp.mpz(a)+Gmp.mpz(b)),
+                          zero_type(a), zero_type(b),
+                          !!zero_type(a) && !!zero_type(b) });
+      if (!equal(f(a, b, old),
+                 ({ ({ "prefix" }), expected, ({ "suffix" }) }))) return 0;
+      foreach (({ 0, 1 }), int invoke)
+        if (!equal(g(a, b, old, invoke), expected)) return 0;
+    }
+  return 1;
+]], 1)
+
 // Balanced replay must not repeat completed updates or skip fused steps.
 test_any([[
   void boundary() {}

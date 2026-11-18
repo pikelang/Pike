@@ -167,7 +167,8 @@ o Compiler
     addition into a separate local (c=a+b) in SSA-enabled builds on AMD64,
     SPARC32 and SPARC64. The old destination needs no numeric load; reference
     values retain ordinary assignment and release through replay. SPARC
-    fills the branch delay slots in this path to reduce generated code.
+    fills the branch delay slots and avoids redundant pointer reloads
+    through entry and ordinary replay to reduce generated code.
 
   - Set PIKE_SSA_INTEGER_PROFILE=1 to collect per-region execution counts,
     type-guard failures and overflow exits. Summarize captured stderr with
