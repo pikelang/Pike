@@ -6066,8 +6066,6 @@ PIKECLASS BlockCipher16
       {
         pike_nettle_crypt_func func = pike_crypt_func;
         void *ctx = THIS->encrypt_object;
-        int iv_len = iv->len;
-        uint8_t *ctr_iv;
         THIS->tag_length = tag_length?tag_length->u.integer:OCB_DIGEST_SIZE;
 
         iv->flags |= STRING_CLEAR_ON_EXIT;

@@ -36,11 +36,16 @@ constant THREAD_ABORTED = __builtin.THREAD_ABORTED;
 
 //! Recognition constant for interrupting threads blocked in I/O.
 //!
-//! If nonzero, the thread implementation can send a signal to wake a
-//! thread blocked in an interruptible system call. This allows
+//! If nonzero, the thread implementation can wake a thread blocked in
+//! an interruptible system call. This allows
 //! @[Thread()->interrupt()] and @[Thread()->kill()] to take effect without
 //! waiting for the I/O to complete. It does not guarantee that every
 //! system call can be interrupted.
+//!
+//! On Windows this requires CancelSynchronousIo(), available starting with
+//! Vista / Server 2008. The constant reflects its availability at runtime.
+//! Request @[Stdio.PROP_INTERRUPTIBLE] when creating a pipe to select an
+//! implementation that supports interruption.
 //!
 //! If zero, interrupts are handled when the thread resumes executing
 //! Pike code.

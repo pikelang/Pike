@@ -1,11 +1,11 @@
-#charset utf-8
-/* -*- mode: C; c-basic-offset: 4; -*-
+/* -*- mode: Pike; c-basic-offset: 4; -*-
  *
  *    Shootouts
  *        or
  * Pike speed tests
  *
  */
+#charset utf-8
 
 #pike __REAL_VERSION__
 
@@ -13,11 +13,13 @@ import ".";
 
 protected void create()
 {
-    // Prime glibc's adaptive mmap/trim thresholds. Reserve the buffer
-    // without filling it, then release the allocation before timing.
-    String.Buffer warmup = String.Buffer(8 << 20);
-    warmup->add("x");
-    destruct(warmup);
+    catch {
+        // Prime glibc's adaptive mmap/trim thresholds. Reserve the buffer
+        // without filling it, then release the allocation before timing.
+        String.Buffer warmup = String.Buffer(8 << 20);
+        warmup->add("x");
+        destruct(warmup);
+    };
 }
 
 

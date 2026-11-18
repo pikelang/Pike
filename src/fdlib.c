@@ -255,6 +255,7 @@ static const unsigned long pike_doserrtab[][2] = {
   {  ERROR_NESTING_NOT_ALLOWED,		EAGAIN,		}, /* 215 */
   {  ERROR_DIRECTORY, 			ENOTDIR,	}, /* 267 */
   {  ERROR_DIRECTORY_NOT_SUPPORTED,	EISDIR,		}, /* 336 */
+  {  ERROR_OPERATION_ABORTED,		EINTR,		}, /* 995 */
   {  ERROR_NOT_ENOUGH_QUOTA,		ENOMEM,		}, /* 1816 */
 
   /* WinSock errnos. These are mapped to their plain variants when possible.
@@ -836,10 +837,11 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
       return fd_CAN_NONBLOCK | fd_INTERPROCESSABLE;
 
     case FD_PIPE:
-      return fd_INTERPROCESSABLE | fd_BUFFERED;
+      return fd_INTERPROCESSABLE | fd_BUFFERED | fd_INTERRUPT_CAPABILITY;
 
     case FD_PTY:
-      return fd_INTERPROCESSABLE | fd_BUFFERED | fd_BIDIRECTIONAL;
+      return fd_INTERPROCESSABLE | fd_BUFFERED | fd_BIDIRECTIONAL |
+             fd_INTERRUPT_CAPABILITY;
     default: return 0;
   }
 }

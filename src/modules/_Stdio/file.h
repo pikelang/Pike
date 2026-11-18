@@ -70,7 +70,7 @@ struct my_file
   /* Callbacks can be set without having the corresponding bits in
    * box.events, but not the other way around. */
 
-  short open_mode;
+  int open_mode;
   short flags;
   INT_TYPE my_errno;
 
@@ -198,8 +198,8 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max);
 
 /* open_mode
  *
- * Note: The lowest 8 bits are reserved for the fd_* (aka PROP_*)
- *       flags from "fdlib.h".
+ * Note: Bits 0-7 and 16 and above are reserved for fd_* (aka PROP_*)
+ *       flags from "fdlib.h". FILE_* flags occupy bits 8-15.
  */
 #define FILE_READ               0x1000
 #define FILE_WRITE              0x2000
