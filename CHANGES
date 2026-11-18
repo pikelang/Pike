@@ -157,7 +157,9 @@ o Compiler
   - SSA-enabled builds optimize an isolated local/local addition followed
     by assignment/pop on AMD64, SPARC32 and SPARC64 by default. Set
     PIKE_SSA_NO_INTEGER_SINGLE_UPDATE=1 to disable this optimization.
-    Other short regions retain their existing profitability limits.
+    Assignments to either input are supported without reordering operands
+    on type-guard or overflow replay. Other short regions retain their
+    existing profitability limits.
     SPARC balanced integer regions also avoid redundant pointer reloads
     and empty overflow branches to reduce generated code size.
 

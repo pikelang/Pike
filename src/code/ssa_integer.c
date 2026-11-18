@@ -69,12 +69,18 @@ static int pikecode_ssa_integer_unit(const struct p_instr_s *c,
     *src = c->arg2;
     return *src >= 0;
   }
-  if (available < 3 || c[2].opcode != F_ASSIGN_LOCAL_AND_POP ||
-      c[2].arg != *dst) return 0;
+  if (available < 3 || c[2].opcode != F_ASSIGN_LOCAL_AND_POP) return 0;
   if (c->opcode == F_2_LOCALS && c[1].opcode == F_ADD_INTS) {
-    *src = c->arg2;
+    if (c[2].arg == c->arg) *src = c->arg2;
+    else if (c[2].arg == c->arg2) {
+      /* Only the guarded integer plan commutes the operands. Keep the
+       * original instruction sequence for strings and operator replay. */
+      *dst = c->arg2;
+      *src = c->arg;
+    } else return 0;
     return *src < 0 ? 0 : 3;
   }
+  if (c[2].arg != *dst) return 0;
   if (c->opcode != F_LOCAL && c->opcode != F_INC_LOCAL &&
       c->opcode != F_DEC_LOCAL) return 0;
   if (c[1].opcode != F_ADD_INT && c[1].opcode != F_ADD_NEG_INT) return 0;
@@ -133,6 +139,7 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
     const struct p_instr_s *op = &code[p->consumed];
     struct pikecode_ssa_integer_unit *u = &p->unit[p->units];
     unsigned int steps;
+    unsigned int old_locals = p->locals, old_values = p->values;
     INT32 local, source, imm[2];
     int dst, src = -1;
     int length = pikecode_ssa_integer_unit(op, available - p->consumed,
@@ -162,6 +169,10 @@ int pikecode_ssa_plan_integer(struct pikecode_ssa_integer_plan *p,
       if (src < 0) {
         integer_stop(stop, source > max_local ? "local-range" :
                       "local-limit", p->consumed);
+        /* An unfinished unit must not leave an unused input that rejects
+         * an already profitable prefix, or speculate on that input. */
+        p->locals = old_locals;
+        p->values = old_values;
         break;
       }
     }

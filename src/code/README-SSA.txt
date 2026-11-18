@@ -281,8 +281,10 @@ its overflow check, and only final dirty locals are stored on the fast
 path. The balanced-unit path commits completed units on overflow and
 resumes the remaining source opcodes through their ordinary slow paths.
 A multi-step unit saves its input so it can restore that version and
-replay the unit from a balanced Pike stack. No fast-path operation calls
-C or exposes an uncommitted value to a callback. Source locals that were
+replay the unit from a balanced Pike stack. Input allocation for an
+unaccepted following unit is discarded, preserving the accepted prefix.
+No fast-path operation calls C or exposes an uncommitted value to a
+callback. Source locals that were
 only read retain their original subtype tags.
 
 Computed versions have ordinary integer tags. When a binary addition has
@@ -293,7 +295,8 @@ ordinary-tag check also checks the integer type in the same guard.
 The balanced single-update path is enabled by default. Set
 PIKE_SSA_NO_INTEGER_SINGLE_UPDATE=1 to disable it for comparisons. It
 accepts one F_2_LOCALS / F_ADD_INTS / F_ASSIGN_LOCAL_AND_POP unit when the
-assignment targets the left input.
+assignment targets either input. Only the guarded integer plan commutes
+operands; replay keeps their original order for other types and callbacks.
 The existing type/subtype guards and overflow replay apply; successful
 updates avoid all operand/result Pike-stack copies. Lone increments,
 immediate additions, arbitrary destinations and live-stack exits retain

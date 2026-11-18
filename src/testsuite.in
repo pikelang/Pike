@@ -716,6 +716,20 @@ test_any([[
     boundary();
     return ({ a, b, zero_type(a), zero_type(b) });
   }
+  array right(int a, int b) {
+    b = a + b;
+    boundary();
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array budget(int a, int b, int c, int d) {
+    a++;
+    a++;
+    b = a + b;
+    c = c + d;
+    boundary();
+    return ({ a, b, c, d, zero_type(a), zero_type(b),
+              zero_type(c), zero_type(d) });
+  }
   array alias(int a) {
     a = a + a;
     boundary();
@@ -729,6 +743,12 @@ test_any([[
       int expected = (int)(Gmp.mpz(a) + Gmp.mpz(b));
       if (!equal(update(a, b), ({ expected, b,
             !!zero_type(a) && !!zero_type(b), zero_type(b) }))) return 0;
+      if (!equal(right(a, b), ({ a, expected, zero_type(a),
+            !!zero_type(a) && !!zero_type(b) }))) return 0;
+      if (!equal(budget(a, b, a, b),
+                 ({ (int)(Gmp.mpz(a)+2), expected+2, expected, b,
+                    0, 0, !!zero_type(a) && !!zero_type(b),
+                    zero_type(b) }))) return 0;
     }
     if (!equal(alias(a), ({ (int)(2*Gmp.mpz(a)),
                             zero_type(a) }))) return 0;
@@ -741,6 +761,11 @@ test_any([[
   void boundary() {}
   array update(int a, int b) {
     a = a + b;
+    boundary();
+    return ({ a, b });
+  }
+  array right(int a, int b) {
+    b = a + b;
     boundary();
     return ({ a, b });
   }
@@ -762,6 +787,14 @@ test_any([[
   if (!equal(f(v, 1), ({ v->result, 1 })) || v->calls != 1) return 0;
   Reverse r = Reverse();
   if (!equal(f(1, r), ({ "reverse", r })) || r->calls != 1) return 0;
+  function g = right;
+  if (!equal(g("left", "right"), ({ "left", "leftright" }))) return 0;
+  if (!equal(g(({1}), ({2})), ({ ({1}), ({1,2}) }))) return 0;
+  if (!equal(g(1.25, 2.5), ({ 1.25, 3.75 }))) return 0;
+  v->calls = 0;
+  if (!equal(g(v, 1), ({ v, v->result })) || v->calls != 1) return 0;
+  r->calls = 0;
+  if (!equal(g(1, r), ({ 1, "reverse" })) || r->calls != 1) return 0;
   return 1;
 ]], 1)
 
@@ -770,17 +803,21 @@ test_any([[
   class Boom {
     protected mixed `+(mixed other) { error("single-update error\n"); }
   }
-  program p = compile_string(
-    "void boundary() {}\narray update(int a,int b) {\n"
-    "#line 900 \"ssa-single-error.pike\"\n"
-    "a=a+b;\nboundary();\nreturn ({a,b});\n}\n",
-    "ssa-single-error.pike");
-  mixed e = catch { function f = p()->update; f(Boom(), 1); };
-  if (!e || !has_prefix(e[0], "single-update error\n")) return 0;
-  foreach (e[1], mixed frame)
-    if (arrayp(frame) && sizeof(frame) > 1 &&
-        frame[0] == "ssa-single-error.pike" && frame[1] == 900) return 1;
-  return 0;
+  foreach (({ "a=a+b;", "b=a+b;" }), string assignment) {
+    program p = compile_string(
+      "void boundary() {}\narray update(int a,int b) {\n"
+      "#line 900 \"ssa-single-error.pike\"\n"
+      + assignment + "\nboundary();\nreturn ({a,b});\n}\n",
+      "ssa-single-error.pike");
+    mixed e = catch { function f = p()->update; f(Boom(), 1); };
+    if (!e || !has_prefix(e[0], "single-update error\n")) return 0;
+    int found;
+    foreach (e[1], mixed frame)
+      if (arrayp(frame) && sizeof(frame) > 1 &&
+          frame[0] == "ssa-single-error.pike" && frame[1] == 900) found = 1;
+    if (!found) return 0;
+  }
+  return 1;
 ]], 1)
 
 // Balanced replay must not repeat completed updates or skip fused steps.
