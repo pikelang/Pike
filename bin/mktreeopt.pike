@@ -1364,6 +1364,32 @@ void generate_parent(object(node) n, object(node)|zero parent, string tpos)
   }
 }
 
+// las.h provides composite CAR/CDR macros up to depth six. Proper
+// argument lists can make patterns deeper, so split longer paths.
+string expand_node_paths(string code)
+{
+  array(string) parts = ({});
+  int start = 0;
+  for (int i = 0; i < sizeof(code); i++) {
+    if (code[i] != 'C') continue;
+    int end = i + 1;
+    while (end < sizeof(code) && (code[end] == 'A' || code[end] == 'D'))
+      end++;
+    if (end - i <= 7 || code[end..end+3] != "R(n)") continue;
+    string path = code[i+1..end-1];
+    string expr = "n";
+    while (sizeof(path)) {
+      int len = min(6, sizeof(path));
+      expr = "C" + path[sizeof(path)-len..] + "R(" + expr + ")";
+      path = len == sizeof(path) ? "" : path[..sizeof(path)-len-1];
+    }
+    parts += ({ code[start..i-1], expr });
+    i = end + 3;
+    start = i + 1;
+  }
+  return (parts + ({ code[start..] })) * "";
+}
+
 int main(int argc, array(string) argv)
 {
   if (argc < 2) {
@@ -1386,7 +1412,7 @@ int main(int argc, array(string) argv)
     }
   }
 
-  string result = sprintf(header, fname) + generate_code();
+  string result = expand_node_paths(sprintf(header, fname) + generate_code());
 
   object(Stdio.File) dest = Stdio.File();
 
