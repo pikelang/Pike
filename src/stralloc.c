@@ -3009,9 +3009,124 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
   return i;
 }
 
+/* Normalize a hexadecimal floating constant to decimal for old strtod()
+ * implementations. Keep guard digits and a sticky bit before scaling, so
+ * the temporary integers stay bounded even for very long significands.
+ * A binary exponent is mandatory, distinguishing floats from hex integers.
+ */
+static char *hex_float_decimal(PCHARP start, PCHARP *end, int mant_dig)
+{
+  PCHARP p, significand_end, exponent_start;
+  ptrdiff_t digits = 0, fractional = 0, dropped = 0;
+  int dot = 0, negative = 0, kept = 0, sticky = 0;
+  int keep_digits;
+  long exponent = 0;
+  p_wchar2 c;
+  MP_INT value, power;
+  char *buf;
+  size_t size;
+
+  if (EXTRACT_PCHARP(start) != '0' ||
+      (INDEX_PCHARP(start, 1) != 'x' && INDEX_PCHARP(start, 1) != 'X'))
+    return NULL;
+
+  p = ADD_PCHARP(start, 2);
+  while (1) {
+    c = EXTRACT_PCHARP(p);
+    if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
+        (c >= 'A' && c <= 'F')) {
+      digits++;
+      if (dot) fractional++;
+    } else if (c == '.' && !dot) {
+      dot = 1;
+    } else break;
+    INC_PCHARP(p, 1);
+  }
+  significand_end = p;
+  if (!digits || (EXTRACT_PCHARP(p) != 'p' && EXTRACT_PCHARP(p) != 'P'))
+    return NULL;
+  INC_PCHARP(p, 1);
+  if (EXTRACT_PCHARP(p) == '+' || EXTRACT_PCHARP(p) == '-') {
+    negative = EXTRACT_PCHARP(p) == '-';
+    INC_PCHARP(p, 1);
+  }
+  exponent_start = p;
+  while ((c = EXTRACT_PCHARP(p)) >= '0' && c <= '9') {
+    /* Saturation leaves room for the significand's exponent adjustment. */
+    if (exponent <= (LONG_MAX / 8 - 9) / 10)
+      exponent = exponent * 10 + c - '0';
+    else exponent = LONG_MAX / 8;
+    INC_PCHARP(p, 1);
+  }
+  if (COMPARE_PCHARP(p, ==, exponent_start)) return NULL;
+  if (SUBTRACT_PCHARP(p, start) > LONG_MAX / 16)
+    Pike_error("Hexadecimal floating constant is too long.\n");
+  *end = p;
+  if (negative) exponent = -exponent;
+
+  keep_digits = (mant_dig * FLT_RADIX + 3) / 4 + 1;
+  mpz_init(&value);
+  for (p = ADD_PCHARP(start, 2); COMPARE_PCHARP(p, <, significand_end);
+       INC_PCHARP(p, 1)) {
+    int digit;
+    c = EXTRACT_PCHARP(p);
+    if (c == '.') continue;
+    digit = c <= '9' ? c - '0' : (c | 32) - 'a' + 10;
+    if (!kept && !digit) continue;
+    if (kept < keep_digits) {
+      mpz_mul_2exp(&value, &value, 4);
+      mpz_add_ui(&value, &value, digit);
+      kept++;
+    } else {
+      dropped++;
+      sticky |= digit;
+    }
+  }
+  if (sticky) mpz_setbit(&value, 0);
+  exponent += 4 * (dropped - fractional);
+
+  /* Ignore even enormous exponents for a zero significand. */
+  if (!mpz_sgn(&value)) exponent = 0;
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+  if (exponent > 4 * LDBL_MAX_EXP ||
+      exponent < 4 * (LDBL_MIN_EXP - LDBL_MANT_DIG)) {
+#else
+  if (exponent > 4 * DBL_MAX_EXP ||
+      exponent < 4 * (DBL_MIN_EXP - DBL_MANT_DIG)) {
+#endif
+    mpz_clear(&value);
+    buf = xalloc(16);
+    strcpy(buf, exponent > 0 ? "1e999999" : "1e-999999");
+    return buf;
+  }
+
+  if (exponent >= 0) {
+    mpz_mul_2exp(&value, &value, exponent);
+  } else {
+    mpz_init(&power);
+    mpz_ui_pow_ui(&power, 5, -exponent);
+    mpz_mul(&value, &value, &power);
+    mpz_clear(&power);
+  }
+  size = mpz_sizeinbase(&value, 10) + 32;
+  buf = malloc(size);
+  if (!buf) {
+    mpz_clear(&value);
+    Pike_error("Out of memory converting hexadecimal floating constant.\n");
+  }
+  mpz_get_str(buf, 10, &value);
+  mpz_clear(&value);
+  if (exponent < 0) {
+    size_t len = strlen(buf);
+    snprintf(buf + len, size - len, "e%ld", exponent);
+  }
+  return buf;
+}
+
 /* Convert PCHARP to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
-PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
+static double low_strtod_pcharp(const PCHARP nptr, PCHARP *endptr,
+                                int mant_dig)
 {
   /* Note: Code duplication in STRTOLD_PCHARP. */
 
@@ -3047,6 +3162,17 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
   if (EXTRACT_PCHARP(s) == '-' || EXTRACT_PCHARP(s) == '+')
     INC_PCHARP(s,1);
+
+  {
+    PCHARP end;
+    char *hex = hex_float_decimal(s, &end, mant_dig);
+    if (hex) {
+      num = strtod(hex, NULL);
+      free(hex);
+      if (endptr) *endptr = end;
+      return num * sign;
+    }
+  }
 
   got_dot = 0;
   got_digits = 0;
@@ -3164,6 +3290,11 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   return 0.0;
 }
 
+PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
+{
+  return low_strtod_pcharp(nptr, endptr, DBL_MANT_DIG);
+}
+
 #if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
 /* Convert PCHARP to a long double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
@@ -3203,6 +3334,17 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
   if (EXTRACT_PCHARP(s) == '-' || EXTRACT_PCHARP(s) == '+')
     INC_PCHARP(s,1);
+
+  {
+    PCHARP end;
+    char *hex = hex_float_decimal(s, &end, LDBL_MANT_DIG);
+    if (hex) {
+      num = strtold(hex, NULL);
+      free(hex);
+      if (endptr) *endptr = end;
+      return num * sign;
+    }
+  }
 
   got_dot = 0;
   got_digits = 0;
@@ -3321,6 +3463,19 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 }
 #endif
 
+
+/* Convert directly to Pike's configured precision. Guard/sticky digits
+ * for hex input must be chosen for that precision to avoid rounding a
+ * halfway value twice when FLOAT_TYPE is narrower than double.
+ */
+PMOD_EXPORT FLOAT_TYPE STRTOFLOAT_PCHARP(const PCHARP nptr, PCHARP *endptr)
+{
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+  return STRTOLD_PCHARP(nptr, endptr);
+#else
+  return (FLOAT_TYPE)low_strtod_pcharp(nptr, endptr, PIKEFLOAT_MANT_DIG);
+#endif
+}
 
 PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
                                        char **to_free)

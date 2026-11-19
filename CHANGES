@@ -10,6 +10,14 @@ o Local function prototypes.
   This allows mutually recursive local functions. The definition must be in
   the same block as the prototype and have a compatible function type.
 
+o Hexadecimal floating-point literals.
+
+  A hexadecimal significand followed by a binary exponent is now accepted,
+  e.g. 0x1.8p+2 is 6.0 and 0x.8p-1 is 0.25. The p/P exponent is mandatory
+  and uses decimal digits. This syntax also works in preprocessor
+  expressions and floating-point string conversions. C type suffixes and
+  digit separators are not supported.
+
 o Unlimited character constant size.
 
   There is no longer any limit to the size of character constants,
