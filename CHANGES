@@ -43,6 +43,15 @@ o Calendar
 
 o Compiler
 
+  - Negating a propagated -2147483648 no longer wraps on 32-bit x86,
+    SPARC and PowerPC. Signed-minimum negated immediates use the generic
+    opcode for bignum promotion; 64-bit SPARC widens before negating.
+    The interpreter fallback also handles this boundary without signed
+    overflow, including bytecode-only and debug-allocation builds.
+    AMD64 local additions of this immediate also avoid an overflowing
+    sign reversal when restoring a local before arithmetic replay.
+    Also backported the AMD64 signed-minimum immediate recursion fix.
+
   Internal references to getters and setters are now local.
 
   This makes it possible to reference to the previous implementation

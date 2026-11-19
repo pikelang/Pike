@@ -10,6 +10,7 @@
  * Marcus Comstedt 20010726
  */
 
+#include "bignum.h"
 #include "operators.h"
 #include "constants.h"
 #include "object.h"
@@ -586,6 +587,8 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
      return;
 
    case F_NEG_NUMBER:
+     /* Keep signed-minimum promotion on the generic opcode path. */
+     if (INT32_NEG_OVERFLOW(b)) break;
      ppc32_push_int(-b, 0);
      return;
 

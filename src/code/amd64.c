@@ -681,7 +681,7 @@ static void not_mem( enum amd64_reg reg, int off )
 static void add_reg_imm( enum amd64_reg reg, int imm32 )
 {
   if( !imm32 ) return;
-  if( imm32 < 0 )
+  if( imm32 < 0 && !INT32_NEG_OVERFLOW(imm32) )
   {
     /* This makes the disassembly easier to read. */
     sub_reg_imm( reg, -imm32 );
@@ -777,7 +777,7 @@ static void sub_reg_imm( enum amd64_reg reg, int imm32 )
 {
   if( !imm32 ) return;
 
-  if( imm32 < 0 )
+  if( imm32 < 0 && !INT32_NEG_OVERFLOW(imm32) )
     /* This makes the disassembly easier to read. */
     return add_reg_imm( reg, -imm32 );
 
@@ -3517,6 +3517,8 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   case F_SUBTRACT_INT:
   case F_ADD_NEG_INT:
+    /* Keep an unrepresentable sign reversal on the C opcode path. */
+    if (INT32_NEG_OVERFLOW(b)) break;
     b = -b;
   case F_ADD_INT:
     {
@@ -4345,6 +4347,8 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_ADD_LOCAL_INT_AND_POP:
    {
       LABELS();
+      /* Overflow recovery must be able to negate the immediate exactly. */
+      if (INT32_NEG_OVERFLOW(c)) break;
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);

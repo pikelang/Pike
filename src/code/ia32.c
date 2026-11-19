@@ -8,6 +8,7 @@
  * Machine code generator for IA32.
  */
 
+#include "bignum.h"
 #include "operators.h"
 #include "constants.h"
 #include "object.h"
@@ -1031,8 +1032,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
 
     case F_NEG_NUMBER:
+      /* The negated immediate must fit ia32_push_int's signed argument. */
+      if (INT32_NEG_OVERFLOW(b)) break;
       ins_debug_instr_prologue (a - F_OFFSET, b, 0);
-      ia32_push_int(-(INT32) b);
+      ia32_push_int(-b);
       return;
 
     case F_CONSTANT:

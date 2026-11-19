@@ -7376,6 +7376,84 @@ test_any([[
   };
 ]], 0)
 
+// Negated immediate minima must promote rather than wrap in native emitters.
+test_any([[
+  class Test {
+    int n;
+    int direct() { int a = -2147483648; return -a; }
+    int assigned() { int a = -2147483648; a = -a; return a; }
+    int retained(int a) { return -(a = -2147483648); }
+    array stacked(int a) { return ({ "prefix", -(a = -2147483648), a }); }
+    int global_case() { n = -2147483648; return -n; }
+  };
+  object o = Test();
+  int positive = (int)Gmp.mpz("2147483648");
+  int negative = -positive;
+  foreach (({ UNDEFINED, 0, -1, 1, positive, negative, 1 << 90 }), int a) {
+    o->n = a;
+    if (o->direct() != positive || o->assigned() != positive ||
+        o->retained(a) != positive || o->global_case() != positive ||
+        o->n != negative ||
+        !equal(o->stacked(a), ({ "prefix", positive, negative }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Check both signs and adjacent immediate boundaries in generated programs.
+test_any([[
+  foreach (({ "-2147483649", "-2147483648", "-2147483647", "-1", "0",
+               "1", "2147483647", "2147483648", "2147483649",
+               "-9223372036854775808", "9223372036854775807" }),
+           string text) {
+    int expected = (int)(-Gmp.mpz(text));
+    program p = compile_string("int f() { int a = " + text +
+                               "; return -a; }\n");
+    if (p()->f() != expected) return 0;
+    p = compile_string("int f(int a) { return -(a = " + text + "); }\n");
+    if (p()->f(0) != expected) return 0;
+  }
+  return 1;
+]], 1)
+
+// Local immediate addition must restore the original value before replay.
+test_any([[
+  class Test {
+    array discarded(mixed a) {
+      int b = -2147483648;
+      a += b;
+      return ({ a, zero_type(a) });
+    }
+    array retained(mixed a) {
+      int b = -2147483648;
+      return ({ a += b, a, zero_type(a) });
+    }
+  };
+  object o = Test();
+  foreach (({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN, Int.NATIVE_MIN + 1,
+               Int.NATIVE_MIN + (1 << 30),
+               Int.NATIVE_MAX, 1 << 90 }), int a) {
+    int expected = (int)(Gmp.mpz(a) - Gmp.mpz("2147483648"));
+    if (!equal(o->discarded(a), ({ expected, 0 })) ||
+        !equal(o->retained(a), ({ expected, expected, 0 }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Signed-minimum arithmetic immediates must compile without recursion.
+test_any([[
+  class Test {
+    array f(int a) { return ({ a + -2147483648, a - -2147483648 }); }
+  };
+  object o = Test();
+  foreach (({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN,
+               Int.NATIVE_MAX, 1 << 90 }), int a) {
+    int minus = (int)(Gmp.mpz(a) - Gmp.mpz("2147483648"));
+    int plus = (int)(Gmp.mpz(a) + Gmp.mpz("2147483648"));
+    if (!equal(o->f(a), ({ minus, plus }))) return 0;
+  }
+  return 1;
+]], 1)
+
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
 test_true([[Int.NATIVE_MAX >= 2147483647]])
