@@ -2779,6 +2779,9 @@ variant Concurrent.Future async_##X( string host ) {                    \
 }
 
 //! Returns an asynchronous DNS client object.
+//!
+//! @note
+//!   Introduced in Pike 9.1; it is not available in Pike 9.0.
 async_client get_async_client() {
   if( !global_async_client )
     global_async_client = async_client();

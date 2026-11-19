@@ -2590,7 +2590,7 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
 	n = mkidentifiernode(id);
       }
       if (res) {
-	res = mknode(F_ARG_LIST, res, n);
+        res = mkarglist(res, n);
       } else {
 	res = n;
       }
@@ -2904,10 +2904,8 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	  }
 	}
 	return mknode(F_APPLY, mkexternalnode(state->new_program, id),
-		      mknode(F_ARG_LIST,
-			     mkstrnode(ident),
-			     mknode(F_ARG_LIST,
-				    mkthisnode(state->new_program, inherit_num),
+                      mkarglist(mkstrnode(ident),
+                             mkarglist(mkthisnode(state->new_program, inherit_num),
 				    mkintnode(1))));
       }
     }
@@ -9036,7 +9034,17 @@ int store_constant(const struct svalue *foo,
 	      return e;
 	    }
 	  }
-	} else if(equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) {
+        } else if((equal &&
+                   /* Arrays, mappings and multisets can be changed, and an
+                    * equal constant may be one that the compiler folded
+                    * from another object (eg "obj.mapping_var"), which
+                    * a literal must not become a copy of. So they are
+                    * only shared when they are the same container.
+                    */
+                   (TYPEOF(*foo) != T_ARRAY) &&
+                   (TYPEOF(*foo) != T_MAPPING) &&
+                   (TYPEOF(*foo) != T_MULTISET)) ?
+                  is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) {
 	  UNSETJMP(jmp);
 	  return e;
 	}

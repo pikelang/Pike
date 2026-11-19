@@ -1135,6 +1135,20 @@ static void init_gi_gobject(struct object *obj, gpointer gobj)
   g_object_set_qdata(that->obj, object_quark, obj);
 }
 
+/* Whether a value of type info is declared as a GObject (an object or
+ * interface type). */
+static int constant_is_gobject(GITypeInfo *info)
+{
+  GIBaseInfo *iface;
+  int res;
+  if (g_type_info_get_tag(info) != GI_TYPE_TAG_INTERFACE) return 0;
+  if (!(iface = g_type_info_get_interface(info))) return 0;
+  res = g_base_info_get_type(iface) == GI_INFO_TYPE_OBJECT ||
+    g_base_info_get_type(iface) == GI_INFO_TYPE_INTERFACE;
+  g_base_info_unref(iface);
+  return res;
+}
+
 static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
 {
   STACK_LEVEL_START(0);
@@ -1174,7 +1188,6 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
         if (p) {
           struct object *parent = NULL;
           INT32 parent_identifier = -1;
-          struct GI_GObject_struct *that;
           if (TYPEOF(Pike_sp[-2]) == T_FUNCTION) {
             parent = Pike_sp[-2].u.object;
             parent_identifier = SUBTYPEOF(Pike_sp[-2]);
@@ -1242,7 +1255,6 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
           struct object *parent = NULL;
           INT32 parent_identifier = -1;
           struct object *obj;
-          struct GI_GBoxed_struct *that;
           if (TYPEOF(Pike_sp[-2]) == T_FUNCTION) {
             parent = Pike_sp[-2].u.object;
             parent_identifier = SUBTYPEOF(Pike_sp[-2]);
@@ -2209,7 +2221,6 @@ static void low_invoke(GIBaseInfo *callable,
       } else {
         GITypeInfo *typeinfo = g_arg_info_get_type(ai);
         gint al_arg = g_type_info_get_array_length(typeinfo);
-        ptrdiff_t arr_len;
         g_base_info_unref(typeinfo);
         /* NB: get_gi_argument() may push stuff on the Pike stack. */
         push_int64(get_gi_argument(sval, &in_args[num_in_args++], ai));
@@ -2467,7 +2478,7 @@ static void f_get_gi_property(INT32 args)
     GI_IS_OBJECT_INFO(info) ? g_object_info_get_property(info, n) :
     g_interface_info_get_property(info, n);
   GIFunctionInfo *getter;
-  ONERROR err, err2;
+  ONERROR err;
 
   if (!info) {
     Pike_error("Program contains no object information.\n");
@@ -2922,7 +2933,6 @@ static struct pike_type *generate_gi_fun_type(struct mapping *namespace,
       struct pike_type *fun_type;
       if (g_type_info_get_tag(cinfo) == GI_TYPE_TAG_INTERFACE) {
         GIBaseInfo *iinfo = g_type_info_get_interface(cinfo);
-        gint ncbargs, i;
         fun_type = generate_gi_fun_type(namespace, iinfo, 1);
         push_finished_type(fun_type);
         free_type(fun_type);
@@ -3920,7 +3930,7 @@ static void low_free_gparams(struct gparams_list *gpl)
   if (names) {
     for (i = 0; i < nparam; i++)
       g_free((gchar *)names[i]);
-    g_free(names);
+    g_free((gpointer)names);
     gpl->names = NULL;
   }
   if (values) {
@@ -4078,11 +4088,11 @@ PIKECLASS Repository
    */
   PIKEFUN BaseInfo find_by_name(string namespace, string name)
   {
-    struct svalue *cached;
     ONERROR onerror;
     GIBaseInfo *info;
 
 #if 0
+    struct svalue *cached;
     if ((cached = mapping_string_lookup(THIS->namespace_lookup,
                                         namespace, 0))) {
       pop_n_elems(args);
@@ -4384,7 +4394,11 @@ PIKECLASS Repository
 
         g_constant_info_get_value(info, &c_value);
 
-        push_gi_argument(&c_value, c_type_info);
+        if (constant_is_gobject(c_type_info)) {
+          /* A constant can't be a GObject instance */
+          push_int(0);
+        } else
+          push_gi_argument(&c_value, c_type_info);
         simple_add_constant(pike_get_name(info), Pike_sp-1, 0);
         pop_stack();
 

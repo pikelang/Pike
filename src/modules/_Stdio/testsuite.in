@@ -24,17 +24,6 @@ test_any([[
   return 1;
 ]], 1)
 
-// Reading the write end must preserve the read error for buffer reads.
-test_any([[
-  Stdio.Fd input = Stdio.Fd();
-  Stdio.Fd output = input->pipe(Stdio.PROP_IPC);
-  int result = output->read(Stdio.Buffer());
-  int error = output->errno();
-  input->close();
-  output->close();
-  return result == -1 && error != 0;
-]], 1)
-
 cond_resolv(_Stdio.get_interface_addresses, [[
   test_any([[
     foreach (_Stdio.get_interface_addresses(), array(string) iface) {
@@ -68,6 +57,15 @@ test_any([[
 dnl - file->open
 dnl - file->close
 test_any(object o=Stdio.File(); return o->open(testfile,"wct") && o->close(),1)
+
+dnl Reading a write-only file must preserve the read error for buffer reads.
+test_any([[
+  Stdio.Fd output = Stdio.Fd(testfile, "w");
+  int result = output->read(Stdio.Buffer());
+  int error = output->errno();
+  output->close();
+  return result == -1 && error != 0;
+]], 1)
 test_any([[
   Stdio.File o = Stdio.File();
   o->open ("file_that_doesnt_exist", "r");
@@ -585,6 +583,77 @@ dnl create/add( system.memory )
     return 1;
   ]], 1)
 cond_end
+
+dnl A Stdio.Buffer made of a System.Memory should stay readable after
+dnl the System.Memory's free(), which must throw or leave the memory to
+dnl the buffer. (crash)
+cond([[ System["__MMAP__"] ]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      System.Memory m = System.Memory(1 << 20);
+      m[0] = 65;
+      Stdio.Buffer b = Stdio.Buffer(m);
+      catch { m->free(); };
+      if (b[0] != 65 || sizeof(b->read()) != 1 << 20) return 2;
+      return 0;
+    #} }));
+    if (r->exitcode) return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+
+dnl Explicit destruction must preserve memory shared by sub-buffers.
+cond([[ System["__MMAP__"] ]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      System.Memory m = System.Memory(32);
+      m[0] = 65;
+      Stdio.Buffer b = Stdio.Buffer(m);
+      Stdio.Buffer c = b->read_buffer(16);
+      destruct(m);
+      destruct(b);
+      if (c[0] != 65 || sizeof(c->read()) != 16) return 1;
+      destruct(c);
+      // Only one of several System.Memory inherits backs the buffer.
+      class Memories {
+        inherit System.Memory: first;
+        inherit System.Memory: second;
+        protected void create() {
+          first::create(32);
+          second::create(32);
+        }
+      };
+      m = Memories();
+      b = Stdio.Buffer(m);
+      destruct(m);
+      if (sizeof(b->read()) != 32) return 2;
+      destruct(b);
+      return 0;
+    #} }));
+    return r->exitcode ? sprintf("exit %d: %s", r->exitcode, r->stderr) : 0;
+  ]], 0)
+]])
+
+dnl The last buffer must unmap a destructed System.Memory. Check the
+dnl mapping directly where procfs exposes it, independently of malloc.
+cond([[ System["__MMAP__"] && Stdio.exist("/proc/self/maps") ]], [[
+  test_any([[
+    string path = sprintf("buffer_memory_mapping_%d", getpid());
+    Stdio.File f = Stdio.File(path, "wct");
+    f->truncate(4096);
+    f->close();
+    System.Memory m = System.Memory(path);
+    Stdio.Buffer b = Stdio.Buffer(m);
+    Stdio.Buffer c = b->read_buffer(32);
+    destruct(m);
+    destruct(b);
+    int mapped = search(Stdio.read_file("/proc/self/maps"), path) >= 0;
+    destruct(c);
+    int unmapped = search(Stdio.read_file("/proc/self/maps"), path) < 0;
+    rm(path);
+    return mapped && unmapped;
+  ]], 1)
+]])
 
 dnl create/add( buffer )
 test_any([[
@@ -1163,10 +1232,13 @@ test_any([[
 #if constant(_Stdio.__HAVE_SEND_FD__)
       if (operation >= 5) {
         reader = ReceivingFile();
-        writer = reader->pipe(Stdio.PROP_IPC | Stdio.PROP_SEND_FD);
+        writer = reader->pipe(Stdio.PROP_IPC | Stdio.PROP_SEND_FD |
+                              Stdio.PROP_INTERRUPTIBLE);
       } else
 #endif
-        writer = reader->pipe();
+        writer = reader->pipe(Stdio.PROP_INTERRUPTIBLE);
+      if (!(reader->mode() & Stdio.PROP_INTERRUPTIBLE) ||
+          !(writer->mode() & Stdio.PROP_INTERRUPTIBLE)) return -1;
       Thread.Queue ready = Thread.Queue();
       Thread.Thread worker = Thread.Thread(lambda() {
         mixed failure = catch {
@@ -1175,9 +1247,12 @@ test_any([[
           case 0: reader->read(1); break;
           case 1: reader->read(); break;
           case 2: reader->read(1000000); break;
-          case 3: writer->write("x" * 1000000); break;
-          case 4: writer->write(({ "x" * 1000000,
-                                   "y" * 1000000 })); break;
+          // Keep writing until the pipe fills, regardless of its capacity.
+          case 3:
+            while (1) writer->write("x" * 1000000);
+          case 4:
+            while (1) writer->write(({ "x" * 1000000,
+                                      "y" * 1000000 }));
           }
         };
         return !!failure;
@@ -1198,6 +1273,57 @@ test_any([[
   }
   return 0;
 ]], 0)
+
+test_any([[
+  // An interrupt just before read() must not be lost. Once handled, it
+  // must not cancel a subsequent read on the same thread.
+  foreach (({ 0.0, 0.05 }), float delay) {
+    for (int i = 0; i < 10; i++) {
+      Stdio.File reader = Stdio.File();
+      Stdio.File writer = reader->pipe(Stdio.PROP_INTERRUPTIBLE);
+      if (!(reader->mode() & Stdio.PROP_INTERRUPTIBLE) ||
+          !(writer->mode() & Stdio.PROP_INTERRUPTIBLE)) return -1;
+      Thread.Queue ready = Thread.Queue();
+      int handled;
+      Thread.Thread worker = Thread.Thread(lambda() {
+        mixed interrupted = catch {
+          ready->write(1);
+          reader->read(1);
+        };
+        handled = 1;
+        return ({ !!interrupted, reader->read(1) });
+      });
+      ready->read();
+      sleep(delay);
+      worker->interrupt();
+      while (!handled) sleep(0.001);
+      writer->write("x");
+      mixed result = worker->wait();
+      reader->close();
+      writer->close();
+      if (!equal(result, ({ 1, "x" }))) return result;
+    }
+  }
+  return 0;
+]], 0)
 ]])
+
+dnl errno() in a UDP read callback should be 0 for a datagram that
+dnl arrived, not an older error (EAGAIN from a read of nothing before
+dnl it).
+test_any([[
+  object u = _Stdio.UDP()->bind(0, "127.0.0.1");
+  int port = (int)(u->query_address() / " ")[1];
+  u->_set_nonblocking();
+  u->read();
+  int in_cb = -1;
+  u->_set_read_callback(lambda() { in_cb = u->errno(); u->read(); });
+  object s = Stdio.UDP()->bind(0, "127.0.0.1");
+  s->send("127.0.0.1", port, "x");
+  for (int i = 0; i < 100 && in_cb < 0; i++) Pike.DefaultBackend(0.05);
+  u->close();
+  s->close();
+  return in_cb;
+]], 0)
 
 END_MARKER

@@ -412,6 +412,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //!   Session to resume (if any).
 //!
 //! @param early_data
+//!   Available since Pike 9.1; this argument is not accepted in Pike 9.0.
 //!   TLS 1.3 (@rfc{8446:2.3@}) 0-RTT application data to send
 //!   immediately, opportunistically -- see
 //!   @[ClientConnection.client_hello()]'s parameter doc for exactly

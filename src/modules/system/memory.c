@@ -137,8 +137,24 @@ static void MEMORY_FREE( struct memory_storage *storage )
   if (!(STORAGE->p))							\
     Pike_error("No memory in this Memory object.\n");
 
-static void exit_memory(struct object *UNUSED(o))
+/* A Stdio.Buffer made of this object (or a sub-buffer of one) uses its
+ * memory directly: it may not be freed or replaced meanwhile. */
+#define MEMORY_NOT_PINNED()						\
+  if (THIS->p && pike_memory_object_pinned(THISOBJ))			\
+    Pike_error("The memory is used by a Stdio.Buffer.\n");
+
+static void deferred_memory_free(void *storage)
 {
+   MEMORY_FREE(storage);
+}
+
+static void exit_memory(struct object *o)
+{
+   if (THIS->p && pike_memory_object_pinned(o)) {
+     /* Buffers retain the object's storage until their final unpin. */
+     pike_defer_memory_object_free(o, deferred_memory_free, THIS);
+     return;
+   }
    MEMORY_FREE(THIS);
 }
 
@@ -154,6 +170,7 @@ static void exit_memory(struct object *UNUSED(o))
  */
 static void memory_create(INT32 args)
 {
+   MEMORY_NOT_PINNED();
    if (args)
    {
       if (TYPEOF(sp[-args]) == T_STRING ||
@@ -207,6 +224,7 @@ static void memory_shm( INT32 args )
 #ifdef HAVE_SYS_SHM_H
   int id;
 
+  MEMORY_NOT_PINNED();
   MEMORY_FREE(THIS);
 
   if( args < 2 )
@@ -240,6 +258,7 @@ static void memory_shm( INT32 args )
   {
     HANDLE handle;
     char id[4711];
+    MEMORY_NOT_PINNED();
     snprintf( id, sizeof(id),
               "pike.%"PRINTPIKEINT"d", Pike_sp[-args].u.integer );
     THIS->size = Pike_sp[1-args].u.integer;
@@ -283,6 +302,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    int flags=0;
    int resflags=MEM_FREE_MUNMAP|MEM_WRITE|MEM_READ;
 
+   MEMORY_NOT_PINNED();
    MEMORY_FREE(THIS); /* we expect this even on error */
 
    if (args<1)
@@ -459,6 +479,7 @@ static void memory_allocate(INT32 args)
    INT_TYPE c=0;
    INT_TYPE size;
    unsigned char *mem;
+   MEMORY_NOT_PINNED();
 
    if (args>=2)
       get_all_args(NULL, args, "%+%+", &size,&c);
@@ -495,6 +516,7 @@ static void memory_allocate(INT32 args)
  */
 static void memory_free(INT32 UNUSED(args))
 {
+   MEMORY_NOT_PINNED();
    MEMORY_FREE(THIS);
 }
 

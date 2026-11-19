@@ -142,7 +142,9 @@
 
 #ifdef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
 #undef UNIX_SOCKET_CAPABILITIES
-#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
+#define UNIX_SOCKET_CAPABILITIES \
+  (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | \
+   fd_SEND_FD | fd_INTERRUPT_CAPABILITY)
 #endif
 
 #if !defined(HAVE_DIRFD) && !defined(dirfd)
@@ -213,6 +215,16 @@ struct program *file_ref_program;
  *!
  *! File properties for use with eg @[Fd()->pipe()],
  *! and returned by eg @[Fd()->mode()].
+ */
+
+/*! @decl constant PROP_INTERRUPTIBLE = 0x10000
+ *!   Blocking I/O can be interrupted by @[Thread.Thread()->interrupt()]
+ *!   or @[Thread.Thread()->kill()]. Not all device drivers support
+ *!   cancellation. On Windows this property selects native pipes rather
+ *!   than sockets and requires Vista / Server 2008 or later.
+ *!
+ *! @seealso
+ *!   @[Fd()->pipe()], @[Thread.THREAD_SUPPORTS_IO_INTERRUPTS]
  */
 
 /*! @decl constant PROP_TTY = 0x0080
@@ -4651,6 +4663,8 @@ static void file_errno(INT32 args)
  *! @returns
  *!   Returns an @[`|()] of the following flags:
  *! @int
+ *!   @value 0x10000
+ *!     @[PROP_INTERRUPTIBLE]
  *!   @value 0x1000
  *!     @[FILE_READ]
  *!   @value 0x2000
@@ -5408,7 +5422,9 @@ static void file_pipe(INT32 args)
 
 #ifdef UNIX_SOCKETS_WORKS_WITH_SHUTDOWN
 #undef UNIX_SOCKET_CAPABILITIES
-#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
+#define UNIX_SOCKET_CAPABILITIES \
+  (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | \
+   fd_SEND_FD | fd_INTERRUPT_CAPABILITY)
 #endif
 
 #if defined(HAVE_SOCKETPAIR)
@@ -7418,11 +7434,12 @@ PIKE_MODULE_INIT
 
   /* enum FilePropertyFlags */
   type_stack_mark();
-  push_int_type(0, 0xff);
+  push_int_type(0, 0x1ffff);
   push_type_value(pop_unfinished_type());
   simple_add_constant("FilePropertyFlags", Pike_sp-1, 0);
   pop_stack();
 
+  add_integer_constant("PROP_INTERRUPTIBLE",fd_CAN_INTERRUPT,0);
   add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
   add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
   add_integer_constant("PROP_SEND_FD",fd_SEND_FD,0);

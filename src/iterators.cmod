@@ -1928,21 +1928,18 @@ PIKECLASS string_split_iterator
 	      CADR(*to) && (CADR(*to)->token == F_CONSTANT) &&
 	      (TYPEOF(CADR(*to)->u.sval) == T_INT) &&
 	      (num = CADR(*to)->u.sval.u.integer) &&
-	      CDDR(*to) && (CDDR(*to)->token == F_CONSTANT) &&
-	      (TYPEOF(CDDR(*to)->u.sval) == T_STRING) &&
-	      (CDDR(*to)->u.sval.u.string->len == 1)) {
+              CDDR(*to) && !CDDDR(*to) &&
+              CADDR(*to) && (CADDR(*to)->token == F_CONSTANT) &&
+              (TYPEOF(CADDR(*to)->u.sval) == T_STRING) &&
+              (CADDR(*to)->u.sval.u.string->len == 1)) {
 	    /* String.SplitIterator(replace(str, from, allocate(num, "x")),
 	     *                      ...) */
-	    int split_val = index_shared_string(CDDR(*to)->u.sval.u.string, 0);
+            int split_val = index_shared_string(CADDR(*to)->u.sval.u.string, 0);
 
-	    if (CDDR(n) &&
-		(((CDDR(n)->token == F_CONSTANT) &&
-		  (TYPEOF(CDDR(n)->u.sval) == T_INT) &&
-		  (CDDR(n)->u.sval.u.integer == split_val)) ||
-		 ((CDDR(n)->token == F_ARG_LIST) &&
-		  CADDR(n) && (CADDR(n)->token == F_CONSTANT) &&
-		  (TYPEOF(CADDR(n)->u.sval) == T_INT) &&
-		  (CADDR(n)->u.sval.u.integer == split_val)))) {
+            if (CDDR(n) && CADDR(n) &&
+                CADDR(n)->token == F_CONSTANT &&
+                TYPEOF(CADDR(n)->u.sval) == T_INT &&
+                CADDR(n)->u.sval.u.integer == split_val) {
 	      /* String.SplitIterator(replace(str, from, allocate(n, "x")),
 	       *                      'x', ...)
 	       */
@@ -2021,26 +2018,14 @@ PIKECLASS string_split_iterator
 	       *
 	       * String.SplitIterator(str, split, ...)
 	       */
-	      if (CDDR(n)->token == F_ARG_LIST) {
-		ADD_NODE_REF2(CAR(n),
-		ADD_NODE_REF2(*str,
-		ADD_NODE_REF2(CDDDR(n),
-		  res =
-		    mkapplynode(CAR(n),
-			        mknode(F_ARG_LIST, *str,
-				       mknode(F_ARG_LIST,
-					      mkconstantsvaluenode(Pike_sp-1),
-					      CDDDR(n))));
-		)));
-	      } else {
-		ADD_NODE_REF2(CAR(n),
-		ADD_NODE_REF2(*str,
-		  res =
-		    mkapplynode(CAR(n),
-			        mknode(F_ARG_LIST, *str,
-				       mkconstantsvaluenode(Pike_sp-1)));
-		));
-	      }
+              ADD_NODE_REF2(CAR(n),
+              ADD_NODE_REF2(*str,
+              ADD_NODE_REF2(CDDDR(n),
+                res = mkapplynode(CAR(n),
+                                  mkarglist(*str,
+                                    mkarglist(mkconstantsvaluenode(Pike_sp-1),
+                                              CDDDR(n))));
+              )));
 	      pop_stack();
 	      return res;
 	    }

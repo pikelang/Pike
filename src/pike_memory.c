@@ -667,6 +667,9 @@ static struct mexec_hdr {
   ptrdiff_t size;
   char *bottom;
   struct mexec_free_block *free;/* Ordered according to reverse address. */
+  /* At least the size of the largest block in free: a request larger
+   * than this skips the list. */
+  ptrdiff_t max_free;
 } *mexec_hdrs = NULL;		/* Ordered according to reverse address. */
 
 #ifdef PIKE_DEBUG
@@ -698,6 +701,11 @@ static void low_verify_mexec_hdr(struct mexec_hdr *hdr,
     }
     if (d_flag > 1) {
       for (ptr = hdr->free; ptr; ptr = ptr->next) {
+        if (ptr->size > hdr->max_free) {
+          Pike_fatal("%s:%ld:Free block larger than max_free: %p > %p\n",
+                     file, (long)line,
+                     (void *)ptr->size, (void *)hdr->max_free);
+        }
 	if (ptr < (struct mexec_free_block *)(hdr+1)) {
 	  Pike_fatal("%s:%ld:Free block before start of header. %p < %p\n",
 		     file, (long)line,
@@ -728,12 +736,27 @@ static void low_verify_mexec_hdr(struct mexec_hdr *hdr,
  *   * Combine amounts over 1008 Kbytes into 4080-Kbyte chunks.
  */
 
+/* The size of all chunks. A chunk is created, or grown in place, by
+ * at least a quarter of that, between MEXEC_MIN_NEW_CHUNK and
+ * MEXEC_MAX_NEW_CHUNK. */
+static size_t mexec_total_size;
+#define MEXEC_MIN_NEW_CHUNK	(64 * 1024)
+#define MEXEC_MAX_NEW_CHUNK	(16 * 1024 * 1024)
+
 static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 {
   struct mexec_hdr *wanted = NULL;
   struct mexec_hdr *hdr;
+  size_t want = mexec_total_size / 4;
   /* fprintf(stderr, "grow_mexec_hdr(%p, %p)\n", base, (void *)sz); */
   if (!sz) return NULL;
+
+  /* Also when growing in place: mexec_realloc() would otherwise grow a
+   * chunk a page at a time, and a page that can't go in place becomes
+   * a new chunk. */
+  if (want < MEXEC_MIN_NEW_CHUNK) want = MEXEC_MIN_NEW_CHUNK;
+  if (want > MEXEC_MAX_NEW_CHUNK) want = MEXEC_MAX_NEW_CHUNK;
+  if (sz < want) sz = want;
 
   sz = (sz + sizeof(struct mexec_hdr) + (MEXEC_ALLOC_CHUNK_SIZE-1)) &
     ~(MEXEC_ALLOC_CHUNK_SIZE-1);
@@ -745,6 +768,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 
   hdr = mexec_do_alloc (wanted, sz);
   if (!hdr) return NULL;
+  mexec_total_size += sz;
 #ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
   pthread_jit_write_protect_np(0);
 #endif
@@ -793,6 +817,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 #endif
   hdr->size = sz;
   hdr->free = NULL;
+  hdr->max_free = 0;
   hdr->bottom = (char *)(hdr+1);
 #ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
   pthread_jit_write_protect_np(1);
@@ -805,6 +830,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
 {
   struct mexec_free_block **free;
+  struct mexec_free_block *none = NULL;
   struct mexec_block *res;
 
   /* fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz); */
@@ -814,8 +840,15 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
   pthread_jit_write_protect_np(0);
 #endif
   free = &hdr->free;
-  while (*free && ((*free)->size < (ptrdiff_t)sz)) {
-    free = &((*free)->next);
+  if (hdr->max_free >= (ptrdiff_t)sz) {
+    ptrdiff_t largest = 0;
+    while (*free && ((*free)->size < (ptrdiff_t)sz)) {
+      if ((*free)->size > largest) largest = (*free)->size;
+      free = &((*free)->next);
+    }
+    if (!*free) hdr->max_free = largest;
+  } else {
+    free = &none;
   }
   if ((res = (struct mexec_block *)*free)) {
     if (res->size <= (ptrdiff_t)(sz + 2*sizeof(struct mexec_block))) {
@@ -920,10 +953,14 @@ PMOD_EXPORT void mexec_free(void *ptr)
       /* Join with bottom. */
       hdr->bottom = (char *)blk;
       hdr->free = blk->next;
+      blk = NULL;
     } else {
       hdr->free = blk;
     }
   }
+  /* blk, joined with its neighbours, is in the list unless it joined
+   * the bottom. */
+  if (blk && blk->size > hdr->max_free) hdr->max_free = blk->size;
 #ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
   pthread_jit_write_protect_np(1);
 #endif

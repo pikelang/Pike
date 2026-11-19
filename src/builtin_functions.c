@@ -139,92 +139,49 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 
 static node *optimize_f_aggregate(node *n)
 {
-  /* Split long argument lists into multiple function calls.
-   *
-   * aggregate(...) ==> `+(aggregate(...arg32), aggregate(arg33...), ...)
-   *
-   * Also removes splices.
-   *
-   * Note: We assume that the argument list is in left-recursive form.
-   */
   node *args = CDR(n);
   node *new_args = NULL;
   node *add_args = NULL;
-  int count;
-  if (!args) return NULL;
-  args->parent = NULL;
-  for (count = 0; args->token == F_ARG_LIST; args = CAR(args)) {
-    if (CDR(args) && CDR(args)->token == F_PUSH_ARRAY) {
-      /* Splices have a weight of 16.
-       * FIXME: Consider length of pushed array type.
-       */
-      count += 16;
-    } else {
-      count++;
-    }
-    if (!CAR(args)) break;
-    CAR(args)->parent = args;
-  }
-  if (args->token == F_PUSH_ARRAY) {
-    /* Last argument is a splice */
-    count += 16;
-  } else if (args->token != F_ARG_LIST) {
-    count++;
-  }
+  int count = 0;
 
-  /* Ignore cases with 32 or less arguments. */
-  if (count <= 32) {
-    CDR(n)->parent = n;
-    return NULL;
-  }
-
-  /*
-   * Perform the actual rewrite.
-   *
-   * Start with the last arg, and work towards the first.
+  /* Split long lists into chunks, and expose spliced arrays to `+.
+   * Build the chunk lists backwards to keep construction linear.
    */
+  for (; args; args = CDR(args)) {
+    node *arg = CAR(args);
+    count += arg && arg->token == F_PUSH_ARRAY ? 16 : 1;
+  }
+  if (count <= 32) return NULL;
 
   count = 0;
-  if (args->token != F_ARG_LIST) {
-    if (args->token == F_PUSH_ARRAY) {
-      /* Splice operator. */
-      add_args = copy_node(CAR(args));
-    } else {
-      new_args = copy_node(args);
-      count = 1;
-    }
-    args = args->parent;
-  }
-
-  for(; args; args = args->parent) {
-    if (!CDR(args)) continue;
-    if (CDR(args)->token == F_PUSH_ARRAY) {
+  for (args = CDR(n); args; args = CDR(args)) {
+    node *arg = CAR(args);
+    if (!arg) continue;
+    if (arg->token == F_PUSH_ARRAY) {
       if (count) {
-	add_args = mknode(F_ARG_LIST, add_args,
-			  mkapplynode(copy_node(CAR(n)), new_args));
-	new_args = NULL;
-	count = 0;
+        add_args = mknode(F_ARG_LIST,
+                         mkapplynode(copy_node(CAR(n)),
+                                     reverse_arg_list(new_args)), add_args);
+        new_args = NULL;
+        count = 0;
       }
-      add_args = mknode(F_ARG_LIST, add_args, copy_node(CADR(args)));
+      add_args = mknode(F_ARG_LIST, copy_node(CAR(arg)), add_args);
     } else {
-      new_args = mknode(F_ARG_LIST, new_args, copy_node(CDR(args)));
-      count++;
-      if (count > 31) {
-	add_args = mknode(F_ARG_LIST, add_args,
-			  mkapplynode(copy_node(CAR(n)), new_args));
-	new_args = NULL;
-	count = 0;
+      new_args = mknode(F_ARG_LIST, copy_node(arg), new_args);
+      if (++count == 32) {
+        add_args = mknode(F_ARG_LIST,
+                         mkapplynode(copy_node(CAR(n)),
+                                     reverse_arg_list(new_args)), add_args);
+        new_args = NULL;
+        count = 0;
       }
     }
   }
-  if (count) {
-    add_args = mknode(F_ARG_LIST, add_args,
-		      mkapplynode(copy_node(CAR(n)), new_args));
-    new_args = NULL;
-    count = 0;
-  }
-  CDR(n)->parent = n;
-  return mkefuncallnode("`+", add_args);
+  if (count)
+    add_args = mknode(F_ARG_LIST,
+                     mkapplynode(copy_node(CAR(n)),
+                                 reverse_arg_list(new_args)), add_args);
+  return mkefuncallnode("`+", reverse_arg_list(add_args));
 }
 
 #define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
@@ -3394,7 +3351,7 @@ static node *optimize_this_object(node *n)
 
     CHECK_COMPILER();
 
-    if (CDR (n)->token != F_CONSTANT) {
+    if (CDDR(n) || CADR(n)->token != F_CONSTANT) {
       /* Not a constant expression. Make sure there are parent
        * pointers all the way. */
       int i;
@@ -3405,10 +3362,10 @@ static node *optimize_this_object(node *n)
     else {
       int i;
 #ifdef PIKE_DEBUG
-      if (TYPEOF(CDR(n)->u.sval) != T_INT || CDR(n)->u.sval.u.integer < 0)
+      if (TYPEOF(CADR(n)->u.sval) != T_INT || CADR(n)->u.sval.u.integer < 0)
 	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
-      level = CDR (n)->u.sval.u.integer;
+      level = CADR(n)->u.sval.u.integer;
       for (i = MINIMUM(level, c->compilation_depth); i;
 	   i--, state = state->previous) {
 	state->new_program->flags |=
@@ -3445,15 +3402,15 @@ static int generate_this_object(node *n)
   CHECK_COMPILER();
 
   if (CDR (n)) {
-    if (CDR (n)->token != F_CONSTANT)
+    if (CDDR(n) || CADR(n)->token != F_CONSTANT)
       /* Not a constant expression. Make a call to f_this_object. */
       return 0;
     else {
 #ifdef PIKE_DEBUG
-      if (TYPEOF(CDR(n)->u.sval) != T_INT || CDR(n)->u.sval.u.integer < 0)
+      if (TYPEOF(CADR(n)->u.sval) != T_INT || CADR(n)->u.sval.u.integer < 0)
 	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
-      level = CDR (n)->u.sval.u.integer;
+      level = CADR(n)->u.sval.u.integer;
     }
   }
   else level = 0;
@@ -5465,8 +5422,7 @@ static node *optimize_sleep(node *apply)
       mknode(F_COMMA_EXPR,
              mkcastnode(void_type_string,
                         mkefuncallnode("call_out",
-                                       mknode(F_ARG_LIST,
-                                              program_magic_identifier(Pike_compiler, 0,
+                                       mkarglist(program_magic_identifier(Pike_compiler, 0,
                                                                        INHERIT_GENERATOR,
                                                                        this_function_string,
                                                                        1),
@@ -8633,12 +8589,21 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
         case PIKE_T_MULTISET:
             res = sizeof(struct multiset) + sizeof(struct multiset_data);
             node_ref = multiset_last( s->u.multiset );
-            while( node_ref != -1 )
+            if( node_ref != -1 )
             {
-                res += rec_size_svalue( get_multiset_value (s->u.multiset, node_ref), m )
-                    /* each node has the index and left/right node pointers. */
-                    + sizeof(struct svalue) + (sizeof(void*)*2);
-                node_ref = multiset_prev( s->u.multiset, node_ref );
+                /* multiset_last() took a node reference, which
+                 * multiset_prev() keeps: give it back at the end. */
+                ONERROR uwp;
+                SET_ONERROR( uwp, do_sub_msnode_ref, s->u.multiset );
+                while( node_ref != -1 )
+                {
+                    res += rec_size_svalue( get_multiset_value (s->u.multiset, node_ref), m )
+                        /* each node has the index and left/right node pointers. */
+                        + sizeof(struct svalue) + (sizeof(void*)*2);
+                    node_ref = multiset_prev( s->u.multiset, node_ref );
+                }
+                UNSET_ONERROR( uwp );
+                sub_msnode_ref( s->u.multiset );
             }
             break;
 

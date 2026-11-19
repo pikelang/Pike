@@ -3635,8 +3635,15 @@ static ptrdiff_t calcC(struct CPP_struct *this, const PCHARP data,
   case '0':
     if(DATA(pos+1)=='x' || DATA(pos+1)=='X')
     {
-      PCHARP p = data;
-      INC_PCHARP(p,pos + 2);
+      PCHARP p = ADD_PCHARP(data, pos), end;
+      FLOAT_TYPE f;
+      f = STRTOFLOAT_PCHARP(p, &end);
+      INC_PCHARP(p, 2);
+      if (COMPARE_PCHARP(end, >, p)) {
+        if (OUTP()) push_float(f);
+        pos = SUBTRACT_PCHARP(end, data);
+        break;
+      }
       push_int(0);
       safe_wide_string_to_svalue_inumber(Pike_sp-1, p.ptr, &p.ptr, 16,
                                          len - 2, p.shift);
@@ -3657,11 +3664,7 @@ static ptrdiff_t calcC(struct CPP_struct *this, const PCHARP data,
     /* FIXME: Support bignums. */
 
     p = ADD_PCHARP(data,pos);
-#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
-    f = STRTOLD_PCHARP(p, &p1);
-#else
-    f = STRTOD_PCHARP(p, &p1);
-#endif
+    f = STRTOFLOAT_PCHARP(p, &p1);
     l = STRTOL_PCHARP(p, &p2, 0);
     if(COMPARE_PCHARP(p1,>,p2))
     {

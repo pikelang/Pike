@@ -45,6 +45,9 @@ struct thread_state {
   struct svalue result;
   COND_T status_change;
   THREAD_T id;
+#ifdef NT_THREADS
+  struct nt_io_cancel *io_cancel;
+#endif
   cpu_time_t interval_start;	/* real_time at THREADS_DISALLOW(). */
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
   cpu_time_t auto_gc_time;

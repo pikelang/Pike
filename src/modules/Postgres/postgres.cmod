@@ -640,8 +640,6 @@ yupbegin:       res=PQexec(conn,"BEGIN");
                         THIS->last_rows=PQntuples(res);
 			push_object(make_postgres_result(Pike_fp->current_object,
 							 res, flags));
-			ref_push_object(this_object());
-			push_object(clone_object(Postgres_postgres_result_program,1));
 			return;
 		default:
 			Pike_error ("Unimplemented server feature.\n");

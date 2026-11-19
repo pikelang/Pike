@@ -1373,4 +1373,31 @@ test_do(add_constant("rcsarr"))
 test_do(add_constant("rcsobj"))
 test_do(add_constant("rcsraw"))
 
+dnl Garbage that refers to a Parser.HTML through the values in its
+dnl output queue should be freed by the gc.
+test_any_equal([[
+  array w = set_weak_flag(({ 0, 0 }), 1);
+  {
+    object p = Parser.HTML();
+    p->mixed_mode(1);
+    p->add_tag("t", lambda(object parser, mapping args) {
+        return ({ ({ parser }) });
+      });
+    p->feed("<t>", 1);
+    w[0] = p;
+  }
+  {
+    object p = Parser.HTML();
+    p->mixed_mode(1);
+    p->add_tag("t", lambda(object parser, mapping args) {
+        return ({ ({ 0 }) });
+      });
+    p->feed("<t>", 1);
+    w[1] = p;
+  }
+  gc();
+  gc();
+  return ({ !w[0], !w[1] });
+]], ({ 1, 1 }))
+
 END_MARKER

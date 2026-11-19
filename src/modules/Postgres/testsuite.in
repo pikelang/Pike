@@ -1,1 +1,61 @@
+START_MARKER
 
+dnl Queries that return rows should give their rows. Needs a PostgreSQL
+dnl server URI in PIKE_TEST_PGSQL_URL env, e.g.
+dnl pgsql://user:password@localhost:5432/database.
+cond([[getenv("PIKE_TEST_PGSQL_URL") && master()->resolv("Postgres.postgres")]], [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      Standards.URI u = Standards.URI(getenv("PIKE_TEST_PGSQL_URL"));
+      object db = Postgres.postgres(u->host, u->path[1..], u->user,
+                                    u->password, u->port);
+      object|zero r = db->big_query("SELECT 1 AS a, 'x' AS b");
+      array rows = ({});
+      while (array row = r->fetch_row()) rows += ({ row });
+      r = 0;
+      write("%O\n", rows);
+      return 0;
+    #} }));
+    if (r->exitcode || sizeof(r->stderr) ||
+        r->stdout != sprintf("%O\n", ({ ({ "1", "x" }) })))
+      return sprintf("exit %d: %s%s", r->exitcode, r->stdout, r->stderr);
+    return 0;
+  ]], 0)
+  dnl The native result-to-connection reference must be visible to GC.
+  test_any([[
+    class Connection {
+      inherit Postgres.postgres;
+      mixed saved_result;
+    };
+    Standards.URI u = Standards.URI(getenv("PIKE_TEST_PGSQL_URL"));
+    array weak = set_weak_flag(({ 0, 0 }), Pike.WEAK);
+    {
+      object db = Connection(u->host, u->path[1..], u->user,
+                             u->password, u->port);
+      object r = db->big_query("SELECT 1");
+      db->saved_result = r;
+      weak[0] = db;
+      weak[1] = r;
+    }
+    gc();
+    gc();
+    return !weak[0] && !weak[1];
+  ]], 1)
+
+  dnl A result may outlive an explicitly destructed connection. Its
+  dnl destructor must not commit through the destroyed connection, and
+  dnl fetching another batch must report an error.
+  test_any([[
+    Standards.URI u = Standards.URI(getenv("PIKE_TEST_PGSQL_URL"));
+    object db = Postgres.postgres(u->host, u->path[1..], u->user,
+                                 u->password, u->port);
+    object r = db->big_query("SELECT 1 AS result_connection_lifetime");
+    destruct(db);
+    array row = r->fetch_row();
+    mixed err = catch { r->fetch_row(); };
+    destruct(r);
+    return equal(row, ({ "1" })) && !!err;
+  ]], 1)
+]])
+
+END_MARKER

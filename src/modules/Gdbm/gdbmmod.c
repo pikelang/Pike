@@ -534,6 +534,17 @@ static void gdbmmod_store(INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+/* `[]= also gets the indexing context and access type, while store()
+ * takes its third argument for the insert flag. */
+static void gdbmmod_index_assign(INT32 args)
+{
+  if (args > 2) {
+    pop_n_elems(args - 2);
+    args = 2;
+  }
+  gdbmmod_store(args);
+}
+
 /* Compat */
 static void gdbmmod_store_compat(INT32 args)
 {
@@ -612,6 +623,7 @@ static void gdbmmod_iter_next(INT32 UNUSED(args))
     add_ref(this->iter);
     return;
   }
+  pop_stack();
   push_undefined();
 }
 
@@ -648,13 +660,14 @@ static void gdbmmod_indices(INT32 UNUSED(args))
 {
   struct gdbm_glue *this=THIS;
   struct svalue *start = Pike_sp;
+  /* Each key that gdbmmod_iter_next() finds stays on the stack. */
   gdbmmod_iter_first(0);
-  pop_stack();
-  while( this->iter )
-  {
-    ref_push_string( this->iter );
+  while (1) {
     gdbmmod_iter_next(0);
-    pop_stack();
+    if (!this->iter) {
+      pop_stack();
+      break;
+    }
   }
   push_array(aggregate_array( Pike_sp-start ));
 }
@@ -672,14 +685,13 @@ static void gdbmmod_values(INT32 UNUSED(args))
   struct gdbm_glue *this=THIS;
   struct svalue *start = Pike_sp;
   gdbmmod_iter_first(0);
-  pop_stack();
-
-  while( this->iter )
-  {
-    ref_push_string( this->iter );
-    gdbmmod_fetch(1);
+  while (1) {
     gdbmmod_iter_next(0);
-    pop_stack();
+    if (!this->iter) {
+      pop_stack();
+      break;
+    }
+    gdbmmod_fetch(1);
   }
   push_array(aggregate_array( Pike_sp-start ));
 }
@@ -759,8 +771,9 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("store", gdbmmod_store_compat,
 	       tFunc(tStr8 tStr8 tOr(tInt01, tVoid), tInt), 0);
   /* function(string, string, int(0..1)|void: string) */
-  ADD_FUNCTION("`[]=", gdbmmod_store,
-	       tFunc(tStr8 tSetvar(0, tStr8) tOr(tInt01, tVoid), tVar(0)), 0);
+  ADD_FUNCTION("`[]=", gdbmmod_index_assign,
+               tFunc(tStr8 tSetvar(0, tStr8) tOr(tMix, tVoid) tOr(tInt, tVoid),
+                     tVar(0)), 0);
   /* function(string:string) */
   ADD_FUNCTION("fetch",gdbmmod_fetch,tFunc(tStr,tStr8),0);
   /* function(string:string) */

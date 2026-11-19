@@ -18,6 +18,45 @@
 <p>The remainder of this chapter describes the main incompatibilities
    between the various versions of Pike and the current version.</p>
 
+<section title="Pike 9.0">
+  <subsection title="Language features">
+    <p>Pike 9.0 supports positional array patterns, including nested
+    patterns and defaults for entire function arguments. Pike 9.1 adds
+    defaults for individual pattern elements, rest variables, unnamed
+    elements, and mapping patterns:</p>
+    <example>
+      [int first, int second = 4, int ... tail] = values;
+      [mixed first, mixed, mixed third, ...] = values;
+      ["year": int year, "mon": int mon] = localtime(time());
+    </example>
+    <p>These examples require Pike 9.1 or later. On a newer interpreter,
+    <tt>#pike 9.0</tt> selects compatibility behavior but does not reject
+    all syntax that is unavailable in Pike 9.0.</p>
+    <p>The compiler's ability to defer final compilation across inheritance
+    dependencies between modules is also new in Pike 9.1. Unlike the
+    pattern syntax extensions, that behavior is disabled by
+    <tt>#pike 9.0</tt>.</p>
+  </subsection>
+  <subsection title="Global Functions">
+    <p>Since Pike 9.1, the <tt>+</tt> modifier in <ref>sscanf</ref> also
+    interprets <tt>%b</tt>, <tt>%o</tt>, <tt>%u</tt> and <tt>%x</tt> as
+    signed values. In Pike 9.0 it only affects <tt>%c</tt>.</p>
+  </subsection>
+  <subsection title="Modules">
+    <p>TLS 1.3 support in <ref>SSL</ref>, including its key schedule,
+    resumption and early-data APIs, is new in Pike 9.1. Pike 9.0 supports
+    protocols through TLS 1.2. The default
+    <ref>SSL.Context.supported_versions</ref> list changes from TLS 1.2,
+    TLS 1.1 and TLS 1.0 in Pike 9.0 to TLS 1.3 and TLS 1.2 in Pike 9.1.</p>
+    <p><ref>Protocols.DNS.get_async_client</ref> and the optional comparison
+    callback to <ref>Array.uniq</ref> are new in Pike 9.1.</p>
+    <p><ref>Math.factor</ref> supports negative inputs since Pike 9.1.</p>
+    <p><ref>Odbc.odbc.query_db</ref> was added in Pike 9.1. Asynchronous
+    <ref>Protocols.DNS</ref> queries also support the <tt>CAA</tt> record
+    type since Pike 9.1.</p>
+  </subsection>
+</section>
+
 <section title="Pike 8.0">
   <subsection title="Global Functions">
   </subsection>

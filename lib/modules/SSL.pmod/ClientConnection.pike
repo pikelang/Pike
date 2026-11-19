@@ -53,6 +53,7 @@ protected string _sprintf(int t)
 //! Generate a @[HANDSHAKE_client_hello] @[Packet].
 //!
 //! @param early_data
+//!   TLS 1.3 early-data support requires Pike 9.1 or later.
 //!   TLS 1.3 (@rfc{8446:2.3@}) 0-RTT application data to send
 //!   immediately after this ClientHello, if @[session] has a usable
 //!   resumption ticket that supports it (see @expr{offering_psk@} and
@@ -552,6 +553,7 @@ protected object(Packet)|zero client_key_exchange_packet()
 //!   Optional @[Session] to resume.
 //!
 //! @param early_data
+//!   Available since Pike 9.1; this argument is not accepted in Pike 9.0.
 //!   TLS 1.3 (@rfc{8446:2.3@}) 0-RTT application data to send
 //!   immediately, opportunistically -- see @[client_hello()]'s own
 //!   parameter doc for exactly when this is (and isn't) actually sent

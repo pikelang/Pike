@@ -475,7 +475,8 @@ string fix_extras(string s)
   return a * "";
 }
 
-void read_car_cdr(object(node) res, array(string) linepos)
+void read_car_cdr(object(node) res, array(string) linepos,
+                  void|int cons_args)
 {
   int c = data[pos];
 
@@ -510,7 +511,7 @@ void read_car_cdr(object(node) res, array(string) linepos)
     expect(',');
     eat_whitespace();
 
-    tpos = "D"+otpos;
+    tpos = (cons_args == 1 ? "AD" : "D")+otpos;
 
     if (data[pos] == '$') {
       // FIXME: Support for recurring nodes.
@@ -534,6 +535,20 @@ void read_car_cdr(object(node) res, array(string) linepos)
       res->cdr = res->real_cdr = read_node(linepos);
     }
 
+    if (cons_args) {
+      if (cons_args == 2) {
+        // Unary operator shorthand has no second argument.
+        res->cdr = res->real_cdr = node();
+        res->cdr->token = "-";
+      } else {
+        node tail = node();
+        tail->token = "F_ARG_LIST";
+        tail->car = tail->real_car = res->cdr;
+        tail->cdr = tail->real_cdr = node();
+        tail->cdr->token = "-";
+        res->cdr = res->real_cdr = tail;
+      }
+    }
     tpos = otpos;
     expect(')');
 
@@ -675,7 +690,8 @@ object(node)|zero read_node(array(string) linepos)
       args->token = "F_ARG_LIST";
       res->cdr = res->real_cdr = args;
 
-      read_car_cdr(args, linepos);
+      read_car_cdr(args, linepos,
+                   (f_op_name == "f_not" || f_op_name == "f_compl") ? 2 : 1);
 
       tpos = otpos;
 
@@ -1368,6 +1384,32 @@ void generate_parent(object(node) n, object(node)|zero parent, string tpos)
   }
 }
 
+// las.h provides composite CAR/CDR macros up to depth six. Proper
+// argument lists can make patterns deeper, so split longer paths.
+string expand_node_paths(string code)
+{
+  array(string) parts = ({});
+  int start = 0;
+  for (int i = 0; i < sizeof(code); i++) {
+    if (code[i] != 'C') continue;
+    int end = i + 1;
+    while (end < sizeof(code) && (code[end] == 'A' || code[end] == 'D'))
+      end++;
+    if (end - i <= 7 || code[end..end+3] != "R(n)") continue;
+    string path = code[i+1..end-1];
+    string expr = "n";
+    while (sizeof(path)) {
+      int len = min(6, sizeof(path));
+      expr = "C" + path[sizeof(path)-len..] + "R(" + expr + ")";
+      path = len == sizeof(path) ? "" : path[..sizeof(path)-len-1];
+    }
+    parts += ({ code[start..i-1], expr });
+    i = end + 3;
+    start = i + 1;
+  }
+  return (parts + ({ code[start..] })) * "";
+}
+
 int main(int argc, array(string) argv)
 {
   if (argc < 2) {
@@ -1390,7 +1432,7 @@ int main(int argc, array(string) argv)
     }
   }
 
-  string result = sprintf(header, fname) + generate_code();
+  string result = expand_node_paths(sprintf(header, fname) + generate_code());
 
   object(Stdio.File) dest = Stdio.File();
 

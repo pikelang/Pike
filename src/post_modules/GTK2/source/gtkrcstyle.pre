@@ -147,8 +147,8 @@ void set_ythickness(int value)
   pgtk2_verify_inited();
   {
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
-    int val;
-    get_all_args(NULL,args,"%a",&val);
+    INT_TYPE val;
+    get_all_args(NULL,args,"%i",&val);
     style->ythickness=val;
   }
   RETURN_THIS();

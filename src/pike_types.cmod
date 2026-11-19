@@ -3509,6 +3509,45 @@ static int lower_or_pike_types(struct pike_type *t1,
   return ret;
 }
 
+/* Find an input tail whose members exactly match the normalized stack
+ * suffix. Comparing after the merge preserves all normalization rules.
+ * Only fallback comparisons need the input length; the merge can track
+ * reusable tails without keeping input-length counters live.
+ * The returned tail is borrowed from the input.
+ */
+static struct pike_type *matching_or_tail(struct pike_type *input,
+                                        struct pike_type **items,
+                                        int count, int *matched)
+{
+  struct pike_type *t, *tail = NULL;
+  int remaining = 0;
+  *matched = 0;
+  if (!input || input->type != T_OR) return NULL;
+  for (t = input; t; t = t->type == T_OR ? t->cdr : NULL)
+    remaining++;
+  while (remaining > count) {
+    input = input->cdr;
+    remaining--;
+  }
+  items += count - remaining;
+  for (t = input; t; t = t->type == T_OR ? t->cdr : NULL) {
+    struct pike_type *item = t->type == T_OR ? t->car : t;
+    if (item != *items++) {
+      tail = NULL;
+      *matched = 0;
+    } else if (!tail) {
+      tail = t;
+      *matched = remaining;
+    }
+    remaining--;
+  }
+  if (*matched < 2) {
+    *matched = 0;
+    return NULL;
+  }
+  return tail;
+}
+
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
 			      int zero_implied)
@@ -3578,8 +3617,11 @@ static void low_or_pike_types(struct pike_type *t1,
   }
   else if ((t1->type == T_OR) || (t2->type == T_OR)) {
     int on_stack = 0;
+    struct pike_type *left = t1, *right = t2;
+    struct pike_type *tail = NULL;
+    int matched = 0;
     type_stack_mark();
-    while (t1 || t2) {
+    while (t1 && t2) {
       struct pike_type *a = t1;
       struct pike_type *b = t2;
       struct pike_type *n1 = NULL;
@@ -3612,7 +3654,69 @@ static void low_or_pike_types(struct pike_type *t1,
       if (val >= 0) t2 = n2;
       on_stack = 1;
     }
+    {
+      struct pike_type *rest = t1 ? t1 : t2;
+      /* Once one input is exhausted, remember a run of members that the
+       * merge appends unchanged. A replacement breaks the run; subsequent
+       * unchanged members can start a new reusable tail.
+       */
+      while (rest) {
+        struct pike_type *item = rest;
+        struct pike_type *next = NULL;
+        struct pike_type **before = Pike_compiler->type_stackp;
+        if (rest->type == T_OR) {
+          item = rest->car;
+          next = rest->cdr;
+        }
+        lower_or_pike_types(item, NULL, zero_implied, on_stack);
+        if (*Pike_compiler->type_stackp == item) {
+          if (matched && Pike_compiler->type_stackp == before + 1) {
+            matched++;
+          } else {
+            tail = rest;
+            matched = 1;
+          }
+        } else {
+          tail = NULL;
+          matched = 0;
+        }
+        rest = next;
+        on_stack = 1;
+      }
+    }
     on_stack = pop_stack_mark();
+    if (on_stack > 1) {
+      struct pike_type **items = Pike_compiler->type_stackp - on_stack + 1;
+      /* Any unchanged suffix can be reused; it need not be the longest.
+       * Compare both inputs only if tracking cannot save a join.
+       */
+      if (matched < 2) {
+        struct pike_type *other;
+        int other_matched;
+        tail = matching_or_tail(left, items, on_stack, &matched);
+        other = matching_or_tail(right, items, on_stack, &other_matched);
+        if (other_matched > matched) {
+          tail = other;
+          matched = other_matched;
+        }
+      }
+#ifdef PIKE_DEBUG
+      else {
+        int checked;
+        if (matching_or_tail(tail, items, on_stack, &checked) != tail ||
+            checked != matched)
+          Pike_fatal("Incorrect tracked union tail.\n");
+      }
+#endif
+      if (tail) {
+        int i;
+        add_ref(tail);
+        for (i = 0; i < matched; i++)
+          free_type(*(Pike_compiler->type_stackp--));
+        *(++Pike_compiler->type_stackp) = tail;
+        on_stack -= matched - 1;
+      }
+    }
     while (on_stack > 1) {
       push_reverse_joiner_type(T_OR);
       on_stack--;
@@ -4885,6 +4989,8 @@ static void clear_type_binop_cache(void)
 /* 0: not cacheable; 1: independent of marker state; 2: needs empty state;
  * 3: also may invoke attribute handlers through program metadata. Their
  * user-state side effects are deliberately not replayed on cache hits.
+ * Attributes inherit the underlying type's eligibility. Comparisons that
+ * may invoke their handlers taint the enclosing operations instead.
  */
 static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
 {
@@ -4916,6 +5022,7 @@ static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
     cacheable = left && right ? MAXIMUM(left, right) : 0;
     break;
   case PIKE_T_SCOPE:
+  case PIKE_T_ATTRIBUTE:
     cacheable = type_binop_cacheable(t->cdr, depth + 1);
     break;
   case PIKE_T_MULTISET: case PIKE_T_NOT:
@@ -4928,7 +5035,7 @@ static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
     cacheable = type_binop_cacheable(t->car, depth + 1) ? 3 : 0;
     break;
   default:
-    /* Visible attributes still need their argument-checking context. */
+    /* Other context-dependent type operations use the ordinary path. */
     cacheable = 0;
     break;
   }
@@ -5500,7 +5607,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
         remap->markers[marker_set ^ 1] = copy_mapping(orig_markers_other);
       }
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
-      if (remap && !tmp) {
+      if (remap && ((op == PT_BINOP_AND && !tmp) ||
+                    (op == PT_BINOP_MINUS && tmp == a->car))) {
         /* Unification failed, discard other side marker changes */
         do_free_mapping(remap->markers[marker_set ^ 1]);
         remap->markers[marker_set ^ 1] = orig_markers_other;
@@ -5618,7 +5726,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
-      if (remap && !tmp) {
+      if (remap && ((op == PT_BINOP_AND && !tmp) ||
+                    (op == PT_BINOP_MINUS && tmp == a))) {
         /* Unification failed, discard other side marker changes */
         do_free_mapping(remap->markers[marker_set ^ 1]);
         remap->markers[marker_set ^ 1] = orig_markers_other;
@@ -5870,6 +5979,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
 
       if (!tmp) {
+        /* Attribute handlers can depend on the compilation and argument
+         * state. Taint enclosing operations even outside a compilation,
+         * where a later identical comparison could invoke a handler.
+         */
+        if (op == PT_BINOP_MINUS) type_binop_unstable_generation++;
 	if (c && (op == PT_BINOP_MINUS)) {
 	  ref_push_string((struct pike_string *)a->car);
 	  ref_push_type_value(a->cdr);
@@ -5947,6 +6061,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case PIKE_T_ATTRIBUTE:
     tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
     if (!tmp) {
+      if (a && (op == PT_BINOP_MINUS)) type_binop_unstable_generation++;
       if (a && c && (op == PT_BINOP_MINUS)) {
 	ref_push_string((struct pike_string *)b->car);
 	ref_push_type_value(a);
@@ -12997,126 +13112,119 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
   return NULL;
 }
 
+/* Walk proper argument/lvalue tails. Structural wrappers recurse without
+ * clearing generic markers or losing lvalue mode for subsequent arguments.
+ * fun_type loses a reference.
+ */
+static struct pike_type *new_check_call_args(struct pike_type *fun_type,
+                                            node *args,
+                                            struct call_state *cs,
+                                            INT32 flags,
+                                            INT32 *lvalue_flag)
+{
+  while (args && fun_type) {
+    node *arg = args;
+    node *next = NULL;
+    INT32 arg_flags = flags;
+
+    switch (args->token) {
+    case F_LVALUE_LIST:
+      *lvalue_flag |= CALL_ARG_LVALUE;
+      /* FALLTHRU */
+    case F_ARG_LIST:
+      arg = CAR(args);
+      next = CDR(args);
+      if (next) {
+        next->parent = args;
+        arg_flags |= CALL_NOT_LAST_ARG;
+      }
+      if (!arg) {
+        args = next;
+        continue;
+      }
+      arg->parent = args;
+      break;
+
+    case F_FOREACH_VAL_LVAL:
+      if (CAR(args)) {
+        CAR(args)->parent = args;
+        fun_type = new_check_call_args(fun_type, CAR(args), cs,
+                                      flags | (CDR(args) ?
+                                               CALL_NOT_LAST_ARG : 0),
+                                      lvalue_flag);
+      }
+      if (CDR(args)) {
+        CDR(args)->parent = args;
+        *lvalue_flag |= CALL_ARG_LVALUE;
+      }
+      args = CDR(args);
+      continue;
+
+    case ':':
+      /* Both slots consume an argument, including an omitted destination. */
+      if (CAR(args)) CAR(args)->parent = args;
+      fun_type = new_check_call_arg(fun_type, CAR(args), cs,
+                                   flags | *lvalue_flag |
+                                   (CDR(args) ? CALL_NOT_LAST_ARG : 0));
+      if (CDR(args)) CDR(args)->parent = args;
+      return new_check_call_arg(fun_type, CDR(args), cs,
+                                flags | *lvalue_flag);
+
+    default:
+      return new_check_call_arg(fun_type, args, cs, flags | *lvalue_flag);
+    }
+
+    switch (arg->token) {
+    case F_ARG_LIST:
+    case F_LVALUE_LIST:
+    case F_FOREACH_VAL_LVAL:
+    case ':':
+      fun_type = new_check_call_args(fun_type, arg, cs, arg_flags,
+                                    lvalue_flag);
+      break;
+    default:
+      fun_type = new_check_call_arg(fun_type, arg, cs,
+                                   arg_flags | *lvalue_flag);
+      break;
+    }
+    debug_malloc_touch(fun_type);
+    args = next;
+  }
+  return fun_type;
+}
+
 /* NOTE: fun_type loses a reference. */
 struct pike_type *new_check_call(struct pike_type *fun_type,
-				 node *args, struct call_state *cs,
-				 INT32 flags)
+                               node *args, struct call_state *cs,
+                               INT32 flags)
 {
-  node *orig_args = args;
-  node *orig_arg_parent = NULL;
-  int num_cdr = 0;
-
+  INT32 lvalue_flag = 0;
   if (!args || !fun_type) {
     debug_malloc_touch(fun_type);
     return fun_type;
   }
-
-  orig_arg_parent = args->parent;
-  args->parent = NULL;	/* End marker. */
-
-  if (flags & CALL_NOT_LAST_ARG) {
-    /* Recursive call, where there's a CDR above. */
-    num_cdr = 1;
-  }
-
-  debug_malloc_touch(fun_type);
-
+  /* Clear once for the whole call, including its structural wrappers. */
   clear_markers();
-  while (args && fun_type) {
-    if ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST) ||
-        (args->token == F_FOREACH_VAL_LVAL) || (args->token == ':')) {
-      if (CDR(args)) {
-	num_cdr++;
-	flags |= CALL_NOT_LAST_ARG;
-      }
-      if (args->token == F_LVALUE_LIST) {
-	flags |= CALL_ARG_LVALUE;
-      }
-      if (args->token == ':') {
-        /* NB: Always advance for both car and cdr in this case. */
-        if (CAR(args)) {
-          CAR(args)->parent = args;
-        }
-        fun_type = new_check_call_arg(fun_type, CAR(args), cs, flags);
-        debug_malloc_touch(fun_type);
-        if (CDR(args)) {
-          CDR(args)->parent = args;
-        }
-        if (CDR(args) && !--num_cdr) {
-          flags &= ~CALL_NOT_LAST_ARG;
-        }
-        fun_type = new_check_call_arg(fun_type, CDR(args), cs, flags);
-        debug_malloc_touch(fun_type);
-      } else if (CAR(args)) {
-	CAR(args)->parent = args;
-	args = CAR(args);
-	continue;
-      } else if (CDR(args)) {
-        if (args->token == F_FOREACH_VAL_LVAL) {
-          flags |= CALL_ARG_LVALUE;
-        }
-	CDR(args)->parent = args;
-	args = CDR(args);
-	if (!--num_cdr) {
-	  flags &= ~CALL_NOT_LAST_ARG;
-	}
-	continue;
-      }
-    } else {
-      fun_type = new_check_call_arg(fun_type, args, cs, flags);
-      debug_malloc_touch(fun_type);
-    }
-
-    while (args && fun_type) {
-      node *prev = args;
-      args = args->parent;
-      if (!args) {
-	break;
-      }
-      if ((CAR(args) == prev) && CDR(args)) {
-	if (!--num_cdr) {
-	  flags &= ~CALL_NOT_LAST_ARG;
-	}
-	if (CDR(args) != prev) {
-          if (args->token == F_FOREACH_VAL_LVAL) {
-            flags |= CALL_ARG_LVALUE;
-          }
-	  CDR(args)->parent = args;
-	  args = CDR(args);
-	  break;
-	}
-	/* CAR(args) == CDR(args), so we need to recurse
-	 * since we can't differentiate otherwise.
-	 *
-	 * This should be a quite rare case, and the tree is
-	 * most likely very shallow, so this should be safe.
-	 */
-	fun_type = new_check_call(fun_type, prev, cs, flags);
-	debug_malloc_touch(fun_type);
-      }
-    }
-  }
-
-  orig_args->parent = orig_arg_parent;
-
-  return fun_type;
+  return new_check_call_args(fun_type, args, cs, flags, &lvalue_flag);
 }
 
-/**
- *  Typechecking for F_ADD_EQ, F_INC, F_POST_INC, et al.
- *
- * NB: Does NOT steal a reference from fun_type.
+/* Check prepared scalar operands without disguising them as a list.
+ * Borrows fun_type and returns an owned continuation type.
  */
 struct pike_type *new_check_call_binop(struct pike_type *fun_type,
-                                       node *binop_node,
-                                       struct call_state *cs,
-                                       INT32 flags)
+                                      node *binop_node,
+                                      struct call_state *cs, INT32 flags)
 {
   if (!fun_type || !binop_node) return NULL;
   add_ref(fun_type);
   clear_markers();
-  fun_type = new_check_call_arg(fun_type, CAR(binop_node), cs, flags);
-  return new_check_call_arg(fun_type, CDR(binop_node), cs, flags);
+  if (CAR(binop_node))
+    fun_type = new_check_call_arg(fun_type, CAR(binop_node), cs,
+                                 flags | (CDR(binop_node) ?
+                                          CALL_NOT_LAST_ARG : 0));
+  if (CDR(binop_node))
+    fun_type = new_check_call_arg(fun_type, CDR(binop_node), cs, flags);
+  return fun_type;
 }
 
 struct pike_type *zzap_function_return(struct pike_type *a,

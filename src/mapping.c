@@ -359,46 +359,13 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
     from->next = next;
     next = from;
 
-    if (md->flags & MAPPING_WEAK) {
-
-      switch(md->flags & MAPPING_WEAK) {
-      default:
-	Pike_fatal("Instable mapping data flags.\n");
-	break;
-      case MAPPING_WEAK_INDICES:
-	if (!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
-	    (*from->ind.u.refs > 1)) {
-	  goto keep_keypair;
-	}
-	break;
-      case MAPPING_WEAK_VALUES:
-	if (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
-	    (*from->val.u.refs > 1)) {
-	  goto keep_keypair;
-	}
-	break;
-      case MAPPING_WEAK:
-	/* NB: Compat: Unreference counted values are counted
-	 *             as multi-referenced here.
-	 */
-	if ((!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
-	     (*from->ind.u.refs > 1)) &&
-	    (!REFCOUNTED_TYPE(TYPEOF(from->val)) ||
-	     (*from->val.u.refs > 1))) {
-	  goto keep_keypair;
-	}
-	break;
-      }
-
-      /* Free.
-       * Note that we don't need to free or unlink the keypair,
-       * since that will be done by the caller anyway. */
-      free_svalue(&from->ind);
-      free_svalue(&from->val);
-
-      continue;
-    }
-  keep_keypair:
+    /* Weak entries that only the mapping refers to are kept, not freed
+     * here: freeing an object can destruct it at once
+     * (Pike.DestructImmediate), and its _destruct() would see the
+     * mapping half rehashed, with the new block in m->data partly
+     * filled, and change it under the caller (low_mapping_insert()
+     * takes a keypair of the new block after this). The gc removes
+     * them (do_gc_weak_mapping()). */
 
     /* unlink */
     k=md->free_list;
@@ -1807,32 +1774,35 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
 
 PMOD_EXPORT void clear_mapping(struct mapping *m)
 {
-  struct mapping_data *md;
+  struct mapping_data *md, *empty;
   int flags;
 
   if (!m) return;
   md = m->data;
   flags = md->flags;
   if (!md->size) return;
-  unlink_mapping_data(md);
 
   switch (flags & MAPPING_WEAK) {
-  case 0: md = &empty_data; break;
-  case MAPPING_WEAK_INDICES: md = &weak_ind_empty_data; break;
-  case MAPPING_WEAK_VALUES: md = &weak_val_empty_data; break;
-  default: md = &weak_both_empty_data; break;
+  case 0: empty = &empty_data; break;
+  case MAPPING_WEAK_INDICES: empty = &weak_ind_empty_data; break;
+  case MAPPING_WEAK_VALUES: empty = &weak_val_empty_data; break;
+  default: empty = &weak_both_empty_data; break;
   }
 
   /* FIXME: Increment hardlinks & valrefs?
    *    NB: init_mapping() doesn't do this.
    */
-  add_ref(md);
+  add_ref(empty);
   /* gc_fast_init_marker(md); */
 
-  m->data = md;
+  /* Replaced before the old block is freed: freeing its values can
+   * destruct objects at once (Pike.DestructImmediate), whose
+   * _destruct() may use the mapping. */
+  m->data = empty;
 #ifdef MAPPING_SIZE_DEBUG
-  m->debug_size = md->size;
+  m->debug_size = empty->size;
 #endif
+  unlink_mapping_data(md);
 }
 
 /* deferred mapping copy! */
@@ -2586,8 +2556,7 @@ node *make_node_from_mapping(struct mapping *m)
     ind=mapping_indices(m);
     val=mapping_values(m);
     n=mkefuncallnode("mkmapping",
-		     mknode(F_ARG_LIST,
-			    make_node_from_array(ind),
+                     mkarglist(make_node_from_array(ind),
 			    make_node_from_array(val)));
     free_array(ind);
     free_array(val);

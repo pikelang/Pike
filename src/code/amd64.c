@@ -2840,7 +2840,7 @@ void ins_f_byte(unsigned int b)
     add_reg_reg( P_REG_RBX, P_REG_RDX );
 
    LABEL_D;
-    cmp_reg32_imm( P_REG_RBX, 0 ); jl( &label_B ); // <0
+    cmp_reg_imm( P_REG_RBX, 0 ); jl( &label_B ); // <0
     cmp_reg_reg( P_REG_RBX, P_REG_RDX); jge( &label_B ); // >size
 
     /* array, index inside array. push item, swap, pop, done */
@@ -3809,44 +3809,47 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     {
       LABELS();
       /*
-        local[pike_sp[-1]]
+        pike_sp[-1][local]
       */
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       amd64_load_fp_reg();
 
       amd64_local_address(b, P_REG_RDX);
-      mov_mem8_reg( P_REG_RDX, 0, P_REG_RAX );
-      mov_mem8_reg( sp_reg, -1*sizeof(struct svalue), P_REG_RBX );
+      /* ax = container type << 8 | index type */
+      mov_mem8_reg( sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
+      mov_mem8_reg( P_REG_RDX, 0, P_REG_RBX );
       shl_reg_imm( P_REG_RAX, 8 );
       add_reg_reg( P_REG_RAX, P_REG_RBX );
-      mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, P_REG_RBX ); /* int */
-      mov_mem_reg( P_REG_RDX, 8, P_REG_RCX );                         /* value */
+      mov_mem_reg( P_REG_RDX, 8, P_REG_RBX );                       /* int */
+      mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, P_REG_RCX ); /* array */
       cmp_reg32_imm( P_REG_RAX, (PIKE_T_ARRAY<<8)|PIKE_T_INT );
-      jne( &label_A );
+      jne( &label_B );
 
       /* Array and int index. */
       mov_mem32_reg( P_REG_RCX, OFFSETOF(array,size), P_REG_RDX );
-      cmp_reg32_imm( P_REG_RBX, 0 ); jge( &label_D );
+      cmp_reg_imm( P_REG_RBX, 0 ); jge( &label_D );
       /* less than 0, add size */
       add_reg_reg( P_REG_RBX, P_REG_RDX );
 
       LABEL_D;
-      cmp_reg32_imm( P_REG_RBX, 0 ); jl( &label_B ); // <0
-      cmp_reg_reg( P_REG_RBX, P_REG_RCX); jge( &label_B ); // >=size
+      cmp_reg_imm( P_REG_RBX, 0 ); jl( &label_B ); // <0
+      cmp_reg_reg( P_REG_RBX, P_REG_RDX); jge( &label_B ); // >=size
 
-      /* array, index inside array. push item, swap, pop, done */
+      /* array, index inside array: the item replaces the array on the
+       * stack, whose reference is then freed, as in F_INDEX. */
+      push( P_REG_RCX ); /* Save array pointer */
       mov_mem_reg( P_REG_RCX, OFFSETOF(array,item), P_REG_RCX );
       shl_reg_imm( P_REG_RBX, 4 );
       add_reg_reg( P_REG_RBX, P_REG_RCX );
       amd64_push_svaluep_to( P_REG_RBX, -1 );
+      pop( P_REG_RCX );
+      add_mem32_imm( P_REG_RCX, OFFSETOF(array,refs),  -1);
+      jnz( &label_C );
+      mov_reg_reg( P_REG_RCX, ARG1_REG );
+      amd64_call_c_function(really_free_array);
       jmp( &label_C );
 
-      LABEL_A;
-#if 0
-      cmp_reg32_imm( P_REG_RAX, (PIKE_T_STRING<<8)|PIKE_T_INT );
-      jne( &label_B );
-#endif
       LABEL_B;
       /* something else. */
       update_arg1(b);
@@ -4713,6 +4716,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
 
   case F_LOCAL_LOCAL_INDEX:
     {
+      /* local c [ local b ] */
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
@@ -4721,31 +4725,31 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       add_reg_imm_reg( P_REG_RDX, b*sizeof(struct svalue), P_REG_RBX);
       add_reg_imm_reg( P_REG_RDX, c*sizeof(struct svalue), P_REG_RCX);
 
-      /* bx = svalue for value */
-      /* cx = svalue for index */
-      mov_sval_type( P_REG_RBX, P_REG_RAX );
-      mov_sval_type( P_REG_RCX, P_REG_RDX );
+      /* bx = svalue for index */
+      /* cx = svalue for container */
+      mov_sval_type( P_REG_RCX, P_REG_RAX );
+      mov_sval_type( P_REG_RBX, P_REG_RDX );
       shl_reg_imm( P_REG_RAX, 8 );
       /* fixme: Add add_mem8_reg */
       add_reg_reg( P_REG_RAX, P_REG_RDX );
 
+      /* ax = container->type<<8|index->type */
       cmp_reg32_imm( P_REG_RAX, (PIKE_T_ARRAY<<8)|PIKE_T_INT );
       jne( &label_B );
 
-      /* ax = value->tyupe<<8|index->type */
-      mov_mem_reg( P_REG_RBX, 8, P_REG_RBX );  /* value */
-      mov_mem_reg( P_REG_RCX, 8, P_REG_R9 );   /* int */
+      mov_mem_reg( P_REG_RCX, 8, P_REG_RDX );  /* array */
+      mov_mem_reg( P_REG_RBX, 8, P_REG_RBX );  /* int */
 
-      /* dx = value->u.array, bx = index */
+      /* dx = container->u.array, bx = index */
       /* Array and int index. */
       mov_mem32_reg( P_REG_RDX, OFFSETOF(array,size), P_REG_R8 );
-      cmp_reg32_imm( P_REG_RBX, 0 );
+      cmp_reg_imm( P_REG_RBX, 0 );
       jge( &label_D );
       /* index less than 0, add array size */
       add_reg_reg( P_REG_RBX, P_REG_R8 );
 
     LABEL_D;
-      cmp_reg32_imm( P_REG_RBX, 0 );
+      cmp_reg_imm( P_REG_RBX, 0 );
       jl( &label_B ); // index (still) <0
       cmp_reg_reg( P_REG_RBX, P_REG_R8);
       jge( &label_B ); //index >=size
@@ -4953,6 +4957,8 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_ADD_LOCAL_INT_AND_POP:
    {
       LABELS();
+      /* Overflow recovery must be able to negate the immediate exactly. */
+      if (INT32_NEG_OVERFLOW(c)) break;
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       amd64_local_address(b, ARG1_REG);

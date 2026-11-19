@@ -49,6 +49,7 @@
 
 #include "global.h"
 #include "svalue.h"
+#include "bignum.h"
 #include "operators.h"
 #include "object.h"
 #include "builtin_functions.h"
@@ -1062,7 +1063,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     sparc_push_int(b, 0);
     return;
   case F_NEG_NUMBER:
-    sparc_push_int(-(ptrdiff_t)b, 0);
+    /* Widen before negating; narrow Pike integers need bignum promotion. */
+    if (sizeof(INT_TYPE) == 4 && INT32_NEG_OVERFLOW(b)) break;
+    sparc_push_int(-(INT_TYPE)b, 0);
     return;
   case F_LFUN:
     sparc_push_lfun(b);

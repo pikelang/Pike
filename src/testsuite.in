@@ -188,6 +188,61 @@ test_eq(-8, -0b1000);
 test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
 
+// Hexadecimal floating constants use a decimal power-of-two exponent.
+test_equal(0x1p0, 1.0)
+test_equal(0x1.8p+2, 6.0)
+test_equal(-0X.Ap+4, -10.0)
+test_equal(0x.8p-1, 0.25)
+test_equal(0x1.p+3, 8.0)
+test_equal(0x1e2p0, 482.0)
+test_equal(0x0001.000p0, 1.0)
+test_equal(0x1p-10, 1.0/1024)
+test_equal(0x1.0000000000000000000000000000000000000000000000001p0, 1.0)
+test_equal(0x0p9999999999999999999999999999999999999999, 0.0)
+test_equal(0x0p-9999999999999999999999999999999999999999, 0.0)
+test_true(0x1p9999999999999999999999999999999999999999 > 1.0)
+test_equal(0x1p-9999999999999999999999999999999999999999, 0.0)
+cond([[Float.EPSILON < 1e-6 && Float.EPSILON > 1e-8]], [[
+  test_equal(0x1p-149, array_sscanf("\0\0\0\1", "%4F")[0])
+  test_equal(0x1p-150, 0.0)
+  test_true(0x1.00000000000000001p-150 > 0.0)
+  test_equal(0x1.000001p0, 1.0)
+  test_equal(0x1.000001000000000000000000000001p0, 1.0 + Float.EPSILON)
+]])
+cond([[Float.EPSILON < 1e-15 && Float.EPSILON > 1e-17]], [[
+  test_equal(0x1p-1074, array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0])
+  test_equal(0x1p-1075, 0.0)
+  test_true(0x1.00000000000000001p-1075 > 0.0)
+  test_equal(0x1.00000000000008p0, 1.0)
+  test_equal(0x1.000000000000080000000000000000000001p0,
+             1.0 + Float.EPSILON)
+]])
+test_equal("abc"[0x1..0x2], "bc")
+test_compile_error([[float f = 0x1.2;]])
+test_compile_error([[float f = 0x.p1;]])
+test_compile_error([[float f = 0x1p;]])
+test_compile_error([[float f = 0x1p+;]])
+test_compile_error([[float f = 0x1p-;]])
+test_compile_error([[float f = 0x1p0z;]])
+test_any_equal([[
+#if 0x1.8p+2 == 6.0 && 0X.Ap+3 == 5.0
+  return 1;
+#else
+  return 0;
+#endif
+]], 1)
+test_any_equal([[
+  foreach (({ "\u0100", "\U00010000" }), string marker) {
+    program p = compile_string("constant marker = \"" + marker +
+      "\";\n#if 0x1.8p+2 == 6.0\nfloat f() { return 0X.Ap+3; }\n#endif\n");
+    if (p()->f() != 5.0) return 0;
+  }
+  return 1;
+]], 1)
+test_equal((float)"0x1.8p+2", 6.0)
+test_equal((float)"-0x.8p-1", -0.25)
+test_equal(array_sscanf("0x1.8p+2!", "%f%s"), ({ 6.0, "!" }))
+
 test_true(1e-100000000000000000000000000000000000000000000000000000000000<=1e-10000)
 test_true(1e-10000<=1e-1000)
 test_true(1e-1000<=1e-100)
@@ -3487,6 +3542,76 @@ test_equal([[ typeof(sprintf("%4[1]c", 0, 17)); ]],
 test_equal([[ typeof(sprintf("%[1]n", 0, 17)); ]],
 	   [[ typeof("") ]]);
 
+dnl sizeof multiplication rewrites require the full argument count.
+test_any([[
+  int measure(string s, int n, int m) { return sizeof(s * n * m); }
+  return measure("abc", 2, 3);
+]], 18)
+
+test_any([[
+  int measure(string s, int n, int m) { return sizeof(`*(s, n, m)); }
+  return measure("abc", 2, 3);
+]], 18)
+
+test_any([[
+  int measure(string s, int n, int m) {
+    return sizeof(`*(s, @({n, m})));
+  }
+  return measure("abc", 2, 3);
+]], 18)
+
+dnl Two syntactic operands can expand into a variadic multiplication.
+test_any([[
+  int measure(array args, int n) { return sizeof(`*(@args, n)); }
+  return measure(({"ab", 2}), 3);
+]], 12)
+
+dnl Flatten mapping pairs without changing evaluation order or pair alignment.
+test_any_equal([[
+  array(int) seen = ({});
+  int record(int n) { seen += ({n}); return n; }
+  mapping result = ([record(1):record(2), record(3):record(4),
+                     record(5):record(6)]);
+  return ({seen, result});
+]], ({({1, 2, 3, 4, 5, 6}), ([1:2, 3:4, 5:6])}))
+
+dnl Repeated keys retain the last value after flattening.
+test_any_equal([[
+  string key(string s) { return s; }
+  return ([key("a"):1, key("b"):2, key("a"):3]);
+]], (["a":3, "b":2]))
+
+dnl List preparation must preserve precise types on eagerly evaluated calls.
+test_any_equal([[
+  class C {
+    local constant values = ({1, 2, 3, 4, 5, 6});
+    constant prefix = values[..2];
+  }
+  return C.prefix;
+]], ({1, 2, 3}))
+
+dnl Chunking a long aggregate preserves argument and splice evaluation order.
+test_any_equal([[
+  array(int) seen = ({});
+  int record(int n) { seen += ({n}); return n; }
+  array(string) exprs = map(enumerate(70),
+                           lambda(int n) { return "record(" + n + ")"; });
+  exprs[33] = "@({record(33)})";
+  object o = compile_string("array run(function record) { return ({ " +
+                            exprs * "," + " }); }")();
+  return ({o->run(record), seen});
+]], ({enumerate(70), enumerate(70)}))
+
+dnl Zero and singleton calls retain proper tails after splice expansion.
+test_any([[
+  int target() { return 17; }
+  return target(@({}), @({}));
+]], 17)
+test_any([[
+  int target(int value) { return value; }
+  return target(@({}), 19, @({}));
+]], 19)
+
 test_equal([[ typeof(aggregate("foo"));]],
 	   [[ typeof([array(string(3: 102..111))](mixed)({})) ]]);
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
@@ -6522,6 +6647,76 @@ test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 
+dnl Syntax error in consts value must not leave a NULL in recovery (crash).
+test_compile_error([[ constant x = ; ]])
+test_compile_error([[ class A { constant x = ; } ]])
+
+dnl A fresh ([]), (<>) or ({ 1, 2 }) literal should stay fresh in a
+dnl program that also folds an equal container from another object at
+dnl compile time, and the folded values should still be that object's.
+test_any_equal([[
+  object h = class {
+      mapping m = ([]);
+      multiset s = (<>);
+      array a = ({ 1, 2 });
+    }();
+  add_constant("literal_folded_holder", h);
+  program p = compile_string(#"
+    mixed peek_m(mixed k) { return literal_folded_holder.m[k]; }
+    mixed peek_s(mixed k) { return literal_folded_holder.s[k]; }
+    mixed peek_a(int i) { return literal_folded_holder.a[i]; }
+    mapping fresh_mapping() { mapping x = ([]); return x; }
+    multiset fresh_multiset() { multiset x = (<>); return x; }
+    array fresh_array() { array x = ({ 1, 2 }); return x; }
+  ");
+  add_constant("literal_folded_holder");
+  object o = p();
+  h->m->key = "from the other object";
+  h->s->key = 1;
+  h->a[0] = "from the other object";
+  return ({ o->fresh_mapping(), o->fresh_multiset(), o->fresh_array(),
+            o->peek_m("key") == h->m->key && o->peek_s("key") &&
+            o->peek_a(0) == h->a[0] });
+]], ({ ([]), (<>), ({ 1, 2 }), 1 }))
+
+dnl Compiling should not slow down for good after many programs: after
+dnl 20,000 small programs, half of them dropped, a program of 50
+dnl functions must compile at most 1.5 times as slowly as before.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+test_any([[
+  string small(int i) {
+    return "int f(int x) { return x" + ("+ 1" * (1 + i % 40)) + "; }\n" +
+      "constant id = " + i + ";\n";
+  };
+  string big(int i) {
+    string s = "";
+    for (int j = 0; j < 50; j++)
+      s += "int f" + j + "(int x) { return x + " + j + " * " + i + "; }\n";
+    return s + "int f(int x) { return f0(x); }\n";
+  };
+  float ms_per_compile(int n, int base) {
+    int t0 = gethrtime();
+    for (int i = 0; i < n; i++)
+      compile_string(big(base + i))()->f(1);
+    return (gethrtime() - t0) / 1000.0 / n;
+  };
+  ms_per_compile(20, 0);
+  float before = ms_per_compile(100, 1000);
+  array(program) kept = ({}), dropped = ({});
+  for (int i = 0; i < 20000; i++) {
+    program p = compile_string(small(10000 + i));
+    if (i & 1) dropped += ({ p }); else kept += ({ p });
+    if (!(i & 1023)) __signal_watchdog();
+  }
+  dropped = ({});
+  float after = ms_per_compile(100, 50000);
+  kept = ({});
+  if (after > 1.5 * before)
+    return sprintf("a compile took %.2f ms, %.2f ms before", after, before);
+  return 0;
+]], 0)
+]])
+
 // Constant initializers must not overwrite declaration modifiers (#10236).
 test_any_equal([[
   array(array(string)) result = ({});
@@ -9000,7 +9195,7 @@ dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->
 	     Thread.this_thread().id_number();
     }
     return ({ Thread.Thread, Thread.Thread })(test_thread)->wait();
-  ]], ({ 1, 1 }))
+ ]], ({ 1, 1 }))
 
 cond_end // thread_create
 cond(0, [[
@@ -9248,6 +9443,78 @@ test_any([[mapping m=([]); m[1]++; return m[1];]],1)
 test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([1:1]); m[1]++; return m[1]++;]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
+
+dnl The _destruct() of values that a mapping frees while it changes
+dnl should see the mapping whole: an m_clear() of values that iterate
+dnl the mapping must not crash, and a weak mapping's freed entries must
+dnl not find kept ones missing. Objects that inherit
+dnl Pike.DestructImmediate are destructed at once.
+test_any_equal([[
+  string common = #{
+    mapping m;
+    class O {
+      inherit Pike.DestructImmediate;
+      function(:void)|zero check;
+      protected void create(function(:void)|zero c) { check = c; }
+      protected void _destruct() { if (check) check(); }
+    };
+  #};
+  string clear_case = common + #{
+    m = ([]);
+    int n;
+    for (int i = 0; i < 64; i++)
+      m[i] = O(lambda() { foreach (m; mixed k; mixed v) n++; });
+    m_clear(m);
+    write("ok\n");
+    return 0;
+  #};
+  string weak_case = common + #{
+    m = set_weak_flag(([]), Pike.WEAK_INDICES);
+    array keep = ({});
+    array(string) bad = ({});
+    function(:void) check = lambda() {
+      int missing;
+      foreach (keep, object k) if (!m[k]) missing++;
+      if (missing)
+        bad += ({ sprintf("%d of %d kept entries missing", missing,
+                          sizeof(keep)) });
+    };
+    for (int i = 0; i < 300; i++) {
+      object k = O(0);
+      keep += ({ k });
+      m[k] = 1;
+      if (i < 8) m[O(check)] = 1;
+    }
+    write("%s\n", sizeof(bad) ? bad[0] : "ok");
+    return 0;
+  #};
+  array res = ({});
+  foreach (({ clear_case, weak_case }), string code) {
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", code }));
+    res += ({ r->exitcode ? sprintf("exit %d: %s", r->exitcode, r->stderr) :
+              String.trim(r->stdout) });
+  }
+  return res;
+]], ({ "ok", "ok" }))
+
+dnl m_delete(m, index, expected) should remove the entry only if its
+dnl value equals expected, for any type of value, and not crash when
+dnl index has no entry (in a child process).
+test_any_equal([[ mapping m = ([ "a": 1 ]); m_delete(m, "a", 2); return m; ]], ([ "a": 1 ]))
+test_any_equal([[ mapping m = ([ "s": "x" ]); m_delete(m, "s", "y"); return m; ]], ([ "s": "x" ]))
+test_any_equal([[ mapping m = ([ "a": 1 ]); return ({ m_delete(m, "a", 1), m }); ]], ({ 1, ([]) }))
+test_any_equal([[ mapping m = ([ "f": 1.5 ]); return ({ m_delete(m, "f", 1.5), m }); ]], ({ 1.5, ([]) }))
+test_any([[ object o = class {}(); mapping m = ([ "o": o ]); m_delete(m, "o", 17); return m->o == o; ]], 1)
+test_any([[ object o = class {}(); mapping m = ([ "o": o ]); return m_delete(m, "o", o) == o && !sizeof(m); ]], 1)
+test_any([[
+  mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+    mapping m = ([ "a": 1 ]);
+    mixed r = m_delete(m, "b", 2);
+    write(undefinedp(r) && equal(m, ([ "a": 1 ])) ? "ok" : "wrong");
+    return 0;
+  #} }));
+  return r->exitcode ? sprintf("exit %d", r->exitcode) : r->stdout;
+]], "ok")
 
 // multiset tests
 
@@ -11389,6 +11656,69 @@ test_any([[
   return 1;
 ]], 1)
 
+// Negated immediate minima must promote rather than wrap in native emitters.
+test_any([[
+  class Test {
+    int n;
+    int direct() { int a = -2147483648; return -a; }
+    int assigned() { int a = -2147483648; a = -a; return a; }
+    int retained(int a) { return -(a = -2147483648); }
+    array stacked(int a) { return ({ "prefix", -(a = -2147483648), a }); }
+    int global_case() { n = -2147483648; return -n; }
+  };
+  object o = Test();
+  int positive = (int)Gmp.mpz("2147483648");
+  int negative = -positive;
+  foreach (({ UNDEFINED, 0, -1, 1, positive, negative, 1 << 90 }), int a) {
+    o->n = a;
+    if (o->direct() != positive || o->assigned() != positive ||
+        o->retained(a) != positive || o->global_case() != positive ||
+        o->n != negative ||
+        !equal(o->stacked(a), ({ "prefix", positive, negative }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Check both signs and adjacent immediate boundaries in generated programs.
+test_any([[
+  foreach (({ "-2147483649", "-2147483648", "-2147483647", "-1", "0",
+               "1", "2147483647", "2147483648", "2147483649",
+               "-9223372036854775808", "9223372036854775807" }),
+           string text) {
+    int expected = (int)(-Gmp.mpz(text));
+    program p = compile_string("int f() { int a = " + text +
+                               "; return -a; }\n");
+    if (p()->f() != expected) return 0;
+    p = compile_string("int f(int a) { return -(a = " + text + "); }\n");
+    if (p()->f(0) != expected) return 0;
+  }
+  return 1;
+]], 1)
+
+// Local immediate addition must restore the original value before replay.
+test_any([[
+  class Test {
+    array discarded(mixed a) {
+      int b = -2147483648;
+      a += b;
+      return ({ a, zero_type(a) });
+    }
+    array retained(mixed a) {
+      int b = -2147483648;
+      return ({ a += b, a, zero_type(a) });
+    }
+  };
+  object o = Test();
+  foreach (({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN, Int.NATIVE_MIN + 1,
+               Int.NATIVE_MIN + (1 << 30),
+               Int.NATIVE_MAX, 1 << 90 }), int a) {
+    int expected = (int)(Gmp.mpz(a) - Gmp.mpz("2147483648"));
+    if (!equal(o->discarded(a), ({ expected, 0 })) ||
+        !equal(o->retained(a), ({ expected, expected, 0 }))) return 0;
+  }
+  return 1;
+]], 1)
+
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
 test_true([[Int.NATIVE_MAX >= 2147483647]])
@@ -12536,6 +12866,16 @@ test_eq([[({})*""]],"")
 test_eq([[({"foo",0,"bar"})*"-"]],"foo-bar")
 test_eq([[({"f","o","o"})*""]],"foo")
 
+dnl Successful subtraction must preserve bindings from every union branch.
+test_equal([[typeof(({"f\u01ff", "bar"}) * "-");]],
+           [[typeof([string(45 | 97..511)](mixed)0);]])
+test_equal([[typeof(({"f\u01ff", "bar"}) * "");]],
+           [[typeof([string(97..511)](mixed)0);]])
+test_equal([[typeof(({"f\U001fffff", "bar"}) * "-");]],
+           [[typeof([string(45 | 97..0x1fffff)](mixed)0);]])
+test_equal([[typeof(({"f\u01ff", "b\u0100"}) * "-");]],
+           [[typeof([string(45 | 98..511)](mixed)0);]])
+
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
 test_eq(({"f\777\777","bar","gaz\777nk"})*"-","f\777\777-bar-gaz\777nk")
 test_eq(({"f\7777777\7777777","bar","gaz\7777777nk"})*"-","f\7777777\7777777-bar-gaz\7777777nk")
@@ -12829,6 +13169,32 @@ test_eval_error([[return ({1})[1];]])
 test_eval_error([[int i = 1; return ({1})[i];]])
 test_eval_error([[array a = ({ 1 }); return a[1];]])
 test_eval_error([[array a = ({ 1 }); int i = 1; return a[i];]])
+
+dnl Indexing as expr[local], local[local] and expr[expr] should give the
+dnl element, or the same errors as the interpreter, even for indices
+dnl beyond 32 bits and for an int indexed with an array, and keep the
+dnl array's reference count.
+test_any_equal([[
+  mixed id(mixed x) { return x; };
+  mixed local_local(mixed c, mixed i) { return c[i]; };
+  mixed expr_local(mixed c, mixed i) { return id(c)[i]; };
+  mixed expr_expr(mixed c, mixed i) { return id(c)[id(i)]; };
+  array a = ({ 10, 20, 30 });
+  array(string) bad = ({});
+  foreach (({ local_local, expr_local, expr_expr }); int n; function f) {
+    foreach (({ 0, 1, 2, -1, -3 }), int i)
+      if (f(a, i) != a[i]) bad += ({ sprintf("%d: a[%d] is %O", n, i, f(a, i)) });
+    foreach (({ 3, -4, 4294967296, -4294967296, -4294967295 }), int i)
+      if (!catch { f(a, i); }) bad += ({ sprintf("%d: a[%d] didn't throw", n, i) });
+    if (!catch { f(5, ({ 1, 2 })); })
+      bad += ({ sprintf("%d: 5[array] didn't throw", n) });
+  }
+  int refs = Debug.refs(a);
+  for (int i = 0; i < 1000; i++) expr_local(a, 1), local_local(a, 2);
+  if (Debug.refs(a) != refs)
+    bad += ({ sprintf("%d references before, %d after", refs, Debug.refs(a)) });
+  return bad;
+]], ({}))
 
 // index assigning
 test_any(mixed a=({1}); a[0]=2; return equal(a,({2})),1)
@@ -18800,6 +19166,36 @@ test_any_equal([[
   return counts;
 ]], ({ 0, 0, 1 }))
 
+dnl Cached attributed comparisons must still invoke warning handlers on every
+dnl use, including after compilations with the warnings suppressed.
+test_any_equal([[
+  class Handler {
+    array(string) warnings = ({});
+    void compile_warning(string file, int line, string message) {
+      warnings += ({ message });
+    }
+  }
+  array(int) counts = ({});
+  foreach (({ "deprecated", "experimental" }), string attribute) {
+    string suppression = attribute == "deprecated" ?
+      "no_deprecation_warnings" : "no_experimental_warnings";
+    foreach (({
+      "int a() { return value; } int b() { return value; }",
+      "void a() { value = 1; } void b() { value = 1; }"
+    }), string uses) {
+      foreach (({ "", "#pragma " + suppression + "\n", "" }),
+               string pragma) {
+        Handler handler = Handler();
+        compile_string(pragma + "typedef __attribute__(\"" + attribute +
+                       "\", int) T; T value; " + uses,
+                       "cached_type_attributes", handler);
+        counts += ({ sizeof(handler->warnings) });
+      }
+    }
+  }
+  return counts;
+]], ({ 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2 }))
+
 test_any_equal([[
   class Handler {
     array(string) warnings = ({});
@@ -19938,5 +20334,66 @@ test_do(Stdio.recursive_rm("cmod_dependency_dump_test"))
 dnl - Deprecated safe indexing
 test_compile_warning( mapping foo; foo?->bar; )
 
+
+dnl Optimizer intrinsics must evaluate trailing empty splices.
+ignore_warning("In argument 2 to this_object: The @-operator argument must be an empty array.", [[
+test_any_equal([[
+  int trace;
+  array empty() { trace++; return ({}); }
+  object o = this_object(0, @empty());
+  return ({ o == this_object(), trace });
+]], ({ 1, 1 }))
+]])
+
+ignore_warning("In argument 3 to allocate: The @-operator argument must be an empty array.", [[
+test_any_equal([[
+  int trace;
+  array empty() { trace++; return ({}); }
+  int count;
+  foreach (String.SplitIterator(
+             replace("axbxc", ({ "x" }), allocate(1, "z", @empty())),
+             'z');; string part)
+    count++;
+  return ({ count, trace });
+]], ({ 3, 1 }))
+]])
+
+dnl Argument walkers count values and preserve automap/splice evaluation order.
+test_any_equal([[
+  int trace;
+  int tick() { return ++trace; }
+  array empty() { return ({}); }
+  array gather(mixed ... args) { return args; }
+  return ({ gather(tick(), (void)tick(), @empty(), tick()), trace });
+]], ({ ({ 1, 3 }), 3 }))
+
+test_any_equal([[
+  int trace;
+  int tick() { return ++trace; }
+  array(int) a = ({ 10, 20 });
+  return ({ `+(tick(), a[*], @({ tick(), tick() }), tick()), trace });
+]], ({ ({ 20, 30 }), 4 }))
+
+test_any_equal([[
+  string source = "mixed run() { int trace;"
+    "int tick() { return ++trace; } array(int) a = ({ 10, 20 });"
+    "array(int) result = `+(" + allocate(512, "tick()") * "," +
+    ",a[*],@({tick(),tick()})); return ({result,trace}); }";
+  return compile_string(source)()->run();
+]], ({ ({ 132365, 132375 }), 514 }))
+
+dnl Cons-list construction must preserve nested constant slice types.
+test_any_equal([[
+  class Container {
+    local protected constant base = ({
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 });
+    local protected constant extended = base[..8] + ({
+      19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 });
+    array run() {
+      return ({ sizeof(extended), extended[8], extended[9], extended[-1] });
+    }
+  }
+  return Container()->run();
+]], ({ 22, 9, 19, 31 }))
 
 END_MARKER

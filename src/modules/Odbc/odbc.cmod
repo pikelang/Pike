@@ -583,7 +583,7 @@ PIKEFUN void create_dsn(string connectstring)
       &stringlength2,
       SQL_DRIVER_NOPROMPT),
 		   NULL, NULL);
-  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
+  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED | odbc_driver_flags(PIKE_ODBC->hdbc);
 }
 
 
@@ -597,6 +597,15 @@ PIKEFUN void select_db(string db)
   /**********************************************/
 }
 
+/*! @decl string|zero query_db()
+ *!
+ *! Returns the current database name, falling back to the data source name
+ *! if the driver does not provide a database name. Returns @[UNDEFINED]
+ *! if neither name is available.
+ *!
+ *! @note
+ *!   This method was introduced in Pike 9.1 and is unavailable in Pike 9.0.
+ */
 PIKEFUN string|zero query_db()
 {
   HDBC hdbc = PIKE_ODBC->hdbc;

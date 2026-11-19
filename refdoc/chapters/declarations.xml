@@ -174,10 +174,22 @@ mapping(string:function(string|int...:mapping(string:array(string)))) x;
         }
       </example>
 
-      <p>Function arguments can also use array or mapping patterns, with
-      the same defaults, rest variables, and nesting as multi-assignment.
-      Each pattern consumes one argument. Pattern variables are available
-      in the function body.</p>
+      <p>Function arguments can use array patterns in Pike 9.0 and later.
+      Each pattern consumes one argument, and its variables are available
+      in the function body. A default for the entire argument is also
+      supported in Pike 9.0:</p>
+
+      <example>
+        int sum([int first, int second] = ({ 0, 0 })) {
+          return first + second;
+        }
+      </example>
+
+      <p>Pike 9.1 adds defaults for individual pattern elements, rest
+      variables, unnamed elements, and mapping patterns. These extensions
+      have the same meaning as in multi-assignment and are not available
+      in Pike 9.0. For example, the following declarations require
+      Pike 9.1 or later:</p>
 
       <example>
         array split([mixed head, mixed ... tail], string label) {

@@ -130,8 +130,25 @@ if test x$with_ttflib = xyes ; then
     else :; fi
   else
     if test "$freetype_h" = "nono"; then :; else
-      PIKE_FEATURE(Image.TTF,[no (too old)])
-      AC_MSG_WARN(Detected freetype library (libttf), but too old version)
+      # FreeType 2 also provides freetype/freetype.h. Only diagnose a
+      # missing FreeType 1 kerning header if the old API is present.
+      AC_CACHE_CHECK([for FreeType 1 headers], pike_cv_freetype1_headers, [
+        AC_TRY_COMPILE([
+#ifdef HAVE_FREETYPE_FREETYPE_H
+#include <freetype/freetype.h>
+#else
+#include <freetype.h>
+#endif
+        ], [
+          TT_Engine engine;
+          (void)engine;
+        ], [pike_cv_freetype1_headers=yes],
+           [pike_cv_freetype1_headers=no])
+      ])
+      if test "$pike_cv_freetype1_headers" = yes; then
+        PIKE_FEATURE(Image.TTF,[no (missing kerning header)])
+        AC_MSG_WARN([FreeType 1 headers found, but ftxkern.h is missing])
+      fi
     fi
   fi
 fi

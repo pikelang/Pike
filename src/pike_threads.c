@@ -36,6 +36,7 @@
 #include "signal_handler.h"
 #include "backend.h"
 #include "pike_rusage.h"
+#include "fdlib.h"
 #include "pike_cpulib.h"
 #include "pike_compiler.h"
 #include "sprintf.h"
@@ -64,6 +65,18 @@ PMOD_EXPORT struct Pike_interpreter_struct *
     __restrict
 #endif
 Pike_interpreter_pointer = &static_pike_interpreter;
+
+/* Shared by Thread's recognition constant and fd capability selection. */
+PMOD_EXPORT int pike_threads_support_io_interrupts(void)
+{
+#ifdef NT_THREADS
+  return !!Pike_NT_CancelSynchronousIo;
+#elif defined(HAVE_TH_KILL)
+  return 1;
+#else
+  return 0;
+#endif
+}
 
 PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer(void)
 {
@@ -171,6 +184,83 @@ PMOD_EXPORT int low_nt_create_thread(unsigned Pike_stack_size,
 }
 
 #endif
+
+#if defined(NT_THREADS) && !defined(CONFIGURE_TEST)
+/* Owned by the interrupted thread, under the interpreter lock. The helper
+ * only accesses the handles, which remain valid until it has been joined.
+ */
+struct nt_io_cancel {
+  Pike_NT_CancelSynchronousIo_type cancel_io;
+  HANDLE target;
+  HANDLE stop;
+  HANDLE worker;
+};
+
+static unsigned TH_STDCALL cancel_nt_io(void *arg)
+{
+  struct nt_io_cancel *cancel = arg;
+  do {
+    cancel->cancel_io(cancel->target);
+    /* Retry if the interrupt arrived before the target entered the call,
+     * or between calls in a multi-part read/write operation.
+     */
+  } while (WaitForSingleObject(cancel->stop, 1) == WAIT_TIMEOUT);
+  return 0;
+}
+
+static void stop_nt_io_cancel(struct thread_state *ts)
+{
+  struct nt_io_cancel *cancel = ts->io_cancel;
+  if (!cancel) return;
+  SetEvent(cancel->stop);
+  /* Join before executing Pike code or starting unrelated I/O. */
+  WaitForSingleObject(cancel->worker, INFINITE);
+  CloseHandle(cancel->worker);
+  CloseHandle(cancel->stop);
+  CloseHandle(cancel->target);
+  free(cancel);
+  ts->io_cancel = NULL;
+}
+
+static void interrupt_nt_io(struct thread_state *ts)
+{
+  struct nt_io_cancel *cancel;
+  unsigned id;
+  DWORD err;
+
+  if (!Pike_NT_CancelSynchronousIo || !ts->swapped || ts->io_cancel ||
+      (ts->flags & THREAD_FLAG_INHIBIT)) return;
+
+  cancel = xalloc(sizeof(*cancel));
+  /* Keep our own function pointer even during fdlib shutdown. */
+  cancel->cancel_io = Pike_NT_CancelSynchronousIo;
+  cancel->target = OpenThread(THREAD_TERMINATE, FALSE, ts->id);
+  if (!cancel->target) {
+    err = GetLastError();
+    free(cancel);
+    Pike_error("Failed to open interrupted thread (Windows error %lu).\n",
+               (unsigned long)err);
+  }
+  cancel->stop = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (!cancel->stop) {
+    err = GetLastError();
+    CloseHandle(cancel->target);
+    free(cancel);
+    Pike_error("Failed to create I/O cancellation event "
+               "(Windows error %lu).\n", (unsigned long)err);
+  }
+  cancel->worker = (HANDLE)_beginthreadex(NULL, 0, cancel_nt_io,
+                                         cancel, 0, &id);
+  if (!cancel->worker) {
+    int e = errno;
+    CloseHandle(cancel->target);
+    CloseHandle(cancel->stop);
+    free(cancel);
+    Pike_error("Failed to start I/O cancellation helper: %s.\n", strerror(e));
+  }
+  ts->io_cancel = cancel;
+}
+#endif /* NT_THREADS && !CONFIGURE_TEST */
 
 #ifdef SIMULATE_COND_WITH_EVENT
 PMOD_EXPORT int co_wait(COND_T *c, PIKE_MUTEX_T *m)
@@ -589,6 +679,9 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->busy_prev = ts->busy_next = NULL;
   ts->status = THREAD_RUNNING;
   ts->swapped = 0;
+#ifdef NT_THREADS
+  ts->io_cancel = NULL;
+#endif
   ts->interval_start = get_real_time();
 #ifdef PIKE_DEBUG
   ts->debug_flags = 0;
@@ -658,6 +751,9 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
   }
 #endif
 
+#ifdef NT_THREADS
+  stop_nt_io_cancel(ts);
+#endif
   ts->swapped=0;
   Pike_interpreter_pointer = &ts->state;
 #ifdef PIKE_DEBUG
@@ -4286,6 +4382,9 @@ static void f_thread_id_interrupt(INT32 args)
     th_kill(THIS_THREAD->id, SIGCHLD);
   }
   THIS_THREAD->flags |= THREAD_FLAG_INTR;
+#ifdef NT_THREADS
+  interrupt_nt_io(THIS_THREAD);
+#endif
 }
 
 static void low_thread_kill (struct thread_state *th)
@@ -4300,6 +4399,9 @@ static void low_thread_kill (struct thread_state *th)
     th_kill(th->id, SIGCHLD);
   }
   th->flags |= THREAD_FLAG_TERM;
+#ifdef NT_THREADS
+  interrupt_nt_io(th);
+#endif
 }
 
 /*! @decl void kill(int|void exit_value)
@@ -4939,11 +5041,8 @@ void th_init(void)
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
   add_integer_constant("THREAD_ABORTED", THREAD_ABORTED, 0);
 
-#ifdef HAVE_TH_KILL
-  add_integer_constant("THREAD_SUPPORTS_IO_INTERRUPTS", 1, 0);
-#else
-  add_integer_constant("THREAD_SUPPORTS_IO_INTERRUPTS", 0, 0);
-#endif
+  add_integer_constant("THREAD_SUPPORTS_IO_INTERRUPTS",
+                       pike_threads_support_io_interrupts(), 0);
 
   add_integer_constant("MUTEX_SUPPORTS_SHARED_LOCKS", 1, 0);
 

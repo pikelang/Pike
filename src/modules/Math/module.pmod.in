@@ -373,6 +373,10 @@ float logn(int|float n, int|float x) { return log(x)/log(n); }
 //! be sorted biggest to smallest factor.
 //!
 //! @note
+//!   Support for negative inputs was added in Pike 9.1. For a negative
+//!   input, the factors of its absolute value are followed by @expr{-1@}.
+//!
+//! @note
 //!   In Pike versions prior to v8.0, only primes @expr{<= 8161@} were
 //!   considered.
 array(int(-1..)) factor(int x) {

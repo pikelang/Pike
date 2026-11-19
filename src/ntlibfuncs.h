@@ -15,6 +15,11 @@
 
 NTLIB(kernel32);
 
+/* Available starting with Vista / Server 2008. */
+NTLIBFUNC(kernel32, BOOL, CancelSynchronousIo, (
+  HANDLE hThread
+));
+
 NTLIBFUNC(kernel32, BOOL, MoveFileExW, (
   LPCWSTR lpExistingFileName,  /* file name     */
   LPCWSTR lpNewFileName,       /* new file name */

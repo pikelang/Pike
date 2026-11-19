@@ -118,6 +118,15 @@ is equal to "1.0 times 10 to the power of 9". <note><tt>float</tt> and
 <tt>int</tt> are not compatible and are not implicit casted like in
 C and C++</note></p>
 
+<p>Hexadecimal floating-point literals start with <tt>0x</tt> or
+<tt>0X</tt>. The significand consists of hexadecimal digits with an optional
+period. A mandatory <tt>p</tt> or <tt>P</tt> introduces a decimal exponent,
+which scales the significand by a power of two. For example,
+<expr>0x1.8p+2</expr> is <expr>6.0</expr>, and <expr>0x.8p-1</expr> is
+<expr>0.25</expr>. Without the binary exponent, a hexadecimal numeral is an
+integer, and cannot contain a period. C floating-point type suffixes and
+digit separators are not supported.</p>
+
 <p>All the arithmetic and comparison operators can be used on floats.
 Also, these functions operates on floats:</p>
 

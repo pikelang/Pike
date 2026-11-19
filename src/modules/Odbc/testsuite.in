@@ -1,1 +1,30 @@
+START_MARKER
 
+dnl String columns should come back as strings: 'v1' as "v1", not as
+dnl UTF-16 ("v\0" "1\0"). Uses the SQLite ODBC driver, which needs no
+dnl server.
+cond_resolv(Odbc.odbc, [[
+  test_do([[
+    catch {
+      object db = class {
+          inherit Odbc.odbc;
+          protected void create(string dsn) { create_dsn(dsn); }
+        }("DRIVER=SQLite3;Database=:memory:");
+      add_constant("odbc_utf16_sqlite", 1);
+    };
+  ]])
+]])
+cond([[all_constants()->odbc_utf16_sqlite]], [[
+  test_any_equal([[
+    object db = class {
+        inherit Odbc.odbc;
+        protected void create(string dsn) { create_dsn(dsn); }
+      }("DRIVER=SQLite3;Database=:memory:");
+    db->big_query("CREATE TABLE t (k INTEGER, v VARCHAR(20))");
+    db->big_query("INSERT INTO t VALUES (1, 'v1')");
+    return db->big_query("SELECT k, v FROM t")->fetch_row();
+  ]], ({ "1", "v1" }))
+]])
+test_do(add_constant("odbc_utf16_sqlite"))
+
+END_MARKER
