@@ -629,6 +629,12 @@ o Compiler
     call or drops spliced operands. The size optimization requires exactly
     two arguments, including when arguments are supplied through splices.
 
+  - Negating a propagated -2147483648 no longer wraps on 32-bit x86,
+    SPARC and PowerPC. Signed-minimum negated immediates use the generic
+    opcode for bignum promotion; 64-bit SPARC widens before negating.
+    AMD64 local additions of this immediate also avoid an overflowing
+    sign reversal when restoring a local before arithmetic replay.
+
   - Preserve inferred type-variable bindings from fully matching union
     branches. This fixes lost character ranges in string joins involving
     both wide and ASCII strings.

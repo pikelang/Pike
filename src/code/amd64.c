@@ -4443,6 +4443,8 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_ADD_LOCAL_INT_AND_POP:
    {
       LABELS();
+      /* Overflow recovery must be able to negate the immediate exactly. */
+      if (INT32_NEG_OVERFLOW(c)) break;
       ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
