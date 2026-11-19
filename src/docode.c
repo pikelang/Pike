@@ -2255,7 +2255,9 @@ static int do_docode2(node *n, int flags)
 	n = CAR(n);
       }
       /* CAR(n) is not F_ARG_LIST or F_COMMA_EXPR */
-      tmp1 += do_docode(CAR(n), flags & ~WANT_LVALUE);
+      tmp1 += do_docode(CAR(n),
+                           (!CDR(n) && !n->parent) ?
+                           flags : flags & ~WANT_LVALUE);
 
       do {
 	if (CDR(n)) {
@@ -3273,7 +3275,8 @@ static int do_docode2(node *n, int flags)
 	CDR(n) && (CDR(n)->token == F_ARG_LIST)) {
       /* F_SET_LOCAL_NAME(F_LOCAL(stack_offset, 0),
        *                  F_ARG_LIST(F_CONSTANT(T_STRING, "varname"),
-       *                             F_CONSTANT(T_INT, varflags)))
+       *                             F_ARG_LIST(F_CONSTANT(T_INT, varflags),
+       *                                        NULL)))
        */
       tmp2 = CAR(n)->u.integer.a;
 
@@ -3288,7 +3291,7 @@ static int do_docode2(node *n, int flags)
       emit2(F_SET_LOCAL_TYPE, tmp2, tmp1);
 
       /* varflags. */
-      tmp1 = CDDR(n)->u.sval.u.integer;
+      tmp1 = CADDR(n)->u.sval.u.integer;
       if (tmp1 & LOCAL_VAR_USED_IN_SCOPE) {
 	emit2(F_SET_LOCAL_FLAGS, tmp2, tmp1);
       }

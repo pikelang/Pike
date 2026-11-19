@@ -777,13 +777,86 @@ static int apply_opt_flags_for_ref(struct program *prog, int fun)
   return OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
 }
 
+/* Every nonempty argument list is a cons chain ending in NULL. Unlike
+ * mkarglist(), mknode(F_ARG_LIST, a, b) constructs just one cell: a is
+ * one expression and b is the remaining list.
+ */
+node *mkarglist(node *a, node *b)
+{
+  node *root = NULL, *last = NULL, *cur;
+  if (b && b->token != F_ARG_LIST) b = mknode(F_ARG_LIST, b, NULL);
+  if (!a) return b;
+  if (a->token != F_ARG_LIST) return mknode(F_ARG_LIST, a, b);
+  if (!b) return a;
+
+  /* Copy prefix cells, sharing expressions. Attach b only after reading
+   * the prefix, since it may share cells with a. Builders that append
+   * repeatedly should build backwards and reverse once instead.
+   */
+  for (cur = a; cur; cur = CDR(cur)) {
+    node *cell;
+    if (!CAR(cur)) continue;
+    add_ref(CAR(cur));
+    cell = mknode(F_ARG_LIST, CAR(cur), NULL);
+    if (last) {
+      _CDR(last) = cell;
+      cell->parent = last;
+    } else root = cell;
+    last = cell;
+  }
+  if (!last) {
+    free_node(a);
+    return b;
+  }
+  _CDR(last) = b;
+  b->parent = last;
+  /* Completing the tail changes the flags of every new prefix cell. */
+  for (cur = last; cur; cur = cur->parent) {
+    cur->tree_info = cur->node_info | CAR(cur)->tree_info;
+    if (CDR(cur)) cur->tree_info |= CDR(cur)->tree_info;
+  }
+  free_node(a);
+  return root;
+}
+
+node *reverse_arg_list(node *args)
+{
+  node *res = NULL;
+  while (args) {
+    node *next = CDR(args);
+#ifdef PIKE_DEBUG
+    if (args->refs != 1 || args->type)
+      Pike_fatal("Reversing a shared or typed argument list.\n");
+#endif
+    _CDR(args) = res;
+    args->parent = NULL;
+    args->tree_info = args->node_info;
+    if (CAR(args)) args->tree_info |= CAR(args)->tree_info;
+    if (res) {
+      res->parent = args;
+      args->tree_info |= res->tree_info;
+    }
+    res = args;
+    args = next;
+  }
+  return res;
+}
+
 node *debug_mknode(int token, node *a, node *b)
 {
   node *res;
 
   switch(token)
   {
+#ifdef PIKE_DEBUG
+    case F_ARG_LIST:
+      if (b && b->token != F_ARG_LIST)
+        Pike_fatal("Argument list has a non-list tail.\n");
+      break;
+#endif
     case F_APPLY:
+      if (b && b->token != F_ARG_LIST)
+        b = mknode(F_ARG_LIST, b, NULL);
       if(is_automap_arg_list(b))
 	token=F_AUTO_MAP;
       break;
@@ -793,17 +866,17 @@ node *debug_mknode(int token, node *a, node *b)
 	     is_automap_arg_list(b))
       {
 	case 1:
-	  res=mkefuncallnode("rows",mknode(F_ARG_LIST,a,copy_node(CAR(b))));
+          res=mkefuncallnode("rows",mkarglist(a,copy_node(CAR(b))));
 	  free_node(b);
 	  return res;
 
 	case 2:
-	  res=mkefuncallnode("column",mknode(F_ARG_LIST,copy_node(CAR(a)),b));
+          res=mkefuncallnode("column",mkarglist(copy_node(CAR(a)),b));
 	  free_node(a);
 	  return res;
 
 	case 3:
-	  return mkefuncallnode("`[]",mknode(F_ARG_LIST,a,b));
+          return mkefuncallnode("`[]",mkarglist(a,b));
       }
       break;
 
@@ -1181,8 +1254,8 @@ node *mkgeneric_selection(node *expr, node *assocs)
   node *n = assocs;
 
   while (n) {
-    /* NB: Tree-opt has reversed the nesting-order for the F_ARG_LIST nodes. */
-    node *nn = (n->token == F_ARG_LIST)?CDR(n):n;
+    /* Associations are built in reverse order to preserve tie breaking. */
+    node *nn = CAR(n);
     struct pike_type *nt = nn?CAR(nn)->u.sval.u.type:NULL;
     if (nt == t) {
       best = CDR(nn);
@@ -1197,8 +1270,7 @@ node *mkgeneric_selection(node *expr, node *assocs)
       best_type = nt;
     }
 
-    if (n->token != F_ARG_LIST) break;
-    n = CAR(n);
+    n = CDR(n);
   }
 
   if (best) {
@@ -1303,7 +1375,7 @@ node *debug_mkefuncallnode(char *function, node *args)
 node *debug_mkopernode(char *oper_id, node *arg1, node *arg2)
 {
   if(arg1 && arg2)
-    arg1=mknode(F_ARG_LIST,arg1,arg2);
+    arg1=mkarglist(arg1,arg2);
 
   return mkefuncallnode(oper_id, arg1);
 }
@@ -3747,6 +3819,9 @@ void fix_type_field(node *n)
   */
   if( car_is_node(n) ) fix_type_field(CAR(n));
   if( cdr_is_node(n) ) fix_type_field(CDR(n));
+  /* This call consumes invalidations from preparing its argument cells. */
+  if (n->token == F_APPLY || n->token == F_AUTO_MAP)
+    n->node_info &= ~OPT_TYPE_NOT_FIXED;
 
   switch(n->token)
   {
@@ -4028,18 +4103,9 @@ void fix_type_field(node *n)
 
       fix_type_field(efun_node);	/* Just in case. */
 
-      /* NOTE: new_check_call() steals a reference from f! */
-      copy_pike_type(f, efun_node->type);
-
-      free_node(efun_node);
-
-      /* NOTE: Temporarily convert the node into an argument list node
-       *       for new_check_call(),
-       */
-      n->token = F_ARG_LIST;
       INIT_CALL_STATE(cs, efun_string);
-      f = debug_malloc_pass(new_check_call(f, n, &cs, 0));
-      n->token = opcode;
+      f = debug_malloc_pass(new_check_call_binop(efun_node->type, n, &cs, 0));
+      free_node(efun_node);
       if (f) {
 	struct pike_type *ret = new_get_return_type(f, &cs, 0);
 	free_type(f);
@@ -4611,9 +4677,9 @@ void fix_type_field(node *n)
       } else {
 	add_ref(sscanf_type = sscanf_type_string);
       }
-      args = mknode(F_ARG_LIST, CAR(n), CDR(n));
       add_ref(CAR(n));
       if (CDR(n)) add_ref(CDR(n));
+      args = mkarglist(CAR(n), CDR(n));
       INIT_CALL_STATE(cs, sscanf_name);
       sscanf_type = new_check_call(sscanf_type, args, &cs, 0);
       free_node(args);
@@ -4669,6 +4735,7 @@ void fix_type_field(node *n)
     break;
 
   case F_ARG_LIST:
+    n->node_info &= ~OPT_TYPE_NOT_FIXED;
     if (n->parent) {
       /* Propagate the changed type all the way up to the apply node. */
       n->parent->node_info |= OPT_TYPE_NOT_FIXED;
@@ -5170,7 +5237,7 @@ static node *eval(node *n)
   if (n->token == F_ARG_LIST) {
     if (CAR(n)) add_ref(CAR(n));
     if (CDR(n)) add_ref(CDR(n));
-    new = mknode(F_ARG_LIST, eval(CAR(n)), eval(CDR(n)));
+    new = mkarglist(eval(CAR(n)), eval(CDR(n)));
     free_node(n);
     return new;
   }
@@ -5229,7 +5296,7 @@ static node *eval(node *n)
       n=NULL;
       while(args--)
       {
-	n=mknode(F_ARG_LIST,mksvaluenode(Pike_sp-1),n);
+        n=mkarglist(mksvaluenode(Pike_sp-1),n);
 	pop_stack();
       }
     } else {
@@ -5237,7 +5304,7 @@ static node *eval(node *n)
       n = NULL;
       while(args--)
       {
-	n=mknode(F_ARG_LIST,mksvaluenode(Pike_sp-1),n);
+        n=mkarglist(mksvaluenode(Pike_sp-1),n);
 	pop_stack();
       }
       n = mksoftcastnode(nn->type, n);
@@ -5404,7 +5471,7 @@ int dooptcode(struct pike_string *name,
     }
 #endif
   }else{
-    n = mknode(F_ARG_LIST, n, 0);
+    n = mkarglist(n, 0);
 
     if((foo=is_stupid_func(n, args, vargs, type)))
     {

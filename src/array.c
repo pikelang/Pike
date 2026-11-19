@@ -2279,8 +2279,7 @@ node *make_node_from_array(struct array *a)
     }
     debug_malloc_touch(a);
     if(e == a->size)
-      return mkefuncallnode("allocate",mknode(F_ARG_LIST,
-					      mkintnode(a->size),
+      return mkefuncallnode("allocate",mkarglist(mkintnode(a->size),
 					      mksvaluenode(ITEM(a))));
   }
 
@@ -2294,7 +2293,7 @@ node *make_node_from_array(struct array *a)
     debug_malloc_touch(a);
     for(e = a->size; e--;) {
       if (ret) {
-	ret = mknode(F_ARG_LIST, mksvaluenode(ITEM(a)+e), ret);
+        ret = mkarglist(mksvaluenode(ITEM(a)+e), ret);
       } else {
 	ret = mksvaluenode(ITEM(a)+e);
       }

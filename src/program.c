@@ -2591,7 +2591,7 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
 	n = mkidentifiernode(id);
       }
       if (res) {
-	res = mknode(F_ARG_LIST, res, n);
+        res = mkarglist(res, n);
       } else {
 	res = n;
       }
@@ -2905,10 +2905,8 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	  }
 	}
 	return mknode(F_APPLY, mkexternalnode(state->new_program, id),
-		      mknode(F_ARG_LIST,
-			     mkstrnode(ident),
-			     mknode(F_ARG_LIST,
-				    mkthisnode(state->new_program, inherit_num),
+                      mkarglist(mkstrnode(ident),
+                             mkarglist(mkthisnode(state->new_program, inherit_num),
 				    mkintnode(1))));
       }
     }

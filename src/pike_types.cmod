@@ -13075,6 +13075,25 @@ struct pike_type *new_check_call(struct pike_type *fun_type,
   return fun_type;
 }
 
+/* Check prepared scalar operands without disguising them as a list.
+ * Borrows fun_type and returns an owned continuation type.
+ */
+struct pike_type *new_check_call_binop(struct pike_type *fun_type,
+                                      node *binop_node,
+                                      struct call_state *cs, INT32 flags)
+{
+  if (!fun_type || !binop_node) return NULL;
+  add_ref(fun_type);
+  clear_markers();
+  if (CAR(binop_node))
+    fun_type = new_check_call_arg(fun_type, CAR(binop_node), cs,
+                                 flags | (CDR(binop_node) ?
+                                          CALL_NOT_LAST_ARG : 0));
+  if (CDR(binop_node))
+    fun_type = new_check_call_arg(fun_type, CDR(binop_node), cs, flags);
+  return fun_type;
+}
+
 struct pike_type *zzap_function_return(struct pike_type *a,
 				       struct pike_type *fun_ret)
 {

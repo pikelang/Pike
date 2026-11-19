@@ -3827,7 +3827,7 @@ node *low_pop_local_variables(int level, node *block)
          (var->def->token == F_LOCAL_INDIRECT)) &&
         var->name && var->name->len) {
       node *name = mknode(F_SET_LOCAL_NAME, mklocalnode(e, 0),
-                          mknode(F_ARG_LIST, mkstrnode(var->name),
+                          mkarglist(mkstrnode(var->name),
                                  mkintnode(var->flags)));
       names = names ? mknode(F_COMMA_EXPR, names, name) : name;
     }
@@ -4307,7 +4307,7 @@ PIKECLASS AutoCodecClass
       while (e--) {
 	push_finished_type(prog->identifiers[e].type);
 	push_type(T_OR);
-	n = mknode(F_ARG_LIST, mkidentifiernode(e), n);
+        n = mkarglist(mkidentifiernode(e), n);
       }
     }
     push_unlimited_array_type(PIKE_T_ARRAY);

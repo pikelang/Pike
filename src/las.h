@@ -198,6 +198,10 @@ int check_tailrecursion(void);
 struct node_chunk;
 void debug_free_node(node *n);
 node *debug_mknode(int token,node *a,node *b);
+/* Concatenate argument expressions/lists, consuming both references. */
+node *mkarglist(node *a, node *b);
+/* Reverse a newly built, unshared list, consuming its reference. */
+node *reverse_arg_list(node *args);
 node *mknestednodes(int token, ...);
 void set_node_name(node *n, struct pike_string *name);
 node *mkbindnode(node *expr, struct pike_type *type);

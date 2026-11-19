@@ -522,31 +522,13 @@ low_program_ref: safe_assignment_expr
 	      (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
 	      (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
 	      (CAR(n)->u.sval.u.efun->function == debug_f_aggregate)) {
-	    /* Disambiguate multiple inherit ::-reference. */
-	    node *arg;
-	    while(1) {
-	      while ((arg = CDR(n))) {
-		n = arg;
-		if (n->token != F_ARG_LIST) goto found_program_ref;
-	      }
-	      /* Paranoia. */
-	      if ((arg = CAR(n))) {
-		n = arg;
-		continue;
-	      }
-	      /* FIXME: Ought to go up a level and try the car there...
-	       *        But as this code probably won't be reached, we
-	       *        just fail.
-	       */
-	      yyerror("Failed to get last argument from empty array.");
-	      n = NULL;
-	      break;
-	    }
-	  found_program_ref:
-	    /* NB: The traditional C grammar requires a statement
-	     *     after a label.
-	     */
-	    continue;
+            /* Select the final argument without descending into it. */
+            node *arg = CDR(n);
+            while (arg && CDR(arg)) arg = CDR(arg);
+            n = arg ? CAR(arg) : NULL;
+            if (!n)
+              yyerror("Failed to get last argument from empty array.");
+            continue;
 	  }
 	}
 	/* FALLTHRU */
@@ -782,8 +764,8 @@ constant_name: TOK_IDENTIFIER '=' constant_initializer
           type_stack_mark();
           push_finished_type(t);
           while(n) {
-            push_type_attribute(CDR(n)->u.sval.u.string);
-            n = CAR(n);
+            push_type_attribute(CAR(n)->u.sval.u.string);
+            n = CDR(n);
           }
           free_type(t);
           t = pop_unfinished_type();
@@ -1092,7 +1074,7 @@ static_assertion: TOK_STATIC_ASSERT '(' assignment_expr ',' assignment_expr ')'
     Pike_compiler->init_node =
       mknode(F_COMMA_EXPR, Pike_compiler->init_node,
 	     mkefuncallnode("_Static_assert",
-			    mknode(F_ARG_LIST, $3, $5)));
+                            mkarglist($3, $5)));
   }
   ;
 
@@ -1438,7 +1420,7 @@ optional_attributes: dummy_attributes
   {
     if ($2) {
       Pike_compiler->current_attributes =
-	mknode(F_ARG_LIST, Pike_compiler->current_attributes, $2);
+        mknode(F_ARG_LIST, $2, Pike_compiler->current_attributes);
     }
   }
   ;
@@ -1972,8 +1954,8 @@ new_name: TOK_IDENTIFIER
     }
     n = Pike_compiler->current_attributes;
     while(n) {
-      push_type_attribute(CDR(n)->u.sval.u.string);
-      n = CAR(n);
+      push_type_attribute(CAR(n)->u.sval.u.string);
+      n = CDR(n);
     }
     type=compiler_pop_type();
     define_variable($1->u.sval.u.string, type,
@@ -1990,8 +1972,8 @@ new_name: TOK_IDENTIFIER
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     n = Pike_compiler->current_attributes;
     while(n) {
-      push_type_attribute(CDR(n)->u.sval.u.string);
-      n = CAR(n);
+      push_type_attribute(CAR(n)->u.sval.u.string);
+      n = CDR(n);
     }
     type=compiler_pop_type();
     if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
@@ -2726,8 +2708,8 @@ create_arg: modifiers optional_attributes simple_type
       push_unlimited_array_type(T_ARRAY);
     }
     while(n) {
-      push_type_attribute(CDR(n)->u.sval.u.string);
-      n = CAR(n);
+      push_type_attribute(CAR(n)->u.sval.u.string);
+      n = CDR(n);
     }
     type = compiler_pop_type();
 
@@ -3112,8 +3094,8 @@ enum_def: /* EMPTY */
         type_stack_mark();
         push_finished_type(t);
         while(n) {
-          push_type_attribute(CDR(n)->u.sval.u.string);
-          n = CAR(n);
+          push_type_attribute(CAR(n)->u.sval.u.string);
+          n = CDR(n);
         }
         free_type(t);
         t = pop_unfinished_type();
@@ -3177,8 +3159,8 @@ enum: TOK_ENUM
     struct pike_type *t;
     node *n = Pike_compiler->current_attributes;
     while(n) {
-      push_type_attribute(CDR(n)->u.sval.u.string);
-      n = CAR(n);
+      push_type_attribute(CAR(n)->u.sval.u.string);
+      n = CDR(n);
     }
     t = pop_unfinished_type();
     free_node($<n>5);
@@ -3496,23 +3478,38 @@ splice_expr: assignment_expr
 optional_comma: { $$=0; } | ',' { $$=1; };
 
 expr_list: { $$=0; }
-  | expr_list2 optional_comma
+  | expr_list2 optional_comma { $$ = reverse_arg_list($1); }
   ;
 
 
-expr_list2: splice_expr
-  | expr_list2 ',' splice_expr { $$=mknode(F_ARG_LIST,$1,$3); }
+expr_list2: splice_expr { $$ = mknode(F_ARG_LIST, $1, NULL); }
+  | expr_list2 ',' splice_expr
+    { $$ = mknode(F_ARG_LIST, $3, $1); }
   ;
 
 m_expr_list: { $$=0; }
-  | m_expr_list2 optional_comma
+  | m_expr_list2 optional_comma { $$ = reverse_arg_list($1); }
   ;
 
-m_expr_list2: assoc_pair
+m_expr_list2: assoc_pair { $$ = reverse_arg_list($1); }
   | m_expr_list2 ',' assoc_pair
   {
     if ($3) {
-      $$=mknode(F_ARG_LIST,$1,$3);
+      node *key = $3;
+      node *value = CDR(key);
+      /* Reuse the pair cells as value -> key -> preceding entries. The
+       * completed mapping list is reversed once by m_expr_list.
+       */
+      _CDR(key) = $1;
+      if ($1) $1->parent = key;
+      key->tree_info = key->node_info | CAR(key)->tree_info;
+      if ($1) key->tree_info |= $1->tree_info;
+      _CDR(value) = key;
+      key->parent = value;
+      value->parent = NULL;
+      value->tree_info = value->node_info | CAR(value)->tree_info |
+        key->tree_info;
+      $$ = value;
     } else {
       /* Error in assoc_pair */
       $$=$1;
@@ -3523,7 +3520,7 @@ m_expr_list2: assoc_pair
 
 assoc_pair:  assignment_expr expected_colon assignment_expr
   {
-    $$=mknode(F_ARG_LIST,$1,$3);
+    $$=mkarglist($1,$3);
   }
   | assignment_expr expected_colon error { free_node($1); $$=0; }
   ;
@@ -3796,7 +3793,7 @@ safe_chain_expr: TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
   | safe_apply_with_line_info expr_list ')' optional_block
   {
     /* A(?B...) */
-    $$ = mkapplynode(copy_node($<n>0), mknode(F_ARG_LIST, $2, $4));
+    $$ = mkapplynode(copy_node($<n>0), mkarglist($2, $4));
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node($1);
   }
@@ -3826,7 +3823,7 @@ safe_chain_expr: TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
   | safe_chain_expr open_paren_with_line_info expr_list ')' optional_block
   {
     /* safe_chain_expr(B...) */
-    $$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
+    $$ = mkapplynode($1, mkarglist($3, $5));
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node($2);
   }
@@ -3852,11 +3849,11 @@ generic_association: generic_type_spec ':' assignment_expr
 
 generic_assoc_list: generic_association
   {
-    $$ = mknode(F_ARG_LIST, $1, NULL);
+    $$ = mkarglist($1, NULL);
   }
   | generic_assoc_list ',' generic_association
   {
-    $$ = mknode(F_ARG_LIST, $1, $3);
+    $$ = mknode(F_ARG_LIST, $3, $1);
   }
   ;
 
@@ -4275,7 +4272,7 @@ optional_block: /* EMPTY */ { $$=0; }
 apply:
   postfix_expr open_paren_with_line_info expr_list ')' optional_block
   {
-    $$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
+    $$ = mkapplynode($1, mkarglist($3, $5));
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
@@ -4707,9 +4704,9 @@ sscanf: TOK_SSCANF '(' assignment_expr ',' assignment_expr lvalue_list ')'
       mark_lvalues_as_used($6);
     }
     if (TEST_COMPAT(8, 0)) {
-      $$ = mknode(F_SSCANF_80, mknode(F_ARG_LIST, $3, $5), $6);
+      $$ = mknode(F_SSCANF_80, mkarglist($3, $5), $6);
     } else {
-      $$ = mknode(F_SSCANF, mknode(F_ARG_LIST, $3, $5), $6);
+      $$ = mknode(F_SSCANF, mkarglist($3, $5), $6);
     }
   }
   | TOK_SSCANF '(' assignment_expr ',' assignment_expr error ')'
@@ -5383,8 +5380,8 @@ static void compiler_end_class(int has___create__, int parent_constant_id)
       type_stack_mark();
       push_finished_type(t);
       while(n) {
-        push_type_attribute(CDR(n)->u.sval.u.string);
-        n = CAR(n);
+        push_type_attribute(CAR(n)->u.sval.u.string);
+        n = CDR(n);
       }
       free_type(t);
       t = pop_unfinished_type();
@@ -5605,8 +5602,8 @@ static int compiler_declare_prototype(int modifiers,
   if (Pike_compiler->current_attributes) {
     node *n = Pike_compiler->current_attributes;
     while (n) {
-      push_type_attribute(CDR(n)->u.sval.u.string);
-      n = CAR(n);
+      push_type_attribute(CAR(n)->u.sval.u.string);
+      n = CDR(n);
     }
   }
 
@@ -5802,8 +5799,7 @@ static int compiler_define_function(int modifiers,
           mknode(F_COMMA_EXPR,
                  mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
                                          "failure"),
-                             mknode(F_ARG_LIST,
-                                    mknode(F_CATCH, block, NULL),
+                             mkarglist(mknode(F_CATCH, block, NULL),
                                     NULL)),
                  mknode(F_RETURN, NULL, NULL));
       } else if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
@@ -5872,13 +5868,13 @@ static int compiler_define_function(int modifiers,
                               mknode(F_ASSIGN,
                                      mklocalnode(generator_stack_local + 3, 0),
                                      mkapplynode(resolve_identifier(Concurrent_Promise_string),
-                                                 mknode(F_ARG_LIST, NULL, NULL))),
+                                                 mkarglist(NULL, NULL))),
                               mkapplynode(mkgeneratornode(f),
-                                          mknode(F_ARG_LIST, NULL, NULL)),
+                                          mkarglist(NULL, NULL)),
                               mknode(F_RETURN,
                                      mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
                                                              "future"),
-                                                 mknode(F_ARG_LIST, NULL, NULL)),
+                                                 mkarglist(NULL, NULL)),
                                      mkintnode(0)),
                               NULL);
       } else {
@@ -5952,7 +5948,7 @@ static int compiler_define_function(int modifiers,
       }
       while (e--) {
         ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-        args = mknode(F_ARG_LIST, mklocalnode(ee, 0), args);
+        args = mkarglist(mklocalnode(ee, 0), args);
       }
 
       e = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
@@ -6024,8 +6020,8 @@ static int compiler_define_function(int modifiers,
       {
         node *n = Pike_compiler->current_attributes;
         while (n) {
-          push_type_attribute(CDR(n)->u.sval.u.string);
-          n = CAR(n);
+          push_type_attribute(CAR(n)->u.sval.u.string);
+          n = CDR(n);
         }
       }
 

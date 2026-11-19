@@ -2030,14 +2030,14 @@ static node *optimize_not(node *n)
     if((more_args = is_call_to(*first_arg, f_search)) &&
        (count_args(*more_args) == 2)) {
       node *search_args = *more_args;
-      if ((search_args->token == F_ARG_LIST) &&
-	  CAR(search_args) &&
-	  pike_types_le(CAR(search_args)->type, string_type_string, 0, 0) &&
-	  CDR(search_args) &&
-	  pike_types_le(CDR(search_args)->type, string_type_string, 0, 0)) {
-	/* !search(string a, string b)  =>  has_prefix(a, b) */
-	ADD_NODE_REF(*more_args);
-	return mkefuncallnode("has_prefix", search_args);
+      node **first = my_get_arg(&search_args, 0);
+      node **second = my_get_arg(&search_args, 1);
+      if (first && second &&
+          pike_types_le((*first)->type, string_type_string, 0, 0) &&
+          pike_types_le((*second)->type, string_type_string, 0, 0)) {
+        /* !search(string a, string b)  =>  has_prefix(a, b) */
+        ADD_NODE_REF(*more_args);
+        return mkefuncallnode("has_prefix", search_args);
       }
     }
   }
@@ -2088,8 +2088,7 @@ static node *optimize_binary(node *n)
 	ADD_NODE_REF2(*second_arg,
 		      ret = mknode(F_APPLY,
 				   CAR(n),
-				   mknode(F_ARG_LIST,
-					  CDR(*first_arg),
+                                   mkarglist(CDR(*first_arg),
 					  *second_arg))
 	)));
 	return ret;
@@ -2105,8 +2104,7 @@ static node *optimize_binary(node *n)
 	ADD_NODE_REF2(CDR(*second_arg),
 		      ret = mknode(F_APPLY,
 				   CAR(n),
-				   mknode(F_ARG_LIST,
-					  *first_arg,
+                                   mkarglist(*first_arg,
 					  CDR(*second_arg)))
 	)));
 	return ret;
@@ -5592,73 +5590,72 @@ PMOD_EXPORT void f_sizeof(INT32 args)
 
 static node *optimize_sizeof(node *n)
 {
-  if (CDR(n) && (CDR(n)->token == F_APPLY) &&
-      (CADR(n)) && (CADR(n)->token == F_CONSTANT) &&
-      (TYPEOF(CADR(n)->u.sval) == T_FUNCTION) &&
-      (SUBTYPEOF(CADR(n)->u.sval) == FUNCTION_BUILTIN)) {
-    extern struct program *string_split_iterator_program;
-    /* sizeof(efun(...)) */
-    if ((CADR(n)->u.sval.u.efun->function == f_divide) &&
-	CDDR(n) && (CDDR(n)->token == F_ARG_LIST) &&
-	CADDR(n) && pike_types_le(CADDR(n)->type, string_type_string, 0, 0) &&
-	CDDDR(n) && (CDDDR(n)->token == F_CONSTANT) &&
-	(TYPEOF(CDDDR(n)->u.sval) == T_STRING) &&
-	(CDDDR(n)->u.sval.u.string->len == 1)) {
-      p_wchar2 split = index_shared_string(CDDDR(n)->u.sval.u.string, 0);
+  node *call, *callee, *str, *separator, *remove = NULL;
+  extern struct program *string_split_iterator_program;
 
-      /* sizeof(`/(str, "x")) */
-      ADD_NODE_REF2(CADDR(n),
-        return mkefuncallnode("sizeof",
-			      mkapplynode(mkprgnode(string_split_iterator_program),
-					  mknode(F_ARG_LIST, CADDR(n),
-						 mkintnode(split))));
-      );
-    }
-    if ((CADR(n)->u.sval.u.efun->function == f_minus) &&
-	CDDR(n) && (CDDR(n)->token == F_ARG_LIST) &&
-	CADDR(n) && (CADDR(n)->token == F_APPLY) &&
-	CAADDR(n) && (CAADDR(n)->token == F_CONSTANT) &&
-	(TYPEOF(CAADDR(n)->u.sval) == T_FUNCTION) &&
-	(SUBTYPEOF(CAADDR(n)->u.sval) == FUNCTION_BUILTIN) &&
-	(CAADDR(n)->u.sval.u.efun->function == f_divide) &&
-	CDADDR(n) && (CDADDR(n)->token == F_ARG_LIST) &&
-	CADADDR(n) && pike_types_le(CADADDR(n)->type, string_type_string, 0, 0) &&
-	CDDADDR(n) && (CDDADDR(n)->token == F_CONSTANT) &&
-	(TYPEOF(CDDADDR(n)->u.sval) == T_STRING) &&
-	(CDDADDR(n)->u.sval.u.string->len == 1) &&
-	CDDDR(n)) {
-      /* sizeof(`-(`/(str, "x"), y)) */
-      if (((CDDDR(n)->token == F_CONSTANT) &&
-	   (TYPEOF(CDDDR(n)->u.sval) == T_ARRAY) &&
-	   (CDDDR(n)->u.sval.u.array->size == 1) &&
-	   (TYPEOF(CDDDR(n)->u.sval.u.array->item[0]) == T_STRING) &&
-	   (CDDDR(n)->u.sval.u.array->item[0].u.string->len == 0)) ||
-	  ((CDDDR(n)->token == F_APPLY) &&
-	   CADDDR(n) && (CADDDR(n)->token == F_CONSTANT) &&
-	   (TYPEOF(CADDDR(n)->u.sval) == T_FUNCTION) &&
-	   (SUBTYPEOF(CADDDR(n)->u.sval) == FUNCTION_BUILTIN) &&
-	   (CADDDR(n)->u.sval.u.efun->function == f_allocate) &&
-	   CDDDDR(n) && (CDDDDR(n)->token == F_ARG_LIST) &&
-	   CADDDDR(n) && (CADDDDR(n)->token == F_CONSTANT) &&
-	   (TYPEOF(CADDDDR(n)->u.sval) == T_INT) &&
-	   (CADDDDR(n)->u.sval.u.integer == 1) &&
-	   CDDDDDR(n) && (CDDDDDR(n)->token == F_CONSTANT) &&
-	   (TYPEOF(CDDDDDR(n)->u.sval) == T_STRING) &&
-	   (CDDDDDR(n)->u.sval.u.string->len == 0))) {
-	/* sizeof(`-(`/(str, "x"), ({""}))) */
-	p_wchar2 split = index_shared_string(CDDADDR(n)->u.sval.u.string, 0);
-	ADD_NODE_REF2(CADADDR(n),
-          return mkefuncallnode("sizeof",
-				mkapplynode(mkprgnode(string_split_iterator_program),
-					    mknode(F_ARG_LIST, CADADDR(n),
-						   mknode(F_ARG_LIST,
-							  mkintnode(split),
-							  mkintnode(1)))));
-	);
-      }
-    }
+  if (!CDR(n) || CDDR(n)) return NULL;
+  call = CADR(n);
+  if (!call || call->token != F_APPLY) return NULL;
+  callee = CAR(call);
+  if (!callee || callee->token != F_CONSTANT ||
+      TYPEOF(callee->u.sval) != T_FUNCTION ||
+      SUBTYPEOF(callee->u.sval) != FUNCTION_BUILTIN)
+    return NULL;
+
+  if (callee->u.sval.u.efun->function == f_minus) {
+    /* sizeof(`-(`/(str, "x"), ({""}))) */
+    if (!CDR(call) || !CDDR(call) || CDDDR(call)) return NULL;
+    remove = CADDR(call);
+    call = CADR(call);
+    if (!call || call->token != F_APPLY) return NULL;
+    callee = CAR(call);
+    if (!callee || callee->token != F_CONSTANT ||
+        TYPEOF(callee->u.sval) != T_FUNCTION ||
+        SUBTYPEOF(callee->u.sval) != FUNCTION_BUILTIN)
+      return NULL;
   }
-  return NULL;
+  if (callee->u.sval.u.efun->function != f_divide ||
+      !CDR(call) || !CDDR(call) || CDDDR(call)) return NULL;
+  str = CADR(call);
+  separator = CADDR(call);
+  if (!str || !pike_types_le(str->type, string_type_string, 0, 0) ||
+      !separator || separator->token != F_CONSTANT ||
+      TYPEOF(separator->u.sval) != T_STRING ||
+      separator->u.sval.u.string->len != 1) return NULL;
+
+  if (remove) {
+    int empty = remove->token == F_CONSTANT &&
+      TYPEOF(remove->u.sval) == T_ARRAY &&
+      remove->u.sval.u.array->size == 1 &&
+      TYPEOF(remove->u.sval.u.array->item[0]) == T_STRING &&
+      !remove->u.sval.u.array->item[0].u.string->len;
+    if (!empty && remove->token == F_APPLY) {
+      node *fun = CAR(remove);
+      node *args = CDR(remove);
+      empty = fun && fun->token == F_CONSTANT &&
+        TYPEOF(fun->u.sval) == T_FUNCTION &&
+        SUBTYPEOF(fun->u.sval) == FUNCTION_BUILTIN &&
+        fun->u.sval.u.efun->function == f_allocate &&
+        args && CDR(args) && !CDDR(args) &&
+        CAR(args) && CAR(args)->token == F_CONSTANT &&
+        TYPEOF(CAR(args)->u.sval) == T_INT &&
+        CAR(args)->u.sval.u.integer == 1 &&
+        CADR(args) && CADR(args)->token == F_CONSTANT &&
+        TYPEOF(CADR(args)->u.sval) == T_STRING &&
+        !CADR(args)->u.sval.u.string->len;
+    }
+    if (!empty) return NULL;
+  }
+  {
+    node *args;
+    p_wchar2 split = index_shared_string(separator->u.sval.u.string, 0);
+    add_ref(str);
+    args = mkarglist(str, mkintnode(split));
+    if (remove) args = mkarglist(args, mkintnode(1));
+    return mkefuncallnode("sizeof",
+                         mkapplynode(mkprgnode(string_split_iterator_program),
+                                     args));
+  }
 }
 
 static int generate_sizeof(node *n)

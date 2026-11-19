@@ -1570,6 +1570,52 @@ test_any([[
   return measure(({"ab", 2}), 3);
 ]], 12)
 
+dnl Flatten mapping pairs without changing evaluation order or pair alignment.
+test_any_equal([[
+  array(int) seen = ({});
+  int record(int n) { seen += ({n}); return n; }
+  mapping result = ([record(1):record(2), record(3):record(4),
+                     record(5):record(6)]);
+  return ({seen, result});
+]], ({({1, 2, 3, 4, 5, 6}), ([1:2, 3:4, 5:6])}))
+
+dnl Repeated keys retain the last value after flattening.
+test_any_equal([[
+  string key(string s) { return s; }
+  return ([key("a"):1, key("b"):2, key("a"):3]);
+]], (["a":3, "b":2]))
+
+dnl List preparation must preserve precise types on eagerly evaluated calls.
+test_any_equal([[
+  class C {
+    local constant values = ({1, 2, 3, 4, 5, 6});
+    constant prefix = values[..2];
+  }
+  return C.prefix;
+]], ({1, 2, 3}))
+
+dnl Chunking a long aggregate preserves argument and splice evaluation order.
+test_any_equal([[
+  array(int) seen = ({});
+  int record(int n) { seen += ({n}); return n; }
+  array(string) exprs = map(enumerate(70),
+                           lambda(int n) { return "record(" + n + ")"; });
+  exprs[33] = "@({record(33)})";
+  object o = compile_string("array run(function record) { return ({ " +
+                            exprs * "," + " }); }")();
+  return ({o->run(record), seen});
+]], ({enumerate(70), enumerate(70)}))
+
+dnl Zero and singleton calls retain proper tails after splice expansion.
+test_any([[
+  int target() { return 17; }
+  return target(@({}), @({}));
+]], 17)
+test_any([[
+  int target(int value) { return value; }
+  return target(@({}), 19, @({}));
+]], 19)
+
 test_equal([[ typeof(aggregate("foo"));]],
 	   [[ typeof([array(string(3: 102..111))](mixed)({})) ]]);
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
@@ -7145,7 +7191,7 @@ dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->
 	     Thread.this_thread().id_number();
     }
     return ({ Thread.Thread, Thread.Thread })(test_thread)->wait();
-  ]], ({ 1, 1 }))
+ ]], ({ 1, 1 }))
 
 cond_end // thread_create
 cond(0, [[
@@ -18146,5 +18192,28 @@ test_do(Stdio.recursive_rm("cmod_dependency_dump_test"))
 dnl - Deprecated safe indexing
 test_compile_warning( mapping foo; foo?->bar; )
 
+
+dnl Optimizer intrinsics must evaluate trailing empty splices.
+ignore_warning("In argument 2 to this_object: The @-operator argument must be an empty array.", [[
+test_any_equal([[
+  int trace;
+  array empty() { trace++; return ({}); }
+  object o = this_object(0, @empty());
+  return ({ o == this_object(), trace });
+]], ({ 1, 1 }))
+]])
+
+ignore_warning("In argument 3 to allocate: The @-operator argument must be an empty array.", [[
+test_any_equal([[
+  int trace;
+  array empty() { trace++; return ({}); }
+  int count;
+  foreach (String.SplitIterator(
+             replace("axbxc", ({ "x" }), allocate(1, "z", @empty())),
+             'z');; string part)
+    count++;
+  return ({ count, trace });
+]], ({ 3, 1 }))
+]])
 
 END_MARKER
