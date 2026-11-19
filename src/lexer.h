@@ -155,13 +155,7 @@ static long lex_strtol(char *buf, char **end, int base)
 static FLOAT_TYPE lex_strtod(char *buf, char **end)
 {
   PCHARP foo;
-#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
-  FLOAT_TYPE ret;
-  ret=STRTOLD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
-#else
-  double ret;
-  ret=STRTOD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
-#endif
+  FLOAT_TYPE ret = STRTOFLOAT_PCHARP(MKPCHARP(buf, SHIFT), &foo);
   if(end) end[0]=(char *)foo.ptr;
   return ret;
 }

@@ -188,6 +188,61 @@ test_eq(-8, -0b1000);
 test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
 
+// Hexadecimal floating constants use a decimal power-of-two exponent.
+test_equal(0x1p0, 1.0)
+test_equal(0x1.8p+2, 6.0)
+test_equal(-0X.Ap+4, -10.0)
+test_equal(0x.8p-1, 0.25)
+test_equal(0x1.p+3, 8.0)
+test_equal(0x1e2p0, 482.0)
+test_equal(0x0001.000p0, 1.0)
+test_equal(0x1p-10, 1.0/1024)
+test_equal(0x1.0000000000000000000000000000000000000000000000001p0, 1.0)
+test_equal(0x0p9999999999999999999999999999999999999999, 0.0)
+test_equal(0x0p-9999999999999999999999999999999999999999, 0.0)
+test_true(0x1p9999999999999999999999999999999999999999 > 1.0)
+test_equal(0x1p-9999999999999999999999999999999999999999, 0.0)
+cond([[Float.EPSILON > 1e-8 && Float.EPSILON < 1e-6]], [[
+  test_equal(0x1p-149, array_sscanf("\0\0\0\1", "%4F")[0])
+  test_equal(0x1p-150, 0.0)
+  test_true(0x1.00000000000000001p-150 > 0.0)
+  test_equal(0x1.000001p0, 1.0)
+  test_equal(0x1.000001000000000000000000000001p0, 1.0 + Float.EPSILON)
+]])
+cond([[Float.EPSILON > 1e-17 && Float.EPSILON < 1e-15]], [[
+  test_equal(0x1p-1074, array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0])
+  test_equal(0x1p-1075, 0.0)
+  test_true(0x1.00000000000000001p-1075 > 0.0)
+  test_equal(0x1.00000000000008p0, 1.0)
+  test_equal(0x1.000000000000080000000000000000000001p0,
+             1.0 + Float.EPSILON)
+]])
+test_equal("abc"[0x1..0x2], "bc")
+test_compile_error([[float f = 0x1.2;]])
+test_compile_error([[float f = 0x.p1;]])
+test_compile_error([[float f = 0x1p;]])
+test_compile_error([[float f = 0x1p+;]])
+test_compile_error([[float f = 0x1p-;]])
+test_compile_error([[float f = 0x1p0z;]])
+test_any_equal([[
+#if 0x1.8p+2 == 6.0 && 0X.Ap+3 == 5.0
+  return 1;
+#else
+  return 0;
+#endif
+]], 1)
+test_any_equal([[
+  foreach (({ "\u0100", "\U00010000" }), string marker) {
+    program p = compile_string("constant marker = \"" + marker +
+      "\";\n#if 0x1.8p+2 == 6.0\nfloat f() { return 0X.Ap+3; }\n#endif\n");
+    if (p()->f() != 5.0) return 0;
+  }
+  return 1;
+]], 1)
+test_equal((float)"0x1.8p+2", 6.0)
+test_equal((float)"-0x.8p-1", -0.25)
+test_equal(array_sscanf("0x1.8p+2!", "%f%s"), ({ 6.0, "!" }))
+
 test_true(1e-100000000000000000000000000000000000000000000000000000000000<=1e-10000)
 test_true(1e-10000<=1e-1000)
 test_true(1e-1000<=1e-100)
@@ -10951,6 +11006,16 @@ test_eq([[({})*""]],"")
 test_eq([[({"foo",0,"bar"})*"-"]],"foo-bar")
 test_eq([[({"f","o","o"})*""]],"foo")
 
+dnl Successful subtraction must preserve bindings from every union branch.
+test_equal([[typeof(({"f\u01ff", "bar"}) * "-");]],
+           [[typeof([string(45 | 97..511)](mixed)0);]])
+test_equal([[typeof(({"f\u01ff", "bar"}) * "");]],
+           [[typeof([string(97..511)](mixed)0);]])
+test_equal([[typeof(({"f\U001fffff", "bar"}) * "-");]],
+           [[typeof([string(45 | 97..0x1fffff)](mixed)0);]])
+test_equal([[typeof(({"f\u01ff", "b\u0100"}) * "-");]],
+           [[typeof([string(45 | 98..511)](mixed)0);]])
+
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
 test_eq(({"f\777\777","bar","gaz\777nk"})*"-","f\777\777-bar-gaz\777nk")
 test_eq(({"f\7777777\7777777","bar","gaz\7777777nk"})*"-","f\7777777\7777777-bar-gaz\7777777nk")
@@ -17240,6 +17305,36 @@ test_any_equal([[
   }
   return counts;
 ]], ({ 0, 0, 1 }))
+
+dnl Cached attributed comparisons must still invoke warning handlers on every
+dnl use, including after compilations with the warnings suppressed.
+test_any_equal([[
+  class Handler {
+    array(string) warnings = ({});
+    void compile_warning(string file, int line, string message) {
+      warnings += ({ message });
+    }
+  }
+  array(int) counts = ({});
+  foreach (({ "deprecated", "experimental" }), string attribute) {
+    string suppression = attribute == "deprecated" ?
+      "no_deprecation_warnings" : "no_experimental_warnings";
+    foreach (({
+      "int a() { return value; } int b() { return value; }",
+      "void a() { value = 1; } void b() { value = 1; }"
+    }), string uses) {
+      foreach (({ "", "#pragma " + suppression + "\n", "" }),
+               string pragma) {
+        Handler handler = Handler();
+        compile_string(pragma + "typedef __attribute__(\"" + attribute +
+                       "\", int) T; T value; " + uses,
+                       "cached_type_attributes", handler);
+        counts += ({ sizeof(handler->warnings) });
+      }
+    }
+  }
+  return counts;
+]], ({ 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2 }))
 
 test_any_equal([[
   class Handler {

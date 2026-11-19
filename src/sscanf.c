@@ -59,12 +59,6 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
 #define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC(noinline)
 #endif
 
-#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
-#define STRTOFLOAT_PCHARP STRTOLD_PCHARP
-#else
-#define STRTOFLOAT_PCHARP STRTOD_PCHARP
-#endif
-
 static void skip_comment( PCHARP *str, ptrdiff_t *len )
 {
   CONSUME(1); // Start '/' 

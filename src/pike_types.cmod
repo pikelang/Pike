@@ -3509,6 +3509,45 @@ static int lower_or_pike_types(struct pike_type *t1,
   return ret;
 }
 
+/* Find an input tail whose members exactly match the normalized stack
+ * suffix. Comparing after the merge preserves all normalization rules.
+ * Only fallback comparisons need the input length; the merge can track
+ * reusable tails without keeping input-length counters live.
+ * The returned tail is borrowed from the input.
+ */
+static struct pike_type *matching_or_tail(struct pike_type *input,
+                                        struct pike_type **items,
+                                        int count, int *matched)
+{
+  struct pike_type *t, *tail = NULL;
+  int remaining = 0;
+  *matched = 0;
+  if (!input || input->type != T_OR) return NULL;
+  for (t = input; t; t = t->type == T_OR ? t->cdr : NULL)
+    remaining++;
+  while (remaining > count) {
+    input = input->cdr;
+    remaining--;
+  }
+  items += count - remaining;
+  for (t = input; t; t = t->type == T_OR ? t->cdr : NULL) {
+    struct pike_type *item = t->type == T_OR ? t->car : t;
+    if (item != *items++) {
+      tail = NULL;
+      *matched = 0;
+    } else if (!tail) {
+      tail = t;
+      *matched = remaining;
+    }
+    remaining--;
+  }
+  if (*matched < 2) {
+    *matched = 0;
+    return NULL;
+  }
+  return tail;
+}
+
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
 			      int zero_implied)
@@ -3578,8 +3617,11 @@ static void low_or_pike_types(struct pike_type *t1,
   }
   else if ((t1->type == T_OR) || (t2->type == T_OR)) {
     int on_stack = 0;
+    struct pike_type *left = t1, *right = t2;
+    struct pike_type *tail = NULL;
+    int matched = 0;
     type_stack_mark();
-    while (t1 || t2) {
+    while (t1 && t2) {
       struct pike_type *a = t1;
       struct pike_type *b = t2;
       struct pike_type *n1 = NULL;
@@ -3612,7 +3654,69 @@ static void low_or_pike_types(struct pike_type *t1,
       if (val >= 0) t2 = n2;
       on_stack = 1;
     }
+    {
+      struct pike_type *rest = t1 ? t1 : t2;
+      /* Once one input is exhausted, remember a run of members that the
+       * merge appends unchanged. A replacement breaks the run; subsequent
+       * unchanged members can start a new reusable tail.
+       */
+      while (rest) {
+        struct pike_type *item = rest;
+        struct pike_type *next = NULL;
+        struct pike_type **before = Pike_compiler->type_stackp;
+        if (rest->type == T_OR) {
+          item = rest->car;
+          next = rest->cdr;
+        }
+        lower_or_pike_types(item, NULL, zero_implied, on_stack);
+        if (*Pike_compiler->type_stackp == item) {
+          if (matched && Pike_compiler->type_stackp == before + 1) {
+            matched++;
+          } else {
+            tail = rest;
+            matched = 1;
+          }
+        } else {
+          tail = NULL;
+          matched = 0;
+        }
+        rest = next;
+        on_stack = 1;
+      }
+    }
     on_stack = pop_stack_mark();
+    if (on_stack > 1) {
+      struct pike_type **items = Pike_compiler->type_stackp - on_stack + 1;
+      /* Any unchanged suffix can be reused; it need not be the longest.
+       * Compare both inputs only if tracking cannot save a join.
+       */
+      if (matched < 2) {
+        struct pike_type *other;
+        int other_matched;
+        tail = matching_or_tail(left, items, on_stack, &matched);
+        other = matching_or_tail(right, items, on_stack, &other_matched);
+        if (other_matched > matched) {
+          tail = other;
+          matched = other_matched;
+        }
+      }
+#ifdef PIKE_DEBUG
+      else {
+        int checked;
+        if (matching_or_tail(tail, items, on_stack, &checked) != tail ||
+            checked != matched)
+          Pike_fatal("Incorrect tracked union tail.\n");
+      }
+#endif
+      if (tail) {
+        int i;
+        add_ref(tail);
+        for (i = 0; i < matched; i++)
+          free_type(*(Pike_compiler->type_stackp--));
+        *(++Pike_compiler->type_stackp) = tail;
+        on_stack -= matched - 1;
+      }
+    }
     while (on_stack > 1) {
       push_reverse_joiner_type(T_OR);
       on_stack--;
@@ -4885,6 +4989,8 @@ static void clear_type_binop_cache(void)
 /* 0: not cacheable; 1: independent of marker state; 2: needs empty state;
  * 3: also may invoke attribute handlers through program metadata. Their
  * user-state side effects are deliberately not replayed on cache hits.
+ * Attributes inherit the underlying type's eligibility. Comparisons that
+ * may invoke their handlers taint the enclosing operations instead.
  */
 static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
 {
@@ -4916,6 +5022,7 @@ static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
     cacheable = left && right ? MAXIMUM(left, right) : 0;
     break;
   case PIKE_T_SCOPE:
+  case PIKE_T_ATTRIBUTE:
     cacheable = type_binop_cacheable(t->cdr, depth + 1);
     break;
   case PIKE_T_MULTISET: case PIKE_T_NOT:
@@ -4928,7 +5035,7 @@ static int type_binop_cacheable(struct pike_type *t, unsigned int depth)
     cacheable = type_binop_cacheable(t->car, depth + 1) ? 3 : 0;
     break;
   default:
-    /* Visible attributes still need their argument-checking context. */
+    /* Other context-dependent type operations use the ordinary path. */
     cacheable = 0;
     break;
   }
@@ -5500,7 +5607,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
         remap->markers[marker_set ^ 1] = copy_mapping(orig_markers_other);
       }
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
-      if (remap && !tmp) {
+      if (remap && ((op == PT_BINOP_AND && !tmp) ||
+                    (op == PT_BINOP_MINUS && tmp == a->car))) {
         /* Unification failed, discard other side marker changes */
         do_free_mapping(remap->markers[marker_set ^ 1]);
         remap->markers[marker_set ^ 1] = orig_markers_other;
@@ -5618,7 +5726,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
-      if (remap && !tmp) {
+      if (remap && ((op == PT_BINOP_AND && !tmp) ||
+                    (op == PT_BINOP_MINUS && tmp == a))) {
         /* Unification failed, discard other side marker changes */
         do_free_mapping(remap->markers[marker_set ^ 1]);
         remap->markers[marker_set ^ 1] = orig_markers_other;
@@ -5870,6 +5979,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
 
       if (!tmp) {
+        /* Attribute handlers can depend on the compilation and argument
+         * state. Taint enclosing operations even outside a compilation,
+         * where a later identical comparison could invoke a handler.
+         */
+        if (op == PT_BINOP_MINUS) type_binop_unstable_generation++;
 	if (c && (op == PT_BINOP_MINUS)) {
 	  ref_push_string((struct pike_string *)a->car);
 	  ref_push_type_value(a->cdr);
@@ -5947,6 +6061,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case PIKE_T_ATTRIBUTE:
     tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
     if (!tmp) {
+      if (a && (op == PT_BINOP_MINUS)) type_binop_unstable_generation++;
       if (a && c && (op == PT_BINOP_MINUS)) {
 	ref_push_string((struct pike_string *)b->car);
 	ref_push_type_value(a);
