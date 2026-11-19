@@ -76,7 +76,8 @@ F_APPLY(0 = F_CONSTANT
 		[TYPEOF($$->u.sval) == T_FUNCTION]
 		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
-		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string, 0, 0)],
+                F_ARG_LIST[count_args($$) == 2](
+                  2 = +[pike_types_le($$->type, int_type_string, 0, 0)],
 			   3 = +[!match_types(object_type_string, $$->type)]))):
   F_APPLY($1, F_ARG_LIST($2, F_APPLY($0, $3)));
 
@@ -89,7 +90,8 @@ F_APPLY(0 = F_CONSTANT
 		[TYPEOF($$->u.sval) == T_FUNCTION]
 		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
-		F_ARG_LIST(2 = +[!match_types(object_type_string, $$->type)],
+                F_ARG_LIST[count_args($$) == 2](
+                  2 = +[!match_types(object_type_string, $$->type)],
 			   3 = +[pike_types_le($$->type, int_type_string, 0, 0)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
 

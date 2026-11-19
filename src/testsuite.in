@@ -1546,6 +1546,30 @@ test_equal([[ typeof(sprintf("%4[1]c", 0, 17)); ]],
 test_equal([[ typeof(sprintf("%[1]n", 0, 17)); ]],
 	   [[ typeof("") ]]);
 
+dnl sizeof multiplication rewrites require the full argument count.
+test_any([[
+  int measure(string s, int n, int m) { return sizeof(s * n * m); }
+  return measure("abc", 2, 3);
+]], 18)
+
+test_any([[
+  int measure(string s, int n, int m) { return sizeof(`*(s, n, m)); }
+  return measure("abc", 2, 3);
+]], 18)
+
+test_any([[
+  int measure(string s, int n, int m) {
+    return sizeof(`*(s, @({n, m})));
+  }
+  return measure("abc", 2, 3);
+]], 18)
+
+dnl Two syntactic operands can expand into a variadic multiplication.
+test_any([[
+  int measure(array args, int n) { return sizeof(`*(@args, n)); }
+  return measure(({"ab", 2}), 3);
+]], 12)
+
 test_equal([[ typeof(aggregate("foo"));]],
 	   [[ typeof([array(string(3: 102..111))](mixed)({})) ]]);
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");

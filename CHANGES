@@ -625,6 +625,10 @@ o Cpp
 
 o Compiler
 
+  - sizeof() of a variadic multiplication no longer produces an invalid
+    call or drops spliced operands. The size optimization requires exactly
+    two arguments, including when arguments are supplied through splices.
+
   - Preserve inferred type-variable bindings from fully matching union
     branches. This fixes lost character ranges in string joins involving
     both wide and ASCII strings.
