@@ -202,14 +202,14 @@ test_equal(0x0p9999999999999999999999999999999999999999, 0.0)
 test_equal(0x0p-9999999999999999999999999999999999999999, 0.0)
 test_true(0x1p9999999999999999999999999999999999999999 > 1.0)
 test_equal(0x1p-9999999999999999999999999999999999999999, 0.0)
-cond([[Float.EPSILON > 1e-8 && Float.EPSILON < 1e-6]], [[
+cond([[Float.EPSILON < 1e-6 && Float.EPSILON > 1e-8]], [[
   test_equal(0x1p-149, array_sscanf("\0\0\0\1", "%4F")[0])
   test_equal(0x1p-150, 0.0)
   test_true(0x1.00000000000000001p-150 > 0.0)
   test_equal(0x1.000001p0, 1.0)
   test_equal(0x1.000001000000000000000000000001p0, 1.0 + Float.EPSILON)
 ]])
-cond([[Float.EPSILON > 1e-17 && Float.EPSILON < 1e-15]], [[
+cond([[Float.EPSILON < 1e-15 && Float.EPSILON > 1e-17]], [[
   test_equal(0x1p-1074, array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0])
   test_equal(0x1p-1075, 0.0)
   test_true(0x1.00000000000000001p-1075 > 0.0)
@@ -1838,6 +1838,76 @@ test_equal([[ typeof(sprintf("%4[1]c", 0, 17)); ]],
 	   [[ typeof([string(8bit)](mixed)"") ]]);
 test_equal([[ typeof(sprintf("%[1]n", 0, 17)); ]],
 	   [[ typeof("") ]]);
+
+dnl sizeof multiplication rewrites require the full argument count.
+test_any([[
+  int measure(string s, int n, int m) { return sizeof(s * n * m); }
+  return measure("abc", 2, 3);
+]], 18)
+
+test_any([[
+  int measure(string s, int n, int m) { return sizeof(`*(s, n, m)); }
+  return measure("abc", 2, 3);
+]], 18)
+
+test_any([[
+  int measure(string s, int n, int m) {
+    return sizeof(`*(s, @({n, m})));
+  }
+  return measure("abc", 2, 3);
+]], 18)
+
+dnl Two syntactic operands can expand into a variadic multiplication.
+test_any([[
+  int measure(array args, int n) { return sizeof(`*(@args, n)); }
+  return measure(({"ab", 2}), 3);
+]], 12)
+
+dnl Flatten mapping pairs without changing evaluation order or pair alignment.
+test_any_equal([[
+  array(int) seen = ({});
+  int record(int n) { seen += ({n}); return n; }
+  mapping result = ([record(1):record(2), record(3):record(4),
+                     record(5):record(6)]);
+  return ({seen, result});
+]], ({({1, 2, 3, 4, 5, 6}), ([1:2, 3:4, 5:6])}))
+
+dnl Repeated keys retain the last value after flattening.
+test_any_equal([[
+  string key(string s) { return s; }
+  return ([key("a"):1, key("b"):2, key("a"):3]);
+]], (["a":3, "b":2]))
+
+dnl List preparation must preserve precise types on eagerly evaluated calls.
+test_any_equal([[
+  class C {
+    local constant values = ({1, 2, 3, 4, 5, 6});
+    constant prefix = values[..2];
+  }
+  return C.prefix;
+]], ({1, 2, 3}))
+
+dnl Chunking a long aggregate preserves argument and splice evaluation order.
+test_any_equal([[
+  array(int) seen = ({});
+  int record(int n) { seen += ({n}); return n; }
+  array(string) exprs = map(enumerate(70),
+                           lambda(int n) { return "record(" + n + ")"; });
+  exprs[33] = "@({record(33)})";
+  object o = compile_string("array run(function record) { return ({ " +
+                            exprs * "," + " }); }")();
+  return ({o->run(record), seen});
+]], ({enumerate(70), enumerate(70)}))
+
+dnl Zero and singleton calls retain proper tails after splice expansion.
+test_any([[
+  int target() { return 17; }
+  return target(@({}), @({}));
+]], 17)
+test_any([[
+  int target(int value) { return value; }
+  return target(@({}), 19, @({}));
+]], 19)
 
 test_equal([[ typeof(aggregate("foo"));]],
 	   [[ typeof([array(string(3: 102..111))](mixed)({})) ]]);
@@ -7422,7 +7492,7 @@ dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->
 	     Thread.this_thread().id_number();
     }
     return ({ Thread.Thread, Thread.Thread })(test_thread)->wait();
-  ]], ({ 1, 1 }))
+ ]], ({ 1, 1 }))
 
 cond_end // thread_create
 cond(0, [[
@@ -9879,6 +9949,69 @@ test_any([[
     int plus = normal + offset;
     int minus = normal - offset;
     if (!equal(f(a), ({ minus, plus }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Negated immediate minima must promote rather than wrap in native emitters.
+test_any([[
+  class Test {
+    int n;
+    int direct() { int a = -2147483648; return -a; }
+    int assigned() { int a = -2147483648; a = -a; return a; }
+    int retained(int a) { return -(a = -2147483648); }
+    array stacked(int a) { return ({ "prefix", -(a = -2147483648), a }); }
+    int global_case() { n = -2147483648; return -n; }
+  };
+  object o = Test();
+  int positive = (int)Gmp.mpz("2147483648");
+  int negative = -positive;
+  foreach (({ UNDEFINED, 0, -1, 1, positive, negative, 1 << 90 }), int a) {
+    o->n = a;
+    if (o->direct() != positive || o->assigned() != positive ||
+        o->retained(a) != positive || o->global_case() != positive ||
+        o->n != negative ||
+        !equal(o->stacked(a), ({ "prefix", positive, negative }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Check both signs and adjacent immediate boundaries in generated programs.
+test_any([[
+  foreach (({ "-2147483649", "-2147483648", "-2147483647", "-1", "0",
+               "1", "2147483647", "2147483648", "2147483649",
+               "-9223372036854775808", "9223372036854775807" }),
+           string text) {
+    int expected = (int)(-Gmp.mpz(text));
+    program p = compile_string("int f() { int a = " + text +
+                               "; return -a; }\n");
+    if (p()->f() != expected) return 0;
+    p = compile_string("int f(int a) { return -(a = " + text + "); }\n");
+    if (p()->f(0) != expected) return 0;
+  }
+  return 1;
+]], 1)
+
+// Local immediate addition must restore the original value before replay.
+test_any([[
+  class Test {
+    array discarded(mixed a) {
+      int b = -2147483648;
+      a += b;
+      return ({ a, zero_type(a) });
+    }
+    array retained(mixed a) {
+      int b = -2147483648;
+      return ({ a += b, a, zero_type(a) });
+    }
+  };
+  object o = Test();
+  foreach (({ UNDEFINED, 0, -1, 1, Int.NATIVE_MIN, Int.NATIVE_MIN + 1,
+               Int.NATIVE_MIN + (1 << 30),
+               Int.NATIVE_MAX, 1 << 90 }), int a) {
+    int expected = (int)(Gmp.mpz(a) - Gmp.mpz("2147483648"));
+    if (!equal(o->discarded(a), ({ expected, 0 })) ||
+        !equal(o->retained(a), ({ expected, expected, 0 }))) return 0;
   }
   return 1;
 ]], 1)
@@ -18474,5 +18607,66 @@ test_do(Stdio.recursive_rm("cmod_dependency_dump_test"))
 dnl - Deprecated safe indexing
 test_compile_warning( mapping foo; foo?->bar; )
 
+
+dnl Optimizer intrinsics must evaluate trailing empty splices.
+ignore_warning("In argument 2 to this_object: The @-operator argument must be an empty array.", [[
+test_any_equal([[
+  int trace;
+  array empty() { trace++; return ({}); }
+  object o = this_object(0, @empty());
+  return ({ o == this_object(), trace });
+]], ({ 1, 1 }))
+]])
+
+ignore_warning("In argument 3 to allocate: The @-operator argument must be an empty array.", [[
+test_any_equal([[
+  int trace;
+  array empty() { trace++; return ({}); }
+  int count;
+  foreach (String.SplitIterator(
+             replace("axbxc", ({ "x" }), allocate(1, "z", @empty())),
+             'z');; string part)
+    count++;
+  return ({ count, trace });
+]], ({ 3, 1 }))
+]])
+
+dnl Argument walkers count values and preserve automap/splice evaluation order.
+test_any_equal([[
+  int trace;
+  int tick() { return ++trace; }
+  array empty() { return ({}); }
+  array gather(mixed ... args) { return args; }
+  return ({ gather(tick(), (void)tick(), @empty(), tick()), trace });
+]], ({ ({ 1, 3 }), 3 }))
+
+test_any_equal([[
+  int trace;
+  int tick() { return ++trace; }
+  array(int) a = ({ 10, 20 });
+  return ({ `+(tick(), a[*], @({ tick(), tick() }), tick()), trace });
+]], ({ ({ 20, 30 }), 4 }))
+
+test_any_equal([[
+  string source = "mixed run() { int trace;"
+    "int tick() { return ++trace; } array(int) a = ({ 10, 20 });"
+    "array(int) result = `+(" + allocate(512, "tick()") * "," +
+    ",a[*],@({tick(),tick()})); return ({result,trace}); }";
+  return compile_string(source)()->run();
+]], ({ ({ 132365, 132375 }), 514 }))
+
+dnl Cons-list construction must preserve nested constant slice types.
+test_any_equal([[
+  class Container {
+    local protected constant base = ({
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 });
+    local protected constant extended = base[..8] + ({
+      19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 });
+    array run() {
+      return ({ sizeof(extended), extended[8], extended[9], extended[-1] });
+    }
+  }
+  return Container()->run();
+]], ({ 22, 9, 19, 31 }))
 
 END_MARKER

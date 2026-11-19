@@ -729,25 +729,18 @@ static int do_encode_automap_arg_list(node *n,
 
     case F_ARG_LIST:
     {
-      int ret;
-      ret=do_encode_automap_arg_list(CAR(n), flags);
-      current_stack_depth=stack_depth_save + ret;
+      int ret = 0;
+      while (n) {
+        ret += do_encode_automap_arg_list(CAR(n), flags);
+        current_stack_depth = stack_depth_save + ret;
 #ifdef PIKE_DEBUG
-      if (a_flag > 4) {
-        fprintf(stderr, "sp = %d + %d ==> %d\n",
-                stack_depth_save, ret,
-                current_stack_depth);
-      }
+        if (a_flag > 4) {
+          fprintf(stderr, "sp = %d + %d ==> %d\n",
+                  stack_depth_save, ret, current_stack_depth);
+        }
 #endif
-      ret+=do_encode_automap_arg_list(CDR(n), flags);
-      current_stack_depth=stack_depth_save + ret;
-#ifdef PIKE_DEBUG
-      if (a_flag > 4) {
-        fprintf(stderr, "sp = %d + %d ==> %d\n",
-                stack_depth_save, ret,
-                current_stack_depth);
+        n = CDR(n);
       }
-#endif
       return ret;
     }
 
@@ -2341,6 +2334,13 @@ static int do_docode2(node *n, int flags)
     }
 
   case F_ARG_LIST:
+    tmp1 = 0;
+    while (n) {
+      tmp1 += do_docode(CAR(n), CDR(n) ? flags & ~WANT_LVALUE : flags);
+      n = CDR(n);
+    }
+    return (INT32)tmp1;
+
   case F_COMMA_EXPR:
   case ':':
     {
@@ -2352,18 +2352,18 @@ static int do_docode2(node *n, int flags)
       tmp1 = 0;
     next_car:
       while (CAR(n) &&
-	     ((CAR(n)->token == F_ARG_LIST) ||
-	      (CAR(n)->token == F_COMMA_EXPR))) {
+             (CAR(n)->token == F_COMMA_EXPR)) {
 	CAR(n)->parent = n;
 	n = CAR(n);
       }
-      /* CAR(n) is not F_ARG_LIST or F_COMMA_EXPR */
-      tmp1 += do_docode(CAR(n), flags & ~WANT_LVALUE);
+      /* CAR(n) is not F_COMMA_EXPR. */
+      tmp1 += do_docode(CAR(n),
+                           (!CDR(n) && !n->parent) ?
+                           flags : flags & ~WANT_LVALUE);
 
       do {
 	if (CDR(n)) {
-	  if ((CDR(n)->token == F_ARG_LIST) ||
-	      (CDR(n)->token == F_COMMA_EXPR)) {
+          if (CDR(n)->token == F_COMMA_EXPR) {
 	    /* Note: Parent points to the closest preceding CAR node
 	     *       on the way to the root.
 	     */
@@ -2371,7 +2371,7 @@ static int do_docode2(node *n, int flags)
 	    n = CDR(n);
 	    goto next_car;
 	  }
-	  /* CDR(n) is not F_ARG_LIST or F_COMMA_EXPR */
+          /* CDR(n) is not F_COMMA_EXPR. */
 	  if (n->parent) {
 	    tmp1 += do_docode(CDR(n), flags & ~WANT_LVALUE);
 	  } else {
@@ -3386,7 +3386,8 @@ static int do_docode2(node *n, int flags)
         CADR(n)->u.sval.u.string->len) {
       /* F_SET_LOCAL_NAME(F_LOCAL(stack_offset, 0),
        *                  F_ARG_LIST(F_CONSTANT(T_STRING, "varname"),
-       *                             F_CONSTANT(T_INT, varflags)))
+       *                             F_ARG_LIST(F_CONSTANT(T_INT, varflags),
+       *                                        NULL)))
        */
       tmp2 = CAR(n)->u.integer.a;
 
@@ -3401,7 +3402,7 @@ static int do_docode2(node *n, int flags)
       emit2(F_SET_LOCAL_TYPE, tmp2, tmp1);
 
       /* varflags. */
-      tmp1 = CDDR(n)->u.sval.u.integer;
+      tmp1 = CADDR(n)->u.sval.u.integer;
       if (tmp1 & LOCAL_VAR_USED_IN_SCOPE) {
 	emit2(F_SET_LOCAL_FLAGS, tmp2, tmp1);
       }

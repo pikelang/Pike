@@ -2556,8 +2556,7 @@ node *make_node_from_mapping(struct mapping *m)
     ind=mapping_indices(m);
     val=mapping_values(m);
     n=mkefuncallnode("mkmapping",
-		     mknode(F_ARG_LIST,
-			    make_node_from_array(ind),
+                     mkarglist(make_node_from_array(ind),
 			    make_node_from_array(val)));
     free_array(ind);
     free_array(val);

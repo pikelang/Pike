@@ -4949,14 +4949,17 @@ static node *optimize_yield(node *n)
 {
   if (n) {
     node *ret;
+    node *value = CDR(n);
+
+    if (value && !CDR(value)) value = CAR(value);
 
     if (Pike_compiler->compiler_frame->generator_local == -1) {
       yyerror("Attempt to yield from a non-restartable function.");
       return NULL;
     }
 
-    ret = mknode(F_RETURN, CDR(n), mkintnode(2));
-    ADD_NODE_REF(CDR(n));
+    ret = mknode(F_RETURN, value, mkintnode(2));
+    if (value) ADD_NODE_REF(value);
     return ret;
   }
   return NULL;
@@ -5013,9 +5016,12 @@ static node *optimize_await(node *n)
      * We use this node to get the type expected from the yield().
      */
     node *ret;
-    node *get = mkapplynode(mkarrownode(CDR(n), "get"),
-                            mknode(F_ARG_LIST, NULL, NULL));
-    ADD_NODE_REF(CDR(n));
+    node *future = CDR(n);
+    node *get;
+
+    if (future && !CDR(future)) future = CAR(future);
+    get = mkapplynode(mkarrownode(future, "get"), NULL);
+    if (future) ADD_NODE_REF(future);
     fix_type_field(get);
 
     if (Pike_compiler->compiler_frame->generator_local == -1) {
@@ -5032,15 +5038,14 @@ static node *optimize_await(node *n)
     ret =
       mknode(F_COMMA_EXPR,
              mkcastnode(void_type_string,
-                        mkapplynode(mkarrownode(CDR(n), "on_await"),
-                                    mknode(F_ARG_LIST,
-                                           program_magic_identifier(Pike_compiler, 0,
+                        mkapplynode(mkarrownode(future, "on_await"),
+                                    mkarglist(program_magic_identifier(Pike_compiler, 0,
                                                                     INHERIT_GENERATOR,
                                                                     this_function_string,
                                                                     1),
                                            NULL))),
              mknode(F_RETURN, NULL, mkintnode(2)));
-    ADD_NODE_REF(CDR(n));
+    if (future) ADD_NODE_REF(future);
 
     if (get->type && (CDR(ret)->token == F_RETURN)) {
       /* Copy the type from get() to yield(). */
