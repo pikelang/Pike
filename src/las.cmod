@@ -195,12 +195,14 @@ static int low_count_args(node *n)
   case F_COMMA_EXPR:
   case F_VAL_LVAL:
   case F_FOREACH_VAL_LVAL:
-  case F_ARG_LIST:
     a=count_args(CAR(n));
     if(a==-1) return -1;
     b=count_args(CDR(n));
     if(b==-1) return -1;
     return a+b;
+
+  case F_ARG_LIST:
+    return count_args(n);
 
   case F_CAST:
     if(n->type == void_type_string)
@@ -280,6 +282,20 @@ INT32 count_args(node *n)
 
   if(!n) return 0;
 
+  if (n->token == F_ARG_LIST) {
+    /* Count produced values, rather than cells: void expressions contribute
+     * zero and an unresolved splice makes the total unknown.
+     */
+    while (n) {
+      int val = low_count_args(CAR(n));
+      if (val < 0) return -1;
+      total += val;
+      n = CDR(n);
+    }
+    return total;
+  }
+
+  /* General expression trees can still be folded in either direction. */
   orig_parent = n->parent;
   n->parent = NULL;
 
@@ -287,8 +303,7 @@ INT32 count_args(node *n)
     int val;
     while ((n->token == F_COMMA_EXPR) ||
 	   (n->token == F_VAL_LVAL) ||
-	   (n->token == F_FOREACH_VAL_LVAL) ||
-	   (n->token == F_ARG_LIST)) {
+           (n->token == F_FOREACH_VAL_LVAL)) {
       if (CAR(n)) {
 	CAR(n)->parent = n;
 	n = CAR(n);
@@ -2607,33 +2622,16 @@ node **last_cmd(node **a)
   return 0;
 }
 
-/* FIXME: Ought to use parent pointer to avoid recursion. */
-static node **low_get_arg(node **a,int *nr)
+/* Return the slot for a syntactic argument, including a splice. */
+node **my_get_arg(node **a, int nr)
 {
-  node **n;
-  if (!a[0]) return NULL;
-  if(a[0]->token != F_ARG_LIST)
-  {
-    if(!(*nr)--)
-      return a;
-    else
-      return NULL;
+  while (*a && (*a)->token == F_ARG_LIST) {
+    if (CAR(*a) && !nr--) return &_CAR(*a);
+    a = &_CDR(*a);
   }
-
-  fatal_check_c_stack(16384);
-
-  if(CAR(*a))
-    if((n=low_get_arg(&_CAR(*a),nr)))
-      return n;
-
-  if(CDR(*a))
-    if((n=low_get_arg(&_CDR(*a),nr)))
-      return n;
-
-  return 0;
+  /* Also accept a bare expression, as the old tree walker did. */
+  return *a && !nr ? a : NULL;
 }
-
-node **my_get_arg(node **a,int n) { return low_get_arg(a,&n); }
 
 node **is_call_to(node *n, c_fun f)
 {
