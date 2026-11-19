@@ -401,7 +401,7 @@ F_CLEAR_LOCAL inside existing regions. It also accepts retained assignments
 of supported literal values. These writes create ordinary integer constant
 versions without a physical bank or an arithmetic-operation budget charge;
 they still count against the instruction/value bounds. The balanced planner
-and region entry-opcode set are unchanged. Bare input copies still require
+is unchanged. Bare input copies still require
 parallel subtype moves and remain unsupported.
 
 All destination locals are guarded as integers at entry, including locals
@@ -417,6 +417,31 @@ Set PIKE_SSA_NO_INTEGER_CONSTANT_ASSIGN=1 to restore previous planning.
 The feature works independently of expression/bitwise/live-stack-exit
 controls; the existing minimum arithmetic count, three-bank limit and
 label/file/call boundaries still apply.
+
+Two independent experimental controls extend this handling:
+
+- PIKE_SSA_INTEGER_CONSTANT_ENTRY=1 also starts stack-aware regions at
+  F_ASSIGN_LOCAL_NUMBER_AND_POP or F_CLEAR_LOCAL. The initializer's
+  destination is discovered first. If its old value is not an integer,
+  the ordinary assignment releases it, then retries the region with fresh
+  guards. This retains the previous native arithmetic suffix instead of
+  introducing builtin calls and destructor checkpoints during replay.
+  Retries have their own profile entries and guard counts. The constant
+  assignment and all other initial local values remain guarded.
+- PIKE_SSA_INTEGER_CONSTANT_FOLD=1 folds constant-only negation, arithmetic
+  and bitwise steps, and combines adjacent constant arguments in builtin
+  sums. Folding is limited to signed 32-bit results without intermediate
+  overflow, so immediates are representable on every supported backend.
+  Constants need no register or overflow exit. The original step identities
+  and snapshots are retained; a surviving operation's overflow restores
+  its original operands, including every argument of a builtin sum.
+
+Both controls default off. Folding runs after the existing profitability
+and bank-allocation decisions, and does not widen region budgets. Removing
+register writes cannot invalidate an existing allocation. Profile operation
+counts still describe original SSA steps, including folded steps, rather
+than the number of emitted arithmetic instructions. Constant entry also
+requires constant assignments to be enabled.
 
 Incoming evaluation-stack integers
 ----------------------------------

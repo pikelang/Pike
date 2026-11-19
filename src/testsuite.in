@@ -1624,6 +1624,144 @@ test_any([[
   return 1;
 ]], 1)
 
+// Constant-initialized locals retain tags and original overflow operands.
+test_any([[
+  array f(int a, mixed b) {
+    b = -1;
+    a = `+(a, -b, -1, 1);
+    b = 0;
+    a++;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  foreach (({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN, Int.NATIVE_MAX,
+               1 << 90, -(1 << 90) }), int a)
+    foreach (({ UNDEFINED, 7, -1, Int.NATIVE_MIN, Int.NATIVE_MAX,
+                 1.5, "old", ({ 1 }), ([ 1:2 ]) }), mixed b)
+      if (!equal(f(a, b), ({ (int)(Gmp.mpz(a) + 2), 0, 0, 0 })))
+        return 0;
+  return 1;
+]], 1)
+
+// Constant-only arithmetic must keep its native-width overflow behavior.
+test_any([[
+  array f(int a, int b) {
+    a = -2147483647;
+    b = 1;
+    a -= b;
+    a = -a;
+    b = 2147483647;
+    b += 1;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  array g(int a, int b) {
+    a = -1;
+    a = -a;
+    b = 1;
+    b = `+(a, b, -1, 1);
+    a &= b;
+    b ^= a;
+    return ({ a, b, zero_type(a), zero_type(b) });
+  }
+  return equal(f(UNDEFINED, 0), ({ 2147483648, 2147483648, 0, 0 })) &&
+    equal(g(UNDEFINED, 0), ({ 0, 2, 0, 0 }));
+]], 1)
+
+// Reference destinations still release through the original assignments.
+test_any([[
+  class Test {
+    array(string) events = ({});
+    class Token {
+      protected void _destruct() { events += ({ "drop" }); }
+    }
+    array f(int a, mixed b) {
+      b = -1;
+      a = `+(a, -b, -1, 1);
+      b = 0;
+      a++;
+      events += ({ "after" });
+      return ({ a, b });
+    }
+    // A file boundary keeps the initializer outside the integer region,
+    // without inserting a runtime call or a destructor checkpoint.
+    array control(int a, mixed b) {
+#line 10 "ssa-constant-control-init.pike"
+      b = -1;
+#line 20 "ssa-constant-control-suffix.pike"
+      a = `+(a, -b, -1, 1);
+      b = 0;
+      a++;
+      events += ({ "after" });
+      return ({ a, b });
+    }
+#line 1 "ssa-constant-release-test.pike"
+    int run() {
+      array result = f(0, Token()), observed = events;
+      events = ({});
+      array expected = control(0, Token());
+      if (!equal(result, ({ 2, 0 })) || !equal(result, expected) ||
+          !equal(observed, events) || sizeof(observed) != 2) return 0;
+      events = ({});
+      result = f(Int.NATIVE_MAX, ({ Token() }));
+      observed = events;
+      events = ({});
+      expected = control(Int.NATIVE_MAX, ({ Token() }));
+      return equal(result, ({ Int.NATIVE_MAX + 2, 0 })) &&
+        equal(result, expected) && equal(observed, events) &&
+        sizeof(observed) == 2;
+    }
+  }
+  return Test()->run();
+]], 1)
+
+// Guard and overflow replay retain the n-ary call and following error PCs.
+test_any([[
+  class Fail {
+    protected mixed `+(mixed other) { error("constant entry replay\n"); }
+  }
+  program p = compile_string(
+    "array f(int a,mixed b) {\n"
+    "#line 900 \"ssa-constant-entry.pike\"\n"
+    " b=-1;\n"
+    "#line 920 \"ssa-constant-entry.pike\"\n"
+    " a=`+(a,-b,-1,1);\n"
+    " b=0; a++;\n"
+    "#line 940 \"ssa-constant-entry.pike\"\n"
+    " error(\"after constant entry\\n\");\n}\n");
+  foreach (({ UNDEFINED, 0, Int.NATIVE_MAX, 1 << 90, Fail() }), mixed a)
+    foreach (({ UNDEFINED, 1, "old", ({ 1 }) }), mixed b) {
+      mixed err = catch { p()->f(a, b); };
+      if (!err) return 0;
+      int found, expected = objectp(a) ? 920 : 940;
+      foreach (err[1], mixed frame)
+        if (frame[0] == "ssa-constant-entry.pike") {
+          if (frame[1] != expected) return 0;
+          found++;
+        }
+      if (found != 1) return 0;
+    }
+  return 1;
+]], 1)
+
+// Constant entry can retain a guarded incoming value and an older prefix.
+test_any([[
+  int produce(int a) { return a; }
+  array stacked(int x, int a, mixed b) {
+    return ({ "prefix", produce(x) + [int](b = -1, `+(a, b, 1, 1)),
+              b, zero_type(b) });
+  }
+  function f = stacked;
+  foreach (({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN, Int.NATIVE_MAX,
+               1 << 90 }), int x)
+    foreach (({ UNDEFINED, 0, Int.NATIVE_MIN, Int.NATIVE_MAX,
+                 1 << 90 }), int a)
+      foreach (({ UNDEFINED, 1.5, "old", ({ 1 }) }), mixed b) {
+        array r = f(x, a, b);
+        if (!equal(r, ({ "prefix", (int)(Gmp.mpz(x) + Gmp.mpz(a) + 1),
+                         -1, 0 }))) return 0;
+      }
+  return 1;
+]], 1)
+
 // A genuine n-ary addition preserves all-UNDEFINED results and source tags.
 test_any([[
   array(mixed) f(int a, int b) {

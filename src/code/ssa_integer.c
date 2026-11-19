@@ -295,6 +295,90 @@ static int integer_stack_constant_assign(void)
   return enabled;
 }
 
+static int integer_stack_constant_entry(void)
+{
+  static int enabled = -1;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_INTEGER_CONSTANT_ENTRY") != NULL;
+  return enabled;
+}
+
+/* Fold only representable ordinary integer constants. Keep value identities,
+ * source steps and their original snapshots: a later overflow must still
+ * reconstruct the operands of the original opcode, including an n-ary call.
+ * Banks were allocated before folding, so removing writes cannot destroy a
+ * live version. Entry guards remain deliberately conservative. */
+static void integer_stack_fold(struct pikecode_ssa_integer_stack_plan *p)
+{
+  static int enabled = -1;
+  unsigned int i;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_INTEGER_CONSTANT_FOLD") != NULL;
+  if (!enabled) return;
+  for (i = 0; i < p->count; i++) {
+    struct pikecode_ssa_integer_value *v = &p->value[p->step[i].result];
+    const struct pikecode_ssa_integer_value *left = &p->value[v->left];
+    INT32 a = left->imm, b = v->imm, result;
+    if (v->kind == PIKE_SSA_INTEGER_SUM) {
+      unsigned int j = 0, args = 0;
+      while (j < v->args) {
+        unsigned int first = j++, id = v->operand[first];
+        if (p->value[id].kind == PIKE_SSA_INTEGER_CONSTANT) {
+          result = p->value[id].imm;
+          while (j < v->args &&
+                 p->value[v->operand[j]].kind == PIKE_SSA_INTEGER_CONSTANT &&
+                 !INT32_ADD_OVERFLOW(result,
+                                    p->value[v->operand[j]].imm)) {
+            result += p->value[v->operand[j++]].imm;
+          }
+          if (j > first + 1) {
+            if (p->values < PIKE_SSA_INTEGER_STACK_VALUES) {
+              struct pikecode_ssa_integer_value *constant;
+              id = ++p->values;
+              constant = &p->value[id];
+              memset(constant, 0, sizeof(*constant));
+              constant->kind = PIKE_SSA_INTEGER_CONSTANT;
+              constant->imm = result;
+            } else j = first + 1;
+          }
+        }
+        v->operand[args++] = id;
+      }
+      v->args = args;
+      v->left = v->operand[0];
+      if (args != 1 ||
+          p->value[v->left].kind != PIKE_SSA_INTEGER_CONSTANT) continue;
+      result = p->value[v->left].imm;
+    } else {
+      if (left->kind != PIKE_SSA_INTEGER_CONSTANT) continue;
+      if (v->right) {
+        if (p->value[v->right].kind != PIKE_SSA_INTEGER_CONSTANT) continue;
+        b = p->value[v->right].imm;
+      }
+      switch (v->kind) {
+      case PIKE_SSA_INTEGER_NEGATE:
+        if (INT32_NEG_OVERFLOW(a)) continue;
+        result = -a;
+        break;
+      case PIKE_SSA_INTEGER_ADD:
+        if (INT32_ADD_OVERFLOW(a, b)) continue;
+        result = a + b;
+        break;
+      case PIKE_SSA_INTEGER_SUBTRACT:
+        if (INT32_SUB_OVERFLOW(a, b)) continue;
+        result = a - b;
+        break;
+      case PIKE_SSA_INTEGER_AND: result = a & b; break;
+      case PIKE_SSA_INTEGER_OR: result = a | b; break;
+      case PIKE_SSA_INTEGER_XOR: result = a ^ b; break;
+      default: continue;
+      }
+    }
+    v->kind = PIKE_SSA_INTEGER_CONSTANT;
+    v->imm = result;
+  }
+}
+
 static int integer_stack_addition(const struct p_instr_s *op)
 {
   const struct svalue *f;
@@ -382,6 +466,10 @@ static int integer_stack_plan(
   case F_LOCAL: case F_2_LOCALS: case F_INC_LOCAL: case F_DEC_LOCAL:
   case F_INC_LOCAL_AND_POP: case F_DEC_LOCAL_AND_POP:
   case F_ADD_LOCAL_INT_AND_POP: case F_ADD_LOCALS_AND_POP:
+    break;
+  case F_ASSIGN_LOCAL_NUMBER_AND_POP: case F_CLEAR_LOCAL:
+    if (!integer_stack_constant_assign() || !integer_stack_constant_entry())
+      return 0;
     break;
   default: return 0;
   }
@@ -736,6 +824,7 @@ static int integer_stack_plan(
     return 0;
   }
   *p = best;
+  integer_stack_fold(p);
   return p->consumed;
 }
 

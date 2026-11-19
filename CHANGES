@@ -136,6 +136,11 @@ o Compiler
     completed constant assignments before replay. Set
     PIKE_SSA_NO_INTEGER_CONSTANT_ASSIGN=1 to restore previous planning.
 
+  - Experimental SSA controls can start integer regions at constant-local
+    assignments and fold constant arithmetic on AMD64, SPARC32 and SPARC64.
+    Set PIKE_SSA_INTEGER_CONSTANT_ENTRY=1 and
+    PIKE_SSA_INTEGER_CONSTANT_FOLD=1 to enable them independently.
+
   - SSA integer regions can consume one guarded integer already on the
     evaluation stack, allowing more expressions involving global values to
     use native arithmetic. Set PIKE_SSA_NO_INTEGER_STACK_INPUT=1 to restore

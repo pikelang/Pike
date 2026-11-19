@@ -324,6 +324,9 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   struct sparc_integer_label slow[PIKE_SSA_INTEGER_CODE] = {{0}};
   struct sparc_integer_label done = {0}, guard = {0}, indirect = {0};
   struct sparc_integer_label prepared = {0};
+  struct sparc_integer_label initialize = {0};
+  INT32 entry_pc;
+  int constant_entry;
   unsigned int i, stores = 0, write_only = 0;
   if (sparc_ssa_no_integer_stack ||
       !pikecode_ssa_plan_integer_stack(&p, code, available,
@@ -331,10 +334,13 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
         !sparc_ssa_no_integer_stack_exits, !sparc_ssa_no_integer_subtract,
         !sparc_ssa_no_integer_bitwise, stop))
     return 0;
+  constant_entry = code[0].opcode == F_ASSIGN_LOCAL_NUMBER_AND_POP ||
+    code[0].opcode == F_CLEAR_LOCAL;
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
                                              p.count, p.locals, "stack", stop);
   if (p.write_only) sparc_integer_balanced_entry();
   else sparc_flush_codegen_state();
+  entry_pc = Pike_compiler->new_program->num_program;
   sparc_update_pc();
   sparc_integer_count(profile, PIKE_SSA_INTEGER_ENTRIES);
   LOAD_PIKE_FP();
@@ -389,7 +395,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
                  off + OFFSETOF(svalue, tu.t.type), 1);
     SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O3, PIKE_T_INT, 1);
     /* bne %icc */
-    sparc_integer_branch((profile || p.global_input) ? &guard : &slow[0],
+    sparc_integer_branch(constant_entry && i == 1 ? &initialize :
+                         (profile || p.global_input) ? &guard : &slow[0],
                          0x12800000);
     SPARC_INTEGER_LD(sparc_integer_reg(v), SPARC_REG_L5,
                      off + OFFSETOF(svalue, u.integer), 1);
@@ -411,6 +418,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   for (i = 0; i < p.count; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[p.step[i].result];
     int right;
+    if (v->kind == PIKE_SSA_INTEGER_CONSTANT) continue;
     pikecode_ssa_integer_source(&code[p.step[i].first], store_lines);
     if (v->kind == PIKE_SSA_INTEGER_NEGATE) {
       int left = sparc_integer_value(&p.value[v->left], SPARC_REG_O5);
@@ -464,6 +472,7 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
   sparc_integer_branch(&done, 0x10800000);
  overflow_exits:
   for (i = 0; i < p.count; i++) {
+    if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_CONSTANT) continue;
     if (integer_stack_bitwise(p.value[p.step[i].result].kind)) continue;
     if (p.write_only && !profile) continue;
     sparc_integer_bind(&overflow[i]);
@@ -475,6 +484,28 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
     }
     sparc_integer_snapshot(&p, &p.step[i].before);
     sparc_integer_branch(&slow[p.step[i].first], 0x10800000);
+  }
+  if (constant_entry) {
+    sparc_integer_bind(&initialize);
+    sparc_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
+    sparc_flush_codegen_state();
+    pikecode_ssa_integer_source(code, store_lines);
+    /* Initialize the first local through ordinary reference release, then
+     * retry. Preserve the previous integer suffix instead of introducing
+     * builtin calls and destructor checkpoints on this guard exit. */
+    if (code[0].opcode == F_CLEAR_LOCAL)
+      ins_f_byte_with_arg(code[0].opcode, code[0].arg);
+    else ins_f_byte_with_2_args(code[0].opcode, code[0].arg, code[0].arg2);
+    sparc_flush_codegen_state();
+    /* The side-exit label helper patches forward references only. This
+     * bounded retry uses an explicit signed Bicc word displacement. */
+    {
+      INT32 delta = entry_pc - Pike_compiler->new_program->num_program;
+      if (delta < -0x200000)
+        Pike_fatal("SPARC integer retry branch is out of range.\n");
+      add_to_program(0x10800000 | ((unsigned INT32)delta & 0x3fffff));
+      SPARC_NOOP();
+    }
   }
   if (profile && !p.global_input) {
     sparc_integer_bind(&guard);
