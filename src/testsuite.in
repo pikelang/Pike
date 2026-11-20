@@ -11322,6 +11322,26 @@ test_old_style([..],     ({0, Int.NATIVE_MAX})) dnl Upper bound might become lar
 undefine([[test_old_style]])
 
 // casting
+// Constant folding must preserve explicit widening to mixed when the
+// argument list is checked again after optimization.
+test_compile_any([[
+  void accept(string value) {}
+  void multi(int first, string value, int last) {}
+  void caller() {
+    accept((mixed)({ 0, 0 }));
+    accept((mixed)([ 0: 0 ]));
+    accept((mixed)(< 0 >));
+    accept((mixed)allocate(2));
+    accept((0, (mixed)({ 0, 0 })));
+    accept((mixed)(0, ({ 0, 0 })));
+    multi(1, (mixed)({ 0, 0 }), 2);
+  }
+]])
+test_compile_error_any([[
+  void accept(string value) {}
+  void caller() { accept(({ 0, 0 })); }
+]])
+
 test_eq([[(int)1]],[[1]])
 test_eq([[(int)-1]],[[-1]])
 test_eq([[(int)1.0]],[[1]])

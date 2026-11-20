@@ -629,6 +629,10 @@ o Compiler
     converter to avoid incorrect rounding near halfway values and
     subnormal boundaries with older libc versions.
 
+  - Constant folding preserves explicit casts to mixed when argument
+    lists are checked again after optimization. This prevents erroneous
+    argument-type errors for cast array, mapping and multiset expressions.
+
   - sizeof() of a variadic multiplication no longer produces an invalid
     call or drops spliced operands. The size optimization requires exactly
     two arguments, including when arguments are supplied through splices.
