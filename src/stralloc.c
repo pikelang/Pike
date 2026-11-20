@@ -15,6 +15,7 @@
 #include "interpret.h"
 #include "operators.h"
 #include "pike_float.h"
+#include "pike_dtoa.h"
 #include "pike_types.h"
 #include "block_allocator.h"
 #include "whitespace.h"
@@ -3167,7 +3168,8 @@ static double low_strtod_pcharp(const PCHARP nptr, PCHARP *endptr,
     PCHARP end;
     char *hex = hex_float_decimal(s, &end, mant_dig);
     if (hex) {
-      num = strtod(hex, NULL);
+      /* Older libc converters can round away the sticky bit at a tie. */
+      num = pike_strtod(hex, NULL);
       free(hex);
       if (endptr) *endptr = end;
       return num * sign;

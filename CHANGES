@@ -625,6 +625,10 @@ o Cpp
 
 o Compiler
 
+  - Hexadecimal floating-point conversion now uses Pike's bundled double
+    converter to avoid incorrect rounding near halfway values and
+    subnormal boundaries with older libc versions.
+
   - sizeof() of a variadic multiplication no longer produces an invalid
     call or drops spliced operands. The size optimization requires exactly
     two arguments, including when arguments are supplied through splices.

@@ -216,6 +216,14 @@ cond([[Float.EPSILON > 1e-17 && Float.EPSILON < 1e-15]], [[
   test_equal(0x1.00000000000008p0, 1.0)
   test_equal(0x1.000000000000080000000000000000000001p0,
              1.0 + Float.EPSILON)
+  test_equal((float)"0x1.00000000000000001p-1075",
+             array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0])
+  test_equal((float)"0x1.000000000000080000000000000000000001p0",
+             1.0 + Float.EPSILON)
+  test_equal(array_sscanf("0x1.00000000000000001p-1075!", "%f%s"),
+             ({ array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0], "!" }))
+  test_equal(array_sscanf("0x1.000000000000080000000000000000000001p0!",
+                          "%f%s"), ({ 1.0 + Float.EPSILON, "!" }))
 ]])
 test_equal("abc"[0x1..0x2], "bc")
 test_compile_error([[float f = 0x1.2;]])
