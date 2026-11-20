@@ -5225,6 +5225,22 @@ test_false([[Program.implements( class { int x; string y = ""; void foo(int x) {
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
+dnl A string constant used as a type should name a program, as a string
+dnl in object() does. Without the fix the compiler crashes.
+test_any([[
+  string path = combine_path(getcwd(), "string_type_" + getpid() + ".pike");
+  Stdio.write_file(path, "int x = 17;\n");
+  mixed err = catch {
+    program p = compile_string(sprintf("constant T = %q;\n"
+                                       "T o = ((program)T)();\n"
+                                       "int f() { return o->x; }\n", path));
+    int res = p()->f();
+    rm(path);
+    return res;
+  };
+  rm(path);
+  throw(err);
+]], 17)
 test_any([[if(int x=1,y=2) return x;]],1)
 test_any([[int x; x++; if(x) return x; return -1;]],1)
 test_any([[int x; if(x) return x; return -1;]],-1)

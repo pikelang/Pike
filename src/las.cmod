@@ -1968,7 +1968,7 @@ void resolv_type(node *n)
 
   if (TYPEOF(Pike_sp[-1]) == T_STRING) {
     /* Program name, etc */
-    if (call_handle_inherit(n->u.sval.u.string)) {
+    if (call_handle_inherit(Pike_sp[-1].u.string)) {
       stack_swap();
       pop_stack();
     }
