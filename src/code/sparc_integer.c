@@ -320,8 +320,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
 {
   struct pikecode_ssa_integer_stack_plan p;
   struct pikecode_ssa_integer_profile *profile;
-  struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
-  struct sparc_integer_label slow[PIKE_SSA_INTEGER_CODE] = {{0}};
+  struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT];
+  struct sparc_integer_label slow[PIKE_SSA_INTEGER_CODE];
   struct sparc_integer_label done = {0}, guard = {0}, indirect = {0};
   struct sparc_integer_label prepared = {0};
   struct sparc_integer_label initialize = {0};
@@ -334,6 +334,8 @@ static int sparc_integer_stack_run(const struct p_instr_s *code,
         !sparc_ssa_no_integer_stack_exits, !sparc_ssa_no_integer_subtract,
         !sparc_ssa_no_integer_bitwise, stop))
     return 0;
+  memset(overflow, 0, sizeof(overflow));
+  memset(slow, 0, sizeof(slow));
   constant_entry = code[0].opcode == F_ASSIGN_LOCAL_NUMBER_AND_POP ||
     code[0].opcode == F_CLEAR_LOCAL;
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
@@ -606,8 +608,8 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
 #ifdef SPARC_INTEGER_LD
   struct pikecode_ssa_integer_plan p;
   struct pikecode_ssa_integer_profile *profile;
-  struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
-  struct sparc_integer_label slow[PIKE_SSA_INTEGER_LIMIT] = {{0}};
+  struct sparc_integer_label overflow[PIKE_SSA_INTEGER_LIMIT];
+  struct sparc_integer_label slow[PIKE_SSA_INTEGER_LIMIT];
   struct sparc_integer_label done = {0}, guard = {0};
   unsigned int i, j, stores = 0;
   struct pikecode_ssa_integer_stop stack_stop = {0}, stop = {0};
@@ -636,6 +638,8 @@ int sparc_integer_run(const struct p_instr_s *code, ptrdiff_t available,
     return 0;
   }
 
+  memset(overflow, 0, sizeof(overflow));
+  memset(slow, 0, sizeof(slow));
   profile = pikecode_ssa_integer_profile_new(code, available, p.consumed,
                                              p.count, p.locals, "balanced",
                                       integer_profile_enabled ? &stop : NULL);
