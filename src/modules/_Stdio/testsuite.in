@@ -1284,6 +1284,38 @@ test_any([[
   }
   return 0;
 ]], 0)
+
+test_any([[
+  // The signal of an interrupt can arrive after the thread has released
+  // the interpreter lock but before it blocks in read(). The interrupt
+  // must still end the read. A thread whose interrupt was lost is let go
+  // with a byte instead of hanging the test. Without the fix 1 to 16 in
+  // 100 interrupts were lost on Linux, depending on timing.
+  for (int i = 0; i < 1000; i++) {
+    Stdio.File reader = Stdio.File();
+    Stdio.File writer = reader->pipe(Stdio.PROP_INTERRUPTIBLE);
+    Thread.Queue ready = Thread.Queue();
+    int handled;
+    Thread.Thread worker = Thread.Thread(lambda() {
+      catch {
+        ready->write(1);
+        reader->read(1);
+      };
+      handled = 1;
+    });
+    ready->read();
+    worker->interrupt();
+    int deadline = gethrtime() + 2000000;
+    while (!handled && gethrtime() < deadline) sleep(0.001);
+    int lost = !handled;
+    if (lost) writer->write("x");
+    worker->wait();
+    reader->close();
+    writer->close();
+    if (lost) return "Interrupt lost in round " + i + ".\n";
+  }
+  return 0;
+]], 0)
 ]])
 
 dnl errno() in a UDP read callback should be 0 for a datagram that

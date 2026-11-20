@@ -262,6 +262,101 @@ static void interrupt_nt_io(struct thread_state *ts)
 }
 #endif /* NT_THREADS && !CONFIGURE_TEST */
 
+#if defined(PIKE_RESEND_IO_INTERRUPTS) && !defined(CONFIGURE_TEST)
+/* The POSIX counterpart of the NT helper above. interrupt() and kill()
+ * send SIGCHLD to make a blocking system call fail with EINTR, but the
+ * signal is lost if it arrives after the thread has released the
+ * interpreter lock and before it has entered the call, which then
+ * blocks. A helper thread resends the signal until the thread has
+ * taken the interrupt or exited, at growing intervals, since the
+ * thread may be waiting for something that signals don't interrupt.
+ * Unlike the NT helper it keeps going while the thread runs Pike
+ * code: a thread swapped in by a yield can still block in I/O before
+ * it checks for the interrupt, and EINTR in Pike code only leads to
+ * that check.
+ *
+ * Owned by the interrupted thread, under the interpreter lock. The
+ * helper isn't a Pike thread, so it uses the pthread calls directly.
+ */
+struct io_interrupt_resend {
+  pthread_t target;
+  pthread_t worker;
+  pthread_mutex_t lock;
+  pthread_cond_t wakeup;
+  int stop;
+};
+
+static void *resend_io_interrupt(void *arg)
+{
+  struct io_interrupt_resend *resend = arg;
+  long delay = 1000;		/* Microseconds: 1 ms, doubled up to 64 ms. */
+
+  pthread_mutex_lock(&resend->lock);
+  while (!resend->stop) {
+    struct timeval now;
+    struct timespec until;
+    gettimeofday(&now, NULL);
+    now.tv_usec += delay;
+    until.tv_sec = now.tv_sec + now.tv_usec / 1000000;
+    until.tv_nsec = (now.tv_usec % 1000000) * 1000;
+    pthread_cond_timedwait(&resend->wakeup, &resend->lock, &until);
+    if (resend->stop) break;
+    pthread_kill(resend->target, SIGCHLD);
+    if (delay < 64000) delay *= 2;
+  }
+  pthread_mutex_unlock(&resend->lock);
+  return NULL;
+}
+
+static void stop_io_interrupt_resend(struct thread_state *ts)
+{
+  struct io_interrupt_resend *resend = ts->io_resend;
+  if (!resend) return;
+  pthread_mutex_lock(&resend->lock);
+  resend->stop = 1;
+  pthread_cond_signal(&resend->wakeup);
+  pthread_mutex_unlock(&resend->lock);
+  /* Join, so that no signal is sent after the thread has gone. */
+  pthread_join(resend->worker, NULL);
+  pthread_cond_destroy(&resend->wakeup);
+  pthread_mutex_destroy(&resend->lock);
+  free(resend);
+  ts->io_resend = NULL;
+}
+
+static void resend_io_interrupts(struct thread_state *ts)
+{
+  struct io_interrupt_resend *resend;
+
+  if (ts->status != THREAD_RUNNING || !ts->swapped || ts->io_resend ||
+      (ts->flags & THREAD_FLAG_INHIBIT)) return;
+
+  /* On failure the signal already sent is all there is, as before. */
+  if (!(resend = malloc(sizeof(*resend)))) return;
+  resend->target = ts->id;
+  resend->stop = 0;
+  if (pthread_mutex_init(&resend->lock, NULL)) {
+    free(resend);
+    return;
+  }
+  if (pthread_cond_init(&resend->wakeup, NULL)) {
+    pthread_mutex_destroy(&resend->lock);
+    free(resend);
+    return;
+  }
+  if (pthread_create(&resend->worker, NULL, resend_io_interrupt, resend)) {
+    pthread_cond_destroy(&resend->wakeup);
+    pthread_mutex_destroy(&resend->lock);
+    free(resend);
+    return;
+  }
+  ts->io_resend = resend;
+}
+#define STOP_IO_INTERRUPT_RESEND(ts) stop_io_interrupt_resend(ts)
+#else /* !PIKE_RESEND_IO_INTERRUPTS || CONFIGURE_TEST */
+#define STOP_IO_INTERRUPT_RESEND(ts)
+#endif /* PIKE_RESEND_IO_INTERRUPTS && !CONFIGURE_TEST */
+
 #ifdef SIMULATE_COND_WITH_EVENT
 PMOD_EXPORT int co_wait(COND_T *c, PIKE_MUTEX_T *m)
 {
@@ -681,6 +776,8 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->swapped = 0;
 #ifdef NT_THREADS
   ts->io_cancel = NULL;
+#elif defined(PIKE_RESEND_IO_INTERRUPTS)
+  ts->io_resend = NULL;
 #endif
   ts->interval_start = get_real_time();
 #ifdef PIKE_DEBUG
@@ -1431,6 +1528,7 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 #endif
 
     cleanup_interpret();        /* Must be done before EXIT_THREAD_STATE */
+    STOP_IO_INTERRUPT_RESEND(Pike_interpreter.thread_state);
     Pike_interpreter.thread_state->status=THREAD_EXITED;
     co_signal(&Pike_interpreter.thread_state->status_change);
     thread_table_delete(Pike_interpreter.thread_state);
@@ -2010,6 +2108,8 @@ TH_RETURN_TYPE new_thread_func(void *data)
   }
 
   UNSETJMP(back);
+
+  STOP_IO_INTERRUPT_RESEND(thread_state);
 
   DEBUG_CHECK_THREAD();
 
@@ -4433,6 +4533,7 @@ static void check_thread_interrupt(struct callback *foo,
       throw_severity = THROW_ERROR;
     }
     Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
+    STOP_IO_INTERRUPT_RESEND(Pike_interpreter.thread_state);
     if (!--num_pending_interrupts) {
       remove_callback(foo);
       thread_interrupt_callback = NULL;
@@ -4494,6 +4595,8 @@ static void f_thread_id_interrupt(INT32 args)
   THIS_THREAD->flags |= THREAD_FLAG_INTR;
 #ifdef NT_THREADS
   interrupt_nt_io(THIS_THREAD);
+#elif defined(PIKE_RESEND_IO_INTERRUPTS)
+  resend_io_interrupts(THIS_THREAD);
 #endif
 }
 
@@ -4511,6 +4614,8 @@ static void low_thread_kill (struct thread_state *th)
   th->flags |= THREAD_FLAG_TERM;
 #ifdef NT_THREADS
   interrupt_nt_io(th);
+#elif defined(PIKE_RESEND_IO_INTERRUPTS)
+  resend_io_interrupts(th);
 #endif
 }
 
@@ -4554,6 +4659,9 @@ void init_thread_obj(struct object *UNUSED(o))
   memset(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter_struct));
   THIS_THREAD->thread_obj = Pike_fp->current_object;
   THIS_THREAD->swapped = 0;
+#ifdef PIKE_RESEND_IO_INTERRUPTS
+  THIS_THREAD->io_resend = NULL;
+#endif
   THIS_THREAD->status=THREAD_NOT_STARTED;
   THIS_THREAD->flags = 0;
   THIS_THREAD->waiting = 0;
@@ -4584,6 +4692,7 @@ static void cleanup_thread_state (struct thread_state *th)
     }
   }
 
+  STOP_IO_INTERRUPT_RESEND(th);
   co_destroy(& th->status_change);
   th_destroy(& th->id);
 }
