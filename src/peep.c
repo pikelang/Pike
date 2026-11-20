@@ -204,6 +204,27 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
+#ifdef CODE_GENERATOR_INTEGER_RUN
+/* A conservative union of the balanced and stack planners' entry opcodes,
+ * including their global-input and constant-entry wrappers. Keep this in
+ * sync when adding planner entry points. Feature flags and operand checks
+ * belong to the planners; unsupported opcodes need no emitter stack frame.
+ */
+static inline int integer_region_candidate(unsigned int op)
+{
+  switch (op) {
+  case F_LOCAL: case F_2_LOCALS: case F_INC_LOCAL: case F_DEC_LOCAL:
+  case F_INC_LOCAL_AND_POP: case F_DEC_LOCAL_AND_POP:
+  case F_ADD_LOCAL_INT_AND_POP: case F_ADD_LOCALS_AND_POP:
+  case F_ASSIGN_LOCAL_NUMBER_AND_POP: case F_CLEAR_LOCAL:
+  case F_PRIVATE_IF_DIRECT_GLOBAL:
+    return 1;
+  default:
+    return 0;
+  }
+}
+#endif
+
 INT32 assemble(int store_linenumbers)
 {
   INT32 entry_point;
@@ -636,7 +657,7 @@ INT32 assemble(int store_linenumbers)
     }
 
 #ifdef CODE_GENERATOR_INTEGER_RUN
-    if (use_integer
+    if (use_integer && integer_region_candidate(c->opcode)
 #ifdef CODE_GENERATOR_REGION_OPCODE
         && !region_left
 #endif

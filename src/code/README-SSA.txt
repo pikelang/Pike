@@ -247,6 +247,11 @@ store_lines). The latter returns the number of consumed source opcodes,
 or zero to use ordinary emission. It must guard inputs, lower the plan,
 publish snapshots on exits, replay failures and restore source/PC state.
 The assembler avoids integer regions while tracing or disassembling.
+Before calling the native emitter, it checks the opcode against the shared
+integer_region_candidate() filter in peep.c. This conservative union covers
+both planners and the global-input/constant-entry wrappers, independently
+of feature flags. Add new planner entry opcodes there too; detailed operand
+and profitability checks remain in the planners.
 Native-region buffering uses CODE_GENERATOR_REGIONS_ENABLED() and the
 CODE_GENERATOR_REGION_* hooks. Reusing the generic state model does not
 require implementing that layer.
