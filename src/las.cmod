@@ -5482,7 +5482,11 @@ static node *eval(node *n)
       return n;
     }
     new = mksvaluenode(Pike_sp-1);
-    if (new->type &&
+    if (n->token == F_CAST &&
+        (n->type == mixed_type_string || n->type == any_type_string)) {
+      /* A cast to mixed intentionally discards the value's static type. */
+      new = mkcastnode(n->type, new);
+    } else if (new->type &&
 	((new->type->type == PIKE_T_INT) || (new->type->type == PIKE_T_TYPE))) {
       /* Ok. */
     } else if (n->type) {

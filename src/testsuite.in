@@ -216,6 +216,14 @@ cond([[Float.EPSILON < 1e-15 && Float.EPSILON > 1e-17]], [[
   test_equal(0x1.00000000000008p0, 1.0)
   test_equal(0x1.000000000000080000000000000000000001p0,
              1.0 + Float.EPSILON)
+  test_equal((float)"0x1.00000000000000001p-1075",
+             array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0])
+  test_equal((float)"0x1.000000000000080000000000000000000001p0",
+             1.0 + Float.EPSILON)
+  test_equal(array_sscanf("0x1.00000000000000001p-1075!", "%f%s"),
+             ({ array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0], "!" }))
+  test_equal(array_sscanf("0x1.000000000000080000000000000000000001p0!",
+                          "%f%s"), ({ 1.0 + Float.EPSILON, "!" }))
 ]])
 test_equal("abc"[0x1..0x2], "bc")
 test_compile_error([[float f = 0x1.2;]])
@@ -11615,6 +11623,26 @@ test_old_style([..],     ({0, Int.NATIVE_MAX})) dnl Upper bound might become lar
 undefine([[test_old_style]])
 
 // casting
+// Constant folding must preserve explicit widening to mixed when the
+// argument list is checked again after optimization.
+test_compile_any([[
+  void accept(string value) {}
+  void multi(int first, string value, int last) {}
+  void caller() {
+    accept((mixed)({ 0, 0 }));
+    accept((mixed)([ 0: 0 ]));
+    accept((mixed)(< 0 >));
+    accept((mixed)allocate(2));
+    accept((0, (mixed)({ 0, 0 })));
+    accept((mixed)(0, ({ 0, 0 })));
+    multi(1, (mixed)({ 0, 0 }), 2);
+  }
+]])
+test_compile_error_any([[
+  void accept(string value) {}
+  void caller() { accept(({ 0, 0 })); }
+]])
+
 test_eq([[(int)1]],[[1]])
 test_eq([[(int)-1]],[[-1]])
 test_eq([[(int)1.0]],[[1]])
