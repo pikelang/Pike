@@ -6201,6 +6201,53 @@ test_do([[{
   }]])
 
 // local function tests
+dnl Trailing call blocks have the same outer scope as ordinary functions.
+dnl Coverity CID 1708338: a missing name must not index local_names[-1].
+test_any_equal([[
+  return map(({ 1 })) {
+    int nested() { return 7; };
+    return nested();
+  };
+]], ({ 7 }))
+
+test_any_equal([[
+  return map(({ 1, 2 })) {
+    int later();
+    function saved = later;
+    int later() { return __ARGS__[0] + 6; };
+    return saved();
+  };
+]], ({ 7, 8 }))
+
+test_any_equal([[
+  return map(({ 1, 2 })) {
+    int value() { return __ARGS__[0]; };
+    int result = value();
+    {
+      int value() { return 10; };
+      result += value();
+    }
+    int later();
+    int later() { return value(); };
+    return result + later();
+  };
+]], ({ 12, 14 }))
+
+test_compile_error([[
+  array result = map(({ 1 })) {
+    int nested() { return 1; };
+    int nested() { return 2; };
+    return nested();
+  };
+]])
+
+test_compile_error([[
+  array result = map(({ 1 })) {
+    int missing();
+    return missing();
+  };
+]])
+
 dnl Local function prototypes (#10237).
 test_any_equal([[
   string fn2();
