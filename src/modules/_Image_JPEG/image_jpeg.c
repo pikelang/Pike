@@ -70,6 +70,12 @@
 
 #ifdef HAVE_JPEGLIB_H
 
+/* The counters of IMAGE_THREADS_ALLOW(), from the Image module. */
+static int *image_threads_unlocked_p, *image_replace_waiting_p;
+#define IMAGE_THREADS_IMPORTED
+#define image_threads_unlocked (*image_threads_unlocked_p)
+#define image_replace_waiting (*image_replace_waiting_p)
+
 #include "../Image/image.h"
 
 #ifdef DYNAMIC_MODULE
@@ -625,7 +631,8 @@ static void init_src(struct pike_string *raw_img,
 #ifdef TRANSFORMS_SUPPORTED
 void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
 {
-    int transform = 0;
+    INT32 transform = 0;
+    INT32 grayscale = 0;
     if (args > 1 && parameter_int(sp+1-args,param_transform,&transform) &&
 	((transform == JXFORM_FLIP_H) ||
 	(transform == JXFORM_FLIP_V) ||
@@ -640,10 +647,47 @@ void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
 	options->transform = JXFORM_NONE;
     }
     options->trim = FALSE;
-    options->force_grayscale = FALSE;
+    options->force_grayscale =
+      args > 1 && parameter_int(sp+1-args, param_grayscale, &grayscale) &&
+      grayscale;
     options->crop = FALSE;
 }
 #endif /*TRANSFORMS_SUPPORTED*/
+
+/* The options of encode() that apply to JPEG data too: they don't
+ * change the image data. libjpeg needs them before it starts
+ * compressing, and progressive after the colour space. */
+static void set_coding_options(struct svalue *map,
+                               struct jpeg_compress_struct *cinfo)
+{
+   INT32 p, q;
+
+   if (parameter_int(map,param_optimize,&p))
+   {
+      cinfo->optimize_coding=!!p;
+   }
+
+   if (parameter_int(map,param_x_density,&p) &&
+       parameter_int(map,param_y_density,&q))
+   {
+      cinfo->X_density=p;
+      cinfo->Y_density=q;
+      cinfo->density_unit=1;
+   }
+
+   if (parameter_int(map,param_density,&p))
+   {
+      cinfo->X_density=p;
+      cinfo->Y_density=p;
+      cinfo->density_unit=1;
+   }
+
+   if (parameter_int(map,param_density_unit,&p))
+      cinfo->density_unit=p;
+
+   if (parameter_int(map,param_progressive,&p) && p)
+      jpeg_simple_progression(cinfo);
+}
 
 /*! @decl string encode(object image)
  *! @decl string encode(string|object image, mapping options)
@@ -716,6 +760,12 @@ void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
  *!         Transverse image
  *!       @endint
  *! @endmapping
+ *!
+ *! @note
+ *!   JPEG data in @[image] is transcoded without decoding it, so only
+ *!   the options "optimize", "progressive", "grayscale",
+ *!   "density_unit", "x_density", "y_density", "comment", "marker"
+ *!   and "transform" apply to it. The others are ignored.
  *!
  *! @note
  *!   Please read some about JPEG files. A quality
@@ -816,6 +866,8 @@ static void image_jpeg_encode(INT32 args)
        dst_coef_arrays = jtransform_adjust_parameters(&mds.cinfo, &cinfo,
 						      src_coef_arrays,
 						      &transformoption);
+       if (args>1)
+          set_coding_options(sp+1-args, &cinfo);
        jpeg_write_coefficients(&cinfo, dst_coef_arrays);
 #endif /*TRANSFORMS_SUPPORTED*/
 
@@ -828,8 +880,8 @@ static void image_jpeg_encode(INT32 args)
 #endif /*TRANSFORMS_SUPPORTED*/
    }
 
-   /* check configuration */
-   if (args>1)
+   /* check configuration (JPEG data got the options it can use above) */
+   if (img && args>1)
    {
       INT32 p,q=95;
 
@@ -850,35 +902,11 @@ static void image_jpeg_encode(INT32 args)
 	 cinfo.in_color_space=JCS_RGB; /* JCS_GRAYSCALE */
       }
 
-      if (parameter_int(sp+1-args,param_optimize,&p))
-      {
-	 cinfo.optimize_coding=!!p;
-      }
-
       if (parameter_int(sp+1-args,param_smoothing,&p))
       {
 	 if (p<1) p=1; else if (p>100) p=100;
 	 cinfo.smoothing_factor=p;
       }
-
-
-      if (parameter_int(sp+1-args,param_x_density,&p) &&
-	  parameter_int(sp+1-args,param_y_density,&q))
-      {
-	 cinfo.X_density=p;
-	 cinfo.Y_density=q;
-	 cinfo.density_unit=1;
-      }
-
-      if (parameter_int(sp+1-args,param_density,&p))
-      {
-	 cinfo.X_density=p;
-	 cinfo.Y_density=p;
-	 cinfo.density_unit=1;
-      }
-
-      if (parameter_int(sp+1-args,param_density_unit,&p))
-	 cinfo.density_unit=p;
 
       if (parameter_int(sp+1-args,param_method,&p)
 	  && (p==JDCT_IFAST ||
@@ -888,10 +916,9 @@ static void image_jpeg_encode(INT32 args)
 	      p==JDCT_FASTEST))
 	 cinfo.dct_method=p;
 
-      if (parameter_int(sp+1-args,param_progressive,&p) && p)
-	 jpeg_simple_progression(&cinfo);
-
       parameter_qt(sp+1-args,param_quant_tables,&cinfo);
+
+      set_coding_options(sp+1-args, &cinfo);
    }
 
    if (img) {
@@ -909,7 +936,7 @@ static void image_jpeg_encode(INT32 args)
        y=img->ysize;
        s=img->img;
 
-       THREADS_ALLOW();
+       IMAGE_THREADS_ALLOW();
        while (y)
 	   {
 	       int n,i,y2=y;
@@ -931,7 +958,7 @@ static void image_jpeg_encode(INT32 args)
 
 	       y-=y2;
 	   }
-       THREADS_DISALLOW();
+       IMAGE_THREADS_DISALLOW();
 
        free(tmp);
    } else {
@@ -1581,13 +1608,19 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_JPEGLIB_H
-#ifndef FAKE_DYNAMIC_LOAD
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
     if(!image_program) {
        yyerror("Could not load Image module.");
        return;
     }
-#endif /* DYNAMIC_MODULE */
+    image_threads_unlocked_p =
+      PIKE_MODULE_IMPORT_SYMBOL("Image.image_threads_unlocked", "Image");
+    image_replace_waiting_p =
+      PIKE_MODULE_IMPORT_SYMBOL("Image.image_replace_waiting", "Image");
+    if (!image_threads_unlocked_p || !image_replace_waiting_p) {
+       yyerror("Could not load Image module.");
+       return;
+    }
 
 #define tOptions tMap(tStr,tOr3(					\
     tInt,								\

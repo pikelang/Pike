@@ -94,7 +94,7 @@ static inline int getrgb(struct image *img,
 void img_clear(rgb_group *dest, rgb_group rgb, ptrdiff_t size)
 {
   if(!size) return;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   if( ( rgb.r == rgb.g && rgb.r == rgb.b ) )
     memset(dest, rgb.r, size*sizeof(rgb_group) );
   else if(size)
@@ -111,7 +111,7 @@ void img_clear(rgb_group *dest, rgb_group rgb, ptrdiff_t size)
     }
     if(size>0) memcpy(dest,from,size*sizeof(rgb_group));
   }
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 }
 
 void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
@@ -131,7 +131,7 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
      if(!mod)
        img_clear(foo,rgb,end-foo);
      else {
-       THREADS_ALLOW();
+       IMAGE_THREADS_ALLOW();
        do {
 	 int length = x2-x1+1, xs=this->xsize, y=y2-y1+1;
 	 rgb_group *from = foo;
@@ -140,18 +140,18 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 	 for(x=0; x<length; x++)  *(foo+x) = rgb;
 	 while(--y)  memcpy((foo+=xs), from, length*sizeof(rgb_group));
        } while(0);
-       THREADS_DISALLOW();
+       IMAGE_THREADS_DISALLOW();
      }
    }
    else
    {
-     THREADS_ALLOW();
+     IMAGE_THREADS_ALLOW();
      do {
        for (; foo<end; foo+=mod)
          for (x=x1; x<=x2; x++,foo++)
            set_rgb_group_alpha(*foo,rgb,this->alpha);
      } while(0);
-     THREADS_DISALLOW();
+     IMAGE_THREADS_DISALLOW();
    }
 }
 
@@ -163,7 +163,7 @@ void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
     return;
 CHRONO("image_blit begin");
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    if(!moddest && !modsrc)
      memcpy(dest,src,sizeof(rgb_group)*width*lines);
    else
@@ -173,7 +173,7 @@ CHRONO("image_blit begin");
        dest+=moddest;
        src+=modsrc;
      }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 CHRONO("image_blit end");
 
 }
@@ -197,9 +197,9 @@ void img_crop(struct image *dest,
        img->xsize-1==x2 && img->ysize-1==y2)
    {
       *dest=*img;
-      THREADS_ALLOW();
+      IMAGE_THREADS_ALLOW();
       memcpy(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
-      THREADS_DISALLOW();
+      IMAGE_THREADS_DISALLOW();
       dest->img=new;
       return;
    }
@@ -236,9 +236,9 @@ void img_clone(struct image *newimg,struct image *img)
 {
    if (newimg->img) free(newimg->img);
    newimg->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    memcpy(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    newimg->xsize=img->xsize;
    newimg->ysize=img->ysize;
    newimg->rgb=img->rgb;
@@ -380,7 +380,7 @@ void image_paste_alpha(INT32 args)
      int xs = this->xsize, ix, mx=img->xsize, my=img->ysize, x;
      int ys = this->ysize, iy, y;
 
-     THREADS_ALLOW();
+     IMAGE_THREADS_ALLOW();
      for (iy=0; iy<my; iy++)
        for (ix=0; ix<mx; ix++)
        {
@@ -393,7 +393,7 @@ void image_paste_alpha(INT32 args)
 	 }
 	 source++;
        }
-     THREADS_DISALLOW();
+     IMAGE_THREADS_DISALLOW();
    }
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -472,7 +472,7 @@ CHRONO("image_paste_mask begin");
 
    q=1.0/255;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    for (y=MAXIMUM(0,-y1); y<y2; y++)
    {
       for (x=MAXIMUM(0,-x1); x<x2; x++)
@@ -490,7 +490,7 @@ CHRONO("image_paste_mask begin");
       }
       s+=smod; m+=mmod; d+=dmod;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 CHRONO("image_paste_mask end");
 
    pop_n_elems(args);
@@ -574,7 +574,7 @@ CHRONO("image_paste_alpha_color begin");
 
    rgb=THIS->rgb;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    for (y=MAXIMUM(0,-y1); y<y2; y++)
    {
       for (x=MAXIMUM(0,-x1); x<x2; x++)
@@ -592,7 +592,7 @@ CHRONO("image_paste_alpha_color begin");
       }
       m+=mmod; d+=dmod;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 CHRONO("image_paste_alpha_color end");
 
    pop_n_elems(args);

@@ -2624,4 +2624,39 @@ test_any_equal([[
          !sizeof(Program.inherit_annotations(Leaf));
 ]], 1)
 
+dnl Thread.Queue's write() should wake one waiting reader, not all of
+dnl them: in a ping-pong through a queue, 15 idle readers may take at
+dnl most 1.5 times the voluntary context switches a round of one reader,
+dnl and each item must reach one reader.
+cond([[master()->resolv("Thread.Thread") && System["getrusage"] && System.getrusage()->nvcsw]], [[
+  test_any([[
+    array(float) run(int readers, int rounds) {
+      Thread.Queue q = Thread.Queue(), back = Thread.Queue();
+      array(Thread.Thread) ts = allocate(readers);
+      for (int i = 0; i < readers; i++)
+        ts[i] = Thread.Thread(lambda() {
+            mixed v;
+            while ((v = q->read()) != -1) back->write(v);
+          });
+      sleep(0.2);
+      int bad, c0 = System.getrusage()->nvcsw;
+      for (int i = 0; i < rounds; i++) {
+        q->write(i);
+        if (back->read() != i) bad++;
+      }
+      int c = System.getrusage()->nvcsw - c0;
+      for (int i = 0; i < readers; i++) q->write(-1);
+      ts->wait();
+      return ({ (float)c / rounds, (float)bad });
+    };
+    array(float) one = run(1, 5000), many = run(15, 5000);
+    if (one[1] > 0.0 || many[1] > 0.0)
+      return sprintf("%d items went wrong", (int)(one[1] + many[1]));
+    if (many[0] > 1.5 * one[0])
+      return sprintf("%.1f context switches a round with 15 readers, "
+                     "%.1f with one", many[0], one[0]);
+    return 0;
+  ]], 0)
+]])
+
 END_MARKER

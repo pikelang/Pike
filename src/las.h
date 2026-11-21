@@ -240,6 +240,7 @@ node *debug_mksvaluenode(struct svalue *s);
 node *copy_node(node *n);
 node *defrost_node(node *n);
 void optimize_node(node *);
+void optimize_constant(node *);
 int is_const(node *n);
 int node_is_tossable(node *n);
 int node_is_true(node *n);

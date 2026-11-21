@@ -2650,6 +2650,14 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
  *!
  *! Builtin constant that evaluates to the current program.
  *!
+ *! In an annotation or local constant expression it refers to the
+ *! statically selected program, including a class still being compiled.
+ *! This permits annotations describing recursive records. The qualified
+ *! form @expr{this::this_program@} has the same behavior.
+ *!
+ *! In ordinary runtime expressions it follows the current object's
+ *! program, including when the expression occurs in an inherited method.
+ *!
  *! @seealso
  *!   @[this], @[this_object()]
  */

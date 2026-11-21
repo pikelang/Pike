@@ -112,7 +112,7 @@ static void _image_orient(struct image *source,
       push_object(o[i]);
    }
 
-THREADS_ALLOW();
+IMAGE_THREADS_ALLOW();
 CHRONO("start");
    for (i=0; i<4; i++) /* four directions */
    {
@@ -140,7 +140,7 @@ CHRONO("start");
 	 }
    }
 CHRONO("end");
-THREADS_DISALLOW();
+IMAGE_THREADS_DISALLOW();
 }
 
 void image_orient(INT32 args)
@@ -216,7 +216,7 @@ void image_orient(INT32 args)
   s3=img[3]->img;
   d=img[4]->img;
 
-THREADS_ALLOW();
+IMAGE_THREADS_ALLOW();
 CHRONO("begin hsv...");
   n=this->xsize*this->ysize;
   while (n--)
@@ -255,7 +255,7 @@ CHRONO("begin hsv...");
      s3++;
   }
 CHRONO("end hsv...");
-THREADS_DISALLOW();
+IMAGE_THREADS_DISALLOW();
 
   if (!w)
   {

@@ -5526,6 +5526,22 @@ test_false([[Program.implements( class { int x; string y = ""; void foo(int x) {
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
+dnl A string constant used as a type should name a program, as a string
+dnl in object() does. Without the fix the compiler crashes.
+test_any([[
+  string path = combine_path(getcwd(), "string_type_" + getpid() + ".pike");
+  Stdio.write_file(path, "int x = 17;\n");
+  mixed err = catch {
+    program p = compile_string(sprintf("constant T = %q;\n"
+                                       "T o = ((program)T)();\n"
+                                       "int f() { return o->x; }\n", path));
+    int res = p()->f();
+    rm(path);
+    return res;
+  };
+  rm(path);
+  throw(err);
+]], 17)
 test_any([[if(int x=1,y=2) return x;]],1)
 test_any([[int x; x++; if(x) return x; return -1;]],1)
 test_any([[int x; if(x) return x; return -1;]],-1)
@@ -6502,6 +6518,53 @@ test_do([[{
   }]])
 
 // local function tests
+dnl Trailing call blocks have the same outer scope as ordinary functions.
+dnl Coverity CID 1708338: a missing name must not index local_names[-1].
+test_any_equal([[
+  return map(({ 1 })) {
+    int nested() { return 7; };
+    return nested();
+  };
+]], ({ 7 }))
+
+test_any_equal([[
+  return map(({ 1, 2 })) {
+    int later();
+    function saved = later;
+    int later() { return __ARGS__[0] + 6; };
+    return saved();
+  };
+]], ({ 7, 8 }))
+
+test_any_equal([[
+  return map(({ 1, 2 })) {
+    int value() { return __ARGS__[0]; };
+    int result = value();
+    {
+      int value() { return 10; };
+      result += value();
+    }
+    int later();
+    int later() { return value(); };
+    return result + later();
+  };
+]], ({ 12, 14 }))
+
+test_compile_error([[
+  array result = map(({ 1 })) {
+    int nested() { return 1; };
+    int nested() { return 2; };
+    return nested();
+  };
+]])
+
+test_compile_error([[
+  array result = map(({ 1 })) {
+    int missing();
+    return missing();
+  };
+]])
+
 dnl Local function prototypes (#10237).
 test_any_equal([[
   string fn2();
@@ -7716,6 +7779,154 @@ void test()
 	error("Ignore the following line.\n");
     })->wait();
   ]])
+
+dnl Condition waits of 1 ms should not take over 2 seconds while another
+dnl thread runs Pike code that doesn't block. Run 100s of them, in a child
+dnl process killed after 60 seconds.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+  test_any([[
+    Process.Process p = Process.Process(RUNPIKE_ARRAY + ({ "-e", #{
+      int stop;
+      Thread.Thread busy = Thread.Thread(lambda() {
+          int x;
+          while (!stop) x++;
+        });
+      Thread.Mutex m = Thread.Mutex();
+      Thread.Condition c = Thread.Condition();
+      float worst = 0.0;
+      for (int i = 0; i < 200; i++) {
+        int t = gethrtime();
+        object|zero key = m->lock();
+        c->wait(key, 0.001);
+        key = 0;
+        worst = max(worst, (gethrtime() - t) / 1e6);
+      }
+      stop = 1;
+      busy->wait();
+      if (worst > 2.0) {
+        werror("a 1 ms wait took %.2f s\n", worst);
+        return 1;
+      }
+      return 0;
+    #} }));
+    int t = time();
+    while (!p->status() && time() - t < 60) sleep(0.1);
+    if (!p->status()) {
+      p->kill(9);
+      p->wait();
+      return "200 waits of 1 ms took over 60 s";
+    }
+    return p->wait();
+  ]], 0)
+]])
+
+dnl sprintf("%O") of a mutex should name the holder after "Locked by",
+dnl not the thread that waits for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    string s = sprintf("%O", m);
+    destruct(k);
+    waiter->wait();
+    int waiting, locked;
+    if (sscanf(s, "Thread.Mutex(/* Waiting by 0x%x Locked by 0x%x */)",
+               waiting, locked) != 2)
+      return s;
+    return waiting != locked;
+  ]], 1)
+
+dnl lock() and shared_lock() should succeed once the mutex is free, also
+dnl after a thread that waited in lock() was killed.
+  test_any_equal([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    waiter->kill();
+    sleep(0.2);
+    destruct(k);
+    object got = m->lock(1, 2.0);
+    int got_lock = !!got;
+    if (got) destruct(got);
+    object shared = m->shared_lock(1, 2.0);
+    int got_shared = !!shared;
+    if (shared) destruct(shared);
+    return ({ got_lock, got_shared });
+  ]], ({ 1, 1 }))
+
+dnl The key that a future_lock() gets when the mutex is unlocked should
+dnl belong to the thread that asked for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    object asker, fkey;
+    Thread.Thread t = Thread.Thread(lambda() {
+        asker = this_thread();
+        fkey = m->future_lock()->get();
+      });
+    sleep(0.2);
+    destruct(k);
+    for (int i = 0; i < 100 && !fkey; i++) sleep(0.01);
+    object holder = m->current_locking_thread();
+    mixed err = catch { object k2 = m->trylock(); if (k2) destruct(k2); };
+    int ok = holder == asker && !err;
+    if (fkey) destruct(fkey);
+    t->wait();
+    return ok;
+  ]], 1)
+
+dnl Cleaning up a finished thread that never took its interrupt should
+dnl not lose the interrupt of the thread doing it. The finished thread
+dnl interrupted itself in a destructor, where interrupts wait; the main
+dnl thread interrupts itself in a destructor too, and there releases the
+dnl last reference to the finished thread's Thread object, cleaning it up.
+dnl Without the fix the main thread's interrupt was lost in every run.
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      class SelfInterrupt {
+        protected void _destruct() { this_thread()->interrupt(); }
+      };
+      class Cleanup(Thread.Thread|zero finished) {
+        protected void _destruct() {
+          this_thread()->interrupt("Main thread interrupted.\n");
+          finished = 0;
+        }
+      };
+      void noop() {};
+      // Its Cleanup holds the only reference to the finished thread.
+      object|zero make_cleanup() {
+        Thread.Thread t = Thread.Thread(lambda() { destruct(SelfInterrupt()); });
+        // wait() throws if the thread took its interrupt.
+        if (catch(t->wait())) return 0;
+        return Cleanup(t);
+      };
+      object|zero c = make_cleanup();
+      if (!c) {
+        write("skipped\n");
+        return 0;
+      }
+      mixed err = catch {
+        destruct(c);
+        // Interrupts are taken between calls.
+        for (int i = 0; i < 100000; i++) noop();
+      };
+      write("%s\n", err ? describe_error(err) : "lost");
+      return 0;
+    #} }));
+    if (r->exitcode || sizeof(r->stderr) ||
+        (!has_value(r->stdout, "Main thread interrupted") &&
+         !has_value(r->stdout, "skipped")))
+      return sprintf("exit %d: %s%s", r->exitcode, r->stdout, r->stderr);
+    return 0;
+  ]], 0)
 
 cond_end // thread_create
 
@@ -10565,6 +10776,44 @@ cond([[all_constants()->kill && signum("SIGUSR1") > 0]],
     }
     return stage;
   ]], 2)
+]])
+
+dnl A process should survive 40000 SIGUSR1s sent while it sleeps in C
+dnl code, and handle them, without "Atomic pipe write failed!!" in debug
+dnl builds. The final different signal and the child's exit status must
+dnl survive FIFO overflow too. In child processes.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond([[all_constants()->kill && signum("SIGUSR1") > 0]], [[
+cond([[signum("SIGUSR2") > 0]], [[
+  test_any([[
+    string sender = #{
+      int pid = (int)argv[-1];
+      for (int i = 0; i < 40000; i++) kill(pid, signum("SIGUSR1"));
+      kill(pid, signum("SIGUSR2"));
+      return 42;
+    #};
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      int got, final_signal;
+      signal(signum("SIGUSR1"), lambda() { got++; });
+      signal(signum("SIGUSR2"), lambda() { final_signal++; });
+      object p = Process.Process(
+        Standards.JSON.decode(getenv("SIGNAL_FIFO_SENDER")) +
+        ({ (string)getpid() }));
+      sleep(5);
+      int status = p->wait();
+      sleep(0.5);
+      write("%d signals handled; final signal %d, child status %d\n",
+            got, final_signal, status);
+      return !(got && final_signal && status == 42);
+    #} }), ([ "env": getenv() + ([
+      "SIGNAL_FIFO_SENDER":
+        Standards.JSON.encode(RUNPIKE_ARRAY + ({ "-e", sender })) ]) ]));
+    if (r->exitcode || !has_value(r->stdout, "signals handled"))
+      return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
 ]])
 
 // typeof
@@ -18696,5 +18945,69 @@ test_any_equal([[
   }
   return Container()->run();
 ]], ({ 22, 9, 19, 31 }))
+
+dnl Issue #10238: this_program in explicit constant expressions.
+test_any([[
+  class Ref {
+    inherit Pike.Annotation;
+    @constant;
+    mixed target;
+    protected void create(mixed p) { target = p; }
+  }
+  class Node {
+    @Ref(this_program);
+    @Ref(this_program): object next;
+    @Ref(this::this_program): void method() {}
+    @Ref(([ 0: this_program ])): object tagged;
+  }
+  object p = Node();
+  mapping a = mkmapping(indices(p), annotations(p));
+  return Program.annotations(Node)[0]->target == (program)Node &&
+         a->next[0]->target == (program)Node &&
+         a->method[0]->target == (program)Node &&
+         a->tagged[0]->target[0] == (program)Node ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Base {
+    mixed lexical() { constant p = this_program; return p; }
+    mixed qualified() { constant p = this::this_program; return p; }
+    mixed runtime() { return this_program; }
+  }
+  class Derived { inherit Base; }
+  object p = Derived();
+  return p->lexical() == (program)Base &&
+         p->qualified() == (program)Base &&
+         p->runtime() == (program)Derived ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Base { int value; }
+  class Derived {
+    inherit Base;
+    mixed selected() { constant p = Base::this_program; return p; }
+  }
+  return Derived()->selected() == (program)Base ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Node {
+    @global::this_program: int field;
+  }
+  object p = Node();
+  mapping a = mkmapping(indices(p), annotations(p));
+  return a->field[0] == (program)object_program(this_object()) ? 0 : 1;
+]], 0)
+
+test_compile_error([[
+  class Bad {
+    int this_program;
+    @this_program: int value;
+  }
+]])
+
+test_compile_error([[
+  class Bad { @this: int value; }
+]])
 
 END_MARKER

@@ -815,9 +815,9 @@ class Connection {
 
     protected void close_event(CLOSE_STATUS reason) {
         state = CLOSED;
-        if (onclose) {
-            onclose(reason, id || this);
+        if (function(CLOSE_STATUS, mixed:void) cb = onclose) {
             onclose = 0;
+            cb(reason, id || this);
         }
     }
 

@@ -262,6 +262,99 @@ static void interrupt_nt_io(struct thread_state *ts)
 }
 #endif /* NT_THREADS && !CONFIGURE_TEST */
 
+#if defined(PIKE_RESEND_IO_INTERRUPTS) && !defined(CONFIGURE_TEST)
+/* The Unix counterpart of the NT helper above. interrupt() and kill()
+ * send SIGCHLD to make a blocking system call fail with EINTR, but the
+ * signal is lost if it arrives after the thread has released the
+ * interpreter lock and before it has entered the call, which then
+ * blocks. A helper thread resends the signal until the thread has
+ * taken the interrupt or exited, at growing intervals, since the
+ * thread may be waiting for something that signals don't interrupt.
+ * It keeps going while the thread runs Pike code: a thread swapped
+ * in by a yield can still block in I/O before
+ * it checks for the interrupt, and EINTR in Pike code only leads to
+ * that check.
+ *
+ * Owned by the interrupted thread, under the interpreter lock. The
+ * helper uses only its own synchronization objects and a copied thread id.
+ */
+struct io_interrupt_resend {
+  THREAD_T target;
+  pid_t owner;
+  PIKE_MUTEX_T lock;
+  COND_T wakeup;
+  int stop;
+  int done;
+};
+
+static TH_RETURN_TYPE resend_io_interrupt(void *arg)
+{
+  struct io_interrupt_resend *resend = arg;
+  long delay = 1000000;          /* Nanoseconds: 1 ms, doubled up to 64 ms. */
+
+  mt_lock(&resend->lock);
+  while (!resend->stop) {
+    co_wait_timeout(&resend->wakeup, &resend->lock, 0, delay);
+    if (resend->stop) break;
+    th_kill(resend->target, SIGCHLD);
+    if (delay < 64000000) delay *= 2;
+  }
+  resend->done = 1;
+  co_signal(&resend->wakeup);
+  mt_unlock(&resend->lock);
+  return 0;
+}
+
+static void stop_io_interrupt_resend(struct thread_state *ts)
+{
+  struct io_interrupt_resend *resend = ts->io_resend;
+  if (!resend) return;
+  /* A fork child has no helper, and must not wait on inherited locks. */
+  if (resend->owner == getpid()) {
+    mt_lock(&resend->lock);
+    resend->stop = 1;
+    co_signal(&resend->wakeup);
+    /* The generic thread wrappers create detached helpers. Wait until
+     * the helper has stopped using the target id and its synchronization
+     * objects.
+     */
+    while (!resend->done) co_wait(&resend->wakeup, &resend->lock);
+    mt_unlock(&resend->lock);
+    co_destroy(&resend->wakeup);
+    mt_destroy(&resend->lock);
+  }
+  free(resend);
+  ts->io_resend = NULL;
+}
+
+static void resend_io_interrupts(struct thread_state *ts)
+{
+  struct io_interrupt_resend *resend;
+  THREAD_T worker;
+
+  if (ts->status != THREAD_RUNNING || !ts->swapped || ts->io_resend ||
+      (ts->flags & THREAD_FLAG_INHIBIT)) return;
+
+  /* On failure the signal already sent is all there is, as before. */
+  if (!(resend = malloc(sizeof(*resend)))) return;
+  resend->target = ts->id;
+  resend->owner = getpid();
+  resend->stop = resend->done = 0;
+  mt_init(&resend->lock);
+  co_init(&resend->wakeup);
+  if (th_create_small(&worker, resend_io_interrupt, resend)) {
+    co_destroy(&resend->wakeup);
+    mt_destroy(&resend->lock);
+    free(resend);
+    return;
+  }
+  ts->io_resend = resend;
+}
+#define STOP_IO_INTERRUPT_RESEND(ts) stop_io_interrupt_resend(ts)
+#else /* !PIKE_RESEND_IO_INTERRUPTS || CONFIGURE_TEST */
+#define STOP_IO_INTERRUPT_RESEND(ts)
+#endif /* PIKE_RESEND_IO_INTERRUPTS && !CONFIGURE_TEST */
+
 #ifdef SIMULATE_COND_WITH_EVENT
 PMOD_EXPORT int co_wait(COND_T *c, PIKE_MUTEX_T *m)
 {
@@ -681,6 +774,8 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->swapped = 0;
 #ifdef NT_THREADS
   ts->io_cancel = NULL;
+#elif defined(PIKE_RESEND_IO_INTERRUPTS)
+  ts->io_resend = NULL;
 #endif
   ts->interval_start = get_real_time();
 #ifdef PIKE_DEBUG
@@ -1431,6 +1526,7 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 #endif
 
     cleanup_interpret();        /* Must be done before EXIT_THREAD_STATE */
+    STOP_IO_INTERRUPT_RESEND(Pike_interpreter.thread_state);
     Pike_interpreter.thread_state->status=THREAD_EXITED;
     co_signal(&Pike_interpreter.thread_state->status_change);
     thread_table_delete(Pike_interpreter.thread_state);
@@ -1544,6 +1640,8 @@ union pike_hrtime {
   hrtime_t hrt;
 };
 #endif
+
+static void low_thread_yield(int handover);
 
 static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *UNUSED(arg2))
 {
@@ -1800,7 +1898,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 #ifdef PIKE_DEBUG
     UINT64 old_thread_swaps = thread_swaps;
 #endif
-    pike_thread_yield();
+    low_thread_yield(1);
 #ifdef PIKE_DEBUG
     if (thread_swaps != old_thread_swaps)
       check_threads_swaps++;
@@ -1808,7 +1906,13 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
   }
 }
 
-PMOD_EXPORT void pike_thread_yield(void)
+/* With handover set (at the end of a time slice), sleep a little
+ * instead of yielding: a thread woken from a condition wait takes the
+ * interpreter lock back inside the wait (pike_low_wait_interpreter()),
+ * without the interpreter_lock_wanted handshake, and nearly never got
+ * it in the moment that a yield leaves it free, so it could wait for
+ * tens of seconds while this thread ran. */
+static void low_thread_yield(int handover)
 {
   DEBUG_CHECK_THREAD();
 
@@ -1819,7 +1923,13 @@ PMOD_EXPORT void pike_thread_yield(void)
    * poorly defined. It might not really yield we need it to. It might
    * make us yield to another process instead of just another thread.
    * It might even make us sleep for a short while. */
-  th_yield();
+#ifdef HAVE_NANOSLEEP
+  if (handover) {
+    struct timespec t = { 0, 50000 };
+    nanosleep(&t, NULL);
+  } else
+#endif
+    th_yield();
   THREADS_DISALLOW();
 
 #ifdef USE_CLOCK_FOR_SLICES
@@ -1839,6 +1949,11 @@ PMOD_EXPORT void pike_thread_yield(void)
 #endif
 
   DEBUG_CHECK_THREAD();
+}
+
+PMOD_EXPORT void pike_thread_yield(void)
+{
+  low_thread_yield(0);
 }
 
 struct thread_starter
@@ -1991,6 +2106,8 @@ TH_RETURN_TYPE new_thread_func(void *data)
   }
 
   UNSETJMP(back);
+
+  STOP_IO_INTERRUPT_RESEND(thread_state);
 
   DEBUG_CHECK_THREAD();
 
@@ -2289,9 +2406,9 @@ struct mutex_storage
  * where each future lock is represented by an array containing:
  *
  *   Index 0: Promise        promise
- *   Index 1: int(0..1)|void is_shared
- *
- * The second element may be left out if zero.
+ *   Index 1: int(0..1)       is_shared
+ *   Index 2: Thread.Thread   the thread that asked for it, which the
+ *                            key is given to
  */
 static struct mapping *pending_mutex_futures;
 
@@ -2319,6 +2436,53 @@ struct key_storage
 };
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
+
+/* Handles an error while a thread waits for a mutex, as when the thread
+ * is killed in check_threads_etc(). The thread no longer waits, so the
+ * key it waited with must not stay in the list as waiting. Otherwise the
+ * keys after it would wait for it for good. In lock() and shared_lock()
+ * only the waiter holds that key, so freeing it unlinks it. upgrade()
+ * makes its key downgraded again, and Condition.wait() unlinks its key. */
+enum mutex_wait_kind { MUTEX_WAIT_NEW_KEY, MUTEX_WAIT_UPGRADE, MUTEX_WAIT_COND };
+struct mutex_wait_unwind
+{
+  enum mutex_wait_kind kind;
+  struct mutex_storage *m;
+  struct key_storage *key;
+};
+
+static void mutex_wait_unwind(void *arg)
+{
+  struct mutex_wait_unwind *w = arg;
+  struct mutex_storage *m = w->m;
+  struct key_storage *key = w->key;
+  m->num_waiting--;
+  switch (w->kind) {
+  case MUTEX_WAIT_NEW_KEY:
+    free_object(key->self);
+    break;
+  case MUTEX_WAIT_UPGRADE:
+    key->kind = KEY_DOWNGRADED;
+    co_broadcast(&m->condition);
+    break;
+  case MUTEX_WAIT_COND: {
+    struct object *mutex_obj = key->mutex_obj;
+    if (key->prev) {
+      key->prev->next = key->next;
+    } else {
+      m->key = key->next;
+    }
+    if (key->next) key->next->prev = key->prev;
+    key->prev = key->next = NULL;
+    key->mut = NULL;
+    key->mutex_obj = NULL;
+    key->kind = KEY_INITIALIZED;
+    co_broadcast(&m->condition);
+    if (mutex_obj) free_object(mutex_obj);
+    break;
+  }
+  }
+}
 
 /*! @class Mutex
  *!
@@ -2410,6 +2574,8 @@ void f_mutex_lock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key;
   struct object *o;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
   INT_TYPE type = 0;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -2489,6 +2655,10 @@ void f_mutex_lock(INT32 args)
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_NEW_KEY;
+    mw.m = m;
+    mw.key = key;
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -2527,6 +2697,7 @@ void f_mutex_lock(INT32 args)
         check_threads_etc();
       } while (key->next);
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
   }
 
@@ -2661,7 +2832,9 @@ static void f_mutex_future_lock(INT32 UNUSED(args))
 
   promise = make_promise();
   push_object(promise);
-  f_aggregate(1);
+  push_int(0);				/* Exclusive. */
+  ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  f_aggregate(3);
 
   /* NB: At this point the promise is held by the array on the stack. */
 
@@ -2773,6 +2946,8 @@ void f_mutex_shared_lock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key, *prev = NULL;
   struct object *o, *prev_o = NULL;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
   INT_TYPE type = 0;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -2871,6 +3046,10 @@ void f_mutex_shared_lock(INT32 args)
     }
 
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_NEW_KEY;
+    mw.m = m;
+    mw.key = OB2KEY(o);
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -2908,6 +3087,7 @@ void f_mutex_shared_lock(INT32 args)
         check_threads_etc();
       }
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
 
     if (m->key && (m->key->kind == KEY_DOWNGRADED)) {
@@ -3103,7 +3283,8 @@ static void f_mutex_future_shared_lock(INT32 UNUSED(args))
   promise = make_promise();
   push_object(promise);
   push_int(1);				/* Shared. */
-  f_aggregate(2);
+  ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  f_aggregate(3);
 
   /* NB: At this point the promise is held by the array on the stack. */
 
@@ -3238,7 +3419,7 @@ void f_mutex__sprintf (INT32 args)
         push_static_text(",");
       }
       push_static_text(" 0x");
-      push_int64(PTR_TO_INT(THREAD_T_TO_PTR(m->key->owner->id)));
+      push_int64(PTR_TO_INT(THREAD_T_TO_PTR(k->owner->id)));
       f_int2hex(1);
     }
     push_static_text(" */)");
@@ -3520,6 +3701,19 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
               /* Locking succeeded. */
               multiset_delete(pending, Pike_sp - 2);
 
+              /* The key is the asking thread's, not this one's. */
+              if ((a->size > 2) &&
+                  (TYPEOF(ITEM(a)[2]) == PIKE_T_OBJECT) &&
+                  (ITEM(a)[2].u.object->prog == thread_id_prog) &&
+                  (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) &&
+                  (Pike_sp[-1].u.object->prog == mutex_key)) {
+                struct key_storage *k = OB2KEY(Pike_sp[-1].u.object);
+                struct object *old = k->owner_obj;
+                k->owner = OBJ2THREADSTATE(ITEM(a)[2].u.object);
+                add_ref(k->owner_obj = ITEM(a)[2].u.object);
+                if (old) free_object(old);
+              }
+
               apply(ITEM(a)[0].u.object, "success", 1);
 
               pop_stack();
@@ -3638,6 +3832,8 @@ static void f_mutex_key_upgrade(INT32 args)
   struct key_storage *key = THIS_KEY;
   struct mutex_storage *m = key->mut;
   INT_TYPE seconds = 0, nanos = 0;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
 
   ASSERT_NOT_SIGNAL_CONTEXT();
 
@@ -3680,6 +3876,10 @@ static void f_mutex_key_upgrade(INT32 args)
     key->kind = KEY_PENDING;
 
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_UPGRADE;
+    mw.m = m;
+    mw.key = key;
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -3719,6 +3919,7 @@ static void f_mutex_key_upgrade(INT32 args)
         check_threads_etc();
       } while (key->next);
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
   }
 
@@ -3945,6 +4146,8 @@ void f_cond_wait(INT32 args)
   struct key_storage *key;
   struct pike_cond *c;
   INT_TYPE seconds = 0, nanos = 0;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
@@ -4021,6 +4224,10 @@ void f_cond_wait(INT32 args)
 
   /* Lock mutex */
   mut->num_waiting++;
+  mw.kind = MUTEX_WAIT_COND;
+  mw.m = mut;
+  mw.key = key;
+  SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
   {
     key->kind = KEY_PENDING;
     if ((key->next = mut->key)) {
@@ -4037,6 +4244,7 @@ void f_cond_wait(INT32 args)
     }
     key->kind = KEY_EXCLUSIVE;
   }
+  UNSET_ONERROR(mw_uwp);
   mut->num_waiting--;
 
   pop_stack();
@@ -4323,6 +4531,7 @@ static void check_thread_interrupt(struct callback *foo,
       throw_severity = THROW_ERROR;
     }
     Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
+    STOP_IO_INTERRUPT_RESEND(Pike_interpreter.thread_state);
     if (!--num_pending_interrupts) {
       remove_callback(foo);
       thread_interrupt_callback = NULL;
@@ -4384,6 +4593,8 @@ static void f_thread_id_interrupt(INT32 args)
   THIS_THREAD->flags |= THREAD_FLAG_INTR;
 #ifdef NT_THREADS
   interrupt_nt_io(THIS_THREAD);
+#elif defined(PIKE_RESEND_IO_INTERRUPTS)
+  resend_io_interrupts(THIS_THREAD);
 #endif
 }
 
@@ -4401,6 +4612,8 @@ static void low_thread_kill (struct thread_state *th)
   th->flags |= THREAD_FLAG_TERM;
 #ifdef NT_THREADS
   interrupt_nt_io(th);
+#elif defined(PIKE_RESEND_IO_INTERRUPTS)
+  resend_io_interrupts(th);
 #endif
 }
 
@@ -4444,6 +4657,9 @@ void init_thread_obj(struct object *UNUSED(o))
   memset(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter_struct));
   THIS_THREAD->thread_obj = Pike_fp->current_object;
   THIS_THREAD->swapped = 0;
+#ifdef PIKE_RESEND_IO_INTERRUPTS
+  THIS_THREAD->io_resend = NULL;
+#endif
   THIS_THREAD->status=THREAD_NOT_STARTED;
   THIS_THREAD->flags = 0;
   THIS_THREAD->waiting = 0;
@@ -4467,13 +4683,14 @@ static void cleanup_thread_state (struct thread_state *th)
     return;
 
   if (th->flags & THREAD_FLAG_SIGNAL_MASK) {
-    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
+    th->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
       remove_callback(thread_interrupt_callback);
       thread_interrupt_callback = NULL;
     }
   }
 
+  STOP_IO_INTERRUPT_RESEND(th);
   co_destroy(& th->status_change);
   th_destroy(& th->id);
 }

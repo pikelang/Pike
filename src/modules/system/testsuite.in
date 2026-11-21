@@ -360,4 +360,66 @@ test_equal(map("%d%D%e%G%g%H%I%M%m%p%r%R%T%u%U%V%w"/2,
 test_eq(stringp((string)System.TM(1513871300)), 1)
 test_eq((int)System.TM(1513871300), 1513871300)
 
+dnl System.openlog() changing the ident while other threads log with
+dnl System.syslog() should only give messages with idents that were set.
+dnl LOG_PERROR copies the messages to stderr. The race needs CPU
+dnl contention, so this keeps every CPU thread busy with a child process
+dnl each while up to five child processes log.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond([[System["openlog"] && System["syslog"] && master()->resolv("Thread.Thread")]], [[
+  test_any([[
+    string child = #{
+      int stop;
+      System.openlog("idA0000", 4, 1 << 17);
+      Thread.Thread t = Thread.Thread(lambda() {
+          for (int i = 0; !stop; i++) {
+            System.openlog(sprintf("id%c%04d", 'A' + i % 2, i % 10000), 4,
+                           1 << 17);
+            array junk = map(enumerate(8), lambda(int j) {
+                return "######" + j;
+              });
+          }
+        });
+      map(enumerate(2), lambda(int id) {
+          return Thread.Thread(lambda() {
+              for (int i = 0; i < 50000; i++) System.syslog(1 << 6, "m");
+            });
+        })->wait();
+      stop = 1;
+      t->wait();
+      return 0;
+    #};
+    int cpus = 4;
+    catch {
+      cpus = max((int)Process.run(({ "getconf", "_NPROCESSORS_ONLN" }))->stdout,
+                 1);
+    };
+    array(Process.Process) busy = map(enumerate(cpus), lambda(int i) {
+        return Process.Process(RUNPIKE_ARRAY + ({ "-e", #{
+          int parent = getppid(), start = gethrtime();
+          for (int i = 0;; i++)
+            if (!(i & 0xfffff) &&
+                (getppid() != parent || gethrtime() - start > 300000000))
+              return 0;
+        #} }));
+      });
+    string res;
+    for (int run = 0; run < 5 && !res; run++) {
+      mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", child }));
+      array(string) lines = r->stderr / "\n" - ({ "" });
+      array(string) bad = filter(lines, lambda(string l) {
+          return !sscanf(l, "id%*[AB]%*4d%*[^:]: m%*s");
+        });
+      if (r->exitcode || !sizeof(lines) || sizeof(bad))
+        res = sprintf("run %d: exit %d, %d of %d lines bad, first %O",
+                      run + 1, r->exitcode, sizeof(bad), sizeof(lines),
+                      sizeof(bad) && bad[0]);
+    }
+    busy->kill(signum("SIGKILL"));
+    busy->wait();
+    return res;
+  ]], 0)
+]])
+]])
+
 END_MARKER

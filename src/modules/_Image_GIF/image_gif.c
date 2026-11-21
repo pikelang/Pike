@@ -64,8 +64,6 @@ static struct program *image_program = NULL;
 static struct program *image_colortable_program = NULL;
 static struct program *image_layer_program = NULL;
 
-/*  #ifdef FAKE_DYNAMIC_LOAD */
-
 /* These should really be cached in local, static variables */
 #define image_lay ((void(*)(INT32))PIKE_MODULE_IMPORT(Image,image_lay))
 
@@ -80,8 +78,6 @@ static struct program *image_layer_program = NULL;
 
 #define image_colortable_internal_floyd_steinberg \
   ((void(*)(struct neo_colortable *))PIKE_MODULE_IMPORT(Image,image_colortable_internal_floyd_steinberg))
-
-/*  #endif */
 
 #else
 extern struct program *image_program;
@@ -2788,11 +2784,9 @@ struct program *image_encoding_gif_program=NULL;
 
 PIKE_MODULE_INIT
 {
-#ifndef FAKE_DYNAMIC_LOAD
   image_program = PIKE_MODULE_IMPORT(Image, image_program);
   image_colortable_program=PIKE_MODULE_IMPORT(Image, image_colortable_program);
   image_layer_program = PIKE_MODULE_IMPORT(Image, image_layer_program);
-#endif
 
   if (!image_program || !image_colortable_program || !image_layer_program) {
     yyerror("Could not load Image module.");

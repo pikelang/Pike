@@ -327,7 +327,7 @@ void font_load(INT32 args)
       size = file_size(fd);
       if (size > 0)
       {
-	THREADS_ALLOW();
+	IMAGE_THREADS_ALLOW();
 #ifdef HAVE_MMAP
 	fh = (struct file_head *)
 	  mmap(0, size, PROT_READ, MAP_SHARED, fd, 0);
@@ -348,7 +348,7 @@ void font_load(INT32 args)
 #ifdef HAVE_MMAP
 	}
 #endif
-	THREADS_DISALLOW();
+	IMAGE_THREADS_DISALLOW();
 
       } /* size failure */
 #ifdef FONT_DEBUG
@@ -617,7 +617,7 @@ void font_write(INT32 args)
      {
       case 0:
 	to_write0 = STR0(sp[j-args].u.string);
-	/* THREADS_ALLOW(); */
+	/* IMAGE_THREADS_ALLOW(); */
 	/* Can't release the thread here; this would point to freed
 	 * memory if font_load gets called. We'd have to refcount font
 	 * structs to cope with that, but since the released window
@@ -639,11 +639,11 @@ void font_write(INT32 args)
 	    xsize += char_space(this, c);
 	  }
 	}
-	/* THREADS_DISALLOW(); */
+	/* IMAGE_THREADS_DISALLOW(); */
 	break;
       case 1:
 	to_write1 = STR1(sp[j-args].u.string);
-	/* THREADS_ALLOW(); */
+	/* IMAGE_THREADS_ALLOW(); */
 	for (i = 0; i < to_write_len; i++)
         {
 	  c=*(to_write1++);
@@ -659,11 +659,11 @@ void font_write(INT32 args)
 	    xsize += char_space(this, c);
 	  }
 	}
-	/* THREADS_DISALLOW(); */
+	/* IMAGE_THREADS_DISALLOW(); */
 	break;
       case 2:
 	to_write2 = STR2(sp[j-args].u.string);
-	/* THREADS_ALLOW(); */
+	/* IMAGE_THREADS_ALLOW(); */
 	for (i = 0; i < to_write_len; i++)
         {
 	  c=*(to_write2++);
@@ -679,7 +679,7 @@ void font_write(INT32 args)
 	    xsize += char_space(this, c);
 	  }
 	}
-	/* THREADS_DISALLOW(); */
+	/* IMAGE_THREADS_DISALLOW(); */
 	break;
      }
    }

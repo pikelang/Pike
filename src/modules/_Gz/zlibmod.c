@@ -344,9 +344,24 @@ static void do_mt_unlock (PIKE_MUTEX_T *lock)
 }
 #endif
 
+/* The memory of a buffer object (Stdio.Buffer, String.Buffer,
+ * System.Memory) may be changed, moved or freed by another thread while
+ * zlib reads it without the interpreter lock, so a copy of it is used
+ * instead, which the caller frees. */
+static void *gz_copy_data(struct memobj *data)
+{
+  void *copy = xalloc(data->len + 1);
+  memcpy(copy, data->ptr, data->len);
+  data->ptr = copy;
+  return copy;
+}
+
+/* The input is set once this->lock is held: another thread using the
+ * same object may be waiting for it, and would replace it before. */
 static int do_deflate(struct byte_buffer *buf,
 		      struct zipper *this,
-		      int flush)
+                      int flush,
+                      Bytef *in, unsigned INT32 in_len)
 {
    int ret=0;
 
@@ -357,6 +372,8 @@ static int do_deflate(struct byte_buffer *buf,
    THREADS_DISALLOW();
    SET_ONERROR (uwp, do_mt_unlock, &this->lock);
 #endif
+   this->gz.next_in = in;
+   this->gz.avail_in = in_len;
 
    if(!this->gz.state)
       ret=Z_STREAM_ERROR;
@@ -457,7 +474,7 @@ void low_zlibmod_pack(struct memobj data, struct byte_buffer *buf,
 
   mt_init(&z.lock);
 
-  ret = do_deflate(buf, &z, Z_FINISH);
+  ret = do_deflate(buf, &z, Z_FINISH, z.gz.next_in, z.gz.avail_in);
 
   deflateEnd(&z.gz);
   mt_destroy(&z.lock);
@@ -539,7 +556,8 @@ static void gz_compress(INT32 args)
   struct svalue *data_arg;
   struct memobj data;
   struct byte_buffer buf;
-  ONERROR err;
+  void *copy = NULL;
+  ONERROR err, copy_err;
 
   int wbits = 15;
   int raw = 0;
@@ -580,10 +598,16 @@ static void gz_compress(INT32 args)
   if( raw )
     wbits = -wbits;
 
+  if (TYPEOF(*data_arg) == PIKE_T_OBJECT) {
+    copy = gz_copy_data(&data);
+    SET_ONERROR(copy_err, free, copy);
+  }
+
   buffer_init(&buf);
   SET_ONERROR(err, buffer_free, &buf);
   low_zlibmod_pack(data, &buf, level, strategy, wbits);
   UNSET_ONERROR(err);
+  if (copy) CALL_AND_UNSET_ONERROR(copy_err);
 
   pop_n_elems(args);
   push_string(buffer_finish_pike_string(&buf));
@@ -620,7 +644,8 @@ static void gz_deflate(INT32 args)
   int flush, fail;
   struct zipper *this=THIS;
   struct byte_buffer buf;
-  ONERROR err;
+  void *copy = NULL;
+  ONERROR err, copy_err;
 
   if(THIS->state == 1)
   {
@@ -691,14 +716,18 @@ static void gz_deflate(INT32 args)
   if (data.len > (size_t)(unsigned INT32)~0u)
     Pike_error("Input too large for gz_deflate->deflate().\n");
 
-  this->gz.next_in=(Bytef *)data.ptr;
-  this->gz.avail_in = (unsigned INT32)(data.len);
+  if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+    copy = gz_copy_data(&data);
+    SET_ONERROR(copy_err, free, copy);
+  }
 
   buffer_init(&buf);
 
   SET_ONERROR(err,buffer_free,&buf);
-  fail=do_deflate(&buf,this,flush);
+  fail=do_deflate(&buf,this,flush,(Bytef *)data.ptr,
+                  (unsigned INT32)(data.len));
   UNSET_ONERROR(err);
+  if (copy) CALL_AND_UNSET_ONERROR(copy_err);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
@@ -865,9 +894,13 @@ static void gz_inflate_create(INT32 args)
   }
 }
 
+/* As do_deflate(). At the end of the stream, *rest gets what is left
+ * of the input, if rest is given. */
 static int do_inflate(struct byte_buffer *buf,
 		      struct zipper *this,
-		      int flush)
+                      int flush,
+                      Bytef *in, unsigned INT32 in_len,
+                      struct pike_string **rest)
 {
   int fail=0;
 
@@ -878,6 +911,8 @@ static int do_inflate(struct byte_buffer *buf,
   THREADS_DISALLOW();
   SET_ONERROR (uwp, do_mt_unlock, &this->lock);
 #endif
+  this->gz.next_in = in;
+  this->gz.avail_in = in_len;
 
   if(!this->gz.state)
   {
@@ -917,6 +952,9 @@ static int do_inflate(struct byte_buffer *buf,
     } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
   }
 
+  if (rest && fail == Z_STREAM_END)
+    *rest = make_shared_binary_string((const char *)this->gz.next_in,
+                                      this->gz.avail_in);
 #ifdef _REENTRANT
   CALL_AND_UNSET_ONERROR (uwp);
 #endif
@@ -966,7 +1004,7 @@ void low_zlibmod_unpack(struct memobj data, struct byte_buffer *buf, int raw)
   }
 
   mt_init(&z.lock);
-  ret = do_inflate(buf, &z, Z_SYNC_FLUSH);
+  ret = do_inflate(buf, &z, Z_SYNC_FLUSH, z.gz.next_in, z.gz.avail_in, NULL);
   mt_destroy(&z.lock);
   inflateEnd( &z.gz );
 
@@ -998,7 +1036,8 @@ static void gz_uncompress(INT32 args)
 {
   struct byte_buffer buf;
   struct memobj data;
-  ONERROR err;
+  void *copy = NULL;
+  ONERROR err, copy_err;
   int raw = 0;
 
   if(args<1)
@@ -1035,10 +1074,16 @@ static void gz_uncompress(INT32 args)
       SIMPLE_ARG_TYPE_ERROR("uncompress", 2, "int");
   }
 
+  if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+    copy = gz_copy_data(&data);
+    SET_ONERROR(copy_err, free, copy);
+  }
+
   buffer_init(&buf);
   SET_ONERROR(err, buffer_free, &buf);
   low_zlibmod_unpack(data, &buf, raw);
   UNSET_ONERROR(err);
+  if (copy) CALL_AND_UNSET_ONERROR(copy_err);
 
   pop_n_elems(args);
   push_string(buffer_finish_pike_string(&buf));
@@ -1073,7 +1118,9 @@ static void gz_inflate(INT32 args)
   int fail;
   struct zipper *this=THIS;
   struct byte_buffer buf;
-  ONERROR err;
+  struct pike_string *rest = NULL;
+  void *copy = NULL;
+  ONERROR err, copy_err;
 
   if(!THIS->gz.state)
     Pike_error("gz_inflate not initialized or destructed\n");
@@ -1110,14 +1157,18 @@ static void gz_inflate(INT32 args)
   if (data.len > (size_t)(unsigned INT32)~0u)
     Pike_error("Input too large for gz_inflate->inflate().\n");
 
-  this->gz.next_in=(Bytef *)data.ptr;
-  this->gz.avail_in = (unsigned INT32)(data.len);
+  if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
+    copy = gz_copy_data(&data);
+    SET_ONERROR(copy_err, free, copy);
+  }
 
   buffer_init(&buf);
 
   SET_ONERROR(err,buffer_free,&buf);
-  fail=do_inflate(&buf,this,Z_SYNC_FLUSH);
+  fail=do_inflate(&buf,this,Z_SYNC_FLUSH,(Bytef *)data.ptr,
+                  (unsigned INT32)(data.len),&rest);
   UNSET_ONERROR(err);
+  if (copy) CALL_AND_UNSET_ONERROR(copy_err);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
@@ -1139,8 +1190,8 @@ static void gz_inflate(INT32 args)
       push_string(old_epilogue);
       this->epilogue = NULL;
     }
-    push_string(make_shared_binary_string((const char *)this->gz.next_in,
-					  this->gz.avail_in));
+    push_string(rest);
+    rest = NULL;
     if(old_epilogue)
       f_add(2);
     this->epilogue = (--sp)->u.string;

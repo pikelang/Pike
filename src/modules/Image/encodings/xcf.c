@@ -1215,7 +1215,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
   x=y=0;
 
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   for(l=0; l<(unsigned)tiles->size; l++)
   {
     struct object *to = tiles->item[l].u.object;
@@ -1399,7 +1399,7 @@ void image_xcf_f__decode_tiles( INT32 args )
       y += TILE_HEIGHT;
     }
   }
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
   if(colortable) {
     UNSET_ONERROR(err);
     free( colortable );

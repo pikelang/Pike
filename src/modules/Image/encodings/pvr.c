@@ -709,14 +709,14 @@ void image_pvr_f_encode(INT32 args)
       pvr_encode_rect(attr, img->img, dst, img->ysize, img->xsize);
 
   if(compress) {
-    THREADS_ALLOW();
+    IMAGE_THREADS_ALLOW();
     gla(gla_st, 30);
     if(alpha != NULL)
       pvr_encode_codebook_alpha(attr, gla_st->C, dst);
     else
       pvr_encode_codebook(attr, gla_st->C, dst);
     memcpy(dst+256*4*2, gla_st->P, (img->xsize>>1)*(img->ysize>>1));
-    THREADS_DISALLOW();
+    IMAGE_THREADS_DISALLOW();
   }
 
   if(gla_st)

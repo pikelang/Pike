@@ -1475,6 +1475,14 @@ jtransform_adjust_parameters (j_decompress_ptr srcinfo,
    */
   dstinfo->image_width = info->output_width;
   dstinfo->image_height = info->output_height;
+#if JPEG_LIB_VERSION >= 70
+  /* jpeg_copy_critical_parameters() sets these from the source, and the
+   * compressor may lay out the blocks by them instead of image_width
+   * and image_height.
+   */
+  dstinfo->jpeg_width = info->output_width;
+  dstinfo->jpeg_height = info->output_height;
+#endif
 
   /* Transpose destination image parameters */
   switch (info->transform) {

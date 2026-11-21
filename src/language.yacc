@@ -2239,7 +2239,7 @@ constant_expr: safe_assignment_expr
     {
       int tmp = Pike_compiler->compiler_pass;
       $$ = mknode(F_COMMA_EXPR, $1, 0);
-      optimize_node($$);
+      optimize_constant($$);
       Pike_compiler->compiler_pass = tmp;
     }
 
@@ -2273,7 +2273,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
     {
       int tmp=Pike_compiler->compiler_pass;
       $3=mknode(F_COMMA_EXPR,$3,0);
-      optimize_node($3);
+      optimize_constant($3);
       Pike_compiler->compiler_pass=tmp;
     }
 
@@ -4169,6 +4169,8 @@ optional_block: /* EMPTY */ { $$=0; }
     /* block code */
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
+    /* This implicit lambda's first block includes its arguments. */
+    Pike_compiler->compiler_frame->last_block_level = 0;
 
     /* Declare the argument variable.
      *
@@ -5875,7 +5877,7 @@ static int compiler_declare_local_function(int modifiers,
   node *save_attrs = Pike_compiler->current_attributes;
   struct pike_string *name;
 
-  if (localid >= parent->last_block_level &&
+  if (localid >= 0 && localid >= parent->last_block_level &&
       (parent->local_names[localid].flags & LOCAL_VAR_IS_FUNCTION)) {
     id = local_function_identifier(parent->local_names[localid].def);
     copy_shared_string(name, ID_FROM_INT(Pike_compiler->new_program, id)->name);
