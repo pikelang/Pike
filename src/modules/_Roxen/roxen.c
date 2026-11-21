@@ -73,7 +73,7 @@ static void f_hp_exit( struct object *UNUSED(o) )
 }
 
 static void f_hp_feed( INT32 args )
-/*! @decl array(string|mapping) feed(string data, void|int(0..1) keep_case)
+/*! @decl array(string|mapping)|zero feed(string data, void|int(0..1) keep_case)
  *!
  *! Feeds data into the parser. Once enough data has been fed the
  *! result array is returned. Feeding data after that destroys the
@@ -757,7 +757,8 @@ PIKE_MODULE_INIT
   set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
   ADD_FUNCTION("feed", f_hp_feed,
-	       tFunc(tStr tOr(tInt01,tVoid),tArr(tOr(tStr,tMapping))), 0);
+               tFunc(tStr tOr(tInt01,tVoid),
+                     tOr(tArr(tOr(tStr,tMapping)),tZero)), 0);
   ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid), ID_PROTECTED );
   end_class( "HeaderParser", 0 );
 }
