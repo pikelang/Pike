@@ -4987,6 +4987,32 @@ static void optimize(node *n)
 
     if(!n->parent) break;
 
+    if ((Pike_compiler->flags & COMPILATION_CONSTANT_EXPRESSION) &&
+        n->token == F_APPLY && CAR(n) && CDR(n) &&
+        CAR(n)->token == F_CONSTANT &&
+        TYPEOF(CAR(n)->u.sval) == PIKE_T_FUNCTION &&
+        SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN &&
+        CAR(n)->u.sval.u.efun->function == f_object_program) {
+      node *arg = CDR(n);
+      struct program_state *state = Pike_compiler;
+      int inherit_num;
+      while (arg && arg->token == F_ARG_LIST && CAR(arg) && !CDR(arg))
+        arg = CAR(arg);
+      if (arg && arg->token == F_THIS) {
+        inherit_num = arg->u.integer.b;
+        while (state && state->new_program->id != arg->u.integer.a)
+          state = state->previous;
+      } else state = NULL;
+      if (state) {
+        /* Runtime this_program must still follow the object's inherit.
+         * Only explicit constant expressions name the lexical program.
+         */
+        tmp1 = mkprgnode(inherit_num < 0 ? state->new_program :
+                        state->new_program->inherits[inherit_num].prog);
+        goto use_tmp1;
+      }
+    }
+
 #ifdef PIKE_DEBUG
     if(l_flag > 3 && n)
     {
@@ -5075,6 +5101,17 @@ void optimize_node(node *n)
     optimize(n);
     check_tree(n,0);
   }
+}
+
+/* Unlike runtime folding, constant expressions can bind this_program
+ * to the program under compilation, without constructing a fake object.
+ */
+void optimize_constant(node *n)
+{
+  int flags = Pike_compiler->flags;
+  Pike_compiler->flags |= COMPILATION_CONSTANT_EXPRESSION;
+  optimize_node(n);
+  Pike_compiler->flags = flags;
 }
 
 struct timer_oflo

@@ -18535,4 +18535,68 @@ test_any_equal([[
   return compile_string(source)()->run();
 ]], ({ ({ 132365, 132375 }), 514 }))
 
+dnl Issue #10238: this_program in explicit constant expressions.
+test_any([[
+  class Ref {
+    inherit Pike.Annotation;
+    @constant;
+    mixed target;
+    protected void create(mixed p) { target = p; }
+  }
+  class Node {
+    @Ref(this_program);
+    @Ref(this_program): object next;
+    @Ref(this::this_program): void method() {}
+    @Ref(([ 0: this_program ])): object tagged;
+  }
+  object p = Node();
+  mapping a = mkmapping(indices(p), annotations(p));
+  return Program.annotations(Node)[0]->target == (program)Node &&
+         a->next[0]->target == (program)Node &&
+         a->method[0]->target == (program)Node &&
+         a->tagged[0]->target[0] == (program)Node ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Base {
+    mixed lexical() { constant p = this_program; return p; }
+    mixed qualified() { constant p = this::this_program; return p; }
+    mixed runtime() { return this_program; }
+  }
+  class Derived { inherit Base; }
+  object p = Derived();
+  return p->lexical() == (program)Base &&
+         p->qualified() == (program)Base &&
+         p->runtime() == (program)Derived ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Base { int value; }
+  class Derived {
+    inherit Base;
+    mixed selected() { constant p = Base::this_program; return p; }
+  }
+  return Derived()->selected() == (program)Base ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Node {
+    @global::this_program: int field;
+  }
+  object p = Node();
+  mapping a = mkmapping(indices(p), annotations(p));
+  return a->field[0] == (program)object_program(this_object()) ? 0 : 1;
+]], 0)
+
+test_compile_error([[
+  class Bad {
+    int this_program;
+    @this_program: int value;
+  }
+]])
+
+test_compile_error([[
+  class Bad { @this: int value; }
+]])
+
 END_MARKER
