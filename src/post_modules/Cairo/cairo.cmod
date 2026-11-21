@@ -813,7 +813,7 @@ PIKECLASS Path
      *! Returns the current value, or @[UNDEFINED] if the iterator
      *! doesn't point to any item.
      */
-    PIKEFUN array(int|array(float)) _iterator_value()
+    PIKEFUN array(int|array(float))|zero _iterator_value()
       flags ID_PROTECTED;
     {
       if (THIS->pos < 0 || THIS->pos >= THIS->path->num_data)
@@ -3589,7 +3589,7 @@ PIKECLASS PDFSurface
     f_aggregate(num_versions);
   }
 
-  /*! @decl string version_to_string(int version)
+  /*! @decl string|zero version_to_string(int version)
    *!
    *! Get the string representation of the given version id.  This
    *! function will return @expr{UNDEFINED@} if version isn't valid.
@@ -3599,7 +3599,7 @@ PIKECLASS PDFSurface
    *! @returns
    *!   the string associated to given version.
    */
-  PIKEFUN string version_to_string(int version)
+  PIKEFUN string|zero version_to_string(int version)
     get_all_args;
   {
     const char *str =  cairo_pdf_version_to_string(version);
@@ -4036,7 +4036,7 @@ PIKECLASS PSSurface
     f_aggregate(num_levels);
   }
 
-  /*! @decl string level_to_string(int level)
+  /*! @decl string|zero level_to_string(int level)
    *!
    *! Get the string representation of the given level id.  This
    *! function will return @expr{UNDEFINED@} if level id isn't valid.
@@ -4049,7 +4049,7 @@ PIKECLASS PSSurface
    *! @returns
    *!   the string associated to given level.
    */
-  PIKEFUN string level_to_string(int level)
+  PIKEFUN string|zero level_to_string(int level)
     get_all_args;
   {
     const char *str = cairo_ps_level_to_string(level);
@@ -4494,7 +4494,7 @@ PIKECLASS TeeSurface
     RETURN;
   }
 
-  /*! @decl void add(Surface *target)
+  /*! @decl void add(Surface target)
    *!
    *! Adds a new target surface to the list of replicas of a tee
    *! surface.
@@ -4502,7 +4502,7 @@ PIKECLASS TeeSurface
    *! @param target
    *!   the surface to add
    */
-  PIKEFUN void add(Surface *target)
+  PIKEFUN void add(Surface target)
     get_all_args;
   {
     struct Cairo_Surface_struct *target_surface;
@@ -7719,7 +7719,7 @@ PIKECLASS Context
    *! Transform a coordinate from user space to device space by
    *! multiplying the given point by the current transformation matrix
    *! (CTM).
-   '!
+   *!
    *! @param x
    *!   X value of coordinate
    *! @param y
