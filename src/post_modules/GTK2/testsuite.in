@@ -1,5 +1,5 @@
 START_MARKER
-cond_begin([[ master()->resolv("GTK2")->version ]])
+cond_begin([[ master()->resolv("GTK2.version") ]])
 
 test_true( arrayp(GTK2.version()) )
 

@@ -1,5 +1,5 @@
 START_MARKER
-cond_begin([[ master()->resolv("_Image_GIF")->encode ]])
+cond_begin([[ master()->resolv("_Image_GIF.encode") ]])
 
 dnl  NOTE: We are just testing the API here, not if the module actually
 dnl  performed correctly.

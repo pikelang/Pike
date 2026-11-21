@@ -3,7 +3,7 @@ START_MARKER
 dnl Note: This module has some tests with an external test script in
 dnl src/modules/_Stdio
 
-cond_begin( Crypto.Hash )
+cond_begin([[ master()->resolv("Crypto.Hash") ]])
 
 test_do( SSL.https )
 

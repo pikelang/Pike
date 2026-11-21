@@ -1,5 +1,5 @@
 START_MARKER
-cond_begin([[ master()->resolv("_Image_JPEG")->encode ]])
+cond_begin([[ master()->resolv("_Image_JPEG.encode") ]])
 dnl Encoding an image as JPEG in several threads while another replaces
 dnl its memory with _decode() or destructs it should not crash. Without
 dnl the fix it crashes in every run.

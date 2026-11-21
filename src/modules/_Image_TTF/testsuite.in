@@ -1,4 +1,4 @@
 START_MARKER
-cond_begin([[ master()->resolv("_Image_TTD")->encode ]])
+cond_begin([[ master()->resolv("_Image_TTF") ]])
 cond_end
 END_MARKER
