@@ -744,7 +744,7 @@ PIKECLASS Hash
 
 #include <nettle/balloon.h>
 
-  /*! @decl string(0..127) balloon(string(0..255) password, @
+  /*! @decl string(0..255) balloon(string(0..255) password, @
    *!                              string(0..255) salt, @
    *!                              int(1..) s_cost, @
    *!                              int(1..) rounds)
@@ -778,7 +778,7 @@ PIKECLASS Hash
    *! @seealso
    *!   @[crypt_hash()]
    */
-  PIKEFUN string balloon(string password, string salt,
+  PIKEFUN string(0..255) balloon(string(0..255) password, string(0..255) salt,
                          int(1..) s_cost, int(1..) rounds)
     optflags OPT_EXTERNAL_DEPEND;
   {
@@ -790,6 +790,9 @@ PIKECLASS Hash
 
     if (!meta)
       Pike_error("HashInfo not properly initialized.\n");
+
+    NO_WIDE_STRING(password);
+    NO_WIDE_STRING(salt);
 
     password->flags |= STRING_CLEAR_ON_EXIT;
 
