@@ -7585,18 +7585,18 @@ dnl belong to the thread that asked for it.
 dnl Cleaning up a finished thread that never took its interrupt should
 dnl not lose the interrupt of the thread doing it. The finished thread
 dnl interrupted itself in a destructor, where interrupts wait; the main
-dnl thread interrupts itself in a destructor too, and there destructs the
-dnl finished thread's Thread object, which cleans it up. Without the fix
-dnl the main thread's interrupt was lost in every run.
+dnl thread interrupts itself in a destructor too, and there releases the
+dnl last reference to the finished thread's Thread object, cleaning it up.
+dnl Without the fix the main thread's interrupt was lost in every run.
   test_any([[
     mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
       class SelfInterrupt {
         protected void _destruct() { this_thread()->interrupt(); }
       };
-      class Cleanup(Thread.Thread finished) {
+      class Cleanup(Thread.Thread|zero finished) {
         protected void _destruct() {
           this_thread()->interrupt("Main thread interrupted.\n");
-          destruct(finished);
+          finished = 0;
         }
       };
       void noop() {};
@@ -7620,8 +7620,9 @@ dnl the main thread's interrupt was lost in every run.
       write("%s\n", err ? describe_error(err) : "lost");
       return 0;
     #} }));
-    if (r->exitcode || !has_value(r->stdout, "Main thread interrupted") &&
-        !has_value(r->stdout, "skipped"))
+    if (r->exitcode || sizeof(r->stderr) ||
+        (!has_value(r->stdout, "Main thread interrupted") &&
+         !has_value(r->stdout, "skipped")))
       return sprintf("exit %d: %s%s", r->exitcode, r->stdout, r->stderr);
     return 0;
   ]], 0)
