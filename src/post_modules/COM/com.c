@@ -1339,7 +1339,12 @@ static void f_cobj__indices(INT32 args)
 /*   } */
 /* } */
 
-/*! @decl CObj CreateObject(string prog_id)
+/*! @decl CObj|zero CreateObject(string prog_id)
+ *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) if the object could not be created
+ *!   (eg because @[prog_id] does not resolve to a registered CLSID,
+ *!   or the COM server could not be instantiated).
  */
 static void f_create_object(INT32 args)
 {
@@ -1390,7 +1395,10 @@ static void f_create_object(INT32 args)
   }
 }
 
-/*! @decl object GetObject(string|void filename, string|void prog_id)
+/*! @decl object|zero GetObject(string|void filename, string|void prog_id)
+ *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) if the object could not be obtained.
  */
 static void f_get_object(INT32 args)
 {
@@ -1923,9 +1931,10 @@ PIKE_MODULE_INIT
 /*   ADD_FUNCTION("get_version", f_get_version, tFunc(tVoid,tInt), 0); */
 /*   ADD_FUNCTION("get_nt_systeminfo", f_get_nt_systeminfo, */
 /*                     tFunc(tVoid,tOr3(tStr,tArray,tMapping), 0); */
-  ADD_FUNCTION("CreateObject", f_create_object, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("CreateObject", f_create_object,
+               tFunc(tStr,tOr(tObj,tZero)), 0);
   ADD_FUNCTION("GetObject", f_get_object,
-               tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid),tObj), 0);
+               tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid),tOr(tObj,tZero)), 0);
   ADD_FUNCTION("GetTypeInfo", f_get_typeinfo, tFunc(tObj,tMix), 0);
   ADD_FUNCTION("GetConstants", f_get_constants,
                tFunc(tOr(tObj,tStr),tMapping), 0);
