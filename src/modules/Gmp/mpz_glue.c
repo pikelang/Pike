@@ -968,7 +968,7 @@ static void mpzmod_size(INT32 args)
     push_int(mpz_sizeinbase(THIS, base));
 }
 
-/*! @decl string|int|float|zero cast(string type)
+/*! @decl string|int|float cast(string type)
  *!
  *! Cast this mpz object to another type. Allowed types are string,
  *! int and float.
@@ -1965,13 +1965,18 @@ static void mpzmod_powm(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz|Gmp.mpq|float ``**(int|float|Gmp.mpz|Gmp.mpq x)
+/*! @decl int|Gmp.mpz|Gmp.mpq|float ``**(int|float|Gmp.mpz|Gmp.mpq| @
+ *!                                       Gmp.mpf x)
  *!
  *! Return @[x] raised to the value of this object. The case when zero is
- *! raised to zero yields one. When this object has a negative value and
- *! @[x] is not a float, a @[Gmp.mpq] object will be returned. When @[x]
- *! is a float, or an object other than a @[Gmp.mpz], a @expr{float@}
- *! is returned.
+ *! raised to zero yields one. A @expr{float@} base gives a @expr{float@}
+ *! result. @[Gmp.mpq] bases are first truncated toward zero. @[Gmp.mpf]
+ *! bases are first converted to integers, rounding toward negative infinity
+ *! with MPFR support, or toward zero without it.
+ *! Integer bases give a @[Gmp.mpz] result, or a @[Gmp.mpq] result for
+ *! negative exponents. The special cases with exponent zero or ordinary
+ *! integer bases @expr{-1@}, @expr{0@} and @expr{1@} can return an ordinary
+ *! @expr{int@}.
  *!
  *! @seealso
  *!   @[pow]
@@ -2023,13 +2028,14 @@ static void mpzmod_rpow(INT32 args)
   apply_lfun(sp[-2].u.object, LFUN_POW, 1);
 }
 
-/*! @decl Gmp.mpz|Gmp.mpq|float pow(int|float|Gmp.mpz x)
+/*! @decl Gmp.mpz|Gmp.mpq|float pow(int|float|Gmp.mpz|Gmp.mpq|Gmp.mpf x)
  *!
  *! Return this mpz object raised to @[x]. The case when zero is
  *! raised to zero yields one. If @[x] is a negative integer and this
  *! object isn't @expr{-1@} or @expr{1@}, a @[Gmp.mpq] object is
  *! returned (dividing by zero throws an error, as usual).
- *! If @[x] is a float, a @expr{float@} is returned.
+ *! If @[x] is a @expr{float@}, @[Gmp.mpq] or @[Gmp.mpf], a @expr{float@}
+ *! is returned.
  *!
  *! @seealso
  *!   @[powm]
@@ -2489,7 +2495,7 @@ PMOD_EXPORT void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
   ADD_FUNCTION("pow", mpzmod_pow,tMpz_pow_type, 0);                  \
   ADD_FUNCTION("`**", mpzmod_pow,tMpz_pow_type, 0);                  \
-  ADD_FUNCTION("``**", mpzmod_rpow,tMpz_pow_type, 0);                \
+  ADD_FUNCTION("``**", mpzmod_rpow,tMpz_rpow_type, 0);               \
 									\
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
   ADD_FUNCTION("hamdist", mpzmod_hamdist,tFunc(tMpz_arg,tInt), 0);	\

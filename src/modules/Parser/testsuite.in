@@ -2,6 +2,15 @@ START_MARKER
 
 dnl - Parser.HTML
 
+// A zero argument clears the splice name and returns the previous setting.
+test_equal(_typeof(Parser.HTML()->splice_arg),
+           typeof((function(void|string|zero:string|zero))0))
+test_any_equal([[
+  Parser.HTML parser = Parser.HTML();
+  parser->splice_arg("splice");
+  return ({ parser->splice_arg(0), parser->splice_arg() });
+]], ({ "splice", 0 }))
+
 define(test_parser, [[
   define([[WIDENER]], "\0")
   test_any_equal($1,$2)

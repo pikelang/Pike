@@ -5032,10 +5032,11 @@ static void html_get_extra(INT32 args)
     ref_push_array (&empty_array);
 }
 
-/*! @decl string|zero splice_arg(void|string name)
+/*! @decl string|zero splice_arg(void|string|zero name)
  *!
  *! If given a string, it sets the splice argument name to it. It
- *! returns the old splice argument name, or zero if none was set.
+ *! returns the old splice argument name, or zero if none was set. Passing
+ *! zero clears the splice argument name.
  *!
  *! If a splice argument name is set, it's parsed in all tags, both
  *! those with callbacks and those without. Wherever it occurs, its
@@ -5608,7 +5609,7 @@ void init_parser_html(void)
 		tFunc(tNone,tArray),0);
 
    ADD_FUNCTION("splice_arg",html_splice_arg,
-                tFunc(tOr(tVoid,tStr),tOr(tStr,tZero)),0);
+                tFunc(tOr3(tVoid,tStr,tZero),tOr(tStr,tZero)),0);
 
    ADD_FUNCTION("ignore_tags",html_ignore_tags,
 		tFunc(tOr(tVoid,tInt),tInt),0);

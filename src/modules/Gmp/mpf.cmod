@@ -343,11 +343,11 @@ PIKECLASS mpf
       RETURN 0;
     }
 
-  /*! @decl protected mixed cast(string to)
+  /*! @decl protected string|int|float cast(string to)
    *! Casts to @expr{"string"@}, @expr{"int"@} or @expr{"float"@}.
    *! Returns @[UNDEFINED] for any other requested type.
    */
-  PIKEFUN mixed cast(string s)
+  PIKEFUN string|int|float cast(string s)
     flags ID_PROTECTED;
   {
     pop_stack(); /* s have at least one more reference. */
@@ -780,7 +780,7 @@ PIKECLASS mpf
     RETURN res;							\
   }
 
-  /*! @decl mpf pow(int|float|object exp)
+  /*! @decl mpf pow(int|float|Gmp.mpz|Gmp.mpq|Gmp.mpf exp)
    *!
    *! Returns this number raised to the power of @[exp].
    *!
@@ -791,7 +791,8 @@ PIKECLASS mpf
    *! Without mpfr support, @[exp] must have an integer value: an
    *! @expr{int@}, a @[Gmp.mpz], or an integer-valued @expr{float@}
    *! (a @[Gmp.mpq] or @[Gmp.mpf] exponent is not supported in this
-   *! case). Negative integer exponents are supported.
+   *! case). Negative integer exponents are supported. Integer object
+   *! exponents must fit in a signed C @tt{long@}.
    */
 
   /*! @decl mpf sqrt()
@@ -965,7 +966,9 @@ PIKECLASS mpf
         if( arg->u.object->prog == mpzmod_program ||
             arg->u.object->prog == bignum_program )
         {
-          ai = mpz_get_ui(OBTOMPZ(arg->u.object));
+          if (!mpz_fits_slong_p(OBTOMPZ(arg->u.object)))
+            Pike_error("Exponent is out of range without the mpfr library.\n");
+          ai = mpz_get_si(OBTOMPZ(arg->u.object));
         }
         else
         {

@@ -76,6 +76,8 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
  * exponent), so they need a broader return type than tMpz_ret.
  */
 #define tMpz_pow_type tFunc(tMpz_arg,tOr(tMpz_ret,tOr(tObj,tFloat)))
+/* Reverse power also has fast paths that return an ordinary integer. */
+#define tMpz_rpow_type tFunc(tMpz_arg,tOr3(tInt,tObj,tFloat))
 
 extern struct program *mpzmod_program;
 extern struct program *mpq_program;
