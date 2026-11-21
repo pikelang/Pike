@@ -127,25 +127,33 @@ protected __factory__ SimpleRegexp `()(void|string regexp) {
 
 // ****************************************************************
 
-//! Calls @[Regexp.PCRE.Plain.match] in a temporary regexp object.
+//! Calls @tt{match()@} in a temporary regexp object (usually
+//! @[Regexp.PCRE.Plain], but @[Regexp.PCRE1.Widestring] if only
+//! @[PCRE1] with wide-string support is available).
 //! Faster to type but slower to run...
 int(0..1) match(string regexp, string data) {
   return QUICK(regexp)->match(data);
 }
 
-//! Calls @[Regexp.PCRE.Plain.split] in a temporary regexp object.
+//! Calls @tt{split()@} in a temporary regexp object (usually
+//! @[Regexp.PCRE.Plain], but @[Regexp.PCRE1.Widestring] if only
+//! @[PCRE1] with wide-string support is available).
 //! Faster to type but slower to run...
 array split(string regexp, string data) {
   return QUICK(regexp)->split(data);
 }
 
-//! Calls @[Regexp.PCRE.Plain.split2] in a temporary regexp object.
+//! Calls @tt{split2()@} in a temporary regexp object (usually
+//! @[Regexp.PCRE.Plain], but @[Regexp.PCRE1.Widestring] if only
+//! @[PCRE1] with wide-string support is available).
 //! Faster to type but slower to run...
 array split2(string regexp, string data) {
   return QUICK(regexp)->split2(data);
 }
 
-//! Calls @[Regexp.PCRE.Plain.replace] in a temporary regexp object.
+//! Calls @tt{replace()@} in a temporary regexp object (usually
+//! @[Regexp.PCRE.Plain], but @[Regexp.PCRE1.Widestring] if only
+//! @[PCRE1] with wide-string support is available).
 //! Faster to type but slower to run...
 string replace(string regexp, string data,
 	       string|function(string:string) transform) {

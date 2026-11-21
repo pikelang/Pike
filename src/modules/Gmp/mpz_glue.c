@@ -702,7 +702,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 }
 
 /*! @decl string encode_json()
- *  Casts the object to a string.
+ *!  Casts the object to a string.
  */
 static void mpzmod_encode_json(INT32 args)
 {
@@ -968,7 +968,7 @@ static void mpzmod_size(INT32 args)
     push_int(mpz_sizeinbase(THIS, base));
 }
 
-/*! @decl string|int|float cast(string type)
+/*! @decl string|int|float|zero cast(string type)
  *!
  *! Cast this mpz object to another type. Allowed types are string,
  *! int and float.
@@ -1754,7 +1754,7 @@ static void mpzmod_sgn(INT32 args)
 
 /*! @decl Gmp.mpz sqrt()
  *!
- *! Return the the truncated integer part of the square root of this
+ *! Return the truncated integer part of the square root of this
  *! mpz object.
  */
 static void mpzmod_sqrt(INT32 args)
@@ -1965,11 +1965,13 @@ static void mpzmod_powm(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz|Gmp.mpq ``**(int|float|Gmp.mpz|Gmp.mpq x)
+/*! @decl Gmp.mpz|Gmp.mpq|float ``**(int|float|Gmp.mpz|Gmp.mpq x)
  *!
  *! Return @[x] raised to the value of this object. The case when zero is
  *! raised to zero yields one. When this object has a negative value and
- *! @[x] is not a float, a @[Gmp.mpq] object will be returned.
+ *! @[x] is not a float, a @[Gmp.mpq] object will be returned. When @[x]
+ *! is a float, or an object other than a @[Gmp.mpz], a @expr{float@}
+ *! is returned.
  *!
  *! @seealso
  *!   @[pow]
@@ -2021,10 +2023,13 @@ static void mpzmod_rpow(INT32 args)
   apply_lfun(sp[-2].u.object, LFUN_POW, 1);
 }
 
-/*! @decl Gmp.mpz pow(int|float|Gmp.mpz x)
+/*! @decl Gmp.mpz|Gmp.mpq|float pow(int|float|Gmp.mpz x)
  *!
  *! Return this mpz object raised to @[x]. The case when zero is
- *! raised to zero yields one.
+ *! raised to zero yields one. If @[x] is a negative integer and this
+ *! object isn't @expr{-1@} or @expr{1@}, a @[Gmp.mpq] object is
+ *! returned (dividing by zero throws an error, as usual).
+ *! If @[x] is a float, a @expr{float@} is returned.
  *!
  *! @seealso
  *!   @[powm]
@@ -2182,8 +2187,12 @@ static void mpzmod_hamdist(INT32 args)
   pop_stack();
 }
 
-/*! @decl Gmp.mpz _random(function(int:string(8bit)) random_string, @
+/*! @decl Gmp.mpz|zero _random(function(int:string(8bit)) random_string, @
  *!                       function(mixed:mixed) random)
+ *!
+ *! Returns a random value in the range @expr{[0, this)@}. If this
+ *! object is less than or equal to zero, @expr{0@} (zero) is
+ *! returned instead.
  */
 static void mpzmod_random(INT32 args)
 {
@@ -2478,14 +2487,14 @@ PMOD_EXPORT void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("_sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
   ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0); \
   ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
-  ADD_FUNCTION("pow", mpzmod_pow,tMpz_shift_type, 0);			\
-  ADD_FUNCTION("`**", mpzmod_pow,tMpz_shift_type, 0);			\
-  ADD_FUNCTION("``**", mpzmod_rpow,tMpz_shift_type, 0);			\
+  ADD_FUNCTION("pow", mpzmod_pow,tMpz_pow_type, 0);                  \
+  ADD_FUNCTION("`**", mpzmod_pow,tMpz_pow_type, 0);                  \
+  ADD_FUNCTION("``**", mpzmod_rpow,tMpz_pow_type, 0);                \
 									\
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
   ADD_FUNCTION("hamdist", mpzmod_hamdist,tFunc(tMpz_arg,tInt), 0);	\
 									\
-  ADD_FUNCTION("_random",mpzmod_random,tFunc(tFunction tFunction,tMpz_ret),0); \
+  ADD_FUNCTION("_random",mpzmod_random,tFunc(tFunction tFunction,tOr(tMpz_ret,tZero)),0); \
   									\
   ADD_FUNCTION("_encode",mpzmod__encode,tFunc(tNone,tStr8),0);		\
   									\

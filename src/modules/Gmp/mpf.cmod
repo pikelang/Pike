@@ -153,7 +153,7 @@ PIKECLASS mpf
    */
   PIKEFUN void create(void|string|int|float|object x, void|int UNUSED,
 		      void|int UNUSED)
-    type function(void|string|int|float|object,void|int(1..):void)|function(string,int(0..),int(2..36):void);
+    type function(void|string|int|float|object,void|int(0..):void)|function(string,int(0..),int(2..36):void);
     flags ID_PROTECTED;
   {
     int base=0;
@@ -343,9 +343,11 @@ PIKECLASS mpf
       RETURN 0;
     }
 
-  /*! @decl protected string|int|float cast(string to)
+  /*! @decl protected mixed cast(string to)
+   *! Casts to @expr{"string"@}, @expr{"int"@} or @expr{"float"@}.
+   *! Returns @[UNDEFINED] for any other requested type.
    */
-  PIKEFUN string|int|float cast(string s)
+  PIKEFUN mixed cast(string s)
     flags ID_PROTECTED;
   {
     pop_stack(); /* s have at least one more reference. */
@@ -517,7 +519,7 @@ PIKECLASS mpf
 
   /*! @decl Gmp.mpf set_precision(int(0..) prec)
    *! Sets the precision of the current object to be at
-   *! least @[prec] bits. The precision is limited to 128Kb.
+   *! least @[prec] bits. The precision is limited to 64Kb.
    *! The current object will be returned.
    */
   PIKEFUN mpf set_precision(int(0..) prec)
@@ -778,7 +780,18 @@ PIKECLASS mpf
     RETURN res;							\
   }
 
-  /*! @decl mpf pow(int|float|Gmp.mpz|Gmp.mpf exp)
+  /*! @decl mpf pow(int|float|object exp)
+   *!
+   *! Returns this number raised to the power of @[exp].
+   *!
+   *! If Pike was compiled with mpfr support, @[exp] may be any
+   *! @expr{int@}, @expr{float@}, @[Gmp.mpz], @[Gmp.mpq] or @[Gmp.mpf]
+   *! value, including fractional and negative exponents.
+   *!
+   *! Without mpfr support, @[exp] must have an integer value: an
+   *! @expr{int@}, a @[Gmp.mpz], or an integer-valued @expr{float@}
+   *! (a @[Gmp.mpq] or @[Gmp.mpf] exponent is not supported in this
+   *! case). Negative integer exponents are supported.
    */
 
   /*! @decl mpf sqrt()

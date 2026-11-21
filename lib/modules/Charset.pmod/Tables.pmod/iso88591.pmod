@@ -77,7 +77,7 @@ class encoder
   {
     repcb = rc;
   }
-  protected void create(string|void r, string|void rc)
+  protected void create(string|void r, function(string:string)|void rc)
   {
     replacement = r && low_convert(r);
     repcb = rc;

@@ -2364,7 +2364,7 @@ static void f_feed_std16e(INT32 args)
 }
 
 
-/*! @decl object rfc1345(string charset, int(0..1)|void encoder, string|void rep, @
+/*! @decl object|zero rfc1345(string charset, int(0..1)|void encoder, string|void rep, @
  *!                      function(string:string)|void repcb)
  *!
  *!   Low-level charset codec factory.
@@ -2392,7 +2392,7 @@ static void f_feed_std16e(INT32 args)
  *! @seealso
  *!   @[Charset.encoder()], @[Charset.decoder()]
  */
-PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
+PIKEFUN object|zero rfc1345(string charset, int|void encoder, string|void rep,
 		       function(string:string)|void repcb)
 {
   int lo=0, hi=num_charset_def-1;
