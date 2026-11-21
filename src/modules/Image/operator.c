@@ -94,7 +94,7 @@ extern struct program *image_program;
    d=img->img;								\
 									\
    i=img->xsize*img->ysize;						\
-   THREADS_ALLOW();							\
+   IMAGE_THREADS_ALLOW();							\
    if (oper)
 
 
@@ -134,7 +134,7 @@ STANDARD_OPERATOR_HEADER("`-")
       d->b=MAXIMUM(absdiff(s1->b,rgb.b),255);
       s1++; d++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -213,7 +213,7 @@ STANDARD_OPERATOR_HEADER("`+")
        s1++; d++;
      }
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -308,7 +308,7 @@ STANDARD_OPERATOR_HEADER("`*")
        s1++; d++;
      }
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -357,7 +357,7 @@ STANDARD_OPERATOR_HEADER("`%%")
       d->b=s1->b%(rgb.b?rgb.b:1);
       s1++; d++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -401,7 +401,7 @@ void image_operator_divide(INT32 args)
 	d->b=testrange(floor(s1->b/(q*(rgb.b+1))+0.5));
 	s1++; d++;
       }
-    THREADS_DISALLOW();
+    IMAGE_THREADS_DISALLOW();
     pop_n_elems(args);
     push_object(o);
   }
@@ -445,7 +445,7 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
       d->b=MAXIMUM(s1->b,rgb.b);
       s1++; s2++; d++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -487,7 +487,7 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
       d->b=MINIMUM(s1->b,rgb.b);
       s1++; d++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_object(o);
 }
@@ -614,7 +614,7 @@ void image_operator_equal(INT32 args)
    }
 
    i=THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    if (s2)
       while (i--)
       {
@@ -627,7 +627,7 @@ void image_operator_equal(INT32 args)
 	 if (s1->r!=rgb.r || s1->g!=rgb.g || s1->b!=rgb.b) { res=0; break; }
 	 s1++;
       }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_int(res);
 }
@@ -687,7 +687,7 @@ void image_operator_lesser(INT32 args)
    }
 
    i=THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    if (s2)
       while (i--)
       {
@@ -700,7 +700,7 @@ void image_operator_lesser(INT32 args)
 	 if (s1->r>=rgb.r || s1->g>=rgb.g || s1->b>=rgb.b) { res=0; break; }
 	 s1++;
       }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_int(res);
 }
@@ -761,7 +761,7 @@ void image_operator_greater(INT32 args)
    }
 
    i=THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    if (s2)
       while (i--)
       {
@@ -774,7 +774,7 @@ void image_operator_greater(INT32 args)
 	 if (s1->r<=rgb.r || s1->g<=rgb.g || s1->b<=rgb.b) { res=0; break; }
 	 s1++;
       }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    pop_n_elems(args);
    push_int(res);
 }
@@ -815,7 +815,7 @@ void image_average(INT32 args)
 
    y=THIS->ysize;
    xz=THIS->xsize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (y--)
    {
       rgbl_group sumx={0,0,0};
@@ -831,7 +831,7 @@ void image_average(INT32 args)
       sumy.g+=((float)sumx.g)/(float)xz;
       sumy.b+=((float)sumx.b)/(float)xz;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_float((FLOAT_TYPE)(sumy.r/(float)THIS->ysize));
    push_float((FLOAT_TYPE)(sumy.g/(float)THIS->ysize));
@@ -853,7 +853,7 @@ void image_sumf(INT32 args)
 
    y=THIS->ysize;
    xz=THIS->xsize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (y--)
    {
       rgbl_group sumx={0,0,0};
@@ -869,7 +869,7 @@ void image_sumf(INT32 args)
       sumy.g+=(float)sumx.g;
       sumy.b+=(float)sumx.b;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_float((FLOAT_TYPE)sumy.r);
    push_float((FLOAT_TYPE)sumy.g);
@@ -889,7 +889,7 @@ void image_sum(INT32 args)
    CHECK_INIT();
 
    n=THIS->ysize*THIS->xsize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (n--)
    {
       sum.r+=s->r;
@@ -897,7 +897,7 @@ void image_sum(INT32 args)
       sum.b+=s->b;
       s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_int(sum.r);
    push_int(sum.g);
@@ -917,7 +917,7 @@ void image_min(INT32 args)
    CHECK_INIT();
 
    n=THIS->ysize*THIS->xsize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (n--)
    {
       if (x.r>s->r) x.r=s->r;
@@ -925,7 +925,7 @@ void image_min(INT32 args)
       if (x.b>s->b) x.b=s->b;
       s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_int(x.r);
    push_int(x.g);
@@ -945,7 +945,7 @@ void image_max(INT32 args)
    CHECK_INIT();
 
    n=THIS->ysize*THIS->xsize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (n--)
    {
       if (x.r<s->r) x.r=s->r;
@@ -953,7 +953,7 @@ void image_max(INT32 args)
       if (x.b<s->b) x.b=s->b;
       s++;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_int(x.r);
    push_int(x.g);
@@ -1020,7 +1020,7 @@ void image_find_min(INT32 args)
    yz=THIS->ysize;
    xz=THIS->xsize;
    min=(rgb.r+rgb.g+rgb.b)*256.0;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    for (y=0; y<yz; y++)
    {
       for (x=0; x<xz; x++)
@@ -1030,7 +1030,7 @@ void image_find_min(INT32 args)
 	 s++;
       }
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_int(xp);
    push_int(yp);
@@ -1067,7 +1067,7 @@ void image_find_max(INT32 args)
    yz=THIS->ysize;
    xz=THIS->xsize;
    max=0.0;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    for (y=0; y<yz; y++)
    {
       for (x=0; x<xz; x++)
@@ -1077,7 +1077,7 @@ void image_find_max(INT32 args)
 	 s++;
       }
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_int(xp);
    push_int(yp);

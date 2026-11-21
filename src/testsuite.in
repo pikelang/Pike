@@ -7479,6 +7479,109 @@ void test()
     })->wait();
   ]])
 
+dnl Condition waits of 1 ms should not take over 2 seconds while another
+dnl thread runs Pike code that doesn't block. Run 100s of them, in a child
+dnl process killed after 60 seconds.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+  test_any([[
+    Process.Process p = Process.Process(RUNPIKE_ARRAY + ({ "-e", #{
+      int stop;
+      Thread.Thread busy = Thread.Thread(lambda() {
+          int x;
+          while (!stop) x++;
+        });
+      Thread.Mutex m = Thread.Mutex();
+      Thread.Condition c = Thread.Condition();
+      float worst = 0.0;
+      for (int i = 0; i < 200; i++) {
+        int t = gethrtime();
+        object|zero key = m->lock();
+        c->wait(key, 0.001);
+        key = 0;
+        worst = max(worst, (gethrtime() - t) / 1e6);
+      }
+      stop = 1;
+      busy->wait();
+      if (worst > 2.0) {
+        werror("a 1 ms wait took %.2f s\n", worst);
+        return 1;
+      }
+      return 0;
+    #} }));
+    int t = time();
+    while (!p->status() && time() - t < 60) sleep(0.1);
+    if (!p->status()) {
+      p->kill(9);
+      p->wait();
+      return "200 waits of 1 ms took over 60 s";
+    }
+    return p->wait();
+  ]], 0)
+]])
+
+dnl sprintf("%O") of a mutex should name the holder after "Locked by",
+dnl not the thread that waits for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    string s = sprintf("%O", m);
+    destruct(k);
+    waiter->wait();
+    int waiting, locked;
+    if (sscanf(s, "Thread.Mutex(/* Waiting by 0x%x Locked by 0x%x */)",
+               waiting, locked) != 2)
+      return s;
+    return waiting != locked;
+  ]], 1)
+
+dnl lock() and shared_lock() should succeed once the mutex is free, also
+dnl after a thread that waited in lock() was killed.
+  test_any_equal([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    waiter->kill();
+    sleep(0.2);
+    destruct(k);
+    object got = m->lock(1, 2.0);
+    int got_lock = !!got;
+    if (got) destruct(got);
+    object shared = m->shared_lock(1, 2.0);
+    int got_shared = !!shared;
+    if (shared) destruct(shared);
+    return ({ got_lock, got_shared });
+  ]], ({ 1, 1 }))
+
+dnl The key that a future_lock() gets when the mutex is unlocked should
+dnl belong to the thread that asked for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    object asker, fkey;
+    Thread.Thread t = Thread.Thread(lambda() {
+        asker = this_thread();
+        fkey = m->future_lock()->get();
+      });
+    sleep(0.2);
+    destruct(k);
+    for (int i = 0; i < 100 && !fkey; i++) sleep(0.01);
+    object holder = m->current_locking_thread();
+    mixed err = catch { object k2 = m->trylock(); if (k2) destruct(k2); };
+    int ok = holder == asker && !err;
+    if (fkey) destruct(fkey);
+    t->wait();
+    return ok;
+  ]], 1)
+
 cond_end // thread_create
 
 cond([[0]],
@@ -10327,6 +10430,44 @@ cond([[all_constants()->kill && signum("SIGUSR1") > 0]],
     }
     return stage;
   ]], 2)
+]])
+
+dnl A process should survive 40000 SIGUSR1s sent while it sleeps in C
+dnl code, and handle them, without "Atomic pipe write failed!!" in debug
+dnl builds. The final different signal and the child's exit status must
+dnl survive FIFO overflow too. In child processes.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond([[all_constants()->kill && signum("SIGUSR1") > 0]], [[
+cond([[signum("SIGUSR2") > 0]], [[
+  test_any([[
+    string sender = #{
+      int pid = (int)argv[-1];
+      for (int i = 0; i < 40000; i++) kill(pid, signum("SIGUSR1"));
+      kill(pid, signum("SIGUSR2"));
+      return 42;
+    #};
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      int got, final_signal;
+      signal(signum("SIGUSR1"), lambda() { got++; });
+      signal(signum("SIGUSR2"), lambda() { final_signal++; });
+      object p = Process.Process(
+        Standards.JSON.decode(getenv("SIGNAL_FIFO_SENDER")) +
+        ({ (string)getpid() }));
+      sleep(5);
+      int status = p->wait();
+      sleep(0.5);
+      write("%d signals handled; final signal %d, child status %d\n",
+            got, final_signal, status);
+      return !(got && final_signal && status == 42);
+    #} }), ([ "env": getenv() + ([
+      "SIGNAL_FIFO_SENDER":
+        Standards.JSON.encode(RUNPIKE_ARRAY + ({ "-e", sender })) ]) ]));
+    if (r->exitcode || !has_value(r->stdout, "signals handled"))
+      return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
 ]])
 
 // typeof

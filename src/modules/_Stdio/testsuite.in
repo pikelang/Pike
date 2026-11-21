@@ -183,6 +183,47 @@ test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); destruct(o); re
 test_any([[object|zero o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
 
 
+dnl read() into a buffer that another thread adds to should keep both
+dnl threads' data: the buffer must hold every byte read and added, and
+dnl nothing else. Without the fix it fails on every run of this
+dnl testsuite; other threads busy in the same process can hide it.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond_resolv(Thread.Thread, [[
+  test_any([[
+    string path = testfile + "_read_into_buffer";
+    Stdio.write_file(path, "a" * (4 * 1024 * 1024));
+    Stdio.Fd f = Stdio.Fd(path, "r");
+    rm(path);
+    Stdio.Buffer buf = Stdio.Buffer();
+    int done, adds;
+    Thread.Thread adder = Thread.Thread(lambda() {
+        while (!done) { buf->add("b" * 100); adds++; sleep(0.0005); }
+      });
+    int got, a, b, other, reads;
+    void count(string s) {
+      int sa = String.count(s, "a"), sb = String.count(s, "b");
+      a += sa; b += sb; other += sizeof(s) - sa - sb;
+    };
+    int t = time();
+    while (time() - t < 20) {
+      buf->allocate(4096);
+      int n = f->read(buf);
+      if (n <= 0) { f->seek(0); continue; }
+      got += n;
+      if (!(++reads & 255)) count(buf->read());
+    }
+    done = 1;
+    adder->wait();
+    count(buf->read());
+    f->close();
+    if (a != got || b != adds * 100 || other)
+      return sprintf("%d a, %d b, %d other bytes, expected %d a, %d b",
+                     a, b, other, got, adds * 100);
+    return 0;
+  ]], 0)
+]])
+]])
+
 dnl - file->seek
 dnl - file->tell
 test_any(object o=Stdio.File(); return o->open(testfile,"r") && o->read(4711) && o->tell() == 4711 && o->close(),1)

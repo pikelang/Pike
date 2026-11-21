@@ -81,6 +81,7 @@ PIKECLASS Result
   program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
   CVAR struct Odbc_odbc_struct *odbc;
+  CVAR struct pike_odbc_lock *connection_lock;
   CVAR SQLHSTMT hstmt;
   CVAR SWORD num_fields;
   CVAR SQLLEN num_rows;
@@ -136,17 +137,23 @@ INIT
 
 EXIT
 {
+  ONERROR lock_err;
+  struct pike_odbc_lock *lock = PIKE_ODBC_RES->connection_lock;
+
+  PIKE_ODBC_RES->connection_lock = NULL;
+  SET_ONERROR(lock_err, pike_odbc_free_lock, lock);
   if (PIKE_ODBC_RES->hstmt != SQL_NULL_HSTMT) {
     SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
     RETCODE code;
     PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
-    ODBC_ALLOW();
+    ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
     code = SQLFreeStmt(hstmt, SQL_DROP);
-    ODBC_DISALLOW();
+    ODBC_DISALLOW_ON();
     odbc_check_error("exit_res_struct", "Freeing of HSTMT failed",
 		     code, (void (*)(void *))clean_sql_res, NULL);
   }
   clean_sql_res();
+  CALL_AND_UNSET_ONERROR(lock_err);
 }
 
 EXTRA
@@ -368,13 +375,13 @@ static void odbc_fix_fields(void)
 
     while (1) {
       RETCODE code;
-      ODBC_ALLOW();
+      ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
       code = SQLDescribeColW(hstmt, i+1,
 			     buf,
 			     (SQLSMALLINT)buf_size,
 			     &name_len,
 			     &sql_type, &precision, &scale, &nullable);
-      ODBC_DISALLOW();
+      ODBC_DISALLOW_ON();
       odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
 		       code, NULL, NULL);
       if ((name_len * (ptrdiff_t)sizeof(SQLWCHAR)) < (ptrdiff_t)buf_size) {
@@ -688,19 +695,37 @@ static void odbc_fix_fields(void)
 
 /*! @decl void create()
  */
+/* Hold the connection's lock from here to
+ * ODBC_UNHOLD(), or an error, for methods that make several library
+ * calls on the statement (hstmt). */
+#define ODBC_HOLD_DECLARE()                                           \
+  struct pike_odbc_lock *odbc_held_;                                  \
+  ONERROR odbc_hold_err_
+#define ODBC_HOLD() do {                                              \
+    odbc_held_ = pike_odbc_ref_lock(PIKE_ODBC_RES->odbc);             \
+    if (odbc_held_) {                                                 \
+      pike_odbc_lock(odbc_held_);                                     \
+      SET_ONERROR(odbc_hold_err_, pike_odbc_unlock, odbc_held_);      \
+    }                                                                 \
+  } while (0)
+#define ODBC_UNHOLD() do {						\
+    if (odbc_held_) CALL_AND_UNSET_ONERROR(odbc_hold_err_);		\
+  } while (0)
+
 PIKEFUN void create()
 {
   SQLHSTMT hstmt = SQL_NULL_HSTMT;
 
   PIKE_ODBC_RES->odbc = parent_storage(1, Odbc_odbc_program);
+  PIKE_ODBC_RES->connection_lock = pike_odbc_ref_lock(PIKE_ODBC_RES->odbc);
 
   /* It's doubtful if this call really can block, but we play safe. /mast */
   {
     HDBC hdbc = pike_odbc_get_hdbc(PIKE_ODBC_RES->odbc);
     RETCODE code;
-    ODBC_ALLOW();
+    ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
     code = SQLAllocStmt(hdbc, &hstmt);
-    ODBC_DISALLOW();
+    ODBC_DISALLOW_ON();
     odbc_check_error("Result", "Statement allocation failed",
 		     code, NULL, NULL);
   }
@@ -711,7 +736,8 @@ PIKEFUN void create()
  */
 PIKEFUN int execute(string(16bit) q)
 {
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   RETCODE code;
   const char *err_msg = NULL;
   SWORD num_fields;
@@ -719,6 +745,8 @@ PIKEFUN int execute(string(16bit) q)
   char *to_free = NULL;
   SQLWCHAR *wq = NULL;
 
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
   if ((q->size_shift > 1) && (sizeof(SQLWCHAR) == 2)) {
     SIMPLE_ARG_TYPE_ERROR("execute", 1, "string(16bit)");
   }
@@ -730,7 +758,7 @@ PIKEFUN int execute(string(16bit) q)
     }
   }
 
-  ODBC_ALLOW();
+  ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
 
   if (wq)
     code = SQLExecDirectW(hstmt, wq, (SQLINTEGER)(q->len));
@@ -750,7 +778,7 @@ PIKEFUN int execute(string(16bit) q)
     }
   }
 
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
 
   if (to_free) free (to_free);
 
@@ -776,19 +804,23 @@ PIKEFUN int execute(string(16bit) q)
     /* Result */
     push_int(num_fields);
   }
+  ODBC_UNHOLD();
 }
 
 /*! @decl int list_tables(string|void table_name_pattern)
  */
 PIKEFUN int list_tables(string|void table_name_pattern)
 {
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   RETCODE code;
   const char *err_msg = NULL;
   SWORD num_fields = 0;
   SQLLEN num_rows = 0;
 
-  ODBC_ALLOW();
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
   code = SQLTables(hstmt, NULL, 0, NULL, 0,
 		   table_name_pattern?(SQLCHAR *)table_name_pattern->str:NULL,
 		   table_name_pattern?(SQLSMALLINT)table_name_pattern->len:0,
@@ -805,7 +837,7 @@ PIKEFUN int list_tables(string|void table_name_pattern)
 	err_msg = "Couldn't get the number of rows";
     }
   }
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
 
   if (err_msg)
     odbc_error ("list_tables", err_msg, PIKE_ODBC_RES->odbc, hstmt,
@@ -824,6 +856,7 @@ PIKEFUN int list_tables(string|void table_name_pattern)
     /* Result */
     push_int(PIKE_ODBC_RES->num_fields);
   }
+  ODBC_UNHOLD();
 }
 
 /*! @decl int num_rows()
@@ -855,20 +888,23 @@ PIKEFUN array(int|mapping(string:mixed)) fetch_fields()
  */
 PIKEFUN int|array(string|float|int) fetch_row()
 {
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   int i;
-  unsigned int pike_odbc_flags = pike_odbc_get_flags(PIKE_ODBC_RES->odbc);
-  unsigned int old_tds_kludge = pike_odbc_flags & PIKE_ODBC_OLD_TDS_KLUDGE;
-  unsigned int wdata_shift = (pike_odbc_flags & PIKE_ODBC_WDATA_SHIFT_MASK) >>
-    PIKE_ODBC_WDATA_SHIFT_SHIFT;
-
+  unsigned int pike_odbc_flags, old_tds_kludge, wdata_shift;
   RETCODE code;
 
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
+  pike_odbc_flags = pike_odbc_get_flags(PIKE_ODBC_RES->odbc);
+  old_tds_kludge = pike_odbc_flags & PIKE_ODBC_OLD_TDS_KLUDGE;
+  wdata_shift = (pike_odbc_flags & PIKE_ODBC_WDATA_SHIFT_MASK) >>
+    PIKE_ODBC_WDATA_SHIFT_SHIFT;
   pop_n_elems(args);
 
-  ODBC_ALLOW();
+  ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
   code = SQLFetch(hstmt);
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
 
   if (code == SQL_NO_DATA_FOUND) {
     /* No rows left in result */
@@ -906,7 +942,7 @@ PIKEFUN int|array(string|float|int) fetch_row()
 
       if (old_tds_kludge || !len) {
 
-	ODBC_ALLOW();
+	ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
 
 #ifdef ODBC_DEBUG
 	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
@@ -941,7 +977,7 @@ PIKEFUN int|array(string|float|int) fetch_row()
 		i+1, field_type, code, len);
 #endif /* ODBC_DEBUG */
 
-	ODBC_DISALLOW();
+	ODBC_DISALLOW_ON();
 
 	/* In case the type got changed in the kludge above. */
 	PIKE_ODBC_RES->field_info[i].type = field_type;
@@ -1016,12 +1052,12 @@ PIKEFUN int|array(string|float|int) fetch_row()
 		  i + 1, i+1, field_type, bytes+pad);
 #endif /* ODBC_DEBUG */
 
-	  ODBC_ALLOW();
+	  ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
 
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 			    field_type, s->str, bytes + pad, &len);
 
-	  ODBC_DISALLOW();
+	  ODBC_DISALLOW_ON();
 
 	  num_strings++;
 #ifdef ODBC_DEBUG
@@ -1085,6 +1121,7 @@ PIKEFUN int|array(string|float|int) fetch_row()
     }
     f_aggregate(PIKE_ODBC_RES->num_fields);
   }
+  ODBC_UNHOLD();
 }
 
 /*! @decl this_program next_result()
@@ -1094,9 +1131,9 @@ PIKEFUN object next_result()
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   RETCODE code;
 
-  ODBC_ALLOW();
+  ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
   code = SQLMoreResults(hstmt);
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
 
   if (code == SQL_NO_DATA_FOUND) {
     pop_n_elems(args);
@@ -1213,17 +1250,21 @@ PIKECLASS TypedResult
  */
 PIKEFUN array(string|float|int|object) fetch_row()
 {
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  ODBC_HOLD_DECLARE();
+  SQLHSTMT hstmt;
   int i;
-  unsigned int old_tds_kludge =
-    pike_odbc_get_flags(PIKE_ODBC_RES->odbc) & PIKE_ODBC_OLD_TDS_KLUDGE;
+  unsigned int old_tds_kludge;
   RETCODE code;
 
+  ODBC_HOLD();
+  hstmt = PIKE_ODBC_RES->hstmt;
+  old_tds_kludge =
+    pike_odbc_get_flags(PIKE_ODBC_RES->odbc) & PIKE_ODBC_OLD_TDS_KLUDGE;
   pop_n_elems(args);
 
-  ODBC_ALLOW();
+  ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
   code = SQLFetch(hstmt);
-  ODBC_DISALLOW();
+  ODBC_DISALLOW_ON();
 
   if (code == SQL_NO_DATA_FOUND) {
     /* No rows left in result */
@@ -1272,7 +1313,7 @@ PIKEFUN array(string|float|int|object) fetch_row()
 
       if (old_tds_kludge || !len) {
 
-	ODBC_ALLOW();
+	ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
 
 #ifdef ODBC_DEBUG
 	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
@@ -1307,7 +1348,7 @@ PIKEFUN array(string|float|int|object) fetch_row()
 		i+1, field_type, code, len);
 #endif /* ODBC_DEBUG */
 
-	ODBC_DISALLOW();
+	ODBC_DISALLOW_ON();
 
 	/* In case the type got changed in the kludge above. */
 	field_info->type = field_type;
@@ -1418,12 +1459,12 @@ PIKEFUN array(string|float|int|object) fetch_row()
 		  i + 1, i+1, field_type, bytes+pad);
 #endif /* ODBC_DEBUG */
 
-	  ODBC_ALLOW();
+	  ODBC_ALLOW_ON(PIKE_ODBC_RES->odbc);
 
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 			    field_type, s->str, bytes + pad, &len);
 
-	  ODBC_DISALLOW();
+	  ODBC_DISALLOW_ON();
 
 	  num_strings++;
 #ifdef ODBC_DEBUG
@@ -1493,6 +1534,7 @@ PIKEFUN array(string|float|int|object) fetch_row()
     }
     f_aggregate(PIKE_ODBC_RES->num_fields);
   }
+  ODBC_UNHOLD();
 }
 
 }

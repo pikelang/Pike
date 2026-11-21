@@ -152,7 +152,7 @@ CHRONO("scale begin");
 
    new=xalloc(newx*newy*sizeof(rgbd_group)+1);
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
 
    for (y=0; y<newx*newy; y++)
       new[y].r=new[y].g=new[y].b=0.0;
@@ -204,7 +204,7 @@ CHRONO("transfer begin");
 
 CHRONO("scale end");
 
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    if (!d)
      out_of_memory_error(NULL, -1, 0);
 }
@@ -225,7 +225,7 @@ void img_scale2(struct image *dest, struct image *source)
 
    new=xalloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    memset(new,0,newx*newy*sizeof(rgb_group));
 
    dest->img=new;
@@ -288,7 +288,7 @@ void img_scale2(struct image *dest, struct image *source)
    if (source->xsize & source->ysize & 1) {
      pixel(dest, newx, newy) = pixel(source, source->xsize-1, source->ysize-1);
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 }
 
 
@@ -437,7 +437,7 @@ void image_ccw(INT32 args)
    src=THIS->img+THIS->xsize-1;
    dest=img->img;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (i--)
    {
       j=ys;
@@ -445,7 +445,7 @@ void image_ccw(INT32 args)
       src--;
       src-=xs*ys;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_object(o);
 }
@@ -464,7 +464,7 @@ static void img_cw(struct image *is,struct image *id)
    i=is->xsize;
    src=is->img+is->xsize-1;
    dest=id->img;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (i--)
    {
       j=is->ysize;
@@ -472,7 +472,7 @@ static void img_cw(struct image *is,struct image *id)
       src--;
       src-=is->xsize*is->ysize;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 }
 
 void img_ccw(struct image *is,struct image *id)
@@ -489,7 +489,7 @@ void img_ccw(struct image *is,struct image *id)
    i=is->xsize;
    src=is->img+is->xsize-1;
    dest=id->img+is->xsize*is->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (i--)
    {
       j=is->ysize;
@@ -497,7 +497,7 @@ void img_ccw(struct image *is,struct image *id)
       src--;
       src-=is->xsize*is->ysize;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 }
 
 /*
@@ -541,7 +541,7 @@ void image_cw(INT32 args)
 
    src=THIS->img+THIS->xsize-1;
    dest=img->img+THIS->xsize*THIS->ysize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (i--)
    {
       j=ys;
@@ -549,7 +549,7 @@ void image_cw(INT32 args)
       src--;
       src-=xs*ys;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_object(o);
 }
@@ -594,14 +594,14 @@ void image_mirrorx(INT32 args)
    src=THIS->img+THIS->xsize-1;
    dest=img->img;
    xs=THIS->xsize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (i--)
    {
       j=xs;
       while (j--) *(dest++)=*(src--);
       src+=xs*2;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_object(o);
 }
@@ -644,14 +644,14 @@ void image_mirrory(INT32 args)
    src=THIS->img+THIS->xsize*(THIS->ysize-1);
    dest=img->img;
    xs=THIS->xsize;
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    while (i--)
    {
       j=xs;
       while (j--) *(dest++)=*(src++);
       src-=xs*2;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    push_object(o);
 
@@ -687,7 +687,7 @@ static void img_skewx(struct image *src,
      return;
    }
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    xmod=diff/src->ysize;
    rgb=dest->rgb;
 
@@ -742,7 +742,7 @@ static void img_skewx(struct image *src,
       debug_malloc_touch(dest->img);
       x0+=xmod;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
    debug_malloc_touch(dest->img);
 
    CHRONO("skewx end\n");
@@ -775,7 +775,7 @@ static void img_skewy(struct image *src,
      return;
    }
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
    ymod=diff/src->xsize;
    rgb=dest->rgb;
 
@@ -830,7 +830,7 @@ CHRONO("skewy begin\n");
       d-=dest->ysize*xsz-1;
       y0+=ymod;
    }
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
 CHRONO("skewy end\n");
 

@@ -811,7 +811,7 @@ static void f_apply_cmap( INT32 args )
     Pike_error("Invalid image object\n");
   n = i->xsize * i->ysize;
   d = i->img;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   while(n--)
   {
     int i = d->g;
@@ -819,7 +819,7 @@ static void f_apply_cmap( INT32 args )
     d->g = cmap->str[i+256];
     d->b = cmap->str[i+512];
   }
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 }
 
 static struct program *image_encoding_psd_program=NULL;

@@ -128,6 +128,15 @@ struct field_info {
 
 struct Odbc_odbc_struct;
 
+/* References are held by the connection, its results and native calls.
+ * They are changed with the interpreter lock held. */
+struct pike_odbc_lock {
+  PIKE_MUTEX_T mutex;
+  void *owner;
+  int depth;
+  unsigned int refs;
+};
+
 /*
  * Defines
  */
@@ -161,10 +170,35 @@ struct Odbc_odbc_struct;
 #define ODBC_ALLOW() THREADS_ALLOW()
 #define ODBC_DISALLOW() THREADS_DISALLOW()
 
+/* The same for calls on the connection ODBC or on its results statements, which the connection's lock serializes. */
+#ifdef PIKE_THREADS
+#define ODBC_SELF() ((void *)Pike_interpreter.thread_state)
+#else
+#define ODBC_SELF() ((void *)1)
+#endif
+#define ODBC_ALLOW_ON(ODBC) do {                                      \
+    struct Odbc_odbc_struct *odbc_conn_ = (ODBC);                     \
+    struct pike_odbc_lock *odbc_lock_ =                               \
+      (odbc_conn_ ? pike_odbc_ref_lock(odbc_conn_) : NULL);           \
+    void *odbc_self_ = ODBC_SELF();                                   \
+    THREADS_ALLOW();                                                  \
+    if (odbc_lock_) low_odbc_lock(odbc_lock_, odbc_self_)
+#define ODBC_DISALLOW_ON()                                            \
+    if (odbc_lock_) low_odbc_unlock(odbc_lock_);                      \
+    THREADS_DISALLOW();                                               \
+    pike_odbc_free_lock(odbc_lock_);                                  \
+  } while (0)
+
 /*
  * Prototypes
  */
 SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc);
+struct pike_odbc_lock *pike_odbc_ref_lock(struct Odbc_odbc_struct *odbc);
+void pike_odbc_free_lock(void *lock);
+void low_odbc_lock(struct pike_odbc_lock *lock, void *self);
+void low_odbc_unlock(struct pike_odbc_lock *lock);
+void pike_odbc_lock(struct pike_odbc_lock *lock);
+void pike_odbc_unlock(void *lock);
 void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows);
 unsigned int pike_odbc_get_flags(struct Odbc_odbc_struct *odbc);
 void push_sqlwchar(SQLWCHAR *str, size_t len);
@@ -176,4 +210,5 @@ void init_odbc_res_programs(void);
 void exit_odbc_res(void);
 
 #endif /* HAVE_ODBC */
+
 #endif /* PIKE_PRECOMPILED_ODBC_H */

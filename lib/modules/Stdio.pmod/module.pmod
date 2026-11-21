@@ -1327,9 +1327,10 @@ class File
     }
 #endif
     ::set_read_callback(0);
-    if (___close_callback) {
+    // Read each callback once: another thread may change it meanwhile.
+    if (close_callback_t close_cb = ___close_callback) {
       BE_WERR ("  calling close callback");
-      return ___close_callback(___id||this);
+      return close_cb(___id||this);
     }
   }
 
@@ -1338,7 +1339,8 @@ class File
   {
     BE_WERR("__stdio_read_callback()");
 
-    if (!___read_callback) {
+    read_callback_t read_cb = ___read_callback;
+    if (!read_cb) {
       if (___close_callback) {
 	  return __stdio_close_callback();
       }
@@ -1354,7 +1356,7 @@ class File
 
         if (bytes > 0)
         {
-          return ___read_callback( ___id||this, buffer );
+          return read_cb( ___id||this, buffer );
         }
         else
         {
@@ -1371,7 +1373,7 @@ class File
 	if(sizeof(s))
 	{
           BE_WERR("  calling read callback with %O", s);
-	  return ___read_callback(___id||this, s);
+	  return read_cb(___id||this, s);
 	}
 	BE_WERR ("  got eof");
       }
@@ -1388,12 +1390,13 @@ class File
   {
     BE_WERR ("__stdio_fs_event_callback()");
 
-    if (!___fs_event_callback) return 0;
+    fs_event_callback_t fs_event_cb = ___fs_event_callback;
+    if (!fs_event_cb) return 0;
 
   	if(errno())
         BE_WERR ("  got error %s from read()", strerror(errno()));
 
-    return ___fs_event_callback(___id||this, event_mask);
+    return fs_event_cb(___id||this, event_mask);
   }
 
   protected int __stdio_close_callback()
@@ -1403,7 +1406,8 @@ class File
     if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
 #endif /* 0 */
 
-    if (!___close_callback) return 0;
+    close_callback_t close_cb = ___close_callback;
+    if (!close_cb) return 0;
 
     if (!errno()) {
       // There's data to read...
@@ -1426,7 +1430,7 @@ class File
 #endif
       ::set_read_callback(0);
       BE_WERR ("  calling close callback");
-      return ___close_callback(___id||this);
+      return close_cb(___id||this);
     }
 
     return 0;
@@ -1437,35 +1441,36 @@ class File
     BE_WERR("__stdio_write_callback()");
 
     if (!errno()) {
-      if (!___write_callback) return 0;
+      write_callback_t write_cb = ___write_callback;
+      if (!write_cb) return 0;
 
-      if( outbuffer )
+      if( Stdio.Buffer out = outbuffer )
       {
         int res;
 
-        if( !sizeof( outbuffer ) )
+        if( !sizeof( out ) )
         {
           BE_WERR ("  calling write callback");
-          res = ___write_callback(___id||this,outbuffer);
+          res = write_cb(___id||this,out);
           if( !this ) return res;
-          if (!sizeof( outbuffer ) )
-            outbuffer->__set_on_write(buffer_write);
+          if (!sizeof( out ) )
+            out->__set_on_write(buffer_write);
           // A thread may have written to the buffer between the above
           // check and our registering of buffer_write()...
-          if( !sizeof( outbuffer ) )
+          if( !sizeof( out ) )
             return res;
-          outbuffer->__set_on_write(0);
+          out->__set_on_write(0);
         }
 
-        int bytes = ::write(outbuffer);
+        int bytes = ::write(out);
 
         if (bytes > 0)
-          outbuffer->consume(bytes);
+          out->consume(bytes);
 
         return res;
       }
       BE_WERR ("  calling write callback");
-      return ___write_callback(___id||this);
+      return write_cb(___id||this);
     }
 
     BE_WERR ("  got error %s from backend", strerror(errno()));
@@ -1481,7 +1486,8 @@ class File
     BE_WERR ("__stdio_read_oob_callback()");
 
     string(8bit) s;
-    if (!___read_oob_callback) {
+    read_oob_callback_t read_oob_cb = ___read_oob_callback;
+    if (!read_oob_cb) {
       // The out of band callback was probably removed after the backend
       // was started. Propagate the event to __stdio_read_callback().
       s = "";
@@ -1497,7 +1503,7 @@ class File
     {
       if (sizeof(s)) {
         BE_WERR ("  calling read oob callback with %O", s);
-	return ___read_oob_callback(___id||this, s);
+	return read_oob_cb(___id||this, s);
       }
 
       // If the backend doesn't support separate read oob events then
@@ -1524,9 +1530,9 @@ class File
 
       // In case the read fails (it shouldn't, but anyway..).
       ::set_read_oob_callback(0);
-      if (___close_callback) {
+      if (close_callback_t close_cb = ___close_callback) {
 	BE_WERR ("  calling close callback");
-	return ___close_callback(___id||this);
+	return close_cb(___id||this);
       }
     }
 
@@ -1536,10 +1542,11 @@ class File
   protected int __stdio_write_oob_callback()
   {
     BE_WERR ("__stdio_write_oob_callback()");
-    if (!___write_oob_callback) return 0;
+    write_oob_callback_t write_oob_cb = ___write_oob_callback;
+    if (!write_oob_cb) return 0;
 
     BE_WERR ("  calling write oob callback");
-    return ___write_oob_callback(___id||this);
+    return write_oob_cb(___id||this);
   }
 
   //! @decl void set_read_callback(function(mixed,string(8bit):int)|zero read_cb)

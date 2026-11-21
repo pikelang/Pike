@@ -70,6 +70,12 @@
 
 #ifdef HAVE_JPEGLIB_H
 
+/* The counters of IMAGE_THREADS_ALLOW(), from the Image module. */
+static int *image_threads_unlocked_p, *image_replace_waiting_p;
+#define IMAGE_THREADS_IMPORTED
+#define image_threads_unlocked (*image_threads_unlocked_p)
+#define image_replace_waiting (*image_replace_waiting_p)
+
 #include "../Image/image.h"
 
 #ifdef DYNAMIC_MODULE
@@ -909,7 +915,7 @@ static void image_jpeg_encode(INT32 args)
        y=img->ysize;
        s=img->img;
 
-       THREADS_ALLOW();
+       IMAGE_THREADS_ALLOW();
        while (y)
 	   {
 	       int n,i,y2=y;
@@ -931,7 +937,7 @@ static void image_jpeg_encode(INT32 args)
 
 	       y-=y2;
 	   }
-       THREADS_DISALLOW();
+       IMAGE_THREADS_DISALLOW();
 
        free(tmp);
    } else {
@@ -1584,6 +1590,14 @@ PIKE_MODULE_INIT
 #ifndef FAKE_DYNAMIC_LOAD
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
     if(!image_program) {
+       yyerror("Could not load Image module.");
+       return;
+    }
+    image_threads_unlocked_p =
+      PIKE_MODULE_IMPORT_SYMBOL("Image.image_threads_unlocked", "Image");
+    image_replace_waiting_p =
+      PIKE_MODULE_IMPORT_SYMBOL("Image.image_replace_waiting", "Image");
+    if (!image_threads_unlocked_p || !image_replace_waiting_p) {
        yyerror("Could not load Image module.");
        return;
     }

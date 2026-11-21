@@ -139,7 +139,7 @@ static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b,
   struct rle_state state;
   int width, height;
   int x, y;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   state.nitems = 0;
   state.value = 0;
   width = hdr->x2 - hdr->x1 + 1;
@@ -157,7 +157,7 @@ static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b,
     }
   }
   free(line);
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 }
 
 static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
@@ -167,7 +167,7 @@ static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
   struct rle_state state;
   int width, height;
   int x, y;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   state.nitems = 0;
   state.value = 0;
   width = hdr->x2 - hdr->x1 + 1;
@@ -184,7 +184,7 @@ static void load_mono_pcx( struct pcx_header *hdr, struct buffer *b,
     }
   }
   free(line);
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 }
 
 static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
@@ -195,7 +195,7 @@ static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
   rgb_group * palette = (rgb_group *)hdr->palette;
   int width, height;
   int x, y;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   state.nitems = 0;
   state.value = 0;
   width = hdr->x2 - hdr->x1 + 1;
@@ -214,7 +214,7 @@ static void load_planar_palette_pcx( struct pcx_header *hdr, struct buffer *b,
     }
   }
   free(line);
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 }
 
 
@@ -227,7 +227,7 @@ static void load_palette_pcx( struct pcx_header *hdr, struct buffer *b,
   rgb_group * palette = (rgb_group *)(b->str+b->len-(256*3));
   int width, height;
   int x, y;
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
   state.nitems = 0;
   state.value = 0;
   width = hdr->x2 - hdr->x1 + 1;
@@ -240,7 +240,7 @@ static void load_palette_pcx( struct pcx_header *hdr, struct buffer *b,
       *(dest++) = palette[line[x]];
   }
   free(line);
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 }
 
 static struct object *low_pcx_decode( struct pike_string *data )

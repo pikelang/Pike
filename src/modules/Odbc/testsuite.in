@@ -27,4 +27,74 @@ cond([[all_constants()->odbc_utf16_sqlite]], [[
 ]])
 test_do(add_constant("odbc_utf16_sqlite"))
 
+dnl Querying one Odbc connection from several threads should give the
+dnl right results without errors, crashes or deadlocks. Uses the SQLite
+dnl ODBC driver, which needs no server.
+dnl Without the fix a child fails in about 6% of runs on an idle server
+dnl and 25 to 75% on a busy machine, so this fails about 7 runs in 10 on
+dnl the former and nearly always on the latter.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond_resolv(Odbc.odbc, [[
+  test_do([[
+    catch {
+      object db = class {
+          inherit Odbc.odbc;
+          protected void create(string dsn) { create_dsn(dsn); }
+        }("DRIVER=SQLite3;Database=:memory:");
+      add_constant("odbc_shared_sqlite", 1);
+    };
+  ]])
+]])
+cond([[all_constants()->odbc_shared_sqlite && master()->resolv("Thread.Thread")]], [[
+  test_any([[
+    string child = #{
+      class Dsn {
+        inherit Odbc.odbc;
+        protected void create(string dsn) { create_dsn(dsn); }
+      };
+      Thread.Thread(lambda() {
+          sleep(120);
+          werror("hung\n");
+          _exit(3);
+        });
+      string path = sprintf("odbc_shared_%d.db", getpid());
+      object db = Dsn("DRIVER=SQLite3;Database=" + path);
+      db->big_query("CREATE TABLE t (k INTEGER, v INTEGER)");
+      for (int i = 0; i < 100; i++)
+        db->big_query(sprintf("INSERT INTO t VALUES (%d, %d)", i, i * 2));
+      int bad, errors;
+      mixed first;
+      map(enumerate(4), lambda(int id) {
+          return Thread.Thread(lambda() {
+              for (int i = 0; i < 2000; i++) {
+                int k = (i * 7 + id) % 100;
+                mixed err = catch {
+                    object r = db->big_query(sprintf(
+                        "SELECT k, v FROM t WHERE k = %d", k));
+                    array row = r && r->fetch_row();
+                    if (!row || (int)row[0] != k || (int)row[1] != k * 2)
+                      bad++;
+                  };
+                if (err) { errors++; first = first || describe_error(err); }
+              }
+            });
+        })->wait();
+      rm(path);
+      if (bad || errors)
+        werror("%d wrong results, %d errors, first %s", bad, errors,
+               first || "-\n");
+      return !!(bad || errors);
+    #};
+    for (int run = 0; run < 20; run++) {
+      mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", child }));
+      if (r->exitcode)
+        return sprintf("run %d: exit %d: %s", run + 1, r->exitcode,
+                       r->stderr);
+    }
+    return 0;
+  ]], 0)
+]])
+test_do(add_constant("odbc_shared_sqlite"))
+]])
+
 END_MARKER

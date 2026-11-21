@@ -1545,6 +1545,8 @@ union pike_hrtime {
 };
 #endif
 
+static void low_thread_yield(int handover);
+
 static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *UNUSED(arg2))
 {
 #ifdef PROFILE_CHECK_THREADS
@@ -1800,7 +1802,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 #ifdef PIKE_DEBUG
     UINT64 old_thread_swaps = thread_swaps;
 #endif
-    pike_thread_yield();
+    low_thread_yield(1);
 #ifdef PIKE_DEBUG
     if (thread_swaps != old_thread_swaps)
       check_threads_swaps++;
@@ -1808,7 +1810,13 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
   }
 }
 
-PMOD_EXPORT void pike_thread_yield(void)
+/* With handover set (at the end of a time slice), sleep a little
+ * instead of yielding: a thread woken from a condition wait takes the
+ * interpreter lock back inside the wait (pike_low_wait_interpreter()),
+ * without the interpreter_lock_wanted handshake, and nearly never got
+ * it in the moment that a yield leaves it free, so it could wait for
+ * tens of seconds while this thread ran. */
+static void low_thread_yield(int handover)
 {
   DEBUG_CHECK_THREAD();
 
@@ -1819,7 +1827,13 @@ PMOD_EXPORT void pike_thread_yield(void)
    * poorly defined. It might not really yield we need it to. It might
    * make us yield to another process instead of just another thread.
    * It might even make us sleep for a short while. */
-  th_yield();
+#ifdef HAVE_NANOSLEEP
+  if (handover) {
+    struct timespec t = { 0, 50000 };
+    nanosleep(&t, NULL);
+  } else
+#endif
+    th_yield();
   THREADS_DISALLOW();
 
 #ifdef USE_CLOCK_FOR_SLICES
@@ -1839,6 +1853,11 @@ PMOD_EXPORT void pike_thread_yield(void)
 #endif
 
   DEBUG_CHECK_THREAD();
+}
+
+PMOD_EXPORT void pike_thread_yield(void)
+{
+  low_thread_yield(0);
 }
 
 struct thread_starter
@@ -2289,9 +2308,9 @@ struct mutex_storage
  * where each future lock is represented by an array containing:
  *
  *   Index 0: Promise        promise
- *   Index 1: int(0..1)|void is_shared
- *
- * The second element may be left out if zero.
+ *   Index 1: int(0..1)       is_shared
+ *   Index 2: Thread.Thread   the thread that asked for it, which the
+ *                            key is given to
  */
 static struct mapping *pending_mutex_futures;
 
@@ -2319,6 +2338,53 @@ struct key_storage
 };
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
+
+/* Handles an error while a thread waits for a mutex, as when the thread
+ * is killed in check_threads_etc(). The thread no longer waits, so the
+ * key it waited with must not stay in the list as waiting. Otherwise the
+ * keys after it would wait for it for good. In lock() and shared_lock()
+ * only the waiter holds that key, so freeing it unlinks it. upgrade()
+ * makes its key downgraded again, and Condition.wait() unlinks its key. */
+enum mutex_wait_kind { MUTEX_WAIT_NEW_KEY, MUTEX_WAIT_UPGRADE, MUTEX_WAIT_COND };
+struct mutex_wait_unwind
+{
+  enum mutex_wait_kind kind;
+  struct mutex_storage *m;
+  struct key_storage *key;
+};
+
+static void mutex_wait_unwind(void *arg)
+{
+  struct mutex_wait_unwind *w = arg;
+  struct mutex_storage *m = w->m;
+  struct key_storage *key = w->key;
+  m->num_waiting--;
+  switch (w->kind) {
+  case MUTEX_WAIT_NEW_KEY:
+    free_object(key->self);
+    break;
+  case MUTEX_WAIT_UPGRADE:
+    key->kind = KEY_DOWNGRADED;
+    co_broadcast(&m->condition);
+    break;
+  case MUTEX_WAIT_COND: {
+    struct object *mutex_obj = key->mutex_obj;
+    if (key->prev) {
+      key->prev->next = key->next;
+    } else {
+      m->key = key->next;
+    }
+    if (key->next) key->next->prev = key->prev;
+    key->prev = key->next = NULL;
+    key->mut = NULL;
+    key->mutex_obj = NULL;
+    key->kind = KEY_INITIALIZED;
+    co_broadcast(&m->condition);
+    if (mutex_obj) free_object(mutex_obj);
+    break;
+  }
+  }
+}
 
 /*! @class Mutex
  *!
@@ -2410,6 +2476,8 @@ void f_mutex_lock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key;
   struct object *o;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
   INT_TYPE type = 0;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -2489,6 +2557,10 @@ void f_mutex_lock(INT32 args)
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_NEW_KEY;
+    mw.m = m;
+    mw.key = key;
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -2527,6 +2599,7 @@ void f_mutex_lock(INT32 args)
         check_threads_etc();
       } while (key->next);
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
   }
 
@@ -2661,7 +2734,9 @@ static void f_mutex_future_lock(INT32 UNUSED(args))
 
   promise = make_promise();
   push_object(promise);
-  f_aggregate(1);
+  push_int(0);				/* Exclusive. */
+  ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  f_aggregate(3);
 
   /* NB: At this point the promise is held by the array on the stack. */
 
@@ -2773,6 +2848,8 @@ void f_mutex_shared_lock(INT32 args)
   struct mutex_storage  *m;
   struct key_storage *key, *prev = NULL;
   struct object *o, *prev_o = NULL;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
   INT_TYPE type = 0;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -2871,6 +2948,10 @@ void f_mutex_shared_lock(INT32 args)
     }
 
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_NEW_KEY;
+    mw.m = m;
+    mw.key = OB2KEY(o);
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -2908,6 +2989,7 @@ void f_mutex_shared_lock(INT32 args)
         check_threads_etc();
       }
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
 
     if (m->key && (m->key->kind == KEY_DOWNGRADED)) {
@@ -3103,7 +3185,8 @@ static void f_mutex_future_shared_lock(INT32 UNUSED(args))
   promise = make_promise();
   push_object(promise);
   push_int(1);				/* Shared. */
-  f_aggregate(2);
+  ref_push_object(Pike_interpreter.thread_state->thread_obj);
+  f_aggregate(3);
 
   /* NB: At this point the promise is held by the array on the stack. */
 
@@ -3238,7 +3321,7 @@ void f_mutex__sprintf (INT32 args)
         push_static_text(",");
       }
       push_static_text(" 0x");
-      push_int64(PTR_TO_INT(THREAD_T_TO_PTR(m->key->owner->id)));
+      push_int64(PTR_TO_INT(THREAD_T_TO_PTR(k->owner->id)));
       f_int2hex(1);
     }
     push_static_text(" */)");
@@ -3520,6 +3603,19 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
               /* Locking succeeded. */
               multiset_delete(pending, Pike_sp - 2);
 
+              /* The key is the asking thread's, not this one's. */
+              if ((a->size > 2) &&
+                  (TYPEOF(ITEM(a)[2]) == PIKE_T_OBJECT) &&
+                  (ITEM(a)[2].u.object->prog == thread_id_prog) &&
+                  (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) &&
+                  (Pike_sp[-1].u.object->prog == mutex_key)) {
+                struct key_storage *k = OB2KEY(Pike_sp[-1].u.object);
+                struct object *old = k->owner_obj;
+                k->owner = OBJ2THREADSTATE(ITEM(a)[2].u.object);
+                add_ref(k->owner_obj = ITEM(a)[2].u.object);
+                if (old) free_object(old);
+              }
+
               apply(ITEM(a)[0].u.object, "success", 1);
 
               pop_stack();
@@ -3638,6 +3734,8 @@ static void f_mutex_key_upgrade(INT32 args)
   struct key_storage *key = THIS_KEY;
   struct mutex_storage *m = key->mut;
   INT_TYPE seconds = 0, nanos = 0;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
 
   ASSERT_NOT_SIGNAL_CONTEXT();
 
@@ -3680,6 +3778,10 @@ static void f_mutex_key_upgrade(INT32 args)
     key->kind = KEY_PENDING;
 
     m->num_waiting++;
+    mw.kind = MUTEX_WAIT_UPGRADE;
+    mw.m = m;
+    mw.key = key;
+    SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
     if (seconds || nanos) {
       /* NB: Negative seconds ==> try lock. */
       if (seconds >= 0) {
@@ -3719,6 +3821,7 @@ static void f_mutex_key_upgrade(INT32 args)
         check_threads_etc();
       } while (key->next);
     }
+    UNSET_ONERROR(mw_uwp);
     m->num_waiting--;
   }
 
@@ -3945,6 +4048,8 @@ void f_cond_wait(INT32 args)
   struct key_storage *key;
   struct pike_cond *c;
   INT_TYPE seconds = 0, nanos = 0;
+  struct mutex_wait_unwind mw;
+  ONERROR mw_uwp;
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
@@ -4021,6 +4126,10 @@ void f_cond_wait(INT32 args)
 
   /* Lock mutex */
   mut->num_waiting++;
+  mw.kind = MUTEX_WAIT_COND;
+  mw.m = mut;
+  mw.key = key;
+  SET_ONERROR(mw_uwp, mutex_wait_unwind, &mw);
   {
     key->kind = KEY_PENDING;
     if ((key->next = mut->key)) {
@@ -4037,6 +4146,7 @@ void f_cond_wait(INT32 args)
     }
     key->kind = KEY_EXCLUSIVE;
   }
+  UNSET_ONERROR(mw_uwp);
   mut->num_waiting--;
 
   pop_stack();

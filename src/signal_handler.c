@@ -263,7 +263,9 @@
 #undef USE_SIGCHILD
 #endif
 
-#if defined(USE_SIGCHILD) && defined(__linux__) && defined(_REENTRANT)
+/* With threads, any thread may take a signal, so two may push to the
+ * FIFOs at once; only the pipe takes them from several producers. */
+#if defined(_REENTRANT) && !defined(__NT__)
 #define NEED_SIGNAL_SAFE_FIFO
 #endif
 
@@ -296,11 +298,13 @@
     return 0;								  \
   }									  \
 									  \
-  static inline void PIKE_CONCAT(pre,_push)(TYPE val) {			  \
+  static inline int PIKE_CONCAT(pre,_push)(TYPE val) {			  \
     int tmp = PIKE_CONCAT(pre, _first) + 1;				  \
     if (tmp >= SIGNAL_BUFFER) tmp = 0;					  \
+    if (tmp == PIKE_CONCAT(pre, _last)) return 0;                \
     PIKE_CONCAT(pre, buf)[tmp] = val;					  \
-    PIKE_CONCAT(pre, _first) = tmp;					  \
+    PIKE_CONCAT(pre, _first) = tmp;                             \
+    return 1;					  \
   }
 
 
@@ -326,17 +330,20 @@
     return 0;							 \
   }								 \
 								 \
-  static inline void PIKE_CONCAT(pre, _push)(TYPE val) {	 \
+  static inline int PIKE_CONCAT(pre, _push)(TYPE val) {	 \
     int sz;							 \
     int errno_save = errno;					 \
     while( (sz = write(PIKE_CONCAT(pre,_fd)[1], (char *)&val,	 \
 			 sizeof(val))) < 0 &&			 \
 	   errno==EINTR)					 \
       ;								 \
-    DO_IF_DEBUG(if (sz != sizeof(val))				 \
+    /* register_signal preserves signals that do not fit. */	 \
+    DO_IF_DEBUG(if (sz != sizeof(val) &&			 \
+                    (sz >= 0 || errno != EAGAIN))		 \
 		  Pike_fatal("Atomic pipe write failed!!\n"); )	 \
     errno = errno_save;					 	 \
-    PIKE_CONCAT(pre,_data_available)=1;				 \
+    PIKE_CONCAT(pre,_data_available)=1;                        \
+    return sz == sizeof(val);				 \
   }
 
 
@@ -396,6 +403,32 @@ static struct callback *signal_evaluator_callback =0;
 
 DECLARE_FIFO(sig, unsigned char);
 
+/* POSIX signals may coalesce. Keep at least one delivery of each signal
+ * whose FIFO entry could not be written, including SIGCHLD when the
+ * queue is filled by some other signal. Only sig_atomic_t stores are
+ * used in the signal handlers. */
+static volatile sig_atomic_t signal_overflow[MAX_SIGNALS];
+static volatile sig_atomic_t signal_overflow_available;
+
+static int pop_signal(unsigned char *sig)
+{
+  int i;
+  if (sig_pop(sig)) return 1;
+  if (!signal_overflow_available) return 0;
+  /* Clear before scanning so a concurrent producer can request a new
+   * scan even if we have already passed its array entry. */
+  signal_overflow_available = 0;
+  for (i = 0; i < MAX_SIGNALS; i++) {
+    if (signal_overflow[i]) {
+      signal_overflow[i] = 0;
+      signal_overflow_available = 1;
+      *sig = i;
+      return 1;
+    }
+  }
+  return 0;
+}
+
 #ifdef USE_PID_MAPPING
 static void report_child(int pid,
 			 WAITSTATUSTYPE status,
@@ -409,14 +442,8 @@ static RETSIGTYPE receive_sigchild(int signum);
 #endif
 
 #ifdef USE_SIGCHILD
-typedef struct wait_data_s {
-  pid_t pid;
-  WAITSTATUSTYPE status;
-} wait_data;
-
-DECLARE_FIFO(wait, wait_data);
-
-#endif /* USE_SIGCHILD */
+static void reap_children(void);
+#endif
 
 
 /*
@@ -853,7 +880,10 @@ void process_done(pid_t UNUSED(pid), const char *UNUSED(from)) { }
 static void register_signal(int signum)
 {
   ASYNC_SIGNAL_SAFE();
-  sig_push(signum);
+  if (!sig_push(signum)) {
+    signal_overflow[signum] = 1;
+    signal_overflow_available = 1;
+  }
   wake_up_backend();
 }
 
@@ -936,31 +966,16 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
   if(d_flag>5) do_debug();
 #endif
 
-  if (QUICK_CHECK_FIFO(sig, unsigned char))
+  if (QUICK_CHECK_FIFO(sig, unsigned char) || signal_overflow_available)
   {
     enum interpreter_flags save_iflags = Pike_interpreter.flags;
     unsigned char sig = ~0;
 
     Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;
-    while (sig_pop(&sig)) {
+    while (pop_signal(&sig)) {
 
 #ifdef USE_SIGCHILD
-      if(sig == SIGCHLD)
-      {
-	wait_data wd;
-
-	while (wait_pop(&wd)) {
-
-	  if(!wd.pid)
-	    Pike_fatal("wd.pid=0 NEED_SIGNAL_SAFE_FIFO is "
-#ifndef NEED_SIGNAL_SAFE_FIFO
-		       "not "
-#endif
-		       "defined.\n");
-
-	  report_child(wd.pid, wd.status, "check_signals");
-	}
-      }
+      if (sig == SIGCHLD) reap_children();
 #endif
 
 #if MAX_SIGNALS < 256
@@ -1166,7 +1181,7 @@ static void f_clear_signal_mask(INT32 args)
     Pike_error("Signal %d has no active callback.\n", sig);
 
   if (signal_masks[sig] > 1)
-    sig_push(sig);
+    register_signal(sig);
   signal_masks[sig] = 0;
   pop_stack();
 }
@@ -1340,6 +1355,24 @@ void forkd(int fd)
 #endif
 
 
+#ifdef USE_SIGCHILD
+/* Reap only with the interpreter lock held. Exit statuses remain in the
+ * kernel until they can be reported; no bounded signal-handler FIFO can
+ * lose a status after waitpid() has consumed it. */
+static void reap_children(void)
+{
+  int saved_errno = errno;
+  pid_t pid;
+  WAITSTATUSTYPE status;
+
+  do {
+    pid = MY_WAIT_ANY(&status, WNOHANG | WUNTRACED);
+    if (pid > 0) report_child(pid, status, "check_signals");
+  } while (pid > 0 || (pid < 0 && errno == EINTR));
+  errno = saved_errno;
+}
+#endif
+
 /* NB: Async-Signal-Safe! */
 #ifdef SIGCHLD
 #ifdef SIGNAL_ONESHOT
@@ -1349,8 +1382,6 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 #endif
 {
   ASYNC_SIGNAL_SAFE();
-  pid_t pid;
-  WAITSTATUSTYPE status;
   int masked_errno = errno;
 #ifdef PROC_DEBUG
   char debug_prefix[] = {
@@ -1377,50 +1408,7 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 
   SAFE_FIFO_DEBUG_BEGIN();
 
-#ifdef USE_SIGCHILD
-
- try_reap_again:
-  /* We carefully reap what we saw */
-  pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
-
-  if(pid>0)
-  {
-    wait_data wd;
-
-#ifdef __CHECKER__
-    /* Clear potential padding. */
-    memset(&wd, 0, sizeof(wd));
-#endif
-
-#ifdef PROC_DEBUG
-    {
-      char pid_str[] = {
-        '0' + (pid/100000)%10,
-        '0' + (pid/10000)%10,
-        '0' + (pid/1000)%10,
-        '0' + (pid/100)%10,
-        '0' + (pid/10)%10,
-        '0' + pid()%10,
-        '\n',
-      };
-      write(2, debug_prefix, sizeof(debug_prefix));
-      write(2, "receive_sigchild got pid ", 25);
-      write(2, pid_str, sizeof(pid_str));
-    }
-#endif
-
-    wd.pid=pid;
-    wd.status=status;
-    wait_push(wd);
-    goto try_reap_again;
-  }
-  if (pid < 0 && errno == EINTR) goto try_reap_again;
-
-#ifdef PROC_DEBUG
-  write(2, debug_prefix, sizeof(debug_prefix));
-  write(2, "receive_sigchild: No more dead children.\n", 41);
-#endif
-#endif
+  /* check_signals() reaps children in interpreter context. */
 
   register_signal(SIGCHLD);
 
@@ -1964,8 +1952,8 @@ static void f_pid_status_wait(INT32 args)
 #ifdef HAVE_POLL
 	    {
 	      struct pollfd pfd[1];
-#ifdef NEED_SIGNAL_SAFE_FIFO
-	      pfd[0].fd = wait_fd[0];
+#if defined(NEED_SIGNAL_SAFE_FIFO) && defined(USE_SIGCHILD)
+              pfd[0].fd = sig_fd[0];
 	      pfd[0].events = POLLIN;
 	      poll (pfd, 1, 10000);
 #else
@@ -2007,8 +1995,8 @@ static void f_pid_status_wait(INT32 args)
 
 	  /* We can get here if several threads are waiting on the
 	   * same process, or if the second sleep above wasn't enough
-	   * for receive_sigchild to put the entry into the wait_data
-	   * fifo. In either case we just loop and try again. */
+           * for check_signals() to report its exit status. In either
+           * case we just loop and try again. */
           PROC_FPRINTF("[%d] wait(%d): Child isn't reaped yet, looping.\n",
                        getpid(), pid);
 	}
@@ -4892,7 +4880,8 @@ void Pike_f_fork(INT32 args)
 #endif
 
     REINIT_FIFO(sig, unsigned char);
-    REINIT_FIFO(wait,wait_data);
+    memset((void *)signal_overflow, 0, sizeof(signal_overflow));
+    signal_overflow_available = 0;
 
     /* FIXME: Ought to clear pid_mapping here. */
     call_callback(&fork_child_callback, 0);
@@ -5458,7 +5447,6 @@ void init_signals(void)
   int e;
 
   INIT_FIFO(sig, unsigned char);
-  INIT_FIFO(wait,wait_data);
 
 #ifdef __NT__
   init_interleave_mutex(&handle_protection_mutex);

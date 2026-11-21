@@ -524,6 +524,23 @@ o Stdio.UDP
   Read callbacks now receive the backend's current errno in debug builds,
   instead of retaining an error from an earlier operation.
 
+o Image
+
+  Validate _decode() input after waiting for drawing threads, so a caller
+  changing the input array during the wait cannot cause a crash.
+
+o Odbc
+
+  Release connection mutexes after their last result or active call is
+  finished, including explicit destruction and error paths. Locking
+  declarations remain compatible with older C compilers.
+
+o Signals
+
+  Preserve notifications when the signal queue fills. Child exit statuses
+  are reaped and reported in interpreter context instead of passing
+  through a bounded pipe that could lose them and leave wait() stalled.
+
 o Gmp
 
   Fixed incorrect bignum results for overflowing negative integer products

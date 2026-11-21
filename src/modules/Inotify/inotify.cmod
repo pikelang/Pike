@@ -16,6 +16,7 @@
 #include "interpret.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
+#include "operators.h"
 #include "fdlib.h"
 #include "fd_control.h"
 #include "pike_threadlib.h"
@@ -455,6 +456,8 @@ PIKECLASS _Instance {
     {
 	ptrdiff_t off = 0;
 	ptrdiff_t bytes;
+        int i, n = 0, batches = 0;
+        struct array *events;
 	do {
 	    string_build_mkspace(&THIS->buf, 1024, 0);
 	    do {
@@ -490,8 +493,13 @@ PIKECLASS _Instance {
 		push_int(e->cookie);
 		push_string(make_shared_binary_string(path,
 						      strnlen(path, e->len)));
-		safe_apply_svalue(&THIS->event_callback, 4, 1);
-		pop_stack();
+                f_aggregate(4);
+                /* In batches, so that many events don't fill the stack. */
+                if (++n == 128) {
+                    f_aggregate(n);
+                    n = 0;
+                    batches++;
+                }
 	    }
 	    if (off == THIS->buf.s->len) {
 		/* End of data reached. Restart at beginning of buffer. */
@@ -504,6 +512,24 @@ PIKECLASS _Instance {
 	    memmove(THIS->buf.s->str, THIS->buf.s->str + off,
 		    THIS->buf.s->len);
 	}
+
+        /* The callback is called once the buffer is consistent again: a
+         * poll() meanwhile, from the callback or another thread (which
+         * the interpreter lock may switch to during the callback), would
+         * otherwise deliver the same events again and empty the buffer
+         * under us. */
+        f_aggregate(n);
+        f_add(batches + 1);
+        events = Pike_sp[-1].u.array;
+        for (i = 0; i < events->size; i++) {
+            struct array *ev = ITEM(events)[i].u.array;
+            if (!callablep(&THIS->event_callback)) break;
+            add_ref(ev);
+            push_array_items(ev);
+            safe_apply_svalue(&THIS->event_callback, 4, 1);
+            pop_stack();
+        }
+        pop_stack();
     }
 
     static int got_inotify_event(struct fd_callback_box *box, int UNUSED(event))
