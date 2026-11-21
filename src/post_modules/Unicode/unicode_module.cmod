@@ -205,7 +205,7 @@ PIKEFUN int is_rtlstring( string s )
   if( shift==0 ) RETURN 0;
   len = s->len;
   str = s->str;
-  while( --len )
+  while( len-- )
     if( is_rtl_char(INDEX_CHARP(str,len,shift)) ) RETURN 1;
   RETURN 0;
 }
