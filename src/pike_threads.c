@@ -4685,7 +4685,7 @@ static void cleanup_thread_state (struct thread_state *th)
     return;
 
   if (th->flags & THREAD_FLAG_SIGNAL_MASK) {
-    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
+    th->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
       remove_callback(thread_interrupt_callback);
       thread_interrupt_callback = NULL;
