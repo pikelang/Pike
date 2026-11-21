@@ -37,5 +37,38 @@ cond_resolv(Thread.Thread, [[
 ]])
 ]])
 
+dnl Encoding JPEG data transcodes it without decoding it. Pike needs
+dnl libjpeg's transform support for that.
+cond_begin([[ !catch(Image.JPEG.encode(Image.JPEG.encode(Image.Image(8, 8)))) ]])
+
+dnl The transforms work on an image that isn't square, and give the image
+dnl transformed. The decoder rounds a little differently in each
+dnl direction, hence the tolerance. Without the fix the transforms that
+dnl swap width and height failed with "Bogus virtual array access".
+  test_any([[
+    Image.Image i = Image.Image(64, 48);
+    for (int y = 0; y < 48; y++)
+      for (int x = 0; x < 64; x++)
+        i->setpixel(x, y, x * 4, y * 5, (x * y) % 256);
+    string d = Image.JPEG.encode(i, ([ "optimize": 0 ]));
+    Image.Image s = Image.JPEG.decode(d);
+    mapping(string:Image.Image) want = ([
+      "FLIP_H": s->mirrorx(), "FLIP_V": s->mirrory(),
+      "ROT_90": s->rotate_cw(), "ROT_180": s->mirrorx()->mirrory(),
+      "ROT_270": s->rotate_ccw(), "TRANSPOSE": s->rotate_cw()->mirrorx(),
+      "TRANSVERSE": s->rotate_ccw()->mirrorx(),
+    ]);
+    foreach (sort(indices(want)), string t) {
+      Image.Image r =
+        Image.JPEG.decode(Image.JPEG.encode(d, ([ "transform": Image.JPEG[t] ])));
+      if (r->xsize() != want[t]->xsize() || r->ysize() != want[t]->ysize())
+        return sprintf("%s: %dx%d", t, r->xsize(), r->ysize());
+      if (max(@(r - want[t])->max()) > 8)
+        return sprintf("%s: not the image transformed", t);
+    }
+    return 0;
+  ]], 0)
+cond_end
+
 cond_end
 END_MARKER
