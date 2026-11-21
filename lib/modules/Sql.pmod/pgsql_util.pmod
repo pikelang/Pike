@@ -241,10 +241,7 @@ final void register_backend(proxy client) {
 
 final void throwdelayederror(Result|proxy parent) {
   if (mixed err = parent->delayederror) {
-    if (!objectp(parent->pgsqlsess))
-      parent->untolderror = 0;
-    else if (parent->pgsqlsess)
-      parent->pgsqlsess->untolderror = parent->pgsqlsess->delayederror = 0;
+    parent->_errortold();
     parent->delayederror = 0;
     if (stringp(err))
       err = ({err, backtrace()[..<2]});
@@ -1065,7 +1062,7 @@ class Result {
   }
 
   private void losterror(void|string err) {
-    if (pgsqlsess)
+    if (pgsqlsess && pgsqlsess->untolderror)
       err = pgsqlsess->geterror(1) || err;
     if (err)
       error("%s\n", err);
@@ -1076,6 +1073,20 @@ class Result {
       throwdelayederror(this);
     else if (_state == PURGED)
       losterror();
+  }
+
+  //! Called when this result's error has been thrown: the session it
+  //! came from, while still attached, no longer has an untold error.
+  //! The session's own delayed error, if any, is kept for its next call.
+  final void _errortold() {
+    if (pgsqlsess)
+      pgsqlsess->_errortold();
+    else
+      // FIXME Once releaseconditions() has severed the result from its
+      // session, the session can't be told. Its error then still counts
+      // as untold, and the session's _destruct() prints it to stderr,
+      // although the program has caught it.
+      untolderror = 0;
   }
 
   //! @seealso
@@ -2098,6 +2109,11 @@ class proxy {
       lastmessage = ({});
     warningscollected = 0;
     return sizeof(s) && s;
+  }
+
+  //! Called when this session's error has been thrown.
+  final void _errortold() {
+    untolderror = 0;
   }
 
   final string host_info() {
