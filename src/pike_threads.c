@@ -263,63 +263,66 @@ static void interrupt_nt_io(struct thread_state *ts)
 #endif /* NT_THREADS && !CONFIGURE_TEST */
 
 #if defined(PIKE_RESEND_IO_INTERRUPTS) && !defined(CONFIGURE_TEST)
-/* The POSIX counterpart of the NT helper above. interrupt() and kill()
+/* The Unix counterpart of the NT helper above. interrupt() and kill()
  * send SIGCHLD to make a blocking system call fail with EINTR, but the
  * signal is lost if it arrives after the thread has released the
  * interpreter lock and before it has entered the call, which then
  * blocks. A helper thread resends the signal until the thread has
  * taken the interrupt or exited, at growing intervals, since the
  * thread may be waiting for something that signals don't interrupt.
- * Unlike the NT helper it keeps going while the thread runs Pike
- * code: a thread swapped in by a yield can still block in I/O before
+ * It keeps going while the thread runs Pike code: a thread swapped
+ * in by a yield can still block in I/O before
  * it checks for the interrupt, and EINTR in Pike code only leads to
  * that check.
  *
  * Owned by the interrupted thread, under the interpreter lock. The
- * helper isn't a Pike thread, so it uses the pthread calls directly.
+ * helper uses only its own synchronization objects and a copied thread id.
  */
 struct io_interrupt_resend {
-  pthread_t target;
-  pthread_t worker;
-  pthread_mutex_t lock;
-  pthread_cond_t wakeup;
+  THREAD_T target;
+  pid_t owner;
+  PIKE_MUTEX_T lock;
+  COND_T wakeup;
   int stop;
+  int done;
 };
 
-static void *resend_io_interrupt(void *arg)
+static TH_RETURN_TYPE resend_io_interrupt(void *arg)
 {
   struct io_interrupt_resend *resend = arg;
-  long delay = 1000;		/* Microseconds: 1 ms, doubled up to 64 ms. */
+  long delay = 1000000;          /* Nanoseconds: 1 ms, doubled up to 64 ms. */
 
-  pthread_mutex_lock(&resend->lock);
+  mt_lock(&resend->lock);
   while (!resend->stop) {
-    struct timeval now;
-    struct timespec until;
-    gettimeofday(&now, NULL);
-    now.tv_usec += delay;
-    until.tv_sec = now.tv_sec + now.tv_usec / 1000000;
-    until.tv_nsec = (now.tv_usec % 1000000) * 1000;
-    pthread_cond_timedwait(&resend->wakeup, &resend->lock, &until);
+    co_wait_timeout(&resend->wakeup, &resend->lock, 0, delay);
     if (resend->stop) break;
-    pthread_kill(resend->target, SIGCHLD);
-    if (delay < 64000) delay *= 2;
+    th_kill(resend->target, SIGCHLD);
+    if (delay < 64000000) delay *= 2;
   }
-  pthread_mutex_unlock(&resend->lock);
-  return NULL;
+  resend->done = 1;
+  co_signal(&resend->wakeup);
+  mt_unlock(&resend->lock);
+  return 0;
 }
 
 static void stop_io_interrupt_resend(struct thread_state *ts)
 {
   struct io_interrupt_resend *resend = ts->io_resend;
   if (!resend) return;
-  pthread_mutex_lock(&resend->lock);
-  resend->stop = 1;
-  pthread_cond_signal(&resend->wakeup);
-  pthread_mutex_unlock(&resend->lock);
-  /* Join, so that no signal is sent after the thread has gone. */
-  pthread_join(resend->worker, NULL);
-  pthread_cond_destroy(&resend->wakeup);
-  pthread_mutex_destroy(&resend->lock);
+  /* A fork child has no helper, and must not wait on inherited locks. */
+  if (resend->owner == getpid()) {
+    mt_lock(&resend->lock);
+    resend->stop = 1;
+    co_signal(&resend->wakeup);
+    /* The generic thread wrappers create detached helpers. Wait until
+     * the helper has stopped using the target id and its synchronization
+     * objects.
+     */
+    while (!resend->done) co_wait(&resend->wakeup, &resend->lock);
+    mt_unlock(&resend->lock);
+    co_destroy(&resend->wakeup);
+    mt_destroy(&resend->lock);
+  }
   free(resend);
   ts->io_resend = NULL;
 }
@@ -327,6 +330,7 @@ static void stop_io_interrupt_resend(struct thread_state *ts)
 static void resend_io_interrupts(struct thread_state *ts)
 {
   struct io_interrupt_resend *resend;
+  THREAD_T worker;
 
   if (ts->status != THREAD_RUNNING || !ts->swapped || ts->io_resend ||
       (ts->flags & THREAD_FLAG_INHIBIT)) return;
@@ -334,19 +338,13 @@ static void resend_io_interrupts(struct thread_state *ts)
   /* On failure the signal already sent is all there is, as before. */
   if (!(resend = malloc(sizeof(*resend)))) return;
   resend->target = ts->id;
-  resend->stop = 0;
-  if (pthread_mutex_init(&resend->lock, NULL)) {
-    free(resend);
-    return;
-  }
-  if (pthread_cond_init(&resend->wakeup, NULL)) {
-    pthread_mutex_destroy(&resend->lock);
-    free(resend);
-    return;
-  }
-  if (pthread_create(&resend->worker, NULL, resend_io_interrupt, resend)) {
-    pthread_cond_destroy(&resend->wakeup);
-    pthread_mutex_destroy(&resend->lock);
+  resend->owner = getpid();
+  resend->stop = resend->done = 0;
+  mt_init(&resend->lock);
+  co_init(&resend->wakeup);
+  if (th_create_small(&worker, resend_io_interrupt, resend)) {
+    co_destroy(&resend->wakeup);
+    mt_destroy(&resend->lock);
     free(resend);
     return;
   }

@@ -36,9 +36,8 @@ struct pike_frame;
 /* Debug flags */
 #define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
 
-#if defined(POSIX_THREADS) && defined(HAVE_TH_KILL) && !defined(NT_THREADS)
-/* Resend the signal of an interrupt or kill until the thread runs Pike
- * code again. */
+#if defined(HAVE_TH_KILL) && !defined(NT_THREADS)
+/* Resend the signal of an interrupt or kill until it is consumed. */
 #define PIKE_RESEND_IO_INTERRUPTS
 #endif
 
