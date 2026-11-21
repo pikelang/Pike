@@ -176,6 +176,21 @@ protected void _destruct() {
     destruct_client(client);
 }
 
+//! Starts a thread that calls @[fun] in a connection, with @[args].
+//! Pike may switch threads just before the call, and another thread may
+//! destruct the connection meanwhile, the local backend in particular,
+//! which destructs freed connections. The call then fails, which is no
+//! error, since the connection is gone.
+final void connection_thread(function fun, mixed ... args) {
+  Thread.Thread(call_unless_destructed, fun, args);
+}
+
+private void call_unless_destructed(function fun, array args) {
+  mixed err = catch(fun(@args));
+  if (err && fun)
+    throw(err);
+}
+
 private Regexp iregexp(string expr) {
   Stdio.Buffer ret = Stdio.Buffer();
   foreach (expr; ; int c)
@@ -463,7 +478,7 @@ class conxiin {
      );
     void|Thread.MutexKey lock = fillreadmux->lock();
     if (procmsg && functionp(id))
-      procmsg = 0, lock = 0, Thread.Thread(id);
+      procmsg = 0, lock = 0, connection_thread(id);
     else if (fillread)
       didreadcb = 1, fillread.signal();
     return 0;
@@ -763,7 +778,7 @@ outer:
       socket->set_nonblocking(i->read_cb, 0, close);
       shuffle = shuffler->shuffle(socket);
       if (nossl != 2)
-        Thread.Thread(pgsqlsess->processloop, this);
+        connection_thread(pgsqlsess->processloop, this);
       return;
     };
     PD("Connect error %s\n", describe_backtrace(err));
