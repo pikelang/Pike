@@ -1275,7 +1275,7 @@ PIKECLASS Name
   }
 
   /*! @decl string display_name()
-   *! @decl string display_name_type()
+   *! @decl string|zero display_name_type()
    *!
    *! @[display_name] returns a representation of the name for display
    *! purposes, and @[display_name_type] returns an OID on
@@ -1303,7 +1303,7 @@ PIKECLASS Name
     } END_GSS_BUFFER (d_name);
   }
 
-  PIKEFUN string display_name_type()
+  PIKEFUN string|zero display_name_type()
   {
     WITH_GSS_BUFFER (d_name) {
       gss_OID type;
@@ -2701,10 +2701,10 @@ PIKECLASS Context
   /*! @decl int is_established()
    *! @decl int services()
    *! @decl int locally_initiated()
-   *! @decl Name source_name()
-   *! @decl Name target_name()
+   *! @decl Name|zero source_name()
+   *! @decl Name|zero target_name()
    *! @decl int(0..) lifetime()
-   *! @decl string mech()
+   *! @decl string|zero mech()
    *!
    *! Functions to query various properties about the context.
    *!
@@ -2807,7 +2807,7 @@ PIKECLASS Context
     RETURN locally_initiated;
   }
 
-  PIKEFUN object(Name) source_name()
+  PIKEFUN object(Name)|zero source_name()
   {
     gss_name_t name = GSS_C_NO_NAME;
     ONERROR uwp;
@@ -2830,7 +2830,7 @@ PIKECLASS Context
     UNSET_ONERROR (uwp);
   }
 
-  PIKEFUN object(Name) target_name()
+  PIKEFUN object(Name)|zero target_name()
   {
     gss_name_t name = GSS_C_NO_NAME;
     ONERROR uwp;
@@ -2871,7 +2871,7 @@ PIKECLASS Context
     PUSH_TIME (time);
   }
 
-  PIKEFUN string mech()
+  PIKEFUN string|zero mech()
   {
     /* Init this in case gss_inquire_context doesn't set it afterall
      * (perhaps due to nonestablished context, who knows..) */
@@ -3444,7 +3444,7 @@ PIKECLASS Context
 #undef qop
   }
 
-  /*! @decl string unwrap (string message, void|int accept_encrypted_only)
+  /*! @decl string|zero unwrap (string message, void|int accept_encrypted_only)
    *!
    *! Verifies the origin and integrity of the given message using the
    *! MIC included in it, and also decrypts the message if it was
@@ -3509,7 +3509,7 @@ PIKECLASS Context
    *!   @[last_major_status] may be called to check for the informatory
    *!   codes mentioned above.
    */
-  PIKEFUN string unwrap (string message, void|zero|int accept_encrypted_only)
+  PIKEFUN string|zero unwrap (string message, void|zero|int accept_encrypted_only)
   {
     gss_buffer_desc msg;
 
@@ -3825,7 +3825,7 @@ PIKECLASS InitContext
 #undef DESIRED_TIME
   }
 
-  /*! @decl string init (void|string remote_token)
+  /*! @decl string|zero init (void|string remote_token)
    *!
    *! Initiates a security context to send to a remote peer.
    *!
@@ -3860,7 +3860,7 @@ PIKECLASS InitContext
    *!   This function might block on network connections to remote
    *!   authentication servers.
    */
-  PIKEFUN string init (void|string remote_token)
+  PIKEFUN string|zero init (void|string remote_token)
   {
     gss_buffer_desc input_token;
 
@@ -4108,7 +4108,7 @@ PIKECLASS AcceptContext
 #undef REQUIRED_SERVICES
   }
 
-  /*! @decl string accept (string remote_token)
+  /*! @decl string|zero accept (string remote_token)
    *!
    *! Accepts a remotely initiated security context.
    *!
@@ -4140,7 +4140,7 @@ PIKECLASS AcceptContext
    *!   This function might block on network connections to remote
    *!   authentication servers.
    */
-  PIKEFUN string accept (string remote_token)
+  PIKEFUN string|zero accept (string remote_token)
   {
     gss_buffer_desc input_token;
 
@@ -4239,12 +4239,13 @@ PIKECLASS AcceptContext
     } END_GSS_BUFFER (output_token);
   }
 
-  /*! @decl Cred delegated_cred()
+  /*! @decl Cred|zero delegated_cred()
    *!
    *! Returns the delegated credentials from the initiator if the
    *! delegation (c.f. @[GSSAPI.DELEG_FLAG]) service is in use.
+   *! Returns zero if no delegated credentials are available.
    */
-  PIKEFUN object(Cred) delegated_cred()
+  PIKEFUN object(Cred)|zero delegated_cred()
   {
     if (THIS->delegated_cred)
       ref_push_object (THIS->delegated_cred);
