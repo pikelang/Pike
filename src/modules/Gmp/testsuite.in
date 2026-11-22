@@ -169,6 +169,16 @@ cond_resolv(Random.Deterministic, [[
   test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000001")), -1)
   test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000000000")))
 
+  // Reverse power can return an ordinary integer.
+  test_equal(_typeof(Gmp.mpz(2)["``**"]),
+             typeof((function(int|float|object:int|object|float))0))
+  test_eq(Gmp.mpz(4)->pow(Gmp.mpq(1, 2)), 2.0)
+  test_eq(Gmp.mpz(4)->pow(Gmp.mpf(0.5)), 2.0)
+  test_equal(Gmp.mpz(2)["``**"](1), 1)
+  test_equal(Gmp.mpz(0)["``**"](7), 1)
+  test_eq(Gmp.mpz(2)["``**"](Gmp.mpq(3, 2)), Gmp.mpz(1))
+  test_eq(Gmp.mpz(2)["``**"](Gmp.mpf(1.5)), Gmp.mpz(1))
+
   // powm
   test_eq(Gmp.mpz(17)->powm(12,4711),85)
   test_eq((string)Gmp.mpz(2)->powm(270,Gmp.mpz(10)->pow(39)),"428761855001222473056385648716020711424")

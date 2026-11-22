@@ -153,7 +153,7 @@ PIKECLASS mpf
    */
   PIKEFUN void create(void|string|int|float|object x, void|int UNUSED,
 		      void|int UNUSED)
-    type function(void|string|int|float|object,void|int(1..):void)|function(string,int(0..),int(2..36):void);
+    type function(void|string|int|float|object,void|int(0..):void)|function(string,int(0..),int(2..36):void);
     flags ID_PROTECTED;
   {
     int base=0;
@@ -344,6 +344,8 @@ PIKECLASS mpf
     }
 
   /*! @decl protected string|int|float cast(string to)
+   *! Casts to @expr{"string"@}, @expr{"int"@} or @expr{"float"@}.
+   *! Returns @[UNDEFINED] for any other requested type.
    */
   PIKEFUN string|int|float cast(string s)
     flags ID_PROTECTED;
@@ -517,7 +519,7 @@ PIKECLASS mpf
 
   /*! @decl Gmp.mpf set_precision(int(0..) prec)
    *! Sets the precision of the current object to be at
-   *! least @[prec] bits. The precision is limited to 128Kb.
+   *! least @[prec] bits. The precision is limited to 64Kb.
    *! The current object will be returned.
    */
   PIKEFUN mpf set_precision(int(0..) prec)
