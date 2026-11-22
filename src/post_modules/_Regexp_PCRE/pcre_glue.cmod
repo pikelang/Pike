@@ -498,7 +498,7 @@ PIKECLASS _pcre
 /*! @endclass
  */
 
-/*! @decl array(string) split_subject(string subject, @
+/*! @decl array(string|zero) split_subject(string subject, @
  *!                        array(int) previous_result)
  *! Convenience function that
  *! splits a subject string on the result from @[_pcre()->exec()]
@@ -506,9 +506,13 @@ PIKECLASS _pcre
  *! equal to
  *! map(previous_result/2,
  *!     lambda(array v) { return subject[v[0]..v[1]-1]; })
+ *!
+ *! Elements corresponding to a pair of offsets that didn't match
+ *! (ie both are @expr{-1@}, as @[_pcre()->exec()] uses for
+ *! unmatched subpatterns) are @expr{0@} rather than a string.
  */
 
-PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
+PIKEFUN array(string|zero) split_subject(string subject,array(int) previous_result)
 {
   int i,j;
   int sz=previous_result->size/2;

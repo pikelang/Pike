@@ -62,7 +62,7 @@ class Plain
 //!              "f"
 //!          })
 //! @endcode
-   array(string)|int(0..0) split2(string subject,void|int startoffset)
+   array(string|zero)|int(0..0) split2(string subject,void|int startoffset)
    {
       array(int)|int v=exec(subject,startoffset);
       if (intp(v)) return handle_exec_error([int]v);
@@ -87,9 +87,9 @@ class Plain
 //!                 0
 //!             })
 //! @endcode
-   array(string)|int(0..0) split(string subject,void|int startoffset)
+   array(string|zero)|int(0..0) split(string subject,void|int startoffset)
    {
-      array(string)|int(0..0) v=split2(subject,startoffset);
+      array(string|zero)|int(0..0) v=split2(subject,startoffset);
       if (intp(v)) return v;
       if (sizeof(v)>1) return v[1..];
       else return copy_value(({0}));
@@ -375,7 +375,7 @@ class Widestring
       return ::_sprintf(t,fum);
    }
 
-   array(string)|int(0..0) split2(string subject,void|int startoffset)
+   array(string|zero)|int(0..0) split2(string subject,void|int startoffset)
    {
       string subject_utf8=string_to_utf8(subject);
 
