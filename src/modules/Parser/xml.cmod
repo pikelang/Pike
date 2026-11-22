@@ -744,11 +744,11 @@ PIKECLASS Simple
     pop_stack();
   }
 
-  /*! @decl mixed parse_dtd(string dtd, string context, @
+  /*! @decl array parse_dtd(string dtd, string context, @
    *!                       function cb, mixed ... extras)
-   *! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
+   *! @decl array parse_dtd(string dtd, function cb, mixed ... extras)
    */
-  PIKEFUN mixed parse_dtd(string s, string|function cb, mixed ... UNUSED)
+  PIKEFUN array parse_dtd(string s, string|function cb, mixed ... UNUSED)
     rawtype PARSETYPE;
   {
     int d;
@@ -819,12 +819,13 @@ PIKECLASS Simple
     }
   }
 
-  /*! @decl string lookup_entity(string entity)
+  /*! @decl string|zero lookup_entity(string entity)
    *!
    *! @returns
-   *!   Returns the verbatim expansion of the entity.
+   *!   Returns the verbatim expansion of the entity, or
+   *!   @expr{UNDEFINED@} if the entity is not defined.
    */
-  PIKEFUN string lookup_entity(string entity)
+  PIKEFUN string|zero lookup_entity(string entity)
   {
     struct svalue *s = NULL;
     if (THIS->entities) {
@@ -915,7 +916,7 @@ PIKECLASS Simple
       THIS->flags |= ALLOW_RXML_ENTITIES;
   }
 
-  /*! @decl void compat_allow_errors(string version)
+  /*! @decl void compat_allow_errors(void|string version)
    *!
    *! Set whether the parser should allow certain errors for
    *! compatibility with earlier versions. @[version] can be:
@@ -3127,9 +3128,9 @@ static int low_parse_xml(struct pike_string *end)
       low_parse_dtd();
     }
 
-    /*! @decl string parse_entity()
+    /*! @decl string|zero parse_entity()
      */
-    PIKEFUN string parse_entity()
+    PIKEFUN string|zero parse_entity()
     {
       if (!THIS->input) {
 	push_undefined();
