@@ -1869,6 +1869,44 @@ test_any_equal([[
 ]], ({ 1, 0, 0 }))
 ]])
 
+dnl TLS 1.2 servers with EdDSA certificates sign with EdDSA.
+cond_resolv(Crypto.ECC.Curve448, [[
+test_any_equal([[
+  array res = ({});
+  foreach(({ Crypto.ECC.Curve25519, Crypto.ECC.Curve448 }), object curve) {
+    Crypto.Sign key = curve->EdDSA()->generate_key();
+    object server_ctx = SSL.Context();
+    server_ctx->add_cert(key, ({
+      Standards.X509.make_selfsigned_certificate(key, 3600,
+                                                 ([ "commonName": "*" ])) }));
+    object client_ctx = SSL.Context();
+    client_ctx->max_version = SSL.Constants.PROTOCOL_TLS_1_2;
+    object a = Stdio.File();
+    object b = a->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+    SSL.File server = SSL.File(a, server_ctx);
+    SSL.File client = SSL.File(b, client_ctx);
+    server->set_nonblocking(0, 0, 0);
+    client->set_nonblocking(0, 0, 0);
+    server->accept();
+    client->connect();
+    function handshaking = lambda(SSL.File f) {
+      object c = f->query_connection();
+      return !c || (c->state & SSL.Constants.CONNECTION_handshaking);
+    };
+    for (int i = 0; (handshaking(client) || handshaking(server)) && (i < 100);
+         i++) {
+      Pike.DefaultBackend(0.1);
+    }
+    if (handshaking(client) || handshaking(server)) {
+      res += ({ "Handshake failed" });
+    } else {
+      res += ({ server->query_connection()->session->cipher_spec->signature_alg });
+    }
+  }
+  return res;
+]], ({ SSL.Constants.SIGNATURE_ed25519, SSL.Constants.SIGNATURE_ed448 }))
+]])
+
 test_do( add_constant("S") )
 
 END_MARKER

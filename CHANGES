@@ -897,6 +897,9 @@ o SSL
   - TLS 1.2 clients now accept server key exchanges signed with
     EdDSA, as sent by servers with Ed25519 and Ed448 certificates.
 
+  - TLS 1.2 servers with Ed25519 and Ed448 certificates now sign
+    with EdDSA, and Ed448 certificates no longer need the x448 group.
+
 o SSL.File: Propagate fatal alerts to close and write callbacks.
 
   SSL did not call the close_callback on SSL.File()s that connect outgoing
