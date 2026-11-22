@@ -132,14 +132,15 @@ cond_end
 
 dnl Calls that fail, through libjpeg or an option of the wrong type,
 dnl should leave no memory behind. Without the fix, 100 of each grew the
-dnl resident set by 2.8 to 27 MB. It is read from /proc.
-cond([[ Stdio.exist("/proc/self/status") ]], [[
+dnl resident set by 2.8 to 27 MB. Require the Linux VmRSS field, since
+dnl other systems may have a /proc/self/status with a different format.
+cond([[ lambda() { int rss; string|zero status; return !catch(status = Stdio.read_file("/proc/self/status")) && status && sscanf(status, "%*s\nVmRSS:%*[ \t]%d%*[ \t]kB%*1[\n]", rss) == 5 && rss > 0; }() ]], [[
   test_any([[
     int rss_kb() {
       int rss;
       // VmRSS is in kB, independently of the system page size.
-      if (sscanf(Stdio.read_file("/proc/self/status"),
-                 "%*s\nVmRSS:%*[ \t]%d kB", rss) != 3)
+      if (sscanf(Stdio.read_file("/proc/self/status") || "",
+                 "%*s\nVmRSS:%*[ \t]%d%*[ \t]kB%*1[\n]", rss) != 5)
         error("Failed to read VmRSS from /proc/self/status.\n");
       return rss;
     };
