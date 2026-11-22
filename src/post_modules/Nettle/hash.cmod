@@ -744,7 +744,7 @@ PIKECLASS Hash
 
 #include <nettle/balloon.h>
 
-  /*! @decl string(0..127) balloon(string(0..255) password, @
+  /*! @decl string(0..255) balloon(string(0..255) password, @
    *!                              string(0..255) salt, @
    *!                              int(1..) s_cost, @
    *!                              int(1..) rounds)
