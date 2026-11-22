@@ -560,6 +560,11 @@ o Stdio.File
   file I/O. Busy-thread cleanup now handles exceptions from interrupt
   checks without unlinking the thread twice.
 
+  Fixed a race on POSIX and Windows where an interrupt arriving just
+  before a blocking call could leave the thread stuck in I/O. Wakeup
+  retries now continue until Pike handles the interrupt, and stop before
+  subsequent I/O.
+
 o NetUtils
 
   Windows interface discovery now uses Winsock address and netmask queries

@@ -1256,7 +1256,8 @@ test_any([[
   // An interrupt just before read() must not be lost. Once handled, it
   // must not cancel a subsequent read on the same thread.
   foreach (({ 0.0, 0.05 }), float delay) {
-    for (int i = 0; i < 10; i++) {
+    // Stress the gap between releasing the interpreter and entering read().
+    for (int i = 0; i < (delay ? 10 : 100); i++) {
       Stdio.File reader = Stdio.File();
       Stdio.File writer = reader->pipe(Stdio.PROP_INTERRUPTIBLE);
       if (!(reader->mode() & Stdio.PROP_INTERRUPTIBLE) ||
