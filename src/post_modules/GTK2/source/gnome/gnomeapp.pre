@@ -97,7 +97,7 @@ Gnome.Dock get_dock();
 Gnome.DockItem get_dock_item_by_name( string name );
 
 
-Gnome.Dialog message( string message );
+Gnome.Dialog|zero message( string message );
 //! A simple message, in an OK dialog or the status bar. Requires
 //! confirmation from the user before it goes away.
 //! Returns 0 or a dialog widget. If 0, the message is displayed in the

@@ -11,7 +11,7 @@ inherit GTK2.CellRenderer;
 //!   The inconsistent state of the button.
 //! int indicator-size
 //! int radio
-//!   Draw the toggle butotn as a radio button.
+//!   Draw the toggle button as a radio button.
 
 signal toggled;
 

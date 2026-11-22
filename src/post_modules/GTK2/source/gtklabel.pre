@@ -15,7 +15,7 @@ require pango;
 endrequire;
 //! int cursor-position
 //! int ellipsize CONST(PANGO_ELLIPSIZE_)
-//! int justfy CONST(GTK_JUSTIFY_)
+//! int justify CONST(GTK_JUSTIFY_)
 //! string label
 //! int max-width-chars
 //! int mnemonic-keyval
@@ -98,7 +98,7 @@ void set_justify(int jtype);
 //! Sets the alignment of the lines in the text of the label relative to each
 //! other.  GTK2.JUSTIFY_LEFT is the default value when the widget is first
 //! created.  If you instead want to set the alignment of the label as a
-//! whole, use set_alignment() instead.  set_justify() has no efect on labels
+//! whole, use set_alignment() instead.  set_justify() has no effect on labels
 //! containing only a single line.  One of CONST(GTK_JUSTIFY_).
 
 require gtk26;
@@ -189,7 +189,7 @@ void set_text_with_mnemonic(sprintf_format text, sprintf_args ... fmt)
 //! Sets the label's text from the string text.  If characters in text are
 //! preceded by an underscore, they are underlined indicating that they
 //! represent a keyboard accelerator called a mnemonic.  The mnemonic key can
-//! be used to activate another widget, chose automatically, or explicitly
+//! be used to activate another widget, chosen automatically, or explicitly
 //! using set_mnemonic_widget().
 {
   pgtk2_get_string_arg_with_sprintf(args);
@@ -286,9 +286,9 @@ void set_single_line_mode(int mode);
 //! Sets whether the label is in single line mode.
 
 void set_angle(double angle);
-//! Sets the angle of rotation for the label.  An angle of 90 reads from 
+//! Sets the angle of rotation for the label.  An angle of 90 reads from
 //! bottom to top, and angle of 270, from top to bottom.  The angle setting
-//! for the label is igrnored if the lable is selectable, wrapped, or 
+//! for the label is ignored if the label is selectable, wrapped, or
 //! ellipsized.
 endrequire;
 

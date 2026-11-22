@@ -90,7 +90,7 @@ void format_secondary_markup(string text)
 //! Sets the secondary text of the message dialog to be text, which is
 //! marked up with the Pango text markup language.
 //! <p>
-//! Note tha tsetting a secondary text makes the primary text become bold,
+//! Note that setting a secondary text makes the primary text become bold,
 //! unless you have provided explicit markup.
 {
   pgtk2_verify_inited();

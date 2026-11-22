@@ -43,9 +43,10 @@ int pgtk2_model_filter_visible_callback(GtkTreeModel *model,
 %}
 
 void set_visible_func(function f, mixed user_data)
-//! Sets the comparison function used when sorting to be f.  If the current
-//! sort column id of this sortable is the same as column, then the model will
-//! sort using this function.
+//! Sets the function used to determine whether a row should be visible in
+//! this filtered model.  f is called for each row in the child model with
+//! that row's iter and user_data, and should return true if the row should
+//! be visible and false if not.
 {
   pgtk2_verify_inited();
   {

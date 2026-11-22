@@ -86,7 +86,7 @@ void create(?mapping(string:mixed) props)
 
 void set_fixed_height_from_font(int number_of_rows);
 //! Sets the height of a renderer to explicitly be determined by the "font"
-//! and "y_bad" property set on it.  Further changes in these properties do not
+//! and "ypad" property set on it.  Further changes in these properties do not
 //! affect the height, so they must be accompanied by a subsequent call to
 //! this function.  Using this function is unflexible, and should really only
 //! be used if calculating the size of cell is too slow (i.e., a massive

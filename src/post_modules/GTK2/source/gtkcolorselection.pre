@@ -63,8 +63,8 @@ void set_current_alpha(int alpha);
 mapping(string:int) get_current_color()
 //!  When you need to query the current color, typically when you've
 //!  received a "color_changed" signal, you use this function. The
-//!  return value is an array of floats, See the set_color() function
-//!  for the description of this array.
+//!  return value is a mapping with the keys "pixel", "red", "green"
+//!  and "blue", as described for set_current_color().
 {
   pgtk2_verify_inited();
   {
