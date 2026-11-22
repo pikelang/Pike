@@ -431,7 +431,7 @@ class OAEPState {
       if (sizeof(s) != n->size(256)) {
 	error("Decryption error.\n");
       }
-      Gmp.mpz c = Gmp.mpz(s, 256);
+      Gmp.mpz c = Gmp.smpz(s, 256);
       if (c >= n) {
 	error("Decryption error.\n");
       }
