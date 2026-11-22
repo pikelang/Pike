@@ -278,7 +278,7 @@ void set_documenters(array(string) doc)
     }
     doc[j]=NULL;
 
-    gtk_about_dialog_set_artists(GTK_ABOUT_DIALOG(THIS->obj),doc);
+    gtk_about_dialog_set_documenters(GTK_ABOUT_DIALOG(THIS->obj),doc);
 
     pop_n_elems(j);
 
