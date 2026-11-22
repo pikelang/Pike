@@ -894,6 +894,9 @@ o SSL
   - The default signature algorithms of SSL.Context now include Ed448
     when Crypto.ECC.Curve448 is available.
 
+  - TLS 1.2 clients now accept server key exchanges signed with
+    EdDSA, as sent by servers with Ed25519 and Ed448 certificates.
+
 o SSL.File: Propagate fatal alerts to close and write callbacks.
 
   SSL did not call the close_callback on SSL.File()s that connect outgoing

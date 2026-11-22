@@ -1846,6 +1846,29 @@ test_any([[
 
 cond_end
 
+dnl TLS 1.2 ServerKeyExchange signed with EdDSA for an ECDSA suite.
+cond_resolv(Crypto.ECC.Curve25519, [[
+test_any_equal([[
+  object key = Crypto.ECC.Curve25519.EdDSA()->generate_key();
+  object session = SSL.Session();
+  session->version = SSL.Constants.PROTOCOL_TLS_1_2;
+  session->peer_public_key = key;
+  object cs = SSL.Cipher.CipherSpec();
+  cs->signature_alg = SSL.Constants.SIGNATURE_ecdsa;
+  string data = "Signed data";
+  array res = ({});
+  foreach(({ SSL.Constants.SIGNATURE_ed25519_intrinsic,
+             SSL.Constants.SIGNATURE_ed448_intrinsic,
+             SSL.Constants.SIGNATURE_rsa_pss_sha256 }), int scheme) {
+    Stdio.Buffer input = Stdio.Buffer();
+    input->add_int(scheme, 2);
+    input->add_hstring(key->pkcs_sign(data), 2);
+    res += ({ cs->verify(session, data, input) });
+  }
+  return res;
+]], ({ 1, 0, 0 }))
+]])
+
 test_do( add_constant("S") )
 
 END_MARKER

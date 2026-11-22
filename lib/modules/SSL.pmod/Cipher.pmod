@@ -256,7 +256,9 @@ class CipherSpec {
       int sign_id = signature_scheme & SIGNATURE_MASK;
       string sign = input->read_hstring(2);
 
-      if( sign_id != signature_alg )
+      // RFC 5246 7.4.1.4.1: The server may use any of the offered
+      // schemes that suit its key.
+      if( signature_key_type(sign_id) != signature_key_type(signature_alg) )
       {
         SSL3_DEBUG_MSG("Signature pair <%d,%d> doesn't match "
                        "negotiated <%d,%d>\n", hash_id, sign_id,
@@ -264,9 +266,16 @@ class CipherSpec {
         return 0;
       }
 
+      // RFC 8422 5.4: EdDSA signs the data itself, without a hash.
+      if (EDDSA_SIG_CURVE[sign_id]) {
+        if ((hash_id != HASH_intrinsic) || (pkc->name() != "EdDSA") ||
+            (pkc->get_curve()->name() != EDDSA_SIG_CURVE[sign_id]))
+          return 0;
+        return pkc->raw_verify(data, sign);
+      }
+
       Crypto.Hash hash = HASH_lookup[hash_id];
       if (!hash) return 0;
-
       return pkc->pkcs_verify(data, hash, sign);
     }
 
@@ -1942,6 +1951,22 @@ class RC2
   }
 }
 #endif /* Crypto.Arctwo */
+
+// The type of key that a signature algorithm needs. In TLS 1.2 the
+// suite only gives the type of the server's key, and the server may
+// sign with any offered scheme for that key (RFC 5246 7.4.1.4.1), so
+// EdDSA with an ECDSA suite (RFC 8422 2.1).
+protected int signature_key_type(int sig_id)
+{
+  if (EDDSA_SIG_CURVE[sig_id]) return SIGNATURE_ecdsa;
+  return sig_id;
+}
+
+// The curves of the EdDSA signature algorithms.
+protected constant EDDSA_SIG_CURVE = ([
+  SIGNATURE_ed25519: "Curve25519",
+  SIGNATURE_ed448: "Curve448",
+]);
 
 //! Lookup the crypto parameters for a cipher suite.
 //!
