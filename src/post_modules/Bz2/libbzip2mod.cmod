@@ -120,13 +120,26 @@ DECLARATIONS
  *! @[Bz2.Inflate()]
  */
 
-/*! @decl void create(int(1..9)|void block_size)
+/*! @decl void create(int(1..9)|void block_size, int(1..250)|void work_factor)
  *!
  *! If given, @[block_size] should be a number from 1 to 9 indicating
  *! the block size used when doing compression. The actual block size
  *! will be a 100000 times this number. Low numbers are considered
  *! 'fast', higher numbers are considered 'slow' but give better
  *! packing. The parameter is set to 9 if it is omitted.
+ *!
+ *! @[work_factor] controls how much effort the compressor puts into
+ *! its normal (sorting-based) algorithm before giving up and
+ *! switching to a slower but robust fallback algorithm, when
+ *! presented with worst case, highly repetitive, input data that
+ *! makes the normal algorithm behave badly. It does not affect the
+ *! degree of compression, only how long compression can take in
+ *! such worst-case inputs: lower values make the fallback kick in
+ *! sooner (bounding the worst-case time more tightly, at the cost of
+ *! using the slower algorithm more readily), while higher values let
+ *! the normal algorithm run longer before falling back. The
+ *! parameter is set to 30 if it is omitted, which is a reasonable
+ *! choice for most input data.
  *!
  *! This function can also be used to re-initialize a Bz2.Deflate
  *! object so it can be re-used.
@@ -341,7 +354,7 @@ PIKECLASS Deflate
   }
 
 
-  /*! @decl string finish(string data)
+  /*! @decl string|zero finish(string data)
    *!
    *! This method feeds the data to the internal buffers of the
    *! Deflate object. Then it compresses all buffered data adds a end
@@ -353,7 +366,7 @@ PIKECLASS Deflate
    *! @[Bz2.Deflate->read()]
    */
 
-  PIKEFUN string finish(string data){
+  PIKEFUN string|zero finish(string data){
     struct pike_string *retstr;
     int retval = 0;
     struct byte_buffer retbuf;
@@ -814,10 +827,20 @@ PIKECLASS File
     RETURN(1);
   }
 
-  /*! @decl int(0..1) write_open(string file)
+  /*! @decl int(0..1) write_open(string file, int(1..9)|void compression, @
+   *!                             int(1..250)|void work_factor)
    *! Opens a file for writing.
    *! @param file
-   *! The name of the file to be opened
+   *! The name of the file to be opened.
+   *! @param compression
+   *! The block size used when doing compression, see @[Bz2.Deflate()->create()].
+   *! The parameter is set to 9 if it is omitted.
+   *! @param work_factor
+   *! Controls how much effort the compressor puts into its normal
+   *! algorithm before falling back to a slower but robust one on
+   *! worst-case, highly repetitive, input data, see
+   *! @[Bz2.Deflate()->create()]. The parameter is set to 30 if it is
+   *! omitted.
    */
 
   PIKEFUN int write_open(string file_name, int|void compression, int|void work){
@@ -947,7 +970,7 @@ PIKECLASS File
   /*! @decl string read(int len)
    *! Reads len (uncompressed) bytes from the file.
    *! If len is omitted the whole file is read.
-   *! If read is unsuccessful, 0 is returned.
+   *! If there is no more data to read, the empty string is returned.
    */
 
   PIKEFUN string read(int|void bytes){
