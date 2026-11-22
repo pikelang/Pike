@@ -299,8 +299,8 @@ array(int) signature_algorithms = ({
 #endif
   SIGNATURE_rsa_pkcs1_sha512,
 #endif
-#if constant(Crypto.ECC.Curve488)
-  SIGNATURE_ed488_intrinsic,
+#if constant(Crypto.ECC.Curve448)
+  SIGNATURE_ed448_intrinsic,
 #endif
 #if constant(Crypto.SHA384)
 #if constant(Crypto.ECC.Curve)
