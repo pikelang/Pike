@@ -15,9 +15,8 @@ GTK2.Widget get_source_widget()
 }
 
 void drag_finish(int success, int del)
-//! If success is true, the drag succeded.
+//! If success is true, the drag succeeded.
 //! If del is true, the source should be deleted.
-//! time is the current time.
 {
   INT_TYPE a,b,t;
   get_all_args(NULL,args,"%i%i",&a,&b);

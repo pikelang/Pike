@@ -4,7 +4,7 @@ class Gnome.DruidPageFinish;
 inherit Gnome.DruidPage;
 //! This is a W(GnomeDruidPage).
 void create();
-//! Creates a new Gnome.DruidPageStandard widget.
+//! Creates a new Gnome.DruidPageFinish widget.
 void set_bg_color( GDK.Color color );
 //! This will set the background color to be the specified color.
 void set_textbox_color( GDK.Color color );

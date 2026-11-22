@@ -70,7 +70,7 @@ void create(string|mapping(string:mixed)|void title_or_props,
 void pack_start(GTK2.CellRenderer cell, int expand);
 //! Packs the cell into the beginning of the column.  If expand is false, then
 //! the cell is allocated no more space than it needs.  Any unused space is
-//! divied evenly between cells for which expand is true.
+//! divided evenly between cells for which expand is true.
 
 void pack_end(GTK2.CellRenderer cell, int expand);
 //! Packs the cell to the end of the column.
@@ -79,7 +79,7 @@ void clear();
 //! Unsets all the mappings on all renderers.
 
 array get_cell_renderers()
-//! Returns an array of all the cell renderers in the column, in no partciular
+//! Returns an array of all the cell renderers in the column, in no particular
 //! order.
 {
   pgtk2_verify_inited();
@@ -125,7 +125,7 @@ int get_visible();
 
 void set_resizable(int resizable);
 //! If resizable is true, then the user can explicitly resize the column by
-//! grabbing the outer edge of the column button.  If resizable is ture and
+//! grabbing the outer edge of the column button.  If resizable is true and
 //! the sizing mode of the column is GTK2.TREE_VIEW_COLUMN_AUTOSIZE, then the
 //! sizing mode is changed to GTK2.TREE_VIEW_COLUMN_GROW_ONLY.
 
@@ -133,7 +133,7 @@ int get_resizable();
 //! Returns true if the column can be resized by the end user.
 
 void set_sizing(int type);
-//! Sets the growth behavior of this columnt to type.
+//! Sets the growth behavior of this column to type.
 //! One of CONST(GTK_TREE_VIEW_COLUMN_).
 
 int get_sizing();
@@ -240,7 +240,7 @@ void set_sort_order(int order);
 //! Changes the appearance of the sort indicator.
 //! <p>
 //! This does not actually sort the model.  Use set_sort_column_id() if you
-//! wnat automatic sorting support.  This function is primarily for custom
+//! want automatic sorting support.  This function is primarily for custom
 //! sorting behavior, and should be used in conjunction with 
 //! GTK2.TreeSortable->set_sort_column() to do that.  For custom models, the
 //! mechanism will vary.
@@ -315,7 +315,7 @@ mapping cell_get_position(GTK2.CellRenderer cell_renderer)
 endrequire;
 
 int cell_is_visible();
-//! Returns true if any of the cells packed into the colum are visible.  For
+//! Returns true if any of the cells packed into the column are visible.  For
 //! this to be meaningful, you must first initialize the cells with
 //! cell_set_cell_data().
 

@@ -86,7 +86,7 @@ void create(string|mapping|void title, ?GTK2.RadioButton groupmember, ?int mnemo
 
 void set_group(GTK2.RadioButton groupmember)
 //! the argument is another radio button to whose group this button
-//! should be added to. It is prefereable to use the second argument to
+//! should be added to. It is preferable to use the second argument to
 //! the constructor instead, but if you for some reason want to move
 //! the button to another group, use this function.
 {

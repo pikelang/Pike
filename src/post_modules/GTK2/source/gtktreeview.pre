@@ -155,7 +155,7 @@ void set_rules_hint(int setting);
 //! rows in alternating colors even when rules are turned off, and users who
 //! prefer that appearance all the time can choose those themes.  You should
 //! call this function only as a semantic hint to the theme engine that your
-//! tree makes alternating colors usefull from a functional standpoint
+//! tree makes alternating colors useful from a functional standpoint
 //! (since it has lots of columns, generally).
 
 int get_rules_hint();
@@ -416,7 +416,7 @@ int get_reorderable();
 
 mapping get_path_at_pos(int x, int y)
 //! Finds the path at the point (x,y) relative to widget coordinates.  That
-//! is, x and y are relative to an events coordinates.  x and y must come from
+//! is, x and y are relative to an event's coordinates.  x and y must come from
 //! an event on the view only where event->window==get_bin().  It is primarily
 //! for things like popup menus.  Returns GTK2.TreePath, GTK2.TreeViewColumn,
 //! and cell_x and cell_y, which are the coordinates relative to the cell
@@ -457,7 +457,7 @@ mapping get_path_at_pos(int x, int y)
 //! the row specified by path and the column specified by column.  If path is
 //! omitted or 0, or points to a path not currently displayed, the y and
 //! height fields of the rectangle will be 0.  If column is omitted, the x and
-//! width fields will be o.  The sum of all cell rects does not cover the
+//! width fields will be 0.  The sum of all cell rects does not cover the
 //! entire tree; there are extra pixels in between rows, for example.  The
 //! returned rectangle is equivalent to the cell_area passed to
 //! GTK2.CellRenderer->render().  This function is only valid if the view is
@@ -507,7 +507,7 @@ mapping get_path_at_pos(int x, int y)
 
 +GDK2.Rectangle get_visible_rect()
 //! Returns a GDK2.Rectangle with the currently-visible region of the buffer,
-//! in tree coordinates.  Conver to widget coordinates with 
+//! in tree coordinates.  Convert to widget coordinates with
 //! tree_to_widget_coords().  Tree coordinates start at 0,0 for row 0 of the
 //! tree, and cover the entire scrollable area of the tree.
 {

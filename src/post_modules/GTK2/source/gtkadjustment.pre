@@ -91,7 +91,7 @@ void clamp_page(float lower, float upper);
 //! changed.
 
 void changed();
-//! Emites a "changed" signal.
+//! Emits a "changed" signal.
 
 void value_changed();
 //! Emits a "value-changed" signal.

@@ -20,7 +20,7 @@ void create( string name, int behavior );
 //!  Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. </p><p>
 //!  Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. </p><p>
 //!  Gnome.DockItemBehNeverVertical specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.</p><p>
-//!  Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.</p><p>
+//!  Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept vertical, and users cannot move it to a horizontal band.</p><p>
 //!  Gnome.DockItemBehLocked specifies that users cannot drag the item around.
 //! </p>
 GTK.Widget get_child( );

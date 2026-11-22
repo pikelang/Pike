@@ -328,7 +328,7 @@ void set_dashes(int offset, array dashes)
 void set_line_attributes(int line_width, int line_style, int cap_style,
 			 int join_style)
 //! Control how lines are drawn.
-//! line_style is one of GDK2.LineSolid, GDK2,LineOnOffDash and GDK2.LineDoubleDash.
+//! line_style is one of GDK2.LineSolid, GDK2.LineOnOffDash and GDK2.LineDoubleDash.
 //! cap_style is one of GDK2.CapNotLast, GDK2.CapButt, GDK2.CapRound and GDK2.CapProjecting.
 //! join_style is one of GDK2.JoinMiter, GDK2.JoinRound and GDK2.JoinBevel.
 {

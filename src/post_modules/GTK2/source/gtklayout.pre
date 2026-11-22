@@ -52,7 +52,7 @@ void set_size(int xsize, int ysize);
 
 
 +GTK2.Adjustment get_hadjustment();
-//! Gets the GTK2.Adjustment used for communicaiton between
+//! Gets the GTK2.Adjustment used for communication between
 //! the horizontal scrollbar and this layout.  This should
 //! only be called after the layout has been placed in a
 //! GTK2.ScrolledWindow or otherwise configured for scrolling.

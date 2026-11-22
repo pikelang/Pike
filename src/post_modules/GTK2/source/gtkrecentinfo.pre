@@ -38,8 +38,6 @@ string get_description()
   PGTK_PUSH_GCHAR(gtk_recent_info_get_description((GtkRecentInfo *)THIS->obj));
 }
 
-//! Gets the (short) description of the resource.
-
 string get_mime_type()
 //! Gets the MIME type of the resource.
 {

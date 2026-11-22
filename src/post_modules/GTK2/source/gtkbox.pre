@@ -25,8 +25,7 @@ void pack_start(GTK2.Widget widget, int expandp, int fillp, int padding);
 
 void pack_end(GTK2.Widget widget, int expandp, int fillp, int padding);
 //! Pack from the right (or bottom) of the box.
-//! Arguments are widget, expand, fill, paddingb
-//! widget, expand, fill, padding
+//! Arguments are widget, expand, fill, padding
 
 void pack_start_defaults(GTK2.Widget widget);
 //! The argument is the widget to add. This function is equivalent to 'add'

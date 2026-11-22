@@ -64,7 +64,7 @@ int get_n_pages();
 //! Returns the number of pages.
 
 +GTK2.Widget get_nth_page(int page_num);
-//! Returnss the child widget contained in page number page_num.
+//! Returns the child widget contained in page number page_num.
 
 int prepend_page(GTK2.Widget page);
 //! Prepends a page to the assistant.

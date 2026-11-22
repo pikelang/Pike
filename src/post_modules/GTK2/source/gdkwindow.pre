@@ -429,7 +429,8 @@ void delete_property(GDK2.Atom a)
 
 void set_background(GDK2.Color|GDK2.Pixmap to)
 //! Set the background color or image.
-//! The argument is either a GDK2.Pixmap or a GDK2.Color object.
+//! The argument is either a GDK2.Pixmap, GDK2.Window, GDK2.Bitmap,
+//! GDK2.Drawable or a GDK2.Color object.
 {
   struct object *o;
   get_all_args(NULL,args,"%o",&o);

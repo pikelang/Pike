@@ -514,7 +514,7 @@ string get_option(string key)
 +GDK2.Pixbuf scale_simple(int dest_width, int dest_height, ?int interp_type)
 //! Create a new W(Pixbuf) containing a copy of this W(Pixbuf) scaled to
 //! dest_width x dest_height.  Leaves this W(Pixbuf) unaffected.
-//! intertype should be GDK2.INTERP_NEAREST if you want maximum speed
+//! interp_type should be GDK2.INTERP_NEAREST if you want maximum speed
 //! (but when scaling down GDK2.INTERP_NEAREST is usually unusably ugly).
 //! The default interp_type should be GDK2.INTERP_BILINEAR which offers
 //! reasonable quality and speed.
@@ -564,14 +564,14 @@ string get_option(string key)
 +GDK2.Pixbuf composite_color_simple(int dest_width, int dest_height,
                 int type, int overall_alpha, int check_size, int color1,
                 int color2);
-//! Creates a new W(Pixbuf) by scalling src to dest_width x dest_height
-//! and compositing the result with a checkboard of colors color1 and
+//! Creates a new W(Pixbuf) by scaling src to dest_width x dest_height
+//! and compositing the result with a checkerboard of colors color1 and
 //! color2.
 
 +GDK2.Pixbuf composite(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
                 int dest_height, float offset_x, float offset_y,
                 float scale_x, float scale_y, int type, int overall_alpha)
-//! Creates a transformation of the source image by scalling by scale_x
+//! Creates a transformation of the source image by scaling by scale_x
 //! and scale_y, then translating by offset_x and offset_y.  This gives
 //! an image in the coordinates of the destination pixbuf.  The rectangle
 //! (dest_x,dest_y,dest_width,dest_height) is then composited onto the
@@ -605,8 +605,8 @@ string get_option(string key)
 //! Creates a transformation of the source image by scaling by scale_x and
 //! scale_y, then translating by offset_x and offset_y, then composites
 //! the rectangle (dest_x,dest_y,dest_width,dest_height) of the resulting
-//! image with a checkboard of the colors color1 and color2 and renders it
-//! onto the destinagion image.
+//! image with a checkerboard of the colors color1 and color2 and renders it
+//! onto the destination image.
 //! <p>
 //! See composite_color_simple() for a simpler variant of this function
 //! suitable for many tasks.
@@ -653,7 +653,7 @@ endrequire;
 //! for the substitute color, all white pixels will become fully
 //! transparent.
 
-+GDK2.Pixbuf copy_area(GDK2.Pixbuf dest, int src_x, int src_y, int widt,
++GDK2.Pixbuf copy_area(GDK2.Pixbuf dest, int src_x, int src_y, int width,
 		      int height, int dest_x, int dest_y)
 //! Copies a rectangular area from this pixbuf to dest.  Conversion of
 //! pixbuf formats is done automatically.
@@ -684,7 +684,7 @@ void saturate_and_pixelate(GDK2.Pixbuf dest, float saturation,
 //! checkerboard pattern to create a pixelated image.  This pixbuf and
 //! dest must have the same image format, size, and rowstride.
 
-+GDK2.Bitmap render_threshold_alpha(int src_x, int src_y, int dest_c,
++GDK2.Bitmap render_threshold_alpha(int src_x, int src_y, int dest_x,
 				   int dest_y, int width, int height,
 				   int alpha_threshold)
 //! Takes the opacity values in a rectangular portion of a pixbuf and

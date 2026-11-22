@@ -12,7 +12,7 @@ void set_mode(int type);
 //! One of CONST(GTK_SELECTION_).
 
 int get_mode();
-//! Gets the selectiom mode.
+//! Gets the selection mode.
 
 object get_user_data()
 //! Returns the user data for the selection function.
@@ -26,9 +26,9 @@ object get_user_data()
 //! Returns the tree view associated with this selection.
 
 array get_selected()
-//! Returns a W(TreeITer) with the currently selected node if this selection
+//! Returns a W(TreeIter) with the currently selected node if this selection
 //! is set to GTK2.SELECTION_SINGLE or GTK2.SELECTION_BROWSE.  Also returns
-//! W(TreeModel) as a convenience.  This function will not work if you this
+//! W(TreeModel) as a convenience.  This function will not work if this
 //! selection is set to GTK2.SELECTION_MULTIPLE.
 {
   pgtk2_verify_inited();

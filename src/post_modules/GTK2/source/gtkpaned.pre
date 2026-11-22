@@ -59,7 +59,7 @@ void add1(GTK2.Widget left_or_top);
 
 void add2(GTK2.Widget right_or_bottom);
 //! Set the right or bottommost item<br />
-//! This is equivalent to pack2(left_or_top,0,1)
+//! This is equivalent to pack2(right_or_bottom,0,1)
 
 void pack1(GTK2.Widget widget, int resize, int shrink);
 //! Add a child to the top or left pane.

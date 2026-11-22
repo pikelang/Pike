@@ -85,7 +85,7 @@ void thaw();
 //! Resume dynamic updating of the widget
 
 array(int) get_marked_dates()
-//! Returns an array (with 31 elements) with 1es and 0es.
+//! Returns an array (with 31 elements) with 1s and 0s.
 {
   int i;
   pgtk2_pop_n_elems(args);
