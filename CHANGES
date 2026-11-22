@@ -904,6 +904,12 @@ o SSL
     own key, not the type of the key that signed it. Eg ECDSA
     certificates issued by RSA CAs now work.
 
+  - TLS 1.2 servers now match certificates signed with RSA and
+    SHA-512 against the client's rsa_pkcs1_sha512 signature
+    algorithm. A server with RSA certificates signed with SHA-256 and
+    SHA-512 now sends the one the client lists, whatever order they
+    were added in.
+
 o SSL.File: Propagate fatal alerts to close and write callbacks.
 
   SSL did not call the close_callback on SSL.File()s that connect outgoing

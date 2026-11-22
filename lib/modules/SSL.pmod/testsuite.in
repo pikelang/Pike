@@ -1962,6 +1962,58 @@ test_any_equal([[
        SSL.Constants.KE_ecdhe_ecdsa, SSL.Constants.KE_ecdhe_rsa }))
 ]])
 
+dnl Certificates signed with sha512WithRSAEncryption are recognized as
+dnl such, and a TLS 1.2 server gives each client the certificate signed
+dnl with the algorithm it lists, whatever order they were added in.
+test_any_equal([[
+  object k256 = Crypto.RSA()->generate_key(1024);
+  object k512 = Crypto.RSA()->generate_key(1024);
+  string c256 = Standards.X509.make_selfsigned_certificate(k256, 3600,
+    ([ "commonName": "*" ]), ([]), Crypto.SHA256);
+  string c512 = Standards.X509.make_selfsigned_certificate(k512, 3600,
+    ([ "commonName": "*" ]), ([]), Crypto.SHA512);
+  array res = ({ SSL.Constants.CertificatePair(k512, ({ c512 }))->sign_algs });
+  foreach(({ SSL.Constants.SIGNATURE_rsa_pkcs1_sha256,
+             SSL.Constants.SIGNATURE_rsa_pkcs1_sha512 }), int scheme) {
+    foreach(({ 0, 1 }), int sha512_first) {
+      object server_ctx = SSL.Context();
+      if (sha512_first) {
+        server_ctx->add_cert(k512, ({ c512 }));
+        server_ctx->add_cert(k256, ({ c256 }));
+      } else {
+        server_ctx->add_cert(k256, ({ c256 }));
+        server_ctx->add_cert(k512, ({ c512 }));
+      }
+      object client_ctx = SSL.Context();
+      client_ctx->max_version = SSL.Constants.PROTOCOL_TLS_1_2;
+      client_ctx->signature_algorithms = ({ scheme });
+      object a = Stdio.File();
+      object b = a->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+      SSL.File server = SSL.File(a, server_ctx);
+      SSL.File client = SSL.File(b, client_ctx);
+      server->set_nonblocking(0, 0, 0);
+      client->set_nonblocking(0, 0, 0);
+      server->accept();
+      client->connect();
+      function handshaking = lambda(SSL.File f) {
+        object c = f->query_connection();
+        return !c || (c->state & SSL.Constants.CONNECTION_handshaking);
+      };
+      for (int i = 0; (handshaking(client) || handshaking(server)) && (i < 100);
+           i++) {
+        Pike.DefaultBackend(0.1);
+      }
+      if (handshaking(client) || handshaking(server)) {
+        res += ({ "Handshake failed" });
+      } else {
+        string cert = server->query_connection()->session->certificate_chain[0];
+        res += ({ (cert == c512) ? 512 : 256 });
+      }
+    }
+  }
+  return res;
+]], ({ ({ SSL.Constants.SIGNATURE_rsa_pkcs1_sha512 }), 256, 256, 512, 512 }))
+
 test_do( add_constant("S") )
 
 END_MARKER

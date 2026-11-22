@@ -1672,7 +1672,7 @@ mapping(string(8bit):SignatureScheme)
   Standards.PKCS.Identifiers.rsa_sha384_id->get_der():
   SIGNATURE_rsa_pkcs1_sha384,
   Standards.PKCS.Identifiers.rsa_sha512_id->get_der():
-  SIGNATURE_rsa_pkcs1_sha256,
+  SIGNATURE_rsa_pkcs1_sha512,
 
   // DSA
   Standards.PKCS.Identifiers.dsa_sha_id->get_der():
