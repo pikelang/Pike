@@ -288,12 +288,12 @@ PIKECLASS TypedResult
     RETURN THIS->eof;
   }
 
-  /*! @decl array(mapping(string:mixed)) fetch_fields()
+  /*! @decl array(mapping(string:mixed))|zero fetch_fields()
    *!
    *! @seealso
    *!   @[Sql.sql_result()->fetch_fields()]
    */
-  PIKEFUN array(mapping(string:mixed)) fetch_fields() {
+  PIKEFUN array(mapping(string:mixed))|zero fetch_fields() {
     int i,t;
     if (!THIS->stmt || !sqlite3_column_name(THIS->stmt, 0)) {
       /* Documented to happen on malloc() failure,
@@ -356,12 +356,12 @@ PIKECLASS TypedResult
       }
   }
 
-  /*! @decl array fetch_row()
+  /*! @decl array|zero fetch_row()
    *!
    *! @seealso
    *!   @[Sql.sql_result()->fetch_row()]
    */
-  PIKEFUN array fetch_row() {
+  PIKEFUN array|zero fetch_row() {
     int i;
     sqlite3_stmt *stmt = THIS->stmt;
 
@@ -426,12 +426,12 @@ PIKECLASS Result
 #undef THIS
 #define THIS	THIS_SQLITE_TYPEDRESULT
 
-  /*! @decl array fetch_row()
+  /*! @decl array|zero fetch_row()
    *!
    *! @seealso
    *!   @[Sql.sql_result()->fetch_row()]
    */
-  PIKEFUN array fetch_row()
+  PIKEFUN array|zero fetch_row()
   {
     int i;
     sqlite3_stmt *stmt = THIS->stmt;
