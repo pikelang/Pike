@@ -576,7 +576,7 @@ EXIT {
 *! @decl constant PRESET_PHOTO
 *! @decl constant PRESET_DRAWING
 *! @decl constant PRESET_ICON
-*! @decl constant PRESET_TREXT
+*! @decl constant PRESET_TEXT
 *!  Constants used to select the default values for the various encoding options in @[encode].
 *!
 *! @decl constant HINT_DEFAULT

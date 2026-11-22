@@ -68,6 +68,11 @@ class Plain
 //! and the subsequent are the matching subpatterns.
 //! Returns 0 if there was no match.
 //!
+//! @param context
+//!   Optional @[MatchContext] providing extra context for the match
+//!   (eg a callout). A plain callout function may be given instead
+//!   of a @[MatchContext], in which case one is created internally.
+//!
 //! example:
 //! @code
 //! > Regexp.PCRE2.Plain("i\(.*\) is \(.*\)u")->split2("pike is fun");
@@ -77,7 +82,7 @@ class Plain
 //!              "f"
 //!          })
 //! @endcode
-   array(string)|int(0..0) split2(string subject,void|int startoffset,
+   array(string|zero)|int(0..0) split2(string subject,void|int startoffset,
                                   MatchContext|function(CalloutBlock:int)|void context)
    {
       array(int)|int v=exec(subject,startoffset,handle_match_context(context));
@@ -91,6 +96,11 @@ class Plain
 //! or if there are no subpattern but still a match, ({0}).
 //! Returns 0 if there was no match.
 //!
+//! @param context
+//!   Optional @[MatchContext] providing extra context for the match
+//!   (eg a callout). A plain callout function may be given instead
+//!   of a @[MatchContext], in which case one is created internally.
+//!
 //! example:
 //! @code
 //! > Regexp.PCRE2.Plain("i\(.*\) is \(.*\)u")->split("pike is fun");
@@ -103,10 +113,10 @@ class Plain
 //!                 0
 //!             })
 //! @endcode
-   array(string)|int(0..0) split(string subject,void|int startoffset,
+   array(string|zero)|int(0..0) split(string subject,void|int startoffset,
                                  MatchContext|function(CalloutBlock:int)|void context)
    {
-      array(string)|int(0..0) v=split2(subject,startoffset,context);
+      array(string|zero)|int(0..0) v=split2(subject,startoffset,context);
       if (intp(v)) return v;
       if (sizeof(v)>1) return v[1..];
       else return copy_value(({0}));
@@ -114,6 +124,11 @@ class Plain
 
 //! returns true (1) if a match is found,
 //! false otherwise
+//!
+//! @param context
+//!   Optional @[MatchContext] providing extra context for the match
+//!   (eg a callout). A plain callout function may be given instead
+//!   of a @[MatchContext], in which case one is created internally.
 //!
 //! example:
 //! @code
@@ -199,6 +214,11 @@ class Plain
 
 //! replace one (first) occurance of a pattern in a subject
 //!
+//! @param context
+//!   Optional @[MatchContext] providing extra context for the match
+//!   (eg a callout). A plain callout function may be given instead
+//!   of a @[MatchContext], in which case one is created internally.
+//!
 //! example:
 //! @code
 //! > Regexp.PCRE2("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka");
@@ -227,6 +247,11 @@ class Plain
 //! in an array and as second argument the exec result array.
 //!
 //! returns called object
+//!
+//! @param context
+//!   Optional @[MatchContext] providing extra context for the match
+//!   (eg a callout). A plain callout function may be given instead
+//!   of a @[MatchContext], in which case one is created internally.
 //!
 //! example:
 //! @code
