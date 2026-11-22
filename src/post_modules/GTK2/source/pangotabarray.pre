@@ -90,7 +90,7 @@ array get_tabs()
       ref_push_string(_STR("location")); push_int(locations[i]);
       f_aggregate_mapping(4);
     }
-    f_aggregate(i-1);
+    f_aggregate(i);
     g_free(alignments);
     g_free(locations);
   }
