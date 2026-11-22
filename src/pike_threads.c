@@ -2174,6 +2174,12 @@ int num_lwps = 1;
 #endif
 
 /*! @class Thread
+ *!
+ *! Explicit destruction is prohibited, including after the thread has
+ *! finished. Release references to the thread object to let it be cleaned
+ *! up normally.
+ *!
+ *! @decl inherit Pike.NoExplicitDestruct
  */
 
 /*! @decl void create(function(mixed...:mixed|void) f, mixed ... args)
@@ -5182,6 +5188,7 @@ void th_init(void)
   pop_stack();
 
   START_NEW_PROGRAM_ID(THREAD_ID);
+  low_inherit(NoExplicitDestruct_program, NULL, -1, 0, 0, NULL, NULL);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
   PIKE_MAP_VARIABLE_SIZED("result", OFFSETOF(thread_state, result),
                     PIKE_SIZEOF_MEMBER(thread_state, result),
@@ -5204,7 +5211,6 @@ void th_init(void)
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);
   thread_id_prog=Pike_compiler->new_program;
-  thread_id_prog->flags |= PROGRAM_NO_EXPLICIT_DESTRUCT;
   add_ref(thread_id_prog);
   end_class("thread_id", 0);
 

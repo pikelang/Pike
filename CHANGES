@@ -1221,6 +1221,9 @@ o Pike.NoExplicitDestruct
   collection is unaffected. The restriction also propagates when inheriting
   native classes with the PROGRAM_NO_EXPLICIT_DESTRUCT flag.
 
+  Thread.Thread now inherits Pike.NoExplicitDestruct instead of setting
+  the restriction directly.
+
 o Pike.InhibitDestruct
 
   Objects of classes that inherit Pike.InhibitDestruct may

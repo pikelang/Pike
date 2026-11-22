@@ -7617,6 +7617,16 @@ dnl belong to the thread that asked for it.
     return ok;
   ]], 1)
 
+  test_any([[
+    class Derived { inherit Thread.Thread; };
+    if (!Program.inherits(Thread.Thread, Pike.NoExplicitDestruct) ||
+        !Program.inherits(Derived, Pike.NoExplicitDestruct)) return 1;
+    Thread.Thread t = Derived(lambda() { return 42; });
+    if (t->wait() != 42) return 2;
+    if (!catch(destruct(t)) || !t) return 3;
+    return t->wait() == 42 ? 0 : 4;
+  ]], 0)
+
 dnl Cleaning up a finished thread that never took its interrupt should
 dnl not lose the interrupt of the thread doing it. The finished thread
 dnl interrupted itself in a destructor, where interrupts wait; the main
