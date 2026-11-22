@@ -1481,16 +1481,25 @@ class CType {
   }
 }
 
-// Used to find the declared upper and lower range for strings
-// in argument types.
-array(int) clamp_int_range(PikeType complex_type, string ranged_type)
+// Used to find the declared upper and lower range for integers
+// and strings in argument types.
+//
+// The range is normally clamped to 32 bit signed, since that is
+// what the Pike type system supports. If wide is set it is instead
+// clamped to 64 bit signed, which is used for the argument checks
+// in the generated C code. Open bounds (ie int(..)) are widened
+// accordingly.
+array(int) clamp_int_range(PikeType complex_type, string ranged_type,
+                           int(0..1)|void wide)
 {
+  int min = wide ? -0x8000000000000000 : -0x80000000;
+  int max = wide ?  0x7fffffffffffffff :  0x7fffffff;
   switch((string)complex_type->t) {
   case "|":
     {
       array(int)|zero res = UNDEFINED;
       foreach(complex_type->args, PikeType arg) {
-	array(int)|zero sub_res = clamp_int_range(arg, ranged_type);
+        array(int)|zero sub_res = clamp_int_range(arg, ranged_type, wide);
 	if (!sub_res) continue;
 	if (!res) {
 	  res = sub_res;
@@ -1503,9 +1512,9 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
     }
   case "&":
     {
-      array(int) res = ({ -0x80000000, 0x7fffffff });
+      array(int) res = ({ min, max });
       foreach(complex_type->args, PikeType arg) {
-	array(int)|zero sub_res = clamp_int_range(arg, ranged_type);
+        array(int)|zero sub_res = clamp_int_range(arg, ranged_type, wide);
 	if (!sub_res) return UNDEFINED;
 	if (res[0] < sub_res[0]) res[0] = sub_res[0];
 	if (res[1] > sub_res[1]) res[1] = sub_res[1];
@@ -1515,7 +1524,7 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
     }
 
   case "sprintf_format":
-    return ({ -0x80000000, 0x7fffffff });
+    return ({ min, max });
 
   case "utf8_string":
     if (ranged_type == "string") {
@@ -1526,15 +1535,14 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
     if (((string)complex_type->t) == ranged_type) {
       array(PikeType) args = complex_type->args;
       if (sizeof(args) == 2) {
-	return ({ limit(-0x80000000,
-			(int)(string)(args[0]->t),
-			0x7fffffff),
-		  limit(-0x80000000,
-			(int)(string)(args[1]->t),
-			0x7fffffff),
-	});
+        int low = (int)(string)(args[0]->t);
+        int high = (int)(string)(args[1]->t);
+        // NB: Open bounds are represented by the 32 bit limits.
+        if (low == -0x80000000) low = min;
+        if (high == 0x7fffffff) high = max;
+        return ({ limit(min, low, max), limit(min, high, max) });
       }
-      return ({ -0x80000000, 0x7fffffff });
+      return ({ min, max });
     }
     return UNDEFINED;
   }
@@ -3323,8 +3331,10 @@ static struct %s *%s_gdb_dummy_ptr;
 	      {
 	      case "int":
 		{
-		  // Clamp the integer range to 32 bit signed.
-		  [int low, int high] = clamp_int_range(arg->type(), "int");
+                  // Clamp the integer range to 64 bit signed.
+                  [int low, int high] = clamp_int_range(arg->type(), "int", 1);
+                  int min = -0x8000000000000000;
+                  int max = 0x7fffffffffffffff;
 
 		  ret += ({
 		    PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s)",
@@ -3349,19 +3359,19 @@ static struct %s *%s_gdb_dummy_ptr;
 		      });
 		      continue;
 		    }
-		    if (low > -0x80000000) {
-		      ret += ({
-			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer < %d)",
-					 argnum, check_argbase, low),
-				 arg->line()),
-		      });
-		    }
-		    if (high < -0x7fffffff) {
-		      ret += ({
-			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer > %d)",
-					 argnum, check_argbase, high),
-				 arg->line()),
-		      });
+                    foreach(({ ({ low > min, "<", low }),
+                               ({ high < max, ">", high }) }),
+                            [int(0..1) bounded, string op, int bound]) {
+                      if (!bounded) continue;
+                      string check =
+                        sprintf(" || (Pike_sp[%d%s].u.integer %s %d)",
+                                argnum, check_argbase, op, bound);
+                      if ((bound < -0x80000000) || (bound > 0x7fffffff)) {
+                        // Only possible with a 64 bit INT_TYPE.
+                        check = "\n#if SIZEOF_INT_TYPE > 4\n" + check +
+                          "\n#endif\n";
+                      }
+                      ret += ({ PC.Token(check, arg->line()) });
 		    }
 		  } while(0);
 		  ret += ({
