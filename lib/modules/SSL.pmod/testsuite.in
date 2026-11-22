@@ -1907,6 +1907,61 @@ test_any_equal([[
 ]], ({ SSL.Constants.SIGNATURE_ed25519, SSL.Constants.SIGNATURE_ed448 }))
 ]])
 
+dnl The key exchange follows the type of the leaf certificate's key, not
+dnl the type of the key that signed it.
+cond_resolv(Crypto.ECC.Curve25519, [[
+test_any_equal([[
+  object rsa = Crypto.RSA()->generate_key(1024);
+  object ecdsa = Crypto.ECC.SECP_256R1.ECDSA()->generate_key();
+  object ed25519 = Crypto.ECC.Curve25519.EdDSA()->generate_key();
+  array res = ({});
+  foreach(({ ({ ecdsa, rsa }), ({ rsa, ecdsa }), ({ ed25519, rsa }),
+             ({ rsa, ed25519 }) }), array(object) pair) {
+    object key = pair[0], ca = pair[1];
+    mapping ca_name = ([ "commonName": "CA" ]);
+    object tbs = Standards.X509.make_tbs(
+      Standards.PKCS.Certificate.build_distinguished_name(ca_name),
+      ca->pkcs_signature_algorithm_id(Crypto.SHA256),
+      Standards.PKCS.Certificate.build_distinguished_name(
+        ([ "commonName": "*" ])),
+      key->pkcs_public_key(), Standards.ASN1.Types.Integer(2), 3600, 0);
+    array(string) certs = ({
+      Standards.X509.sign_tbs(tbs, ca, Crypto.SHA256)->get_der(),
+      Standards.X509.make_selfsigned_certificate(ca, 3600, ca_name) });
+    object server_ctx = SSL.Context();
+    server_ctx->add_cert(key, certs);
+    object client_ctx = SSL.Context();
+    client_ctx->min_version = client_ctx->max_version =
+      SSL.Constants.PROTOCOL_TLS_1_2;
+    object a = Stdio.File();
+    object b = a->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+    SSL.File server = SSL.File(a, server_ctx);
+    SSL.File client = SSL.File(b, client_ctx);
+    server->set_nonblocking(0, 0, 0);
+    client->set_nonblocking(0, 0, 0);
+    server->accept();
+    client->connect();
+    function handshaking = lambda(SSL.File f) {
+      object c = f->query_connection();
+      return !c || (c->state & SSL.Constants.CONNECTION_handshaking);
+    };
+    mixed err = catch {
+      for (int i = 0;
+           (handshaking(client) || handshaking(server)) && (i < 100); i++) {
+        Pike.DefaultBackend(0.1);
+      }
+    };
+    if (err || handshaking(client) || handshaking(server)) {
+      res += ({ "Handshake failed" });
+    } else {
+      res += ({ SSL.Constants.CIPHER_SUITES[client->query_suite()][0] });
+    }
+  }
+  return res;
+]], ({ SSL.Constants.KE_ecdhe_ecdsa, SSL.Constants.KE_ecdhe_rsa,
+       SSL.Constants.KE_ecdhe_ecdsa, SSL.Constants.KE_ecdhe_rsa }))
+]])
+
 test_do( add_constant("S") )
 
 END_MARKER

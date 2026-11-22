@@ -900,6 +900,10 @@ o SSL
   - TLS 1.2 servers with Ed25519 and Ed448 certificates now sign
     with EdDSA, and Ed448 certificates no longer need the x448 group.
 
+  - Servers now choose key exchanges by the type of the certificate's
+    own key, not the type of the key that signed it. Eg ECDSA
+    certificates issued by RSA CAs now work.
+
 o SSL.File: Propagate fatal alerts to close and write callbacks.
 
   SSL did not call the close_callback on SSL.File()s that connect outgoing
