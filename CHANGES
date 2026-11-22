@@ -1214,6 +1214,13 @@ o Pike.DestructImmediate
   than at some arbitrary time "soon"). This class should be used
   for any classes that are (or hold) locks or similar.
 
+o Pike.NoExplicitDestruct
+
+  Objects of classes that inherit Pike.NoExplicitDestruct reject explicit
+  destruct() calls. Normal cleanup through reference counting and garbage
+  collection is unaffected. The restriction also propagates when inheriting
+  native classes with the PROGRAM_NO_EXPLICIT_DESTRUCT flag.
+
 o Pike.InhibitDestruct
 
   Objects of classes that inherit Pike.InhibitDestruct may
