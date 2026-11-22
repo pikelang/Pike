@@ -1285,7 +1285,8 @@ PIKECLASS CircularList
     /*! @decl int(0..) _iterator_index()
      *!
      *! @returns
-     *!    The index at the current position.
+     *!    The index at the current position, or @expr{UNDEFINED@}
+     *!    if the iterator isn't positioned at a valid element.
      */
 
     PIKEFUN int(0..) _iterator_index()
@@ -1305,15 +1306,16 @@ PIKECLASS CircularList
     }
 
 
-    /*! @decl ValueType _iterator_value()
+    /*! @decl ValueType|zero _iterator_value()
      *!
      *! @returns
-     *!    The value at the current position.
+     *!    The value at the current position, or @expr{UNDEFINED@}
+     *!    if the iterator isn't positioned at a valid element.
      */
 
     PIKEFUN mixed _iterator_value()
       flags ID_PROTECTED;
-      rawtype tFunc(tNone, tCircularListIterValueType);
+      rawtype tFunc(tNone, tOr(tCircularListIterValueType, tZero));
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
