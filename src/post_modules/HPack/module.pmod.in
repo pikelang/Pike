@@ -217,7 +217,7 @@ class Context
 
   //! Create a new HPack @[Context].
   //!
-  //! @param static_max_size
+  //! @param protocol_dynamic_max_size
   //!   This is the static maximum size in bytes (as calculated by
   //!   @rfc{7541:4.1@}) of the dynamic header table.
   //!   It defaults to @[DEFAULT_HEADER_TABLE_SIZE], and is the
@@ -283,7 +283,7 @@ class Context
   //! @returns
   //!   Returns @expr{0@} (zero) if the header was too large to store.
   //!   Returns the encoding key for the header on success (this is always
-  //!   @expr{sizeof(static_header_tab + 1@} (ie @expr{62@}), as new headers
+  //!   @expr{sizeof(static_header_tab) + 1@} (ie @expr{62@}), as new headers
   //!   are prepended to the dynamic header table.
   //!
   //! @note
