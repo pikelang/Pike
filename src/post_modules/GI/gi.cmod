@@ -605,9 +605,9 @@ PIKECLASS BaseInfo
     push_text(g_base_info_get_namespace(THIS->info));
   }
 
-  /*! @decl BaseInfo get_container()
+  /*! @decl BaseInfo|zero get_container()
    */
-  PIKEFUN BaseInfo get_container()
+  PIKEFUN BaseInfo|zero get_container()
   {
     GIBaseInfo *container = g_base_info_get_container(THIS->info);
     pop_n_elems(args);
@@ -1058,7 +1058,7 @@ PIKECLASS GBoxed
 #define tObjImpl_STRUCTINFO tObj
 #endif
 
-  /*! @decl void create(mapping(string:mixed)|void props)
+  /*! @decl protected void create(mapping(string:mixed)|void props)
    */
   PIKEFUN void create(mapping(string:mixed)|void props)
     flags ID_PROTECTED;
@@ -4058,9 +4058,9 @@ PIKECLASS Repository
       }
     }
 
-  /*! @decl array(string) enumerate_versions(string namespace)
+  /*! @decl array(string)|zero enumerate_versions(string namespace)
    */
-  PIKEFUN array(string) enumerate_versions(string namespace)
+  PIKEFUN array(string)|zero enumerate_versions(string namespace)
   {
     ONERROR onerror;
     int count = 0;
@@ -4084,9 +4084,9 @@ PIKECLASS Repository
     f_aggregate(count);
   }
 
-  /*! @decl BaseInfo find_by_name(string namespace, string name)
+  /*! @decl BaseInfo|zero find_by_name(string namespace, string name)
    */
-  PIKEFUN BaseInfo find_by_name(string namespace, string name)
+  PIKEFUN BaseInfo|zero find_by_name(string namespace, string name)
   {
     ONERROR onerror;
     GIBaseInfo *info;
