@@ -4312,7 +4312,7 @@ static void html_current(INT32 args)
  *!
  */
 
-/*! @decl mapping(string:mixed) tag_args(void|mixed default_value)
+/*! @decl mapping(string:mixed)|zero tag_args(void|mixed default_value)
  *!
  *! Gives the arguments of the current tag, parsed to a convenient
  *! mapping consisting of key:value pairs. If the current thing isn't
@@ -4321,7 +4321,7 @@ static void html_current(INT32 args)
  *! value is set to the same string as the key.
  */
 
-/*! @decl string tag_content()
+/*! @decl string|zero tag_content()
  *!
  *! Gives the content of the current tag, if it's a container or quote
  *! tag. Otherwise returns zero.
@@ -4331,11 +4331,11 @@ static void html_current(INT32 args)
  *!
  *! Returns the equivalent of the following calls.
  *! @array
- *!   @elem string 0
+ *!   @elem string|zero 0
  *!     @expr{tag_name()@}
- *!   @elem mapping(string:mixed) 1
+ *!   @elem mapping(string:mixed)|zero 1
  *!     @expr{tag_args(default_value)@}
- *!   @elem string 2
+ *!   @elem string|zero 2
  *!     @expr{tag_content()@}
  *! @endarray
  */
@@ -5019,7 +5019,8 @@ static void html_set_extra(INT32 args)
  *! Gets the extra arguments set by @[set_extra()].
  *!
  *! @returns
- *!   Returns the object being called.
+ *!   Returns the extra arguments as an array, or an empty array if
+ *!   none have been set.
  */
 
 static void html_get_extra(INT32 args)
@@ -5031,10 +5032,11 @@ static void html_get_extra(INT32 args)
     ref_push_array (&empty_array);
 }
 
-/*! @decl string splice_arg(void|string name)
+/*! @decl string|zero splice_arg(void|string|zero name)
  *!
  *! If given a string, it sets the splice argument name to it. It
- *! returns the old splice argument name.
+ *! returns the old splice argument name, or zero if none was set. Passing
+ *! zero clears the splice argument name.
  *!
  *! If a splice argument name is set, it's parsed in all tags, both
  *! those with callbacks and those without. Wherever it occurs, its
@@ -5119,7 +5121,7 @@ static void html_splice_arg (INT32 args)
  *! parsing tags. This is the default.
  */
 
-/*! @decl int max_parse_depth(void|int value)
+/*! @decl int max_stack_depth(void|int value)
  *!
  *! Maximum recursion depth during parsing. Recursion occurs when a
  *! tag/container/entity/quote tag callback function returns a string
@@ -5554,11 +5556,11 @@ void init_parser_html(void)
    ADD_FUNCTION("tag_name",html_tag_name,tFunc(tNone,tOr(tStr,tZero)),0);
    ADD_FUNCTION("tag_args",html_tag_args,
 		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
-		      tMap(tStr,tOr(tStr,tVar(1)))),0);
-   ADD_FUNCTION("tag_content",html_tag_content,tFunc(tNone,tStr),0);
+                      tOr(tMap(tStr,tOr(tStr,tVar(1))),tZero)),0);
+   ADD_FUNCTION("tag_content",html_tag_content,tFunc(tNone,tOr(tStr,tZero)),0);
    ADD_FUNCTION("tag",html_tag,
 		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
-		      tArr(tOr(tStr,tMap(tStr,tOr(tStr,tVar(1)))))),0);
+                      tArr(tOr3(tStr,tMap(tStr,tOr(tStr,tVar(1))),tZero))),0);
    ADD_FUNCTION("context",html_context,
 		tFunc(tNone,tStr),0);
 
@@ -5607,7 +5609,7 @@ void init_parser_html(void)
 		tFunc(tNone,tArray),0);
 
    ADD_FUNCTION("splice_arg",html_splice_arg,
-		tFunc(tOr(tVoid,tStr),tStr),0);
+                tFunc(tOr3(tVoid,tStr,tZero),tOr(tStr,tZero)),0);
 
    ADD_FUNCTION("ignore_tags",html_ignore_tags,
 		tFunc(tOr(tVoid,tInt),tInt),0);
