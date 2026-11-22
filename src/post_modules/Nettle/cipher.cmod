@@ -934,7 +934,8 @@ PIKECLASS BufferedCipher
 	apply(THIS->object, "crypt", 1);
       }
 
-      /*! @decl string(0..255) unpad(string(0..255) data, void|int method)
+      /*! @decl string(0..255)|zero unpad(string(0..255) data, @
+       *!                                 void|int method)
        *!
        *! Decrypt and unpad a block of data. Neither the input or output
        *! data is not automatically memory scrubbed, unless
@@ -959,7 +960,7 @@ PIKECLASS BufferedCipher
        *! @seealso
        *!   @[pad()]
        */
-      PIKEFUN string(0..255) unpad(string(0..255) str, void|int method) {
+      PIKEFUN string(0..255)|zero unpad(string(0..255) str, void|int method) {
 	ptrdiff_t len, bytes;
 	int m = 0, i, invalid = 0, padding=0;
 
@@ -2657,7 +2658,7 @@ PIKECLASS BlockCipher
        *! The length of @[data] MUST be a multiple of the block size
        *! for all calls except the last.
        *!
-       *! Neither the input or output data is not automatically memory
+       *! Neither the input nor output data is automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
@@ -2890,11 +2891,11 @@ PIKECLASS BlockCipher
 	  free_string(THIS->iv);
       }
 
-      /*! @decl object `obj()
+      /*! @decl object|zero `obj()
        *!
        *! Getter for the wrapped cipher algorithm.
        */
-      PIKEFUN object `obj()
+      PIKEFUN object|zero `obj()
       {
 	if (THIS->object) {
 	  ref_push_object(THIS->object);
@@ -3110,7 +3111,7 @@ PIKECLASS BlockCipher
        *! The length of @[data] MUST be a multiple of the block size
        *! for all calls except the last.
        *!
-       *! Neither the input or output data is not automatically memory
+       *! Neither the input nor output data is automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
@@ -3258,11 +3259,11 @@ PIKECLASS BlockCipher
 	  free_string(THIS->iv);
       }
 
-      /*! @decl object `obj()
+      /*! @decl object|zero `obj()
        *!
        *! Getter for the wrapped cipher algorithm.
        */
-      PIKEFUN object `obj()
+      PIKEFUN object|zero `obj()
       {
 	if (THIS->object) {
 	  ref_push_object(THIS->object);
@@ -3472,7 +3473,7 @@ PIKECLASS BlockCipher
        *! The length of @[data] MUST be a multiple of the block size
        *! for all calls except the last.
        *!
-       *! Neither the input or output data is not automatically memory
+       *! Neither the input nor output data is automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
@@ -4517,7 +4518,7 @@ PIKECLASS BlockCipher16
     /*! @decl string(8bit) name()
      *! Returns the name of the base cipher with @expr{".CCM8"@} appended.
      */
-    PIKEFUN string(7bit) name()
+    PIKEFUN string(8bit) name()
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
       push_static_text(".CCM8");
@@ -5433,7 +5434,7 @@ PIKECLASS BlockCipher16
        *!   @[set_iv()] needs to be called to start the next message.
        *!
        *! @seealso
-       *!   @[update()], @[digest()]
+       *!   @[update()], @[crypt()]
        */
       PIKEFUN string(0..255) digest()
       {
@@ -5936,11 +5937,12 @@ PIKECLASS BlockCipher16
       }
 
       /*! @decl int(15..15) iv_size()
-       *! Returns the recommended size for the initialization vector
+       *! Returns the maximum size for the initialization vector
        *! (ie @expr{15@}).
        *!
-       *! Other sizes are allowed, but will be compressed or expanded
-       *! to this size using the encapsulated cipher.
+       *! Shorter IVs (down to a single byte) are also accepted and
+       *! are zero-padded internally; unlike for @[GCM], IVs longer
+       *! than this are @b{not@} supported.
        */
       PIKEFUN int(15..15) iv_size()
         optflags OPT_TRY_OPTIMIZE;
@@ -6551,7 +6553,7 @@ PIKECLASS ARCTWO
 
   /*! @class State
    *!
-   *! State for PIKE_NAME encyption.
+   *! State for ARCTWO encryption.
    *!
    */
   PIKECLASS State
@@ -6914,7 +6916,7 @@ PIKECLASS CHACHA
 
   /*! @class State
    *!
-   *! State for CHACHA encyption.
+   *! State for CHACHA encryption.
    *!
    */
   PIKECLASS State
@@ -7111,7 +7113,7 @@ PIKECLASS DES
 
   /*! @class State
    *!
-   *! State for DES encyption
+   *! State for DES encryption
    */
   PIKECLASS State
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
@@ -7340,7 +7342,7 @@ PIKECLASS DES3
 
   /*! @class State
    *!
-   *! State for DES3 encyption
+   *! State for DES3 encryption
    */
   PIKECLASS State
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
@@ -7452,7 +7454,7 @@ PIKECLASS SALSA20
 
   /*! @class State
    *!
-   *! State for SALSA20 encyption.
+   *! State for SALSA20 encryption.
    *!
    */
   PIKECLASS State
