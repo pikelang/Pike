@@ -499,7 +499,8 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  */
 
 /*! @decl string encode (int|float|string|array|mapping|object val, @
- *!                      void|int flags, void|function|object|program|string callback)
+ *!                      void|int flags, void|function|object|program|string callback, @
+ *!                      void|int base_indent)
  *!
  *! Encodes a value to a JSON string.
  *!
@@ -521,6 +522,10 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   argument, and optionally with flags and indent arguments. If a string is
  *!   supplied, it will be used to replace the value verbatim.
  *!   The callback must return a string or throw an error.
+ *!
+ *! @param base_indent
+ *!   The starting indentation level (in spaces) to use when
+ *!   @[HUMAN_READABLE] is set in @[flags]. Defaults to zero.
  *!
  *! @note
  *! 8-bit and wider characters in input strings are neither escaped
