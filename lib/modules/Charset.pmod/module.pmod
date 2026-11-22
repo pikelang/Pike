@@ -1560,11 +1560,6 @@ void decode_error (string err_str, int err_pos, string charset,
 class EncodeError
 //! Error thrown when encode fails (and no replacement char or
 //! replacement callback has been registered).
-//!
-//! @fixme
-//! This error class is not actually used by this module yet - encode
-//! errors are still thrown as untyped error arrays. At this point it
-//! exists only for use by other modules.
 {
   inherit CharsetGenericError;
   constant error_type = "charset_encode";
