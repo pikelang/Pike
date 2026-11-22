@@ -11,7 +11,7 @@ inherit @module@;
 //! 
 //! @seealso
 //!     @[decode], @[decode_from]
-typedef function(int(-127..128),Stdio.Buffer:mixed) decode_handler;
+typedef function(int(-128..127),Stdio.Buffer:mixed) decode_handler;
 
 //! Function prototype for encode extension handlers. The first
 //! argument is the @[Stdio.Buffer], the second the value to
