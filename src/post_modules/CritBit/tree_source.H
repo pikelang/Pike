@@ -279,12 +279,13 @@ DOCEND()
 	return;
     }
 
-    DOCSTART() @decl array _random(function random_string, function random)
+    DOCSTART() @decl array|zero _random(function random_string, function random)
      *! Get a random entry.
      *! @returns
-     *! 	An array @expr{({ key, value })@}.
+     *! An array @expr{({ key, value })@}, or @expr{UNDEFINED@} if the
+     *! tree is empty.
     DOCEND()
-    PIKEFUN array _random(function random_string, function random)
+    PIKEFUN array|zero _random(function random_string, function random)
 	flags ID_PROTECTED;
     {
         cb_node_t node;
@@ -579,10 +580,10 @@ range_do_clone:
 	push_static_text("");
     }
 
-    DOCSTART() @decl key_ptype first()
+    DOCSTART() @decl key_ptype|zero first()
      *! Get the lexicographically first index in the tree.
     DOCEND()
-    PIKEFUN key_ptype first() {
+    PIKEFUN key_ptype|zero first() {
 	if (THIS->tree.root) {
 	    cb_node_t first = cb_find_first(THIS->tree.root);
 	    if (first) {
@@ -593,10 +594,10 @@ range_do_clone:
 	push_undefined();
     }
 
-    DOCSTART() @decl key_ptype last()
+    DOCSTART() @decl key_ptype|zero last()
      *! Get the lexicographically last index in the tree.
     DOCEND()
-    PIKEFUN key_ptype last() {
+    PIKEFUN key_ptype|zero last() {
 	if (THIS->tree.root) {
 	    cb_node_t last = cb_find_last(THIS->tree.root);
 	    if (last) {
@@ -623,10 +624,10 @@ range_do_clone:
 	push_string(finish_string_builder(&s));
     }
 
-    DOCSTART() @decl key_ptype previous(mixed current)
+    DOCSTART() @decl key_ptype|zero previous(mixed current)
      *! Get the key before @expr{current@} in lexicographical order.
     DOCEND()
-    PIKEFUN key_ptype previous(mixed current) {
+    PIKEFUN key_ptype|zero previous(mixed current) {
 	CB_CHECK_KEY(current, "previous", 1);
 
 	if (THIS->tree.root) {
@@ -643,10 +644,10 @@ range_do_clone:
 	push_undefined();
     }
 
-    DOCSTART() @decl key_ptype next(mixed current)
+    DOCSTART() @decl key_ptype|zero next(mixed current)
      *! Get the key after @expr{current@} in lexicographical order.
     DOCEND()
-    PIKEFUN key_ptype next(mixed current) {
+    PIKEFUN key_ptype|zero next(mixed current) {
 	CB_CHECK_KEY(current, "next", 1);
 
 	if (THIS->tree.root) {
