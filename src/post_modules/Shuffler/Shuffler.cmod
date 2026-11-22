@@ -74,18 +74,25 @@ static void free_source(struct source *s) {
  *!  This is an interface that all @[Throttler]s must implement.
  *!  It's not an actual class in this module.
  *!
- *! @decl void request( Shuffle shuffle, int amount, function(int:void) callback )
+ *! @decl void request( Shuffle shuffle, int amount, @
+ *!                      function(int:void) callback, mixed extra )
  *! This function is called when the @[Shuffle] wants to send some
  *! data to a client.
+ *!
+ *! @param extra
+ *!   The value set via @[Shuffle()->set_request_arg()].
  *!
  *! When data can be sent, the @[callback] function should be called
  *! with the amount of data that can be sent as the argument.
  *!
- *! @decl void give_back( Shuffle shuffle, int amount )
+ *! @decl void give_back( Shuffle shuffle, int amount, mixed extra )
  *!
  *! This function will be called by the @[Shuffle] object to report
  *! that some data assigned to it by this throttler was unused, and
  *! can be given to another @[Shuffle] object instead.
+ *!
+ *! @param extra
+ *!   The value set via @[Shuffle()->set_request_arg()].
  */
 /*! @endclass
  */
@@ -459,9 +466,11 @@ PIKECLASS Shuffle
   }
 
   PIKEFUN void set_done_callback( function(object, int:void)|zero cb )
-   /*! @decl void set_done_callback( function(Shuffle,int:void) cb )
+   /*! @decl void set_done_callback( function(Shuffle,int:void)|zero cb )
     *! Sets the @[done_callback]. This function will be called when all
     *! sources have been processed, or if an error occurs.
+    *!
+    *! Passing @expr{0@} (zero) clears the callback.
     *!
     */
     optflags OPT_SIDE_EFFECT;
@@ -764,7 +773,8 @@ PIKECLASS Shuffle
   }
 
   /*! @decl void create(object fd, object shuffler, mixed throttler,@
-   *!                   mixed backend, void|int start, void|int length)
+   *!                   mixed backend, void|int|object start, @
+   *!                   void|int|object length)
    *!
    *! This object is normally not created directly, instead use
    *! @[Shuffler()->shuffle]
@@ -946,7 +956,8 @@ PIKECLASS Shuffle
   PIKEFUN void add_source(mixed source,
 			  int|object|function(object, int:array(string)|zero)|
 			  void start, int|object|void length)
-   /*! @decl void add_source( mixed source, int|void start, int|void length );
+   /*! @decl void add_source( mixed source, int|object|void start, @
+    *!                        int|object|void length );
     *! @decl void add_source( mixed source, @
     *!                        function(Shuffle, int:array(string)|zero) wrap_cb );
     *! @decl void add_source( array source);
