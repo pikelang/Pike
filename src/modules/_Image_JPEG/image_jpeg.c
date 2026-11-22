@@ -867,10 +867,11 @@ static void image_jpeg_encode(INT32 args)
        destmgr.pub.term_destination=my_term_destination;
        destmgr.buf=NULL;
 
+       memset(&cinfo, 0, sizeof(cinfo));
        cinfo.err=&errmgr;
+       st.cinfo=&cinfo;
 
        jpeg_create_compress(&cinfo);
-       st.cinfo=&cinfo;
 
        cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
 
@@ -903,10 +904,11 @@ static void image_jpeg_encode(INT32 args)
        destmgr.pub.term_destination=my_term_destination;
        destmgr.buf=NULL;
 
+       memset(&cinfo, 0, sizeof(cinfo));
        cinfo.err=&errmgr;
+       st.cinfo=&cinfo;
 
        jpeg_create_compress(&cinfo);
-       st.cinfo=&cinfo;
 
        cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
 
@@ -1494,10 +1496,11 @@ void image_jpeg_quant_tables(INT32 args)
    destmgr.pub.term_destination=my_term_destination;
    destmgr.buf=NULL;
 
+   memset(&cinfo, 0, sizeof(cinfo));
    cinfo.err=&errmgr;
+   st.cinfo=&cinfo;
 
    jpeg_create_compress(&cinfo);
-   st.cinfo=&cinfo;
 
    cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
 
