@@ -3720,6 +3720,46 @@ PMOD_EXPORT void f_crypt(INT32 args)
   }
 }
 
+static int type_rejects_explicit_destruct(const struct pike_type *t)
+{
+  struct program *p;
+
+  if (!t) return 0;
+  switch (t->type) {
+  case T_OBJECT:
+    p = low_id_to_program((INT32)(ptrdiff_t)t->cdr, 1);
+    return p && (p->flags & PROGRAM_NO_EXPLICIT_DESTRUCT);
+  case T_OR:
+    return type_rejects_explicit_destruct(t->car) &&
+           type_rejects_explicit_destruct(t->cdr);
+  case T_AND:
+    return type_rejects_explicit_destruct(t->car) ||
+           type_rejects_explicit_destruct(t->cdr);
+  case T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_ATTRIBUTE:
+  case PIKE_T_NAME:
+    return type_rejects_explicit_destruct(t->cdr);
+  default:
+    return 0;
+  }
+}
+
+static node *optimize_destruct(node *n)
+{
+  node *args = CDR(n);
+
+  if (!args) {
+    if (Pike_compiler->new_program->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
+      yywarning("The current object can't be destructed explicitly.");
+  } else if (args->token == F_ARG_LIST && !CDR(args) &&
+             CAR(args) && CAR(args)->token != F_PUSH_ARRAY &&
+             type_rejects_explicit_destruct(CAR(args)->type)) {
+    yywarning("Object can't be destructed explicitly.");
+  }
+  return NULL;
+}
+
 /*! @decl int(1bit) destruct(void|object o)
  *!
  *!   Mark an object as destructed.
@@ -10612,7 +10652,8 @@ void init_builtin_efuns(void)
            tOr(tFunc(tOr(tStr,tVoid),tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
 
   /* function(object|void:int(0..1)) */
-  ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tInt01),OPT_SIDE_EFFECT);
+  ADD_EFUN2("destruct", f_destruct, tFunc(tOr(tObj,tVoid),tInt01),
+            OPT_SIDE_EFFECT, optimize_destruct, 0);
 
   ADD_EFUN("dirname", f_dirname,
 	   tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0))), 0);

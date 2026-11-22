@@ -169,10 +169,12 @@ test_any([[
 cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
 ]])
-cond( master()->resolv("Nettle.Yarrow")()->get_seed, [[
-  test_eval_error( Nettle.Yarrow()->get_seed() )
-  test_eq( S(Nettle.Yarrow()->seed("\0"*32)->get_seed()),
-    "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
+cond_resolv(Nettle.Yarrow, [[
+  cond([[ Nettle.Yarrow()->get_seed ]], [[
+    test_eval_error( Nettle.Yarrow()->get_seed() )
+    test_eq( S(Nettle.Yarrow()->seed("\0"*32)->get_seed()),
+      "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
+  ]])
 ]])
 cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->is_seeded(), 0)

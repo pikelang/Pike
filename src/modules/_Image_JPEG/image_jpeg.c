@@ -156,7 +156,7 @@ static void my_error_exit(struct jpeg_common_struct *cinfo)
    char buffer[JMSG_LENGTH_MAX];
    (*cinfo->err->format_message) (cinfo, buffer);
 
-   jpeg_destroy(cinfo);
+   /* The caller's free_jpeg_state() destroys cinfo, with the rest. */
    Pike_error("Image.JPEG: fatal error in libjpeg; %s\n",buffer);
 }
 
@@ -300,6 +300,53 @@ struct pike_string* my_result_and_clean(struct jpeg_compress_struct *cinfo)
       return ps;
    }
    return make_shared_string("");
+}
+
+/* What encode(), decode() and quant_tables() have set up. free_jpeg_state()
+ * releases it when they are done, or when an error unwinds them: libjpeg's,
+ * one in the options, or running out of memory. */
+struct jpeg_state
+{
+   struct jpeg_compress_struct *cinfo;	/* And its output buffer. */
+   struct my_decompress_struct *mds;	/* And its markers. */
+   unsigned char *tmp;
+   struct object *o;
+};
+
+static void free_jpeg_state(struct jpeg_state *st)
+{
+   if (st->cinfo)
+   {
+      struct my_destination_mgr *dm=(struct my_destination_mgr *)st->cinfo->dest;
+      if (dm && dm->buf)
+      {
+         free(dm->buf);
+         dm->buf=NULL;
+      }
+      jpeg_destroy_compress(st->cinfo);
+      st->cinfo=NULL;
+   }
+   if (st->mds)
+   {
+      while (st->mds->first_marker)
+      {
+         struct my_marker *mm=st->mds->first_marker;
+         st->mds->first_marker=mm->next;
+         free(mm);
+      }
+      jpeg_destroy_decompress(&st->mds->cinfo);
+      st->mds=NULL;
+   }
+   if (st->tmp)
+   {
+      free(st->tmp);
+      st->tmp=NULL;
+   }
+   if (st->o)
+   {
+      free_object(st->o);
+      st->o=NULL;
+   }
 }
 
 static int parameter_int(struct svalue *map,struct pike_string *what,INT32 *p)
@@ -787,6 +834,9 @@ static void image_jpeg_encode(INT32 args)
    rgb_group *s;
    JSAMPROW row_pointer[8];
 
+   struct jpeg_state st = { NULL, NULL, NULL, NULL };
+   ONERROR uwp;
+
    if (args<1
        || (TYPEOF(sp[-args]) != T_OBJECT && TYPEOF(sp[-args]) != T_STRING)
        || (TYPEOF(sp[-args]) == T_OBJECT &&
@@ -794,12 +844,14 @@ static void image_jpeg_encode(INT32 args)
        || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
       Pike_error("Image.JPEG.encode: Illegal arguments\n");
 
+   SET_ONERROR(uwp, free_jpeg_state, &st);
+
    if (img) {
        /* Compression from Image.Image object */
        if (!img->img)
 	   Pike_error("Image.JPEG.encode: Given image is empty.\n");
 
-       tmp=malloc(img->xsize*3*8);
+       st.tmp=tmp=malloc(img->xsize*3*8);
        if (!tmp)
 	   Pike_error("Image.JPEG.encode: out of memory\n");
        /* init jpeg library objects */
@@ -813,8 +865,11 @@ static void image_jpeg_encode(INT32 args)
        destmgr.pub.init_destination=my_init_destination;
        destmgr.pub.empty_output_buffer=my_empty_output_buffer;
        destmgr.pub.term_destination=my_term_destination;
+       destmgr.buf=NULL;
 
+       memset(&cinfo, 0, sizeof(cinfo));
        cinfo.err=&errmgr;
+       st.cinfo=&cinfo;
 
        jpeg_create_compress(&cinfo);
 
@@ -847,13 +902,18 @@ static void image_jpeg_encode(INT32 args)
        destmgr.pub.init_destination=my_init_destination;
        destmgr.pub.empty_output_buffer=my_empty_output_buffer;
        destmgr.pub.term_destination=my_term_destination;
+       destmgr.buf=NULL;
 
+       memset(&cinfo, 0, sizeof(cinfo));
        cinfo.err=&errmgr;
+       st.cinfo=&cinfo;
 
        jpeg_create_compress(&cinfo);
 
        cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
 
+       memset(&mds, 0, sizeof(mds));
+       st.mds=&mds;
        init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
 #ifdef TRANSFORMS_SUPPORTED
@@ -959,23 +1019,19 @@ static void image_jpeg_encode(INT32 args)
 	       y-=y2;
 	   }
        IMAGE_THREADS_DISALLOW();
-
-       free(tmp);
    } else {
        /* "Compression" from JPEG block */
 
    }
    jpeg_finish_compress(&cinfo);
 
+   if (!img)
+     jpeg_finish_decompress(&mds.cinfo);
+
    pop_n_elems(args);
    push_string(my_result_and_clean(&cinfo));
 
-   if (!img) {
-     /* remove extra workspace if data was read from JPEG string */
-     jpeg_finish_decompress(&mds.cinfo);
-     jpeg_destroy_decompress(&mds.cinfo);
-   }
-   jpeg_destroy_compress(&cinfo);
+   CALL_AND_UNSET_ONERROR(uwp);
 }
 
 /*! @decl object decode(string data)
@@ -1069,13 +1125,20 @@ static void img_jpeg_decode(INT32 args,int mode)
 
    int n=0;
 
+   struct jpeg_state st = { NULL, NULL, NULL, NULL };
+   ONERROR uwp;
+
    if (args<1
        || TYPEOF(sp[-args]) != T_STRING
        || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
       Pike_error("Image.JPEG.decode: Illegal arguments\n");
 
+   SET_ONERROR(uwp, free_jpeg_state, &st);
+
    /* init jpeg library objects */
 
+   memset(&mds, 0, sizeof(mds));
+   st.mds=&mds;
    init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
    if (mds.cinfo.jpeg_color_space == JCS_CMYK ||
@@ -1257,35 +1320,23 @@ static void img_jpeg_decode(INT32 args,int mode)
       jpeg_start_decompress(&mds.cinfo);
       bytes_per_pixel = mds.cinfo.output_components;
 
-      o=clone_object(image_program,0);
+      st.o=o=clone_object(image_program,0);
       img=get_storage(o,image_program);
       if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
       if (DO_INT32_MUL_OVERFLOW(sizeof(*img->img), mds.cinfo.output_width,
 			        &bytes_needed)
 	  || DO_INT32_MUL_OVERFLOW(bytes_needed, mds.cinfo.output_height,
 		                   &bytes_needed))
-      {
-	 jpeg_destroy((struct jpeg_common_struct*)&mds.cinfo);
-	 free_object(o);
 	 Pike_error("Image.JPEG.decode: Image too large (>%d bytes).\n", MAX_INT32);
-      }
       img->img=malloc(bytes_needed);
       if (!img->img)
-      {
-	 jpeg_destroy((struct jpeg_common_struct*)&mds.cinfo);
-	 free_object(o);
 	 Pike_error("Image.JPEG.decode: out of memory\n");
-      }
       img->xsize=mds.cinfo.output_width;
       img->ysize=mds.cinfo.output_height;
 
-      tmp=malloc(8 * mds.cinfo.output_width * bytes_per_pixel);
+      st.tmp=tmp=malloc(8 * mds.cinfo.output_width * bytes_per_pixel);
       if (!tmp)
-      {
-	 jpeg_destroy((struct jpeg_common_struct*)&mds.cinfo);
-	 free_object(o);
 	 Pike_error("Image.JPEG.decode: out of memory\n");
-      }
 
       y=img->ysize;
       d=img->img;
@@ -1332,8 +1383,6 @@ static void img_jpeg_decode(INT32 args,int mode)
       }
       THREADS_DISALLOW();
 
-      free(tmp);
-
       if (mode!=IMG_DECODE_IMAGE)
       {
 	 int i,m,j;
@@ -1377,7 +1426,8 @@ static void img_jpeg_decode(INT32 args,int mode)
 
       jpeg_finish_decompress(&mds.cinfo);
    }
-   jpeg_destroy_decompress(&mds.cinfo);
+   st.o=NULL;				/* The result, if any. */
+   CALL_AND_UNSET_ONERROR(uwp);
 
    if (mode==IMG_DECODE_IMAGE)
    {
@@ -1425,6 +1475,15 @@ void image_jpeg_quant_tables(INT32 args)
    struct my_destination_mgr destmgr;
    struct jpeg_compress_struct cinfo;
    int i,m,j;
+   INT_TYPE q = -1;
+
+   struct jpeg_state st = { NULL, NULL, NULL, NULL };
+   ONERROR uwp;
+
+   if (args)
+      get_all_args(NULL,args,"%i",&q);
+
+   SET_ONERROR(uwp, free_jpeg_state, &st);
 
    jpeg_std_error(&errmgr);
 
@@ -1435,8 +1494,11 @@ void image_jpeg_quant_tables(INT32 args)
    destmgr.pub.init_destination=my_init_destination;
    destmgr.pub.empty_output_buffer=my_empty_output_buffer;
    destmgr.pub.term_destination=my_term_destination;
+   destmgr.buf=NULL;
 
+   memset(&cinfo, 0, sizeof(cinfo));
    cinfo.err=&errmgr;
+   st.cinfo=&cinfo;
 
    jpeg_create_compress(&cinfo);
 
@@ -1448,11 +1510,7 @@ void image_jpeg_quant_tables(INT32 args)
    cinfo.in_color_space=JCS_RGB;
 
    if (args)
-   {
-      INT_TYPE q;
-      get_all_args(NULL,args,"%i",&q);
       jpeg_set_quality(&cinfo,q,0);
-   }
 
    for (i=m=0; i<NUM_QUANT_TBLS; i++)
    {
@@ -1471,7 +1529,7 @@ void image_jpeg_quant_tables(INT32 args)
    }
    f_aggregate_mapping(m*2);
 
-   jpeg_destroy_compress(&cinfo);
+   CALL_AND_UNSET_ONERROR(uwp);
 }
 
 #endif /* HAVE_JPEGLIB_H */

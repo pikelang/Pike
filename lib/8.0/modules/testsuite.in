@@ -321,10 +321,12 @@ test_equal( sort(indices(Locale.Charset)), sort(indices(Charset)) )
 
 test_eq( Parser.XML.Validating()->get_external_entity(""), 0 )
 
-cond_resolv([[
-  test_true( Sql.sybase()->select_db )
-  test_true( Sql.sybase()->create_db )
-  test_true( Sql.sybase()->drop_db )
+cond_resolv(Sql.sybase, [[
+  test_true(Program.implements(Sql.sybase, class {
+    void select_db(string db);
+    void create_db(string db);
+    void drop_db(string db);
+  }))
 ]])
 
 test_true( Stdio.File()->set_peek_file_before_read_callback(0) )

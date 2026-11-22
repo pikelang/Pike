@@ -1,5 +1,5 @@
 START_MARKER
-cond_begin([[ master()->resolv("_Image_JPEG")->encode ]])
+cond_begin([[ master()->resolv("_Image_JPEG.encode") ]])
 dnl Encoding an image as JPEG in several threads while another replaces
 dnl its memory with _decode() or destructs it should not crash. Without
 dnl the fix it crashes in every run.
@@ -129,6 +129,55 @@ dnl swap width and height failed with "Bogus virtual array access".
     return 0;
   ]], 0)
 cond_end
+
+dnl Calls that fail, through libjpeg or an option of the wrong type,
+dnl should leave no memory behind. Without the fix, 100 of each grew the
+dnl resident set by 2.8 to 27 MB. It is read from /proc.
+cond([[ Stdio.exist("/proc/self/status") ]], [[
+  test_any([[
+    int rss_kb() {
+      int rss;
+      // VmRSS is in kB, independently of the system page size.
+      if (sscanf(Stdio.read_file("/proc/self/status"),
+                 "%*s\nVmRSS:%*[ \t]%d kB", rss) != 3)
+        error("Failed to read VmRSS from /proc/self/status.\n");
+      return rss;
+    };
+    // A 60 kB comment, so that lost markers show.
+    string d = Image.JPEG.encode(Image.Image(256, 256)->test(),
+                                 ([ "comment": "x" * 60000 ]));
+    int sos = search(d, "\xff\xda");
+    string corrupt = d[..sos-1] + "\xff\xc0\0\0" + d[sos..];
+    Image.Image i = Image.Image(1024, 64)->test();
+    // Of the wrong types, past the compiler's checks.
+    mixed bad_comment = ([ "comment": ({}) ]), bad_marker = ([ "marker": 17 ]);
+    mixed bad_quant_tables = ([ "quant_tables": 17 ]);
+    mapping(string:function) cases = ([
+      "encode, bad option": lambda() { Image.JPEG.encode(i, bad_marker); },
+      "encode, libjpeg error": lambda() {
+        Image.JPEG.encode(i, ([ "marker": ([ Image.JPEG.Marker.APP1: "x" * 70000 ]) ]));
+      },
+      "decode, bad option": lambda() { Image.JPEG.decode(d, bad_quant_tables); },
+      "decode, corrupt": lambda() { Image.JPEG.decode(corrupt); },
+    ]);
+    if (!catch(Image.JPEG.encode(d)))
+      cases += ([
+        "transcode, bad option": lambda() { Image.JPEG.encode(d, bad_comment); },
+        "transcode, corrupt": lambda() { Image.JPEG.encode(corrupt, ([])); },
+      ]);
+    foreach (sort(indices(cases)), string c) {
+      for (int n = 0; n < 5; n++) catch(cases[c]());
+      gc();
+      int before = rss_kb();
+      for (int n = 0; n < 100; n++)
+        if (!catch(cases[c]())) return c + ": did not fail";
+      gc();
+      if (rss_kb() - before >= 1024)
+        return sprintf("%s: %d kB after 100 calls", c, rss_kb() - before);
+    }
+    return 0;
+  ]], 0)
+]])
 
 cond_end
 END_MARKER

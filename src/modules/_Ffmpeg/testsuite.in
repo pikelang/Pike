@@ -1,5 +1,5 @@
 START_MARKER
-cond_begin([[ master()->resolv("_Ffmpeg")->CODEC_ID_MP2 ]])
+cond_begin([[ master()->resolv("_Ffmpeg.CODEC_ID_MP2") ]])
 
 test_any_equal([[
   // One frame @ 32kbps: 144 bytes = 36 milliseconds ->

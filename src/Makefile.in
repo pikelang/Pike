@@ -1318,7 +1318,7 @@ post-module-pike-stamp: @BUILD_PIKE@@EXEEXT@ dynamic-modules-stamp
 
 pike_modules.o:  modules/modlist_headers.h modules/modlist.h post_modules/modlist_headers.h post_modules/modlist.h
 
-tmodule.o:  modules/modlist_headers.h modules/modlist.h
+tmodule.o: $(SRCDIR)/pike_modules.c modules/modlist_headers.h modules/modlist.h
 
 # Backward compat.
 post_modules: post_module_objects

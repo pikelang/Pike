@@ -3471,12 +3471,39 @@ PIKEFUN void _putenv (string var, void|string val)
  *! @tt{PROGRAM_DESTRUCT_IMMEDIATE@} flag set.
  *!
  *! @seealso
- *!   @[InhibitDestruct]
+ *!   @[InhibitDestruct], @[NoExplicitDestruct]
  */
 
 PIKECLASS DestructImmediate
   program_flags PROGRAM_DESTRUCT_IMMEDIATE;
 {
+}
+
+/*! @endclass
+ */
+
+/*! @class NoExplicitDestruct
+ *!
+ *! An empty class that permanently rejects explicit calls to @[destruct()].
+ *! The restriction is inherited by derived classes. Attempting to destruct
+ *! an instance throws an error, even if it defines @[lfun::_destruct()].
+ *!
+ *! Objects are still destroyed normally when their last reference is
+ *! released or when the garbage collector collects them.
+ *!
+ *! @seealso
+ *!   @[InhibitDestruct], @[DestructImmediate], @[Thread.Thread]
+ */
+
+PMOD_EXPORT struct program *NoExplicitDestruct_program = NULL;
+
+/* Thread.Thread needs this class before init_builtin() is called. */
+void init_no_explicit_destruct(void)
+{
+  start_new_program();
+  Pike_compiler->new_program->flags |= PROGRAM_NO_EXPLICIT_DESTRUCT;
+  NoExplicitDestruct_program = end_program();
+  add_program_constant("NoExplicitDestruct", NoExplicitDestruct_program, 0);
 }
 
 /*! @endclass
@@ -3494,7 +3521,7 @@ PIKECLASS DestructImmediate
  *! or @expr{private@} in order to affect users minimally.
  *!
  *! @seealso
- *!   @[DestructImmediate]
+ *!   @[DestructImmediate], @[NoExplicitDestruct]
  */
 PIKECLASS InhibitDestruct
 {
@@ -8767,6 +8794,8 @@ void init_builtin(void)
 void exit_builtin(void)
 {
   struct svalue zero;
+  free_program(NoExplicitDestruct_program);
+  NoExplicitDestruct_program = NULL;
   if (proxy_lookup) free_mapping(proxy_lookup);
   if (val_module) free_object (val_module);
   EXIT;

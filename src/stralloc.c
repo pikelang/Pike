@@ -3097,9 +3097,7 @@ static char *hex_float_decimal(PCHARP start, PCHARP *end, int mant_dig)
       exponent < 4 * (DBL_MIN_EXP - DBL_MANT_DIG)) {
 #endif
     mpz_clear(&value);
-    buf = xalloc(16);
-    strcpy(buf, exponent > 0 ? "1e999999" : "1e-999999");
-    return buf;
+    return xstrdup(exponent > 0 ? "1e999999" : "1e-999999");
   }
 
   if (exponent >= 0) {

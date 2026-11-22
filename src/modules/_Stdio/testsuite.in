@@ -1256,7 +1256,7 @@ test_any( [[
   return 0;
 ]], 0)
 
-cond([[Thread["THREAD_SUPPORTS_IO_INTERRUPTS"]]], [[
+cond_begin([[ master()->resolv("Thread.THREAD_SUPPORTS_IO_INTERRUPTS") ]])
 test_any([[
   class ReceivingFile {
     inherit Stdio.File;
@@ -1379,7 +1379,7 @@ test_any([[
   }
   return 0;
 ]], 0)
-]])
+cond_end
 
 dnl errno() in a UDP read callback should be 0 for a datagram that
 dnl arrived, not an older error (EAGAIN from a read of nothing before

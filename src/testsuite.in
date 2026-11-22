@@ -2445,6 +2445,61 @@ test_any_equal([[
        40, 41, 41, 41, 41, 50, 61, 61, 61, 61, 70, 81, 81, 81, 81 }))
 
 test_any([[
+  array(int) destroyed = ({ 0 });
+  class Base(array(int) counter) {
+    inherit Pike.NoExplicitDestruct;
+    mixed link;
+    protected void _destruct() { counter[0]++; }
+  };
+  class Derived { inherit Base; };
+  object|zero o = Derived(destroyed);
+  if (!Program.inherits(Derived, Pike.NoExplicitDestruct)) return 1;
+  if (!catch(destruct(o)) || !o || destroyed[0]) return 2;
+  o = 0;
+  gc();
+  if (destroyed[0] != 1) return 3;
+  o = Derived(destroyed);
+  o->link = o;
+  if (!catch(destruct(o)) || !o || destroyed[0] != 1) return 4;
+  o = 0;
+  gc();
+  return destroyed[0] == 2 ? 0 : 5;
+]], 0)
+
+test_any([[
+  array(int) destroyed = ({ 0 });
+  class Foo(array(int) counter) {
+    inherit Pike.DestructImmediate;
+    inherit Pike.NoExplicitDestruct;
+    protected void _destruct() { counter[0]++; }
+  };
+  object|zero o = Foo(destroyed);
+  if (!catch(destruct(o)) || !o || destroyed[0]) return 0;
+  o = 0;
+  return destroyed[0];
+]], 1)
+
+test_compile_warning([[
+  class Base { inherit Pike.NoExplicitDestruct; };
+  class Derived { inherit Base; };
+  return lambda(Derived o) { destruct(o); };
+]])
+
+test_compile_warning([[
+  class Protected {
+    inherit Pike.NoExplicitDestruct;
+    void f() { destruct(); }
+  };
+  return Protected;
+]])
+
+test_compile_any([[
+  class Protected { inherit Pike.NoExplicitDestruct; };
+  class Ordinary { int x; };
+  void f(Protected|Ordinary o) { destruct(o); }
+]])
+
+test_any([[
   // Test Pike.InhibitDestruct.
   class Foo {
     inherit Pike.InhibitDestruct;
@@ -7882,6 +7937,16 @@ dnl belong to the thread that asked for it.
     t->wait();
     return ok;
   ]], 1)
+
+  test_any([[
+    class Derived { inherit Thread.Thread; };
+    if (!Program.inherits(Thread.Thread, Pike.NoExplicitDestruct) ||
+        !Program.inherits(Derived, Pike.NoExplicitDestruct)) return 1;
+    object t = Derived(lambda() { return 42; });
+    if (t->wait() != 42) return 2;
+    if (!catch(destruct(t)) || !t) return 3;
+    return t->wait() == 42 ? 0 : 4;
+  ]], 0)
 
 dnl Cleaning up a finished thread that never took its interrupt should
 dnl not lose the interrupt of the thread doing it. The finished thread
