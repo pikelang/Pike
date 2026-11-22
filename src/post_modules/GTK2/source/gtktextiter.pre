@@ -156,8 +156,8 @@ string get_visible_text(GTK2.TextIter end)
   }
 }
 
-+GDK2.Pixbuf get_pixbuf()
-//! If the element at iter is a pixbuf, it is returned.
+GDK2.Pixbuf|zero get_pixbuf()
+//! If the element at iter is a pixbuf, it is returned, otherwise 0.
 {
   pgtk2_verify_inited();
   {
@@ -1147,7 +1147,7 @@ int compare(GTK2.TextIter rhs)
     struct object *o1;
     int res;
     get_all_args(NULL,args,"%o",&o1);
-    res=gtk_text_iter_equal((GtkTextIter *)THIS->obj,
+    res=gtk_text_iter_compare((GtkTextIter *)THIS->obj,
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
