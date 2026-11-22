@@ -2186,6 +2186,26 @@ test_any([[
   return destroyed[0];
 ]], 1)
 
+test_compile_warning([[
+  class Base { inherit Pike.NoExplicitDestruct; };
+  class Derived { inherit Base; };
+  return lambda(Derived o) { destruct(o); };
+]])
+
+test_compile_warning([[
+  class Protected {
+    inherit Pike.NoExplicitDestruct;
+    void f() { destruct(); }
+  };
+  return Protected;
+]])
+
+test_compile_any([[
+  class Protected { inherit Pike.NoExplicitDestruct; };
+  class Ordinary { int x; };
+  void f(Protected|Ordinary o) { destruct(o); }
+]])
+
 test_any([[
   // Test Pike.InhibitDestruct.
   class Foo {
@@ -7621,7 +7641,7 @@ dnl belong to the thread that asked for it.
     class Derived { inherit Thread.Thread; };
     if (!Program.inherits(Thread.Thread, Pike.NoExplicitDestruct) ||
         !Program.inherits(Derived, Pike.NoExplicitDestruct)) return 1;
-    Thread.Thread t = Derived(lambda() { return 42; });
+    object t = Derived(lambda() { return 42; });
     if (t->wait() != 42) return 2;
     if (!catch(destruct(t)) || !t) return 3;
     return t->wait() == 42 ? 0 : 4;
