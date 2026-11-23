@@ -5940,9 +5940,8 @@ PIKECLASS BlockCipher16
        *! Returns the maximum size for the initialization vector
        *! (ie @expr{15@}).
        *!
-       *! Shorter IVs (down to a single byte) are also accepted and
-       *! are zero-padded internally; unlike for @[GCM], IVs longer
-       *! than this are @b{not@} supported.
+       *! Shorter IVs are also accepted. IVs longer than this are
+       *! unsupported.
        */
       PIKEFUN int(15..15) iv_size()
         optflags OPT_TRY_OPTIMIZE;

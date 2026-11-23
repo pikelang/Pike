@@ -202,7 +202,9 @@ static unsigned TH_STDCALL cancel_nt_io(void *arg)
   do {
     cancel->cancel_io(cancel->target);
     /* Retry if the interrupt arrived before the target entered the call,
-     * or between calls in a multi-part read/write operation.
+     * or between calls in a multi-part read/write operation. Keep retrying
+     * until Pike consumes the interrupt: swapping in can be followed by
+     * another blocking call before evaluator callbacks run.
      */
   } while (WaitForSingleObject(cancel->stop, 1) == WAIT_TIMEOUT);
   return 0;
@@ -213,7 +215,7 @@ static void stop_nt_io_cancel(struct thread_state *ts)
   struct nt_io_cancel *cancel = ts->io_cancel;
   if (!cancel) return;
   SetEvent(cancel->stop);
-  /* Join before executing Pike code or starting unrelated I/O. */
+  /* Join before consuming the interrupt or deleting the thread state. */
   WaitForSingleObject(cancel->worker, INFINITE);
   CloseHandle(cancel->worker);
   CloseHandle(cancel->stop);
@@ -846,9 +848,6 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
   }
 #endif
 
-#ifdef NT_THREADS
-  stop_nt_io_cancel(ts);
-#endif
   ts->swapped=0;
   Pike_interpreter_pointer = &ts->state;
 #ifdef PIKE_DEBUG
@@ -1329,6 +1328,9 @@ PMOD_EXPORT void thread_table_insert(struct thread_state *s)
 
 PMOD_EXPORT void thread_table_delete(struct thread_state *s)
 {
+#ifdef NT_THREADS
+  stop_nt_io_cancel(s);
+#endif
   mt_lock( & thread_table_lock );
   num_pike_threads--;
   if(s->hashlink != NULL)
@@ -4531,6 +4533,9 @@ static void check_thread_interrupt(struct callback *foo,
     return;
   }
   if (Pike_interpreter.thread_state->flags & THREAD_FLAG_SIGNAL_MASK) {
+#ifdef NT_THREADS
+    stop_nt_io_cancel(Pike_interpreter.thread_state);
+#endif
     if (Pike_interpreter.thread_state->flags & THREAD_FLAG_TERM) {
       throw_severity = THROW_THREAD_EXIT;
     } else {

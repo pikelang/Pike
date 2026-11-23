@@ -3938,9 +3938,10 @@ static void compile_compiler(void)
       PIKE_SIZEOF_MEMBER(compilation, default_module),
 		    tOr(tMap(tStr,tMix),tObj), PIKE_T_MIXED, 0);
 
-  /* end_class()/end_program() adds the parent_info storage once more.
-   * Remove the one we added above, so that we don't get it double.
+  /* The new inherit table starts at offset zero. Remove the bootstrap
+   * parent header from the size before end_program() reserves it again.
    */
+  p2->storage_needed -= p2->xstorage;
   p2->xstorage = 0;
   /* Keep the fake parent's address unchanged while its offset is invalid. */
   assert(p2->parent_info_storage == 0);
