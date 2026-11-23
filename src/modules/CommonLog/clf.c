@@ -99,14 +99,14 @@ PIKE_MODULE_EXIT
  *!            Stdio.File|string logfile, void|int offset)
  *!
  *! Reads the log file and calls the callback function for every parsed line.
- *! For lines that fails to be parsed the callback is not called not is any
+ *! For lines that fail to be parsed the callback is not called, nor is any
  *! error thrown. The number of bytes read are returned.
  *!
  *! @param callback
  *! The callbacks first argument is an array with the different parts of the
  *! log entry.
  *! @array
- *!   @elem string remote_host
+ *!   @elem int(0..0)|string remote_host
  *!
  *!   @elem int(0..0)|string ident_user
  *!
