@@ -2027,25 +2027,230 @@ o Added make verify_all to run slow and very slow tests even on systems
 Issues fixed
 ------------
 
-Github pikelang/pike: #4, #16, #25, #36, #38, #40, #49, #54, #55, #56, #70, #71
+GitHub pikelang/pike:
 
-Lysator pikelang/pike: #1694, #2100, #2315, #3110, #3150, #3429, #3658, #3681,
-  #4312, #4826, #4897, #4934, #5466, #7363, #7831, #8042, #10001, #10003,
-  #10004, #10006, #10012, #10017, #10018, #10021, #10022, #10023, #10026,
-  #10027, #10028, #10029, #10033, #10035, #10037, #10039, #10040, #10041,
-  #10042, #10043, #10044, #10045, #10046, #10047, #10048, #10050, #10055,
-  #10059, #10063, #10064, #10065, #10072, #10076, #10077, #10083, #10084,
-  #10085, #10086, #10089, #10090, #10094, #10096, #10097, #10098, #10100,
-  #10104, #10105, #10107, #10109, #10111, #10112, #10113, #10114, #10117,
-  #10118, #10119, #10120, #10121, #10122, #10125, #10126, #10127, #10128,
-  #10129, #10130, #10131, #10132, #10133, #10134, #10135, #10136, #10137,
-  #10139, #10141, #10142, #10143, #10144, #10145, #10146, #10147, #10148,
-  #10149, #10150, #10151, #10154, #10155, #10156, #10158, #10159, #10160,
-  #10161, #10162, #10163, #10164, #10165, #10167, #10168, #10170, #10171,
-  #10173, #10174, #10175, #10176, #10177, #10178, #10179, #10180, #10181,
-  #10182, #10183, #10184, #10185, #10186, #10187, #10188, #10189, #10191,
-  #10192, #10193, #10195, #10196, #10197, #10198, #10199, #10200, #10201,
-  #10202, #10203, #10204, #10205, #10206, #10207, #10208, #10209, #10210,
-  #10211, #10212, #10213, #10214, #10216, #10217, #10218, #10219, #10220,
-  #10221, #10222, #10223, #10224, #10225, #10227, #10228, #10231, #10233,
-  #10234, #10236
+  #4: Call data callbacks in async_fetch().
+  #16: Correct the Catalan spelling of December in Calendar.Language.
+  #25: Avoid a compiler crash when typeof(X) is used as a type.
+  #36: Update the Spanish spelling of September in Calendar.Language.
+  #38: Fix compilation on macOS.
+  #40: Fix Parser.Markdown output for fenced code blocks.
+  #49: Update Cache.Storage.MySQL for the current MySQL driver.
+  #54: Avoid a compiler crash on invalid source input.
+  #55: Avoid a lexer hang on fuzzer input.
+  #56: Avoid excessive memory use on fuzzer input.
+  #70: Support PCRE.
+  #71: Fix a runtime abort on Linux.
+
+GitLab (Lysator) pikelang/pike:
+
+  #1694: Parse errors when using typedef.
+  #2100: Fix System.normalize_path() on macOS.
+  #2315: Support XY-format XWD images and correct LSBFirst pixel alignment.
+  #3110: Protocols.HTTP.Server problem with the Calendar module.
+  #3150: Inconsistency in the second argument to map, filter etc.
+  #3429: Type system problem with indices.
+  #3658: Protocols.HTTP.get_url_nice doesnt follow 302 - header parser bug.
+  #3681: ? : and precedence.
+  #3917: Fix thread handling on FreeBSD 5.x.
+  #4312: Stdio.Port: Implementation and documentation differ.
+  #4826: New tds module does not handle bindings.
+  #4897: Overzealous compile time type check.
+  #4934: pango items are listed as separate functions.
+  #5466: Reject misplaced XML prologs.
+  #7363: Compat resolver related crash.
+  #7831: Avoid duplicate headers in asynchronous HTTP requests.
+  #8042: Handle invalid Inotify event callbacks.
+  #10001: The type for predef::`&() is wrong in some cases.
+  #10003: Fix an out-of-bounds read in preprocessor string recoding.
+  #10004: Reduce unaligned CRC32 operations in string hashing.
+  #10006: Improve soft casts and their warnings in multi-assignment.
+  #10012: Several autodoc typos in Standards.X509.
+  #10017: Compiler: The multi assign treeopt fix was broken.
+  #10018: Typechecking errors with large integers and sprintf("%c").
+  #10021: multiset | UNDEFINED ought to be a supported operation.
+  #10022: Correct AutoDoc syntax for bcrypt_hash() and bcrypt_verify().
+  #10023: Optimizer fatal error "F_PUSH_ARRAY unexpected in this context.".
+  #10026: Release the interpreter lock during Standards.JSON encoding.
+  #10027: Standards.JSON5.encode() can stall a multi-threaded process for
+    quite a while.
+  #10028: CID 1461177: Null pointer dereferences (FORWARD_NULL).
+  #10029: CID 1461176: Null pointer dereferences (FORWARD_NULL).
+  #10033: Operator assignment and strict_types.
+  #10035: Handle missing SQL result field names.
+  #10037: Expose compat_proxy in the Pike 8.0 Crypto compatibility module.
+  #10039: Avoid constant-folding automap markers.
+  #10040: Correct operator types and Nettle.Hash.SCRAM warnings and
+    validation.
+  #10041: Correct subtraction types and Standards.ASN1.Types warnings.
+  #10042: Fix type warnings in Val.
+  #10043: Fix a type warning in Crypto.SHA1.
+  #10044: Warning in 7.8::Crypto.DSA.
+  #10045: Correct the type of lfun::`/().
+  #10046: Fix a type warning in Standards.PEM.
+  #10047: Fix type warnings in Crypto.Pipe.
+  #10048: Support more complex function types and lfun lookup in the type
+    checker.
+  #10050: Return failure instead of throwing on crypt() validation errors.
+  #10055: Fix a race in Concurrent.Promise finalization.
+  #10059: Return -1 for recoverable failures in
+    Inotify.Instance()->add_watch().
+  #10063: Add size validation to PIKE_MAP_VARIABLE() et al when PIKE_DEBUG.
+  #10064: Add API to clear the signal mask for an active signal handler.
+  #10065: Retry Git exports after SSH failures.
+  #10072: Fix a NULL dereference in Nettle.CCM.digest().
+  #10076: Crypto.DSA verifies pkcs signature with certain degree of
+    malleability.
+  #10077: Crypto.DSA verifies signature with modified R/S values.
+  #10083: Declaring a variable as __weak__ ought to imply that the type
+    includes zero.
+  #10084: Fix reverse() on string subranges.
+  #10085: Adjust Iterator API to be more simple to implement and simpler to
+    generate code for.
+  #10086: Add syntax for specifying default values for optional arguments.
+  #10087: Fix HTTPS server timeouts with Chrome.
+  #10089: Coredump with new array type.
+  #10090: Hilfe does not like anonymous classes with implicit create().
+  #10094: Correct Photoshop 6 block alignment in Standards.IIM.
+  #10096: aggregate_mapping() type checker performance issue.
+  #10097: Compiler C Stack overflow in type checker.
+  #10098: Support multi-assign in function calls.
+  #10100: Support default arguments in multi-assign.
+  #10104: Define the behavior of catch vis a vis local variables defined in
+    the block.
+  #10105: Update various WIN32-API functions to be wide-string aware.
+  #10107: Avoid duplicate code text in Parser.Markdown output.
+  #10109: Add support for defining macros with arguments with -DFOO(X)=X.
+  #10111: Fix Calendar.YMD rounding and backward timezone shifts at midnight.
+  #10112: Pike 9.0 compiler --with-debug cleanup (free_supporter()) fails due
+    to invalid supporter pointers on NT.
+  #10113: Add API(s) for converting pike (wide-) strings to NUL-terminated
+    UTF16-strings.
+  #10114: Add convenience API(s) for generating pike strings from UTF16-data.
+  #10117: System.RegGetValue{,s} does not handle DWORD entries correctly.
+  #10118: Support "cwd" and "chroot" being Stdio.File objects in
+    Process.create_process() et al on plaforms that have fchdir(2).
+  #10119: Add Stdio.File()->cd() on platforms that have fchdir(2).
+  #10120: Move the getcwd cache to C-code.
+  #10121: Fix filtering in Filesystem.System.find().
+  #10122: Support Nettle 3.9.
+  #10125: Consider using a mapping lookup in F_SWITCH when case ranges are not
+    in use.
+  #10126: Optimize switch case ranges to use mapping lookup in the case where
+    all ranges are a small number of integers.
+  #10127: Fix QA complaints from Gentoo Ebuild of Pike 8.0.1738.
+  #10128: switch with mapping lookup table broken on several 32-bit
+    architectures.
+  #10129: Correct UTC handling and make System.TM output deterministic.
+  #10130: Recover from missing identifiers in implicit create() arguments.
+  #10131: Fix for #10130 is not sufficient in Pike master.
+  #10132: Pop arguments correctly in getxattr().
+  #10133: __ARGS__ broken in recent Pike master.
+  #10134: Crypto.DSA et al verify messages with various incorrect signatures.
+  #10135: Preprocessor hides doubles variable assignment in macro on Debian.
+  #10136: Private getter not marked as used.
+  #10137: SHA256/SHA512 crypt_hash bug.
+  #10139: Reject NUL-prefixed RSA ciphertext.
+  #10141: Add support for fftw 3.x (Math.Transforms.FFT).
+  #10142: Add support for RFC 8785 to Standards.JSON.
+  #10143: Update the COM module to use the *W()-APIs.
+  #10144: Add language extensions for asynchronous functions.
+  #10145: Refresh annotations during later compiler passes.
+  #10146: Add support for generic types.
+  #10147: Annotations not retained on special function types.
+  #10148: Return proper Concurrent.Future objects from Sql.promise_query().
+  #10149: Pike doesn't build against libmysql (on MacOS).
+  #10150: Rewrite code that uses the old type-checker APIs.
+  #10151: Fix compilation failure triggered by Filesystem.Monitor's use of
+    ADT.Heap.
+  #10154: Make getter/setter references local.
+  #10155: Make Thread.Farm.Result Concurrent.Future-compatible.
+  #10156: Keep the SSL write queue empty after completing a server handshake.
+  #10158: AutoDoc: Example code block for sprintf() gets truncated by
+    renderer.
+  #10159: Parser.Pike.tokenize() truncates when the input contains
+    unterminated strings or character constants.
+  #10160: Sql.Connection()->query() segfaults in sprintf mode for SQLite.
+  #10161: Add support for marking symbols as experimental.
+  #10162: The ?-> operator should cause following -> operators to also become
+    ?-> operators.
+  #10163: Hilfe hangs when a lambda is placed inside catch with parentheses
+    (expression catch).
+  #10164: Pike sometimes optimizes away exceptions.
+  #10165: Support GNU Gettext 0.22.5 and later.
+  #10166: Allow pgsql rollbacks after failed asynchronous queries.
+  #10167: Fix quoting in Cache.Storage.MySQL.
+  #10168: Unicode 17.2.0.
+  #10170: Support mmaping of devices with System.Memory.
+  #10171: Add support for the apr1 password hash to Crypto.Password.
+  #10173: Segfault relating to annotations.
+  #10174: Add a LaTeX renderer to Parser.Markdown.
+  #10175: Fix lexer handling of NUL characters.
+  #10176: Sort arrays containing mixed types correctly.
+  #10177: Add API to detect whether the current thread is executing in a
+    signal context or not.
+  #10178: Support %z timezone abbreviations in Calendar.mkrules.
+  #10179: Some iterator issues remaining in Pike 9.0.
+  #10180: Add testsuites for the Image codecs that currently lack tests (DSI,
+    NEO, TIM, WBMP, XCF, XWD).
+  #10181: Fix backward compat issue with Protocols.HTTP.Server.Request and
+    make_response_header().
+  #10182: Stdio.Buffer reports a bad length after %H parsing.
+  #10183: Tools.Standalone.autodoc_to_split_html does not generate useful
+    forward/back navigation for enums.
+  #10184: The invocation of mktestsuite is not compatible with m4 other than
+    GNU m4 with respect to options.
+  #10185: Wait thread gets stuck in co_wait on OpenBSD.
+  #10186: GC destructs parent objects ahead of time under some circumstances.
+  #10187: Intermittent failure --with-debug-malloc.
+  #10188: Rename functions in pike_memory.c that assume that the
+    debug_malloc_mutex is locked.
+  #10189: Interruption of threads fails intermittently on some platforms.
+  #10190: Fix intermittent Pike 7.8 compatibility SSL test failures on Windows.
+  #10191: SSL.File()->close() does not like Stdio.File()->close() failing with
+    ECONNRESET.
+  #10192: NetUtils broken on some Linux platforms.
+  #10193: ADT.CircularList testsuite fails intermittently.
+  #10195: Map WSA errnos to normal errnos at the C-level.
+  #10196: Consider using the new GSSAPI if available.
+  #10197: Confusing type checker error when too few arguments to sscanf.
+  #10198: Support __generator__ and __async__ syntax in Hilfe.
+  #10199: On NT co_broadcast() is sometimes called on a condition with an
+    invalid handle.
+  #10200: Add a backend using port_create(3c) (Solaris 10 and later).
+  #10201: Intermittent failures for ADT.CircularList.
+  #10202: Add support for C23-style __has_include() macro.
+  #10203: Consider adding support for #embed as per C23.
+  #10204: #embed <file> limit(X) should support X being a constant expression.
+  #10205: Consider supporting use of C-threads (C11).
+  #10206: Documentation for predef::equal() does not mention eg mappings.
+  #10207: The Charset encoder does not support codepoints beyond 16bit.
+  #10208: Add support for the Unicode brace escape syntax.
+  #10209: Gcc 15.2.1 appears to break dmalloc for Pike 9.0.
+  #10210: yyexplain_nonmatching_types() broken when pike_types_le() started
+    using type_binop().
+  #10211: Implement yyexplain_nonmatching_types() using type_binop().
+  #10212: string_builder_strftime() ought to care about the flags.
+  #10213: Compiler resolver cache version cross-pollution.
+  #10214: Update Protocols.LysKOM to know about protocol version 11.
+  #10216: Update the GL documentation generator to use the OpenGL-Refpages XML
+    as source.
+  #10217: Fix support for Pango.LayoutLine in the GI compiler.
+  #10218: GI: Constructor API conflicts.
+  #10219: Some GI issues to fix before Pike 9.0 release.
+  #10220: bitvector.h uses stdc_leading_zeroes() on a signed type (INT64).
+  #10221: Allowing random function names to act as typenames in declarations
+    is error prone and useless.
+  #10222: The kqueue backend notifies spuriously for out of band data on
+    FreeBSD 15.1.
+  #10223: Array.all seems completely broken with non-integer arrays.
+  #10224: Support generating gir XML from typelib files.
+  #10225: Add support for custom section headings in AutoDoc.
+  #10227: Fix call_out benchmark regression.
+  #10228: Fix frame handling regression.
+  #10231: Consider updating the PCRE module to support the libpcre2 API.
+  #10233: Add support for nested cond() in the testsuite.
+  #10234: Sprintf regression for "%-=*s" in Pike 9.0.
+  #10236: Strange implicit private modifier for constant definition.
+  #10237: Support local function prototypes for mutually recursive functions.
+  #10238: Support class references in annotations and constant expressions.
