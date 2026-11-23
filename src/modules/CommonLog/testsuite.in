@@ -8,9 +8,10 @@ junk
 host - auth [21/Nov/2002:22:23:24 +0000] \"GET /a/b HTTP/1.1\" 200 14
 "+ ("*"*3850) + #"
 host - auth [21/Nov/2002:22:23:24 +0000] \"GET / HTTP/1.1\" 200 14
+- id auth [21/Nov/2002:22:23:24 +0000] \"GET /a/b HTTP/1.1\" 200 14
 " ); ]])
 
-test_eq( CommonLog.read(lambda(mixed ... x){}, Stdio.File("clf"), 0), 4130)
+test_eq( CommonLog.read(lambda(mixed ... x){}, Stdio.File("clf"), 0), 4196)
 test_any_equal([[
   array res = ({});
   CommonLog.read( lambda(array a, int b) {
@@ -21,7 +22,11 @@ test_any_equal([[
 ({"host","id","auth",2002,11,21,22,23,24,0,"GET","/a/b","HTTP/1.1",200,14,71}),
 ({"127.0.0.1",0,0,2001,1,1,0,0,1,0,"KILL","/me","HTTP/07.8",417,666,142}),
 ({"host",0,"auth",2002,11,21,22,23,24,0,"GET","/a/b","HTTP/1.1",200,14,215}),
-({"host",0,"auth",2002,11,21,22,23,24,0,"GET","/","HTTP/1.1",200,14,4130}),
+({"host",0,"auth",2002,11,21,22,23,24,0,"GET","/","HTTP/1.1",200,14,4131}),
+// Regression test: a literal "-" for remote_host must parse as 0,
+// the same way "-" does for ident_user and auth_user, not as the
+// string "-".
+({0,"id","auth",2002,11,21,22,23,24,0,"GET","/a/b","HTTP/1.1",200,14,4196}),
 }) ]])
 
 test_do( rm("clf"); )
