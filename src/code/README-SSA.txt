@@ -504,8 +504,8 @@ The existing guarded incoming-stack planner remains independently usable.
 Guard failures that enter its fallback produce separate profile entries;
 a failed direct-global guard can therefore be followed by fast arithmetic.
 
-Only the leading untyped direct-global load and the terminal store below
-are included. Subsequent global reads, typed raw storage, calls and labels
+By default only the leading untyped direct-global load and terminal store
+are included. Further global reads, typed raw storage, calls and labels
 retain their boundaries. The read itself changes no reference counts and
 makes no callback on the fast path. PIKE_SSA_NO_INTEGER_GLOBAL_INPUT=1
 forces the extension off for comparisons, including when the former positive
@@ -536,6 +536,39 @@ keep their ordinary handling. Other destinations and typed stores remain
 boundaries. Terminal stores default on with direct-global input. Set
 PIKE_SSA_NO_INTEGER_GLOBAL_STORE=1 to restore the preceding store boundary
 independently of the input control.
+
+Two guarded global operands
+---------------------------
+
+Set PIKE_SSA_INTEGER_GLOBAL_PAIR=1 to enable an isolated global/global
+addition. It accepts two leading F_PRIVATE_IF_DIRECT_GLOBAL loads (or a
+load and DUP(0)) followed by F_ADD_INTS. Both complete ordinary-integer
+entry tags and the common direct program/context identity are guarded.
+The operands occupy two banks and the result uses the free third bank,
+keeping both inputs resident for overflow replay. This isolated
+case permits one arithmetic operation without the longer planner's reuse
+requirement; other profitability and discovery rules are unchanged.
+
+The result may remain on the virtual stack or be committed by a terminal
+store to either guarded input, with an optional pop. The existing global
+input, global store, stack planner and stack-exit controls also apply.
+Stores to other destinations and further arithmetic remain ordinary.
+
+Any failed entry guard produces the first operand using its already resolved
+direct storage or program mismatch, then replays the second producer
+normally. This preserves producer order, getters, references, subtypes and
+destructed-object checks without repeating the first program comparison. On
+overflow the isolated addition reuses that direct producer replay, with a
+separate overflow counter. No call, local/global write or real stack change
+precedes the add, so both guarded ordinary integers and the first storage
+address remain unchanged. Copying the first operand and replaying the second
+load cannot invoke a getter on this direct path. The ordinary ADD_INTS then
+handles promotion and exceptions. There is no interior replay entry or
+emitted stack snapshot for this exact shape. Calls or earlier writes in any
+future extension would invalidate this proof. A successful terminal store
+changes only the payload of its entry-guarded ordinary integer. No callback
+or write can invalidate either input's storage before commit. This extension
+is opt-in while its generated size and runtime benefit are evaluated.
 
 Runtime profiling
 -----------------

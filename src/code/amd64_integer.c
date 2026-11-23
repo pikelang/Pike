@@ -125,6 +125,40 @@ static void amd64_integer_snapshot(
   }
 }
 
+/* Resolve the first producer once, preserving its original direct or
+ * indirect semantics. A pair then replays the second producer normally;
+ * the one-input extension can instead compile its arithmetic suffix. */
+static void amd64_integer_global_fallback(
+    const struct p_instr_s *code, int store_lines,
+    struct pikecode_ssa_integer_profile *profile,
+    struct label *guard, struct label *indirect, struct label *prepared,
+    struct label *replay)
+{
+  label(guard);
+  amd64_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
+  if (replay) label(replay);
+  pikecode_ssa_integer_source(code, store_lines);
+  /* No callback has run: RBX still addresses the guarded direct value. */
+  amd64_push_svaluep(P_REG_RBX);
+  amd64_flush_code_generator_state();
+  jmp(prepared);
+  label(indirect);
+  amd64_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
+  /* The program comparison already supplied the object and context.
+   * Read the context first: ARG2 aliases RDX on Windows. */
+  mov_mem16_reg(P_REG_RDX, OFFSETOF(inherit, identifier_level), ARG3_REG);
+  mov_reg_reg(P_REG_RBX, ARG2_REG);
+  add_reg_imm(ARG3_REG, code[0].arg2);
+  amd64_load_sp_reg();
+  mov_reg_reg(sp_reg, ARG1_REG);
+  amd64_prev_stored_pc = -1;
+  maybe_update_pc();
+  amd64_call_c_function(low_object_index_no_free);
+  amd64_add_sp(1);
+  amd64_flush_code_generator_state();
+  label(prepared);
+}
+
 static int amd64_integer_stack_run(const struct p_instr_s *code,
                                    ptrdiff_t available, int store_lines,
                                    struct pikecode_ssa_integer_stop *stop)
@@ -134,7 +168,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   struct label overflow[PIKE_SSA_INTEGER_LIMIT];
   struct label slow[PIKE_SSA_INTEGER_CODE], done = { .addr = -1 };
   struct label guard = { .addr = -1 }, indirect = { .addr = -1 };
-  struct label prepared = { .addr = -1 };
+  struct label prepared = { .addr = -1 }, replay = { .addr = -1 };
   struct label entry = { .addr = -1 }, initialize = { .addr = -1 };
   int constant_entry;
   unsigned int i, stores = 0, write_only = 0;
@@ -176,10 +210,20 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     add_reg_imm(P_REG_RBX, p.global_offset);
     mov_mem32_reg(P_REG_RBX, OFFSETOF(svalue, tu.t.type), P_REG_RAX);
     cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
-    jne((profile || p.global_input) ? &guard : &slow[0]);
+    jne(&guard);
     mov_mem_reg(P_REG_RBX, OFFSETOF(svalue, u.integer), reg);
+    if (p.global_input == 2) {
+      reg = amd64_integer_reg(&p.value[2]);
+      mov_reg_reg(P_REG_RBX, P_REG_RDX);
+      add_reg_imm(P_REG_RDX, p.global_second_offset - p.global_offset);
+      mov_mem32_reg(P_REG_RDX, OFFSETOF(svalue, tu.t.type), P_REG_RAX);
+      cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
+      jne(&guard);
+      mov_mem_reg(P_REG_RDX, OFFSETOF(svalue, u.integer), reg);
+    }
   }
-  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), PIKE_LOCALS_REG);
+  if (p.global_input != 2)
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), PIKE_LOCALS_REG);
   for (i = 1; i <= p.locals; i++) {
     const struct pikecode_ssa_integer_value *v = &p.value[i];
     ptrdiff_t off = v->local * sizeof(struct svalue);
@@ -268,7 +312,8 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
       } else
         amd64_integer_alu_imm(P_REG_RAX, v->imm,
                               v->kind == PIKE_SSA_INTEGER_SUBTRACT);
-      jo(!profile && p.write_only ? &slow[0] : &overflow[i]);
+      jo(!profile && p.global_input == 2 ? &replay :
+          !profile && p.write_only ? &slow[0] : &overflow[i]);
     }
     mov_reg_reg(P_REG_RAX, amd64_integer_reg(v));
   }
@@ -283,6 +328,8 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
       amd64_integer_value(v, P_REG_RAX);
       reg = P_REG_RAX;
     }
+    if (p.global_store_second)
+      add_reg_imm(P_REG_RBX, p.global_second_offset - p.global_offset);
     mov_reg_mem(reg, P_REG_RBX, OFFSETOF(svalue, u.integer));
   }
   /* Publish live results before the next ordinary opcode. The slow replay
@@ -293,9 +340,16 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
   for (i = 0; i < p.count; i++) {
     if (p.value[p.step[i].result].kind == PIKE_SSA_INTEGER_CONSTANT) continue;
     if (integer_stack_bitwise(p.value[p.step[i].result].kind)) continue;
-    if (p.write_only && !profile) continue;
+    if ((p.write_only || p.global_input == 2) && !profile) continue;
     label(&overflow[i]);
     amd64_integer_count(profile, PIKE_SSA_INTEGER_OVERFLOWS);
+    if (p.global_input == 2) {
+      /* The isolated add has made no call, write or stack change. Both
+       * guarded ordinary integers still reside in their original storage.
+       * Resolve neither context again before copying the first input. */
+      jmp(&replay);
+      continue;
+    }
     if (p.write_only) {
       /* The separate assignment has not changed any local or real stack
        * slot. Replay its loads instead of materializing virtual operands. */
@@ -326,44 +380,38 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     amd64_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
     jmp(&slow[0]);
   }
-  for (i = p.global_input; i < p.consumed; i++) {
+  if (p.global_input == 2) {
+    amd64_flush_code_generator_state();
+    amd64_integer_global_fallback(code, store_lines, profile,
+                                    &guard, &indirect, &prepared, &replay);
+  }
+  for (i = p.global_input ? 1 : 0; i < p.consumed; i++) {
     unsigned int instr = code[i].opcode - F_OFFSET;
     /* Incoming exits have different stack depths. Flush fallthrough before
      * binding, so all entries reload from canonical interpreter state. */
-    amd64_flush_code_generator_state();
+    if (p.global_input != 2)
+      amd64_flush_code_generator_state();
     label(&slow[i]);
     pikecode_ssa_integer_source(&code[i], store_lines);
-    if (instrs[instr].flags & I_HASARG) update_arg1(code[i].arg);
-    if (instrs[instr].flags & I_HASARG2) update_arg2(code[i].arg2);
-    amd64_call_c_opcode(instrs[instr].address, instrs[instr].flags);
+    if (p.global_input == 2) {
+      if (instrs[instr].flags & I_HASARG2)
+        ins_f_byte_with_2_args(code[i].opcode, code[i].arg, code[i].arg2);
+      else if (instrs[instr].flags & I_HASARG)
+        ins_f_byte_with_arg(code[i].opcode, code[i].arg);
+      else ins_f_byte(code[i].opcode);
+    } else {
+      if (instrs[instr].flags & I_HASARG) update_arg1(code[i].arg);
+      if (instrs[instr].flags & I_HASARG2) update_arg2(code[i].arg2);
+      amd64_call_c_opcode(instrs[instr].address, instrs[instr].flags);
+    }
   }
   amd64_flush_code_generator_state();
-  if (p.global_input) {
+  if (p.global_input == 1) {
     struct pikecode_ssa_integer_stop fallback_stop = {0};
     int consumed;
     jmp(&done);
-    label(&guard);
-    amd64_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
-    pikecode_ssa_integer_source(code, store_lines);
-    /* No callback has run: RBX still addresses the guarded direct value. */
-    amd64_push_svaluep(P_REG_RBX);
-    amd64_flush_code_generator_state();
-    jmp(&prepared);
-    label(&indirect);
-    amd64_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
-    /* The program comparison already supplied the object and context.
-     * Read the context first: ARG2 aliases RDX on Windows. */
-    mov_mem16_reg(P_REG_RDX, OFFSETOF(inherit, identifier_level), ARG3_REG);
-    mov_reg_reg(P_REG_RBX, ARG2_REG);
-    add_reg_imm(ARG3_REG, code[0].arg2);
-    amd64_load_sp_reg();
-    mov_reg_reg(sp_reg, ARG1_REG);
-    amd64_prev_stored_pc = -1;
-    maybe_update_pc();
-    amd64_call_c_function(low_object_index_no_free);
-    amd64_add_sp(1);
-    amd64_flush_code_generator_state();
-    label(&prepared);
+    amd64_integer_global_fallback(code, store_lines, profile,
+                                    &guard, &indirect, &prepared, NULL);
     /* Keep parent branches wide and fixed across the independent fallback. */
     amd64_ssa_region_end();
     /* A getter or inherited context can still supply an integer. Preserve
@@ -383,7 +431,7 @@ static int amd64_integer_stack_run(const struct p_instr_s *code,
     amd64_flush_code_generator_state();
   }
   label(&done);
-  if (!p.global_input) amd64_ssa_region_end();
+  if (p.global_input != 1) amd64_ssa_region_end();
   pikecode_ssa_integer_source(&code[p.consumed - 1], store_lines);
   /* Slow calls may publish a PC which the fast branch never executed. */
   amd64_prev_stored_pc = -1;

@@ -30,6 +30,15 @@
  * pointer materialization. Counter sites contain no calls. Unset the flag
  * for performance measurements.
  *
+ * PIKE_SSA_SPARC_VECTOR=1 enables SPARC64 far opcode calls through instrs.
+ * Vector-enabled bodies initialize the biased address-field base in I3
+ * before their first real opcode, after entry labels have been bound.
+ * Internal calls skip only SAVE and run this setup; catch re-entry still
+ * finds SAVE immediately before its label. The C interface is unchanged.
+ * Reachable direct CALLs and non-opcode helpers keep their existing forms.
+ * A vectored far call uses LDX/JMPL/delay, with the original delay action
+ * and actual JMPL PC retained. The table is static process-owned data.
+ *
  * Negation uses SUBcc from G0; partial sums use O3 and leave argument banks
  * intact until every ADDcc overflow check succeeds.
  *
@@ -243,6 +252,67 @@
     }									\
   } while(0)
 
+#ifdef PIKE_BYTECODE_SPARC64
+/* The entry frame-save remains one word. Vector-only setup follows it,
+ * so both external and internal entries initialize I3. The table has static
+ * process lifetime, like the existing interpreter-pointer anchor. Portable
+ * program decoding recompiles addresses against the current process. */
+#define SPARC_INSTRS_BIAS ((F_MAX_OPCODE - F_OFFSET) / 2)
+static int sparc_instrs_enabled = -1;
+static unsigned long sparc_instrs_calls;
+static int sparc_instrs_entry_pending;
+
+static int sparc_instrs_vector_enabled(void)
+{
+  if (sparc_instrs_enabled < 0)
+    sparc_instrs_enabled = getenv("PIKE_SSA_SPARC_VECTOR") != NULL;
+  return sparc_instrs_enabled;
+}
+
+/* Delay setup until the first real opcode: F_ENTRY/F_LABEL adjacency is
+ * used by catch re-entry to find SAVE via ENTRY_PROLOGUE_SIZE. */
+static void sparc_instrs_entry(void)
+{
+  if (!sparc_instrs_entry_pending) return;
+  sparc_instrs_entry_pending = 0;
+  SET_REG(SPARC_REG_I3,
+          (ptrdiff_t)&instrs[SPARC_INSTRS_BIAS].address);
+}
+
+static int sparc_instrs_offset(const void *address, int *offset)
+{
+  static struct {
+    const void *address;
+    ptrdiff_t offset;
+  } cache[16];
+  static unsigned int next;
+  ptrdiff_t displacement = 4096;
+  unsigned int i;
+  if (!sparc_instrs_vector_enabled() || !address) return 0;
+  for (i = 0; i < NELEM(cache); i++) {
+    if (cache[i].address == address) {
+      displacement = cache[i].offset;
+      goto found;
+    }
+  }
+  for (i = 0; i < F_MAX_OPCODE - F_OFFSET; i++) {
+    if (instrs[i].address == address) {
+      displacement = ((ptrdiff_t)i - SPARC_INSTRS_BIAS) *
+        (ptrdiff_t)sizeof(struct instr);
+      break;
+    }
+  }
+  cache[next].address = address;
+  cache[next].offset = displacement;
+  next = (next + 1) % NELEM(cache);
+ found:
+  if (displacement < -4096 || displacement > 4095) return 0;
+  *offset = displacement;
+  sparc_instrs_calls++;
+  return 1;
+}
+#endif
+
       /* FIXME: SPARC64 */
 #define ADD_CALL(X, DELAY_OK) do {					\
     PIKE_OPCODE_T *ptr_ = (PIKE_OPCODE_T *)(X);				\
@@ -251,6 +321,7 @@
     INT32 off_ = p_->num_program;					\
     /* noop		*/						\
     INT32 delay_ = 0x01000000;						\
+    IF_SPARC64(int vector_offset_;) \
 									\
     if (DELAY_OK) {							\
       /* Move the previous opcode to the delay-slot. */			\
@@ -265,7 +336,11 @@
     if ((-0x20000000L <= delta_) && (delta_ <= 0x1fffffff)) {		\
       SPARC_CALL((delta_<<2));						\
       add_to_relocations(off_);						\
-    } else {								\
+    } IF_SPARC64(else if (sparc_instrs_offset(ptr_, &vector_offset_)) { \
+      SPARC_LDX(SPARC_REG_O7, SPARC_REG_I3, vector_offset_, 1); \
+      off_++; /* O7 holds the JMPL address, after the pointer load. */ \
+      SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, 0, 1); \
+    }) else { \
       size_t ptr_val_ = (size_t)ptr_;					\
       IF_SPARC64(if (ptr_val_ <= 0xffffffffLL)) {			\
 	/* NOTE: Top 32 bits are zero! */				\
@@ -306,6 +381,7 @@
  * Register conventions:
  *
  * I0	Scratch
+ * I3	Biased instrs address-field base in vectored SPARC64 functions
  *
  * I6	Frame pointer
  * I7	Return address
@@ -522,6 +598,10 @@ static void sparc_ssa_report(void)
           sparc_stats.joins[PIKE_SSA_SP], sparc_stats.avoided[PIKE_SSA_IP],
           sparc_stats.avoided[PIKE_SSA_FP], sparc_stats.avoided[PIKE_SSA_SP],
           sparc_stats.calls, sparc_stats.code_bytes, !sparc_ssa_no_joins);
+#ifdef PIKE_BYTECODE_SPARC64
+  fprintf(stderr, "SSA SPARC64 vector: calls=%lu enabled=%d\n",
+          sparc_instrs_calls, sparc_instrs_enabled > 0);
+#endif
   fprintf(stderr, "SSA SPARC integers: regions=%lu ops=%lu values=%lu "
           "loads avoided=%lu stores avoided=%lu stack regions=%lu "
           "stack exits=%lu subtract ops=%lu bitwise ops=%lu; enabled=%d\n",
@@ -644,6 +724,9 @@ void sparc_ins_entry(void)
   ADD_CALL(sparc_trace_fun, 1);
 #endif /* 0 */
   FLUSH_CODE_GENERATOR_STATE();
+#ifdef PIKE_BYTECODE_SPARC64
+  sparc_instrs_entry_pending = sparc_instrs_vector_enabled();
+#endif
 }
 
 /* Update Pike_fp->pc */
@@ -1050,12 +1133,14 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
 void ins_f_byte(unsigned int opcode)
 {
+  IF_SPARC64(sparc_instrs_entry();)
   ins_sparc_debug();
   low_ins_f_byte(opcode, 0);
 }
 
 void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
+  IF_SPARC64(sparc_instrs_entry();)
   ins_sparc_debug();
 
   switch(a) {
@@ -1094,6 +1179,7 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    INT32 c,
 			    INT32 b)
 {
+  IF_SPARC64(sparc_instrs_entry();)
   ins_sparc_debug();
 
   SET_REG(SPARC_REG_O0, c);

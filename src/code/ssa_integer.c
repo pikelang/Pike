@@ -573,6 +573,7 @@ static int integer_stack_plan(
   p->inputs = inputs;
   p->write_only = 0;
   p->global_input = p->global_store = p->global_pop = 0;
+  p->global_store_second = 0;
   p->global_offset = 0;
   p->values = p->count = p->consumed = p->loads = p->writes = p->retained = 0;
   p->bitwise = p->normal = p->expressions = p->constant_assign = 0;
@@ -910,6 +911,61 @@ static int integer_stack_single_assign(
   return length;
 }
 
+/* Both producers stay virtual until their complete ordinary-integer guards
+ * pass. The isolated addition needs no reuse to pay for avoiding two pushes;
+ * longer local-based plans keep their existing profitability requirements.
+ * This exact shape has no effects before its sole add. Native overflow
+ * replay may reread the guarded storage while it is still unchanged; any
+ * future extension with calls or writes must revisit that proof. */
+static int integer_stack_global_pair(
+    struct pikecode_ssa_integer_stack_plan *p,
+    const struct p_instr_s *code, ptrdiff_t available, int stack_exits,
+    struct pikecode_ssa_integer_stop *stop)
+{
+  static int enabled = -1;
+  unsigned int i;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_INTEGER_GLOBAL_PAIR") != NULL;
+  if (!enabled || !stack_exits || available < 3 ||
+      code[0].opcode != F_PRIVATE_IF_DIRECT_GLOBAL ||
+      code[0].arg < 0 || code[0].arg2 < 0 ||
+      !((code[1].opcode == F_PRIVATE_IF_DIRECT_GLOBAL &&
+         code[1].arg >= 0 && code[1].arg2 >= 0) ||
+        (code[1].opcode == F_DUP && code[1].arg == 0)) ||
+      code[2].opcode != F_ADD_INTS ||
+      code[0].file != code[1].file || code[0].file != code[2].file)
+    return 0;
+  memset(p, 0, sizeof(*p));
+  p->global_input = 2;
+  p->global_offset = code[0].arg;
+  p->global_second_offset = code[1].opcode == F_DUP ?
+    code[0].arg : code[1].arg;
+  p->values = 3;
+  p->count = 1;
+  p->loads = 2;
+  p->consumed = 3;
+  for (i = 1; i <= 2; i++) {
+    p->value[i].kind = PIKE_SSA_INTEGER_GLOBAL_INPUT;
+    p->value[i].bank = i - 1;
+    p->step[0].before.stack[i - 1] = i;
+  }
+  p->step[0].first = 2;
+  p->step[0].result = 3;
+  p->step[0].before.depth = 2;
+  p->value[3].kind = PIKE_SSA_INTEGER_ADD;
+  p->value[3].left = 1;
+  p->value[3].right = 2;
+  /* Keep both original inputs resident even in the result move's delay
+   * slot. SPARC can then publish that move on both overflow outcomes. */
+  p->value[3].bank = 2;
+  p->final.depth = 1;
+  p->final.stack[0] = 3;
+  integer_stop_init(stop);
+  if (stop) { stop->candidate = 1; stop->ops = 1; }
+  integer_stop(stop, available == 3 ? "end" : "global-pair", 3);
+  return 3;
+}
+
 /* A guarded direct global or a rejected virtual stack underflow can supply
  * one ordinary integer to the existing bounded stack plan. Valid bytecode
  * guarantees an incoming real stack operand exists. Labels and calls still
@@ -939,19 +995,25 @@ int pikecode_ssa_plan_integer_stack(
      * Guard failure produces the operand before the existing stack plan;
      * overflow snapshots already contain its value, so replay instead
      * starts at the failing arithmetic. */
-    result = integer_stack_plan(p, code + 1, rest, max_local,
-                                stack_exits, subtract, bitwise, 1, &first);
-    if (available > PIKE_SSA_INTEGER_CODE &&
-        first.offset == (unsigned int)rest && !strcmp(first.reason, "end"))
-      first.reason = "instruction-limit";
-    first.offset++;
+    result = integer_stack_global_pair(p, code, available, stack_exits,
+                                       &first);
+    if (!result) {
+      result = integer_stack_plan(p, code + 1, rest, max_local,
+                                  stack_exits, subtract, bitwise, 1, &first);
+      if (available > PIKE_SSA_INTEGER_CODE &&
+          first.offset == (unsigned int)rest && !strcmp(first.reason, "end"))
+        first.reason = "instruction-limit";
+      first.offset++;
+      if (result) {
+        p->inputs = 0;
+        p->global_input = 1;
+        p->global_offset = code[0].arg;
+        p->value[p->locals + 1].kind = PIKE_SSA_INTEGER_GLOBAL_INPUT;
+        for (i = 0; i < p->count; i++) p->step[i].first++;
+        result = ++p->consumed;
+      }
+    }
     if (result) {
-      p->inputs = 0;
-      p->global_input = 1;
-      p->global_offset = code[0].arg;
-      p->value[p->locals + 1].kind = PIKE_SSA_INTEGER_GLOBAL_INPUT;
-      for (i = 0; i < p->count; i++) p->step[i].first++;
-      result = ++p->consumed;
       /* No call or global write occurs in a successful region. Matching
        * both operands proves this is the same ordinary-integer storage
        * guarded at entry, so commit needs neither lookup nor ref release.
@@ -961,9 +1023,15 @@ int pikecode_ssa_plan_integer_stack(
           result < PIKE_SSA_INTEGER_CODE && p->final.depth == 1 &&
           code[result].file == code[0].file &&
           code[result].opcode == F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL &&
-          code[result].arg == code[0].arg &&
-          code[result].arg2 == code[0].arg2) {
+          ((code[result].arg == code[0].arg &&
+            code[result].arg2 == code[0].arg2) ||
+           (p->global_input == 2 &&
+            code[1].opcode == F_PRIVATE_IF_DIRECT_GLOBAL &&
+            code[result].arg == code[1].arg &&
+            code[result].arg2 == code[1].arg2))) {
         const struct pikecode_ssa_integer_value *v;
+        p->global_store_second = code[result].arg != code[0].arg ||
+          code[result].arg2 != code[0].arg2;
         p->global_store = p->final.stack[0];
         v = &p->value[p->global_store];
         /* An unchanged local may still carry UNDEFINED. Force its full

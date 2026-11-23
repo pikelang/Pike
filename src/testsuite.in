@@ -1174,6 +1174,347 @@ test_any([[
   return 1;
 ]], 1)
 
+// Native entry context survives internal calls, dynamic calls and catches.
+test_any([[
+  program p=compile_string(#"class Base {
+    int a,b=1;
+    int leaf(){return a=a+b;}
+    int first(int n){if(n)return second(n-1);return leaf();}
+    int second(int n){if(n)return first(n-1);return leaf();}
+    int guarded(){catch{error(\"caught\\n\");};return leaf();}
+  }
+  class Derived { inherit Base; }
+  ","native-entry-context.pike");
+  object o=p()->Derived();
+  int expected;
+  for (int n=0;n<48;n++) {
+    if (o->first(n)!=++expected) return 0;
+    if (o->guarded()!=++expected) return 0;
+    function dynamic=o->leaf;
+    if (dynamic()!=++expected) return 0;
+  }
+  return o->a==expected && o->b==1;
+]], 1)
+
+// Shared native fragments retain each function's operands and source PC.
+test_any([[
+  class Codec {
+    mixed nameof(mixed x) { return search(all_constants(), x); }
+    mixed functionof(string x) { return all_constants()[x]; }
+    mixed programof(string x) { return all_constants()[x]; }
+    mixed objectof(string x) { return all_constants()[x]; }
+    mixed encode_object(object o) {}
+    void decode_object(object o, mixed data) {}
+  }
+  string source = "int a,b,c,d;\n"
+    "#line 100 \"shared-native-functions.pike\"\n"
+    "int f(){return a=a+b;}\n"
+    "#line 200 \"shared-native-functions.pike\"\n"
+    "int g(){return c=c+d;}\n"
+    "#line 300 \"shared-native-functions.pike\"\n"
+    "int h(){return b=b+b;}\n";
+  program|zero p=compile_string(source,"shared-native-functions.pike");
+  program|zero q=decode_value(encode_value(p,Codec()),Codec());
+  p=0; gc();
+  object o=q(); q=0;
+  foreach (({ 0, Int.NATIVE_MAX, Int.NATIVE_MIN, 1<<90 }), int value) {
+    o->a=value; o->b=1; o->c=value; o->d=3;
+    if (o->f()!=(int)(Gmp.mpz(value)+1) ||
+        o->g()!=(int)(Gmp.mpz(value)+3) || o->h()!=2) return 0;
+  }
+  class Bounce(object target) {
+    protected int `+(mixed other) {
+      target->c=Int.NATIVE_MAX; target->d=1;
+      return target->g();
+    }
+  }
+  o->a=Bounce(o); o->b=1;
+  if (o->f()!=(int)(Gmp.mpz(Int.NATIVE_MAX)+1)) return 0;
+  class Boom {
+    protected mixed `+(mixed other) { gc(); error("addition\n"); }
+  }
+  foreach (({ "f", "g", "h" }), string method) {
+    o->a=Boom(); o->b=Boom(); o->c=Boom(); o->d=1;
+    mixed err=catch { o[method](); };
+    if (!err) return 0;
+    int line;
+    foreach (err[1], mixed frame)
+      if (arrayp(frame) && sizeof(frame)>1 &&
+          frame[0]=="shared-native-functions.pike") line=frame[1];
+    if (line!=([ "f":100, "g":200, "h":300 ])[method]) return 0;
+  }
+  return 1;
+]], 1)
+
+// Shared cold stubs retain a distinct original PC for every throwing stage.
+test_any([[
+string source = #"class Base {
+ int a,b;
+ int f() {
+#line 400 \"compact-global-pc.pike\"
+ return a = (
+#line 410 \"compact-global-pc.pike\"
+ a
+#line 420 \"compact-global-pc.pike\"
+ +
+#line 430 \"compact-global-pc.pike\"
+ b
+#line 440 \"compact-global-pc.pike\"
+ )
+#line 450 \"compact-global-pc.pike\"
+ ;
+ }
+#line 1 \"compact-global-pc-fixture.pike\"
+}
+class Access {
+ inherit Base;
+ int fail; array log=({});
+ mixed saved;
+ mixed `->a(){if(fail==0)error(\"first\\n\");return saved;}
+ mixed `->b(){if(fail==1)error(\"second\\n\");return 1;}
+ void `->a=(mixed x){if(fail==3)error(\"store\\n\");}
+}
+";
+class Boom {
+ protected mixed `+(mixed x) { error("add\n"); }
+}
+  program p=compile_string(source,"compact-global-pc-fixture.pike");
+  object root=p();
+  foreach (({ 0, 1, 2, 3 }), int which) {
+    object o;
+    if (which==2) { o=root->Base(); o->a=Boom(); o->b=1; }
+    else { o=root->Access(); o->fail=which; o->saved=7; }
+    mixed err=catch { o->f(); };
+    if (!err) return 0;
+    int line;
+    foreach (err[1], mixed frame)
+      if (arrayp(frame) && sizeof(frame)>1 &&
+          frame[0]=="compact-global-pc.pike") line=frame[1];
+    if (line!=({ 420, 440, 400, 450 })[which]) return 0;
+  }
+  return 1;
+]], 1)
+
+// Inline metadata survives native serialization and GC after destruction.
+test_any([[
+  class Codec {
+    mixed nameof(mixed x) { return search(all_constants(), x); }
+    mixed functionof(string x) { return all_constants()[x]; }
+    mixed programof(string x) { return all_constants()[x]; }
+    mixed objectof(string x) { return all_constants()[x]; }
+    mixed encode_object(object o) {}
+    void decode_object(object o, mixed data) {}
+  }
+  program|zero p=compile_string("int a,b; int f(){return a=a+b;}\n",
+                           "compact-global-lifetime.pike");
+  program|zero q=decode_value(encode_value(p,Codec()),Codec());
+  p=0; gc();
+  object o=q(); q=0;
+  o->a=Int.NATIVE_MAX; o->b=1;
+  if (o->f()!=(int)(Gmp.mpz(Int.NATIVE_MAX)+1)) return 0;
+  class Value(object target) {
+    protected int `+(mixed other) {
+      destruct(target); gc(); return 7;
+    }
+  }
+  o->a=Value(o); o->b=1;
+  mixed err=catch { o->f(); };
+  if (!err || !has_value(err[0],"destructed")) return 0;
+  foreach (err[1], mixed frame)
+    if (arrayp(frame) && sizeof(frame)>1 &&
+        frame[0]=="compact-global-lifetime.pike" && frame[1]==1) return 1;
+  return 0;
+]], 1)
+
+// Overflow completes before a later callback can change either global.
+test_any([[
+  class Base {
+    int a, b, calls;
+    int change() { calls++; a = 7; b = 11; return 5; }
+    int expression() { return (a + b) + change(); }
+    int alias() { return (a + a) + change(); }
+  }
+  class Derived { inherit Base; }
+  foreach (({ Base(), Derived() }), object o)
+    foreach (({ ({ Int.NATIVE_MAX, 1 }), ({ Int.NATIVE_MIN, -1 }),
+                ({ 7, 11 }), ({ UNDEFINED, UNDEFINED }),
+                ({ 1<<90, -(1<<89) }) }), array(int) values) {
+      o->a = values[0]; o->b = values[1]; o->calls = 0;
+      int expected = (int)(Gmp.mpz(values[0])+Gmp.mpz(values[1])+5);
+      if (o->expression() != expected || o->a != 7 || o->b != 11 ||
+          o->calls != 1) return 0;
+      o->a = values[0]; o->b = values[1]; o->calls = 0;
+      if (o->alias() != (int)(Gmp.mpz(values[0])*2+5) ||
+          o->a != 7 || o->b != 11 || o->calls != 1) return 0;
+    }
+  return 1;
+]], 1)
+
+// Two global inputs preserve integer tags, overflow operands and aliases.
+test_any([[
+  class Base {
+    int a, b, c;
+    int retained() { return a = a + b; }
+    void dropped() { a = a + b; }
+    int other() { return b = a + b; }
+    int separate() { return c = a + b; }
+    int alias() { return a = a + a; }
+  }
+  class Prefix { mixed pad = "offset"; }
+  class Derived { inherit Prefix; inherit Base; }
+  array(int) values = ({ UNDEFINED, 0, 1, -1, Int.NATIVE_MIN,
+    Int.NATIVE_MIN+1, Int.NATIVE_MAX, Int.NATIVE_MAX-1,
+    1<<90, -(1<<90) });
+  foreach (({ Base(), Derived() }), object o)
+    foreach (values, int a) foreach (values, int b) {
+      int expected = (int)(Gmp.mpz(a) + Gmp.mpz(b));
+      int subtype = zero_type(a) && zero_type(b);
+      o->a = a; o->b = b;
+      mixed result = o->retained();
+      if (result != expected || o->a != expected || o->b != b ||
+          zero_type(result) != subtype || zero_type(o->a) != subtype ||
+          zero_type(o->b) != zero_type(b)) return 0;
+      o->a = a; o->dropped();
+      if (o->a != expected || zero_type(o->a) != subtype) return 0;
+      o->a = a; o->b = b;
+      if (o->other() != expected || o->b != expected || o->a != a ||
+          zero_type(o->a) != zero_type(a)) return 0;
+      o->a = a; o->b = b;
+      if (o->separate() != expected || o->c != expected ||
+          o->a != a || o->b != b) return 0;
+      o->a = a;
+      result = o->alias();
+      if (result != (int)(Gmp.mpz(a)*2) ||
+          zero_type(result) != zero_type(a)) return 0;
+    }
+  return 1;
+]], 1)
+
+// Failed full-tag guards replay references and preserve the surrounding stack.
+test_any([[
+  class Base {
+    int a, b;
+    array retained() { return ({ "prefix", a = a + b, b, "suffix" }); }
+    void dropped() { a = a + b; }
+  }
+  class Derived { inherit Base; }
+  foreach (({ Base(), Derived() }), object o)
+    foreach (({ ({ "left", "right", "leftright" }),
+                ({ 1.25, 2.5, 3.75 }),
+                ({ ({ 1 }), ({ 2 }), ({ 1, 2 }) }),
+                ({ UNDEFINED, 7, 7 }), ({ 7, UNDEFINED, 7 }) }),
+             array values) {
+      o->a = values[0]; o->b = values[1];
+      if (!equal(o->retained(),
+                 ({ "prefix", values[2], values[1], "suffix" })) ||
+          !equal(o->a, values[2]) || !equal(o->b, values[1])) return 0;
+      o->a = values[0]; o->dropped();
+      if (!equal(o->a, values[2])) return 0;
+    }
+  return 1;
+]], 1)
+
+// A later ordinary destination store still releases its old reference once.
+test_any([[
+  array events = ({ ({}) });
+  class Old(array events) {
+    protected void _destruct() { events[0] += ({ "destroy" }); }
+  }
+  class Base(array events) {
+    int a = 11, b = 17, c;
+    void boundary() { events[0] += ({ "boundary" }); }
+    int separate() { c = a + b; boundary(); return c; }
+  }
+  foreach (({ 11, Int.NATIVE_MAX }), int a) {
+    object o = Base(events);
+    o->a = a; o->c = Old(events); events[0] = ({});
+    if (o->separate() != (int)(Gmp.mpz(a)+17) ||
+        !equal(events[0], ({ "destroy", "boundary" }))) return 0;
+  }
+  return 1;
+]], 1)
+
+// Inherited getter/setter callbacks keep left-to-right evaluation and state.
+test_any([[
+  program p = compile_string(
+    "class Base { int a,b; int f(){return a=a+b;} }\n"
+    "class Access { inherit Base; array events=({}); int x=7,y=11;\n"
+    " int `->a(){events+=({\"a\"});y=13;return x;}\n"
+    " int `->b(){events+=({\"b\"});x=100;return y;}\n"
+    " void `->a=(int v){events+=({\"store\"});x=v;} }\n");
+  object o = p()->Access();
+  if (o->f() != 20 || o->x != 20 || o->y != 13 ||
+      !equal(o->events, ({ "a", "b", "store" }))) return 0;
+  return 1;
+]], 1)
+
+// An overloaded addition runs once, and reports the original arithmetic PC.
+test_any([[
+  program p = compile_string(
+    "int a,b; int f(){\n"
+    "#line 910 \"ssa-global-pair-error.pike\"\n"
+    "return a=a+b;\n}\n", "ssa-global-pair-fixture.pike");
+  class Boom {
+    int calls;
+    protected mixed `+(mixed other) { calls++; error("pair error\n"); }
+  }
+  object o = p();
+  Boom b = Boom();
+  o->a = b; o->b = 3;
+  mixed e = catch { o->f(); };
+  if (!e || !has_prefix(e[0], "pair error\n") || b->calls != 1 ||
+      o->a != b || o->b != 3) return 0;
+  foreach (e[1], mixed frame)
+    if (arrayp(frame) && sizeof(frame) > 1 &&
+        frame[0] == "ssa-global-pair-error.pike" && frame[1] == 910) return 1;
+  return 0;
+]], 1)
+// Both offset directions and serialization preserve guarded storage addresses.
+test_any([[
+  class Codec {
+    mixed nameof(mixed x) { return search(all_constants(), x); }
+    mixed functionof(string x) { return all_constants()[x]; }
+    mixed programof(string x) { return all_constants()[x]; }
+    mixed objectof(string x) { return all_constants()[x]; }
+    mixed encode_object(object o) {}
+    void decode_object(object o, mixed d) {}
+  }
+  array(string) pads = ({});
+  for (int i = 0; i < 600; i++) pads += ({ sprintf("pad%d", i) });
+  program p = compile_string("int a; mixed "+pads*","+"; int b;\n"
+    "int f(){return a=a+b;} int g(){return b=b+a;}\n"
+    "int h(){return b=a+b;}\n");
+  program q = decode_value(encode_value(p, Codec()), Codec());
+  foreach (({ p, q }), program type) {
+    object o = type(); o->a = 7; o->b = 11;
+    if (o->f() != 18 || o->g() != 29 || o->h() != 47 ||
+        o->a != 18 || o->b != 47) return 0;
+    o->a = Int.NATIVE_MAX; o->b = 1;
+    if (o->f() != (int)(Gmp.mpz(Int.NATIVE_MAX)+1)) return 0;
+  }
+  return 1;
+]], 1)
+
+// A throwing or destructing getter must not reach the terminal store.
+test_any([[
+  program p = compile_string(
+    "class Base { int a,b; int f(){return a=a+b;} }\n"
+    "class Access { inherit Base; array log=({}); int kill,fail;\n"
+    " int `->a(){log+=({\"a\"});if(fail==1)error(\"getter\\n\");"
+    "if(kill)destruct(this_object());return 7;}\n"
+    " int `->b(){log+=({\"b\"});if(fail==2)error(\"getter\\n\");return 11;}\n"
+    " void `->a=(int v){log+=({\"store\"});} }\n");
+  foreach (({ 1, 2 }), int fail) {
+    object o = p()->Access(); o->fail = fail;
+    mixed err = catch { o->f(); };
+    if (!err || !has_prefix(err[0], "getter\n") ||
+        !equal(o->log, fail == 1 ? ({ "a" }) : ({ "a", "b" }))) return 0;
+  }
+  object o = p()->Access(); o->kill = 1;
+  mixed err = catch { o->f(); };
+  return err && has_value(err[0], "destructed");
+]], 1)
+
 // Same-global stores commit after all arithmetic, with precise local snapshots.
 test_any([[
   class Base {

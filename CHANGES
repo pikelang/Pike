@@ -159,6 +159,11 @@ o Compiler
     program check. Set PIKE_SSA_NO_INTEGER_GLOBAL_INPUT=1 to restore
     previous planning.
 
+  - Experimental SSA global/global integer addition avoids pushing either
+    guarded operand on AMD64, SPARC32 and SPARC64. A terminal assignment to
+    either input can also avoid the evaluation stack. Set
+    PIKE_SSA_INTEGER_GLOBAL_PAIR=1 to enable it.
+
   - SSA integer regions can now commit their final result directly to the
     same guarded global on AMD64, SPARC32 and SPARC64. Popped assignment
     results avoid the evaluation stack. Overflow, indirect setters and
