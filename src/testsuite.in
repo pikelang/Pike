@@ -18645,7 +18645,72 @@ test_any_equal([[
   return compile_string(source)()->run();
 ]], ({ ({ 132365, 132375 }), 514 }))
 
-dnl Issue #10238: this_program in explicit constant expressions.
+dnl Issue #10238: class self-references in explicit constant expressions.
+test_any([[
+  return compile_string(#"
+    class Ref {
+      inherit Pike.Annotation;
+      @constant;
+      mixed target;
+      protected void create(mixed p) { target = p; }
+    }
+    class Node {
+      @Ref(Node);
+      @Ref(global::Node): object next;
+      @Node: int bare;
+    }
+    int run() {
+      object p = Node();
+      mapping a = mkmapping(indices(p), annotations(p));
+      return Program.annotations((program)Node)[0]->target == (program)Node &&
+             a->next[0]->target == (program)Node &&
+             a->bare[0] == (program)Node ? 0 : 1;
+    }
+  ")()->run();
+]], 0)
+
+test_any([[
+  class Outer(int value) {
+    class Node {
+      int read() { return value; }
+      function constructor() { return Node; }
+    }
+  }
+  object n = Outer(23)->Node();
+  return n->constructor()()->read();
+]], 23)
+
+test_any([[
+  return compile_string(#"
+    class Ref {
+      inherit Pike.Annotation;
+      @constant;
+      mixed target;
+      protected void create(mixed p) { target = p; }
+    }
+    class Outer(int value) {
+      class Peer {
+        int read() { return value; }
+      }
+      class Node {
+        @Pike.Annotations.Implements(Peer);
+        @Ref(([ 0: Peer, 1: Outer::Peer, 2: Node ])): int field;
+        int read() { return value; }
+      }
+    }
+    int run() {
+      object outer = Outer(42);
+      object node = outer->Node();
+      object peer = outer->Peer();
+      mapping a = mkmapping(indices(node), annotations(node));
+      mapping targets = a->field[0]->target;
+      return targets[0] == object_program(peer) &&
+             targets[1] == object_program(peer) &&
+             targets[2] == object_program(node) && peer->read() == 42;
+    }
+  ")()->run();
+]], 1)
+
 test_any([[
   class Ref {
     inherit Pike.Annotation;

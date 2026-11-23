@@ -4988,6 +4988,37 @@ static void optimize(node *n)
     if(!n->parent) break;
 
     if ((Pike_compiler->flags & COMPILATION_CONSTANT_EXPRESSION) &&
+        n->token == F_EXTERNAL && n->u.integer.b >= 0) {
+      struct program_state *state = Pike_compiler;
+      int ref = n->u.integer.b;
+
+      while (state && state->new_program->id != n->u.integer.a)
+        state = state->previous;
+      if (state) {
+        struct program *p = state->new_program;
+        struct identifier *id = ID_FROM_INT(p, ref);
+        if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
+            id->func.const_info.offset >= 0) {
+          struct program *owner = PROG_FROM_INT(p, ref);
+          const struct svalue *value =
+            &owner->constants[id->func.const_info.offset].sval;
+          if (TYPEOF(*value) == T_PROGRAM &&
+              (value->u.program == Pike_compiler->new_program ||
+               (value->u.program->parent == owner &&
+                (value->u.program->flags & PROGRAM_USES_PARENT) &&
+                !(n->parent->token == F_APPLY && CAR(n->parent) == n)))) {
+            /* A class value must not retain a constructor bound to the
+             * compiler's fake object. Leave calls to other classes bound
+             * so that compile-time constructors can still run.
+             */
+            tmp1 = mkprgnode(value->u.program);
+            goto use_tmp1;
+          }
+        }
+      }
+    }
+
+    if ((Pike_compiler->flags & COMPILATION_CONSTANT_EXPRESSION) &&
         n->token == F_APPLY && CAR(n) && CDR(n) &&
         CAR(n)->token == F_CONSTANT &&
         TYPEOF(CAR(n)->u.sval) == PIKE_T_FUNCTION &&
@@ -5103,8 +5134,8 @@ void optimize_node(node *n)
   }
 }
 
-/* Unlike runtime folding, constant expressions can bind this_program
- * to the program under compilation, without constructing a fake object.
+/* Unlike runtime folding, constant expressions can refer to lexical
+ * class programs without retaining a fake object.
  */
 void optimize_constant(node *n)
 {

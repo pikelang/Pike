@@ -647,12 +647,6 @@ o Cpp
 
 o Compiler
 
-  this_program and this::this_program now work in annotations and local
-  constant expressions, referring to the statically selected program.
-  Ordinary runtime expressions retain their inherited-object behavior.
-  This addresses the this_program part of #10238; references by class
-  name in annotations still require further work.
-
   - Hexadecimal floating-point conversion now uses Pike's bundled double
     converter to avoid incorrect rounding near halfway values and
     subnormal boundaries with older libc versions.
