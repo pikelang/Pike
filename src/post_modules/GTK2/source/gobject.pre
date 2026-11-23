@@ -336,7 +336,7 @@ object set_data(string name, mixed arg)
   RETURN_THIS();
 }
 
-object get_data(string name)
+mixed get_data(string name)
 //! Gets a named field from the object.
 {
   pgtk2_verify_inited();

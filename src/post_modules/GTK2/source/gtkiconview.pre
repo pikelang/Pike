@@ -7,7 +7,7 @@ inherit GTK2.Container;
 //! GTK2.IconView provides an alternative view on a list model.  It
 //! displays the model as a grid of icons with labels.  Like GTK2.TreeView,
 //! it allows to select one or multiple items (depending on the selection
-//! mode).  In addition to seleciton with the arrow keys, GTK2.IconView
+//! mode).  In addition to selection with the arrow keys, GTK2.IconView
 //! supports rubberband selections, which is controlled by dragging the
 //! pointer.
 
@@ -89,8 +89,9 @@ void set_pixbuf_column(int column);
 int get_pixbuf_column();
 //! Returns the column with pixbufs.
 
-+GTK2.TreePath get_path_at_pos(int x, int y)
+GTK2.TreePath|zero get_path_at_pos(int x, int y)
 //! Finds the path at the point(x,y) relative to widget coordinates.
+//! Returns zero if there is no icon at the given position.
 {
   pgtk2_verify_inited();
   {
@@ -129,8 +130,8 @@ array get_item_at_pos(int x, int y)
 
 void set_cursor(GTK2.TreePath path, ?GTK2.CellRenderer cell, ?int start_editing)
 //! Sets the current keyboard focus to be at path, and selects it.  This is
-//! usefull when you want to focus the user's attention on a particular item.
-//! If cell is not 0, then focus is given to the cell speicified by it.
+//! useful when you want to focus the user's attention on a particular item.
+//! If cell is not 0, then focus is given to the cell specified by it.
 //! Additionally, if start_editing is TRUE, then editing should be started in
 //! the specified cell.
 //! <p>
@@ -330,7 +331,7 @@ void scroll_to_path(GTK2.TreePath path, int use_align,
 //! current position.  If the item is currently visible on the screen, nothing
 //! is done.
 //! <p>
-//! This funciton only works if the model is set, and path is a valid row on
+//! This function only works if the model is set, and path is a valid row on
 //! the model.  If the model changes before this icon view is realized, the
 //! centered path will be modified to reflect this change.
 {

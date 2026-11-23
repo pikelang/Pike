@@ -14,8 +14,8 @@ inherit GTK2.TextTag;
 //! string id
 //! GTK2.SourceTagStyle tag-style
 
-mapping(string:mixed) get_style()
-//! Gets the style associated with this tag.
+mapping(string:mixed)|zero get_style()
+//! Gets the style associated with this tag, or 0 if none is set.
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);

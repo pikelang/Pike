@@ -171,15 +171,19 @@ mapping(string:mixed) get_stock()
   }
 }
 
-+GDK2.PixbufAnimation get_animation()
-//! Gets the GDK2.PixbufAnimation being displayed.
+GDK2.PixbufAnimation|zero get_animation()
+//! Gets the GDK2.PixbufAnimation being displayed, or zero if the storage
+//! type of the image isn't GTK2.IMAGE_ANIMATION.
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
     GdkPixbufAnimation *gpa=gtk_image_get_animation(GTK_IMAGE(THIS->obj));
-    push_gobject(gpa);
-    g_object_ref(gpa);
+    if (gpa) {
+      push_gobject(gpa);
+      g_object_ref(gpa);
+    } else
+      push_int(0);
   }
 }
 

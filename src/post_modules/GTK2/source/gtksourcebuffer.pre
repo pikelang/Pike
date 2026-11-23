@@ -320,7 +320,7 @@ void delete_marker(GTK2.SourceMarker marker)
   RETURN_THIS();
 }
 
-GTK2.SourceMarker get_marker(string name)
+GTK2.SourceMarker|zero get_marker(string name)
 //! Looks up the GTK2.SourceMarker named name, or returns 0 if it doesn't exist.
 {
   pgtk2_verify_inited();
@@ -364,8 +364,9 @@ array(GTK2.SourceMarker) get_markers_in_region(GTK2.TextIter begin,
   }
 }
 
-GTK2.SourceMarker get_first_marker()
-//! Returns the first (nearest to the top of the buffer) marker.
+GTK2.SourceMarker|zero get_first_marker()
+//! Returns the first (nearest to the top of the buffer) marker, or 0
+//! if the buffer has no markers.
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
@@ -379,8 +380,9 @@ GTK2.SourceMarker get_first_marker()
   }
 }
 
-GTK2.SourceMarker get_last_marker()
-//! Returns the last (nearest to the bottom of the buffer) marker.
+GTK2.SourceMarker|zero get_last_marker()
+//! Returns the last (nearest to the bottom of the buffer) marker, or 0
+//! if the buffer has no markers.
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
@@ -412,8 +414,9 @@ GTK2.TextIter get_iter_at_marker(GTK2.SourceMarker marker)
   }
 }
 
-GTK2.SourceMarker get_next_marker(GTK2.TextIter iter)
-//! Returns the nearest marker to the right of iter.  If there are multiple
+GTK2.SourceMarker|zero get_next_marker(GTK2.TextIter iter)
+//! Returns the nearest marker to the right of iter, or 0 if there is
+//! none.  If there are multiple
 //! markers at the same position, this function will always return the first
 //! one (from the internal linked list), even if starting the search exactly
 //! at its location.  You can get the others using next().
@@ -433,8 +436,9 @@ GTK2.SourceMarker get_next_marker(GTK2.TextIter iter)
   }
 }
 
-GTK2.SourceMarker get_prev_marker(GTK2.TextIter iter)
-//! Returns the nearest marker to the left of iter.  If there are multiple
+GTK2.SourceMarker|zero get_prev_marker(GTK2.TextIter iter)
+//! Returns the nearest marker to the left of iter, or 0 if there is
+//! none.  If there are multiple
 //! markers at the same position, this function will always return the last one
 //! (from the internal linked list), even if starting the search exactly at
 //! its location.  You can get the others using prev().

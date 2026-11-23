@@ -997,7 +997,7 @@ void unset_flags(int flags)
   RETURN_THIS();
 }
 
-void STATE()
+int STATE()
 //! Get the state.
 {
   pgtk2_verify_inited();
@@ -1005,7 +1005,7 @@ void STATE()
   PGTK_PUSH_INT(GTK_WIDGET_STATE(THIS->obj));
 }
 
-void SAVED_STATE()
+int SAVED_STATE()
 //! Get the saved state.
 {
   pgtk2_verify_inited();
@@ -1013,7 +1013,7 @@ void SAVED_STATE()
   PGTK_PUSH_INT(GTK_WIDGET_SAVED_STATE(THIS->obj));
 }
 
-void FLAGS()
+int FLAGS()
 //! Returns flags.
 {
   pgtk2_verify_inited();
@@ -1021,7 +1021,7 @@ void FLAGS()
   PGTK_PUSH_INT(GTK_WIDGET_FLAGS(THIS->obj));
 }
 
-void TOPLEVEL()
+int TOPLEVEL()
 //! Returns if this is a toplevel widget.
 {
   pgtk2_verify_inited();
@@ -1029,7 +1029,7 @@ void TOPLEVEL()
   PGTK_PUSH_INT(GTK_WIDGET_TOPLEVEL(THIS->obj));
 }
 
-void NO_WINDOW()
+int NO_WINDOW()
 //! Returns if this widget doesn't have its own GDK2.Window.
 {
   pgtk2_verify_inited();
@@ -1037,7 +1037,7 @@ void NO_WINDOW()
   PGTK_PUSH_INT(GTK_WIDGET_NO_WINDOW(THIS->obj));
 }
 
-void REALIZED()
+int REALIZED()
 //! Returns if this widget is realized.
 {
   pgtk2_verify_inited();
@@ -1045,7 +1045,7 @@ void REALIZED()
   PGTK_PUSH_INT(GTK_WIDGET_REALIZED(THIS->obj));
 }
 
-void MAPPED()
+int MAPPED()
 //! Returns if this widget is mapped.
 {
   pgtk2_verify_inited();
@@ -1053,7 +1053,7 @@ void MAPPED()
   PGTK_PUSH_INT(GTK_WIDGET_MAPPED(THIS->obj));
 }
 
-void VISIBLE()
+int VISIBLE()
 //! Returns if this widget is visible.
 {
   pgtk2_verify_inited();
@@ -1061,7 +1061,7 @@ void VISIBLE()
   PGTK_PUSH_INT(GTK_WIDGET_VISIBLE(THIS->obj));
 }
 
-void DRAWABLE()
+int DRAWABLE()
 //! Returns if this widget is mapped and visible.
 {
   pgtk2_verify_inited();
@@ -1069,7 +1069,7 @@ void DRAWABLE()
   PGTK_PUSH_INT(GTK_WIDGET_DRAWABLE(THIS->obj));
 }
 
-void SENSITIVE()
+int SENSITIVE()
 //! Returns if this widget is sensitive.
 {
   pgtk2_verify_inited();
@@ -1077,7 +1077,7 @@ void SENSITIVE()
   PGTK_PUSH_INT(GTK_WIDGET_SENSITIVE(THIS->obj));
 }
 
-void PARENT_SENSITIVE()
+int PARENT_SENSITIVE()
 //! Returns if the GTK2.PARENT_SENSITIVE flag is set.
 {
   pgtk2_verify_inited();
@@ -1085,7 +1085,7 @@ void PARENT_SENSITIVE()
   PGTK_PUSH_INT(GTK_WIDGET_PARENT_SENSITIVE(THIS->obj));
 }
 
-void IS_SENSITIVE()
+int IS_SENSITIVE()
 //! Returns if this widget is effectively sensitive.
 {
   pgtk2_verify_inited();
@@ -1093,7 +1093,7 @@ void IS_SENSITIVE()
   PGTK_PUSH_INT(GTK_WIDGET_IS_SENSITIVE(THIS->obj));
 }
 
-void CAN_FOCUS()
+int CAN_FOCUS()
 //! Returns if this widget is able to handle focus grabs.
 {
   pgtk2_verify_inited();
@@ -1101,7 +1101,7 @@ void CAN_FOCUS()
   PGTK_PUSH_INT(GTK_WIDGET_CAN_FOCUS(THIS->obj));
 }
 
-void HAS_FOCUS()
+int HAS_FOCUS()
 //! Returns if this widget has grabbed the focus and no other widget has done
 //! so more recently.
 {
@@ -1110,7 +1110,7 @@ void HAS_FOCUS()
   PGTK_PUSH_INT(GTK_WIDGET_HAS_FOCUS(THIS->obj));
 }
 
-void CAN_DEFAULT()
+int CAN_DEFAULT()
 //! Returns if this widget is allowed to receive the default action.
 {
   pgtk2_verify_inited();
@@ -1118,7 +1118,7 @@ void CAN_DEFAULT()
   PGTK_PUSH_INT(GTK_WIDGET_CAN_DEFAULT(THIS->obj));
 }
 
-void RECEIVES_DEFAULT()
+int RECEIVES_DEFAULT()
 //! Returns if this widget when focused will receive the default action even
 //! if there is a different widget set as default.
 {
@@ -1127,7 +1127,7 @@ void RECEIVES_DEFAULT()
   PGTK_PUSH_INT(GTK_WIDGET_RECEIVES_DEFAULT(THIS->obj));
 }
 
-void HAS_DEFAULT()
+int HAS_DEFAULT()
 //! Returns if this widget is currently receiving the default action.
 {
   pgtk2_verify_inited();
@@ -1135,7 +1135,7 @@ void HAS_DEFAULT()
   PGTK_PUSH_INT(GTK_WIDGET_HAS_DEFAULT(THIS->obj));
 }
 
-void HAS_GRAB()
+int HAS_GRAB()
 //! Returns if this widget is in the grab_widgets stack, and will be the
 //! preferred one for receiving events other than ones of cosmetic value.
 {
@@ -1144,7 +1144,7 @@ void HAS_GRAB()
   PGTK_PUSH_INT(GTK_WIDGET_HAS_GRAB(THIS->obj));
 }
 
-void RC_STYLE()
+int RC_STYLE()
 //! Returns if the widget's style has been looked up through the rc mechanism.
 {
   pgtk2_verify_inited();
@@ -1152,7 +1152,7 @@ void RC_STYLE()
   PGTK_PUSH_INT(GTK_WIDGET_RC_STYLE(THIS->obj));
 }
 
-void COMPOSITE_CHILD()
+int COMPOSITE_CHILD()
 //! Returns if this widget is a composite child of its parent.
 {
   pgtk2_verify_inited();
@@ -1160,7 +1160,7 @@ void COMPOSITE_CHILD()
   PGTK_PUSH_INT(GTK_WIDGET_COMPOSITE_CHILD(THIS->obj));
 }
 
-void APP_PAINTABLE()
+int APP_PAINTABLE()
 //! Returns if the GTK2.APP_PAINTABLE flag has been set on this widget.
 {
   pgtk2_verify_inited();
@@ -1168,7 +1168,7 @@ void APP_PAINTABLE()
   PGTK_PUSH_INT(GTK_WIDGET_APP_PAINTABLE(THIS->obj));
 }
 
-void DOUBLE_BUFFERED()
+int DOUBLE_BUFFERED()
 //! Returns if the GTK2.DOUBLE_BUFFERED flag has been set on this widget.
 {
   pgtk2_verify_inited();

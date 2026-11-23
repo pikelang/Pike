@@ -123,7 +123,7 @@ GDK2.Region intersect(GDK2.Region victim)
   void *v;
   get_all_args( "intersect", args, "%o", &o );
   if( (v=get_gdkobject(o, region )) ) {
-    gdk_region_union( (GdkRegion *)THIS->obj, v);
+    gdk_region_intersect( (GdkRegion *)THIS->obj, v);
   } else {
     Pike_error("Bad argument to intersect: Not a GDK2.Region object\n");
   }
@@ -146,7 +146,7 @@ GDK2.Region subtract(GDK2.Region victim)
 }
 
 GDK2.Region xor(GDK2.Region victim)
-//! Computes the exlusive or of the given region and the region.
+//! Computes the exclusive or of the given region and the region.
 //! Also available as region ^ region
 {
   struct object *o;

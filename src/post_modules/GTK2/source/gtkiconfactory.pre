@@ -46,7 +46,7 @@ void add_default();
 //! will normally be an icon factory added for each library or application that
 //! comes with icons.  The default icon factories can be overridden by themes.
 
-GTK2.IconSet lookup(string stock_id)
+GTK2.IconSet|zero lookup(string stock_id)
 //! Looks up stock_id in the icon factory, returning an icon set if found,
 //! otherwise 0.  For display to the user, you should use 
 //! GTK2.Style->lookup_icon_set() on the GTK2.Style for the widget that will 
@@ -64,7 +64,7 @@ GTK2.IconSet lookup(string stock_id)
   }
 }
 
-GTK2.IconSet lookup_default(string stock_id)
+GTK2.IconSet|zero lookup_default(string stock_id)
 //! Looks for an icon in the list of default icon factories.  For display to
 //! the user, you should use GTK2.Style->lookup_icon_set() on the GTK2.Style for
 //! the widget that will display the icon, instead of using this function

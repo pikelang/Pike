@@ -104,8 +104,8 @@ void set_from_icon_name(string icon_name);
 int get_storage_type();
 //! Gets the type of icon, e.g. GTK2.IMAGE_PIXMAP, GTK2.IMAGE_PIXBUF, etc.
 
-+GDK2.Pixbuf get_pixbuf()
-//! Get the pixbuf.
+GDK2.Pixbuf|zero get_pixbuf()
+//! Get the pixbuf, or 0 if none is set.
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);

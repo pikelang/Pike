@@ -175,7 +175,7 @@ void set_reverse(int reverse);
 int get_duplex();
 //! Gets whether to print the output in duplex.
 
-void set_duplex();
+void set_duplex(int duplex);
 //! Sets the duplex value.
 
 int get_quality();
@@ -299,6 +299,6 @@ void set_finishings(string finishings);
 string get_output_bin();
 //! Gets the output bin.
 
-void set_output_bin();
+void set_output_bin(string output_bin);
 //! Sets the output bin.
 endrequire;
