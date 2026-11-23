@@ -161,7 +161,7 @@ void set_lower_stepper_sensitivity(int sensitivity);
 //! Sets the sensitivity policy for the stepper that points to the 'lower' end
 //! of the GTK2.Range's adjustment.
 
-void get_lower_stepper_sensitivity();
+int get_lower_stepper_sensitivity();
 //! Gets the sensitivity policy for the stepper that points to the 'lower' end
 //! of the GTK2.Range's adjustment.
 
@@ -169,7 +169,7 @@ void set_upper_stepper_sensitivity(int sensitivity);
 //! Sets the sensitivity policy for the stepper that points to the 'upper' end
 //! of the GTK2.Range's adjustment.
 
-void get_upper_stepper_sensitivity();
+int get_upper_stepper_sensitivity();
 //! Gets the sensitivity policy for the stepper that points to the 'upper' end
 //! of the GTK2.Range's adjustment.
 endrequire;

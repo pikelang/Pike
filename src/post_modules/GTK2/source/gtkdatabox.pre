@@ -99,7 +99,7 @@ void data_add(array(float) X, array(float) Y, GDK2.Color color,
 void set_rulers_enable(int setting);
 //! Set whether rulers will be displayed.
 
-void get_rulers_enable();
+int get_rulers_enable();
 //! Get whether rulers will be displayed.
 
 void set_selection_enable(int setting);
@@ -117,13 +117,13 @@ int get_selection_fill_enable();
 void set_scrollbars_enable(int setting);
 //! Set whether scrollbars will be displayed.
 
-void get_scrollbars_enable();
+int get_scrollbars_enable();
 //! Get whether scrollbars will be displayed.
 
 void set_zoom_enable(int setting);
 //! Set whether zoom is enabled.
 
-void get_zoom_enable();
+int get_zoom_enable();
 //! Get whether zoom is enabled.
 
 void set_zoom_limit(float limit);

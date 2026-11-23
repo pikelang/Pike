@@ -223,7 +223,7 @@ void set_tabs(?Pango.TabArray tabs)
   RETURN_THIS();
 }
 
-Pango.TabArray get_tabs()
+Pango.TabArray|zero get_tabs()
 //! Gets the current W(TabArray) used by this layout.  If no W(TabArray) has
 //! been set, then the default tabs are in use and 0 is returned.  Default
 //! tabs are every 8 spaces.
@@ -245,7 +245,7 @@ void set_single_paragraph_mode(int setting);
 int get_single_paragraph_mode();
 //! Gets the value set by set_single_paragraph_mode().
 
-mapping(string:int) xy_to_index(int x, int y)
+mapping(string:int)|zero xy_to_index(int x, int y)
 //! Converts from x and y position within a layout to the byte index to the
 //! character at that logical position.  If the y position is not inside the
 //! layout, the closest position is chosen (the position will be clamped inside

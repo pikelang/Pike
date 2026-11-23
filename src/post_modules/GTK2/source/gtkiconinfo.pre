@@ -53,7 +53,7 @@ string get_filename()
   }
 }
 
-GDK2.Pixbuf get_builtin_pixbuf()
+GDK2.Pixbuf|zero get_builtin_pixbuf()
 //! Gets the built-in image for this icon, if any.  To allow GTK2+ to use
 //! built-in icon images, you must pass the GTK2.ICON_LOOKUP_USE_BUILTIN to
 //! GTK2.IconTheme->lookup_icon().
@@ -77,6 +77,7 @@ GDK2.Pixbuf load_icon()
 //! their nominal sizes, and in addition GTK2+ will avoid scaling icons that it
 //! considers sufficiently close to the requested size or for which the source
 //! image would have to be scaled up too far. (This maintains sharpness.)
+//! If no icon was successfully loaded, zero is returned.
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
