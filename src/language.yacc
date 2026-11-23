@@ -2253,7 +2253,7 @@ constant_expr: safe_assignment_expr
     {
       int tmp = Pike_compiler->compiler_pass;
       $$ = mknode(F_COMMA_EXPR, $1, 0);
-      optimize_constant($$);
+      optimize_constant($$, 1);
       Pike_compiler->compiler_pass = tmp;
     }
 
@@ -2287,7 +2287,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
     {
       int tmp=Pike_compiler->compiler_pass;
       $3=mknode(F_COMMA_EXPR,$3,0);
-      optimize_constant($3);
+      optimize_constant($3, 0);
       Pike_compiler->compiler_pass=tmp;
     }
 

@@ -4987,7 +4987,7 @@ static void optimize(node *n)
 
     if(!n->parent) break;
 
-    if ((Pike_compiler->flags & COMPILATION_CONSTANT_EXPRESSION) &&
+    if ((Pike_compiler->flags & COMPILATION_LEXICAL_CLASS_VALUES) &&
         n->token == F_EXTERNAL && n->u.integer.b >= 0) {
       struct program_state *state = Pike_compiler;
       int ref = n->u.integer.b;
@@ -5002,7 +5002,7 @@ static void optimize(node *n)
           struct program *owner = PROG_FROM_INT(p, ref);
           const struct svalue *value =
             &owner->constants[id->func.const_info.offset].sval;
-          if (TYPEOF(*value) == T_PROGRAM &&
+          if (TYPEOF(*value) == PIKE_T_PROGRAM &&
               (value->u.program == Pike_compiler->new_program ||
                (value->u.program->parent == owner &&
                 (value->u.program->flags & PROGRAM_USES_PARENT) &&
@@ -5134,13 +5134,17 @@ void optimize_node(node *n)
   }
 }
 
-/* Unlike runtime folding, constant expressions can refer to lexical
- * class programs without retaining a fake object.
+/* Explicit constant expressions bind this_program lexically. Annotations
+ * and imports also need lexical class values instead of fake constructors.
+ * Local constants keep the constructors bound to the runtime parent.
  */
-void optimize_constant(node *n)
+void optimize_constant(node *n, int lexical_class_values)
 {
   int flags = Pike_compiler->flags;
-  Pike_compiler->flags |= COMPILATION_CONSTANT_EXPRESSION;
+  Pike_compiler->flags = (flags & ~COMPILATION_LEXICAL_CLASS_VALUES) |
+    COMPILATION_CONSTANT_EXPRESSION;
+  if (lexical_class_values)
+    Pike_compiler->flags |= COMPILATION_LEXICAL_CLASS_VALUES;
   optimize_node(n);
   Pike_compiler->flags = flags;
 }
