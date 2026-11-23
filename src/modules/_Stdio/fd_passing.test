@@ -1,0 +1,162 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+#pike __REAL_VERSION__
+
+#if constant(Stdio.__HAVE_SEND_FD__)
+class Receiver {
+  inherit Stdio.File;
+  array(Stdio.Fd) received = ({});
+  void receive_fd(Stdio.Fd fd) { received += ({ fd }); }
+
+  void cleanup() {
+    foreach (received, Stdio.Fd fd) fd->close();
+    close();
+  }
+}
+
+void check_reads()
+{
+  object receiver = Receiver();
+  object sender = receiver->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_SEND_FD);
+  object source = Stdio.File("/dev/null", "r");
+  sender->send_fd(source->_fd);
+  if (sender->write("x") != 1) error("Short descriptor send.\n");
+  // A successful recvmsg must not discard descriptors because errno was set.
+  file_stat(sprintf("/nonexistent-fd-passing-test-%d", getpid()));
+  if (receiver->read(1) != "x" || sizeof(receiver->received) != 1 ||
+      receiver->errno()) error("Lost descriptor or stale read errno.\n");
+
+  sender->send_fd(source->_fd);
+  sender->write("y");
+  if (receiver->read(0) != "" || sizeof(receiver->received) != 1)
+    error("Zero-byte read consumed a descriptor.\n");
+  if (receiver->read(1) != "y" || sizeof(receiver->received) != 2)
+    error("Exact-size descriptor read did not finish correctly.\n");
+
+  receiver->set_nonblocking();
+  if (receiver->read(1, 1) || !receiver->errno())
+    error("Expected an empty nonblocking read to report an error.\n");
+  sender->send_fd(source->_fd);
+  sender->write("z");
+  if (receiver->read(1, 1) != "z" || receiver->errno() ||
+      sizeof(receiver->received) != 3)
+    error("Successful descriptor read retained an earlier error.\n");
+  source->close(); sender->close(); receiver->cleanup();
+}
+
+#if constant(Thread.Thread)
+void await_write(Thread.Thread writer, Stdio.File sender)
+{
+  for (int i = 0; i < 1000; i++) {
+    if (writer->status() != Thread.THREAD_RUNNING) return;
+    array bt = writer->backtrace();
+    if (sizeof(bt) && functionp(bt[-1][2]) &&
+        function_name(bt[-1][2]) == "write" &&
+        function_object(bt[-1][2]) == function_object(sender->_fd->write))
+      return;
+    sleep(0.001);
+  }
+  error("Writer did not enter its blocking write.\n");
+}
+
+int fill_pipe(Stdio.File sender)
+{
+  sender->set_buffer(4096, "w");
+  sender->set_nonblocking();
+  int filled;
+  while (1) {
+    int n = sender->write("x" * 4096);
+    if (n <= 0) break;
+    filled += n;
+    if (filled > 16 * 1024 * 1024) error("Could not fill socket.\n");
+  }
+  sender->set_blocking();
+  return filled;
+}
+
+void check_queued(int vector)
+{
+  object receiver = Receiver();
+  object sender = receiver->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_SEND_FD);
+  int filled = fill_pipe(sender);
+  object first = Stdio.File("/dev/null", "r");
+  object second = Stdio.File("/dev/zero", "r");
+  sender->send_fd(first->_fd);
+  Thread.Queue ready = Thread.Queue();
+  object writer = Thread.Thread(lambda() {
+    ready->write(1);
+    return vector ? sender->write(({ "A" })) : sender->write("A");
+  });
+  ready->read(); await_write(writer, sender);
+  // Queue another descriptor while the first write owns a detached queue.
+  sender->send_fd(second->_fd);
+  if (sizeof(receiver->read(filled)) != filled) error("Short drain.\n");
+  int written = writer->wait();
+  // Some kernels reject ancillary writes to a full socket with EMSGSIZE
+  // instead of blocking. The failed write must retain its descriptors too.
+  string retry = "B";
+  if (written != 1) {
+    if (written != -1 || sender->errno() != System.EMSGSIZE)
+      error("First descriptor write returned %d, errno %d.\n",
+            written, sender->errno());
+    retry = "AB";
+  }
+  if (sender->write(retry) != sizeof(retry) || receiver->read(2) != "AB" ||
+      sizeof(receiver->received) != 2)
+    error("Write lost a newly queued descriptor (vector=%d).\n", vector);
+  if (receiver->received[0]->read(1) != "" ||
+      receiver->received[1]->read(1) != "\0")
+    error("Descriptor ordering changed.\n");
+  first->close(); second->close(); sender->close(); receiver->cleanup();
+}
+
+#if constant(Thread.THREAD_SUPPORTS_IO_INTERRUPTS) && \
+    constant(Stdio.PROP_INTERRUPTIBLE)
+void check_interrupted(int old_count, int new_count)
+{
+  if (!Thread.THREAD_SUPPORTS_IO_INTERRUPTS) return;
+  object receiver = Receiver();
+  object sender = receiver->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_SEND_FD|
+                                  Stdio.PROP_INTERRUPTIBLE);
+  int filled = fill_pipe(sender);
+  object source = Stdio.File("/dev/null", "r");
+  for (int i = 0; i < old_count; i++) sender->send_fd(source->_fd);
+  Thread.Queue ready = Thread.Queue();
+  object writer = Thread.Thread(lambda() {
+    return !!catch { ready->write(1); sender->write("A"); };
+  });
+  ready->read(); await_write(writer, sender);
+  for (int i = 0; i < new_count; i++) sender->send_fd(source->_fd);
+  if (writer->status() == Thread.THREAD_RUNNING) {
+    writer->interrupt();
+    if (!writer->wait()) error("Write was not interrupted.\n");
+  } else {
+    writer->wait();
+    if (sender->errno() != System.EMSGSIZE)
+      error("Write stopped without an interrupt or EMSGSIZE.\n");
+  }
+  if (sizeof(receiver->read(filled)) != filled ||
+      sender->write("B") != 1 || receiver->read(1) != "B" ||
+      sizeof(receiver->received) != old_count + new_count)
+    error("Interrupted write lost or duplicated queued descriptors.\n");
+  source->close(); sender->close(); receiver->cleanup();
+}
+#endif
+#endif
+
+int main()
+{
+  check_reads();
+#if constant(Thread.Thread)
+  check_queued(0); check_queued(1);
+#if constant(Thread.THREAD_SUPPORTS_IO_INTERRUPTS) && \
+    constant(Stdio.PROP_INTERRUPTIBLE)
+  // Exercise merging into a larger second queue and allocating a new queue.
+  check_interrupted(1, 10); check_interrupted(5, 5);
+#endif
+#endif
+  write("Descriptor-passing regressions passed.\n");
+  return 0;
+}
+#else
+int main() { write("Skipping descriptor passing: unavailable.\n"); return 0; }
+#endif

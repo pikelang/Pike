@@ -549,6 +549,11 @@ o Gmp
 
 o Stdio.File
 
+  Descriptor-passing reads no longer discard descriptors because of stale
+  errno values or process the same control message twice after an exact-size
+  read. Concurrent and interrupted writes preserve newly queued descriptors
+  and correctly merge unsent descriptor queues.
+
   Successful reads and EOF no longer report stale errno values. Reads
   into buffers now preserve actual read errors and retry interrupted reads.
 
@@ -817,6 +822,12 @@ o Pike.Backend
   the Stdio.sendfile() result callback.
 
 o Process.Process
+
+  Fixed forkd startup and request handoff races between concurrent callers.
+  Request channels remain open until acknowledged, and failed submissions
+  and helper death before acknowledgement report errors instead of hanging.
+  Forkd status reporting is deferred out of native process callbacks to
+  prevent interrupted packet construction and duplicate terminal packets.
 
   Unexpected closure of the forkd connection now completes unfinished
   processes with status 255 and notifies the callback once. wait() returns
@@ -2058,6 +2069,8 @@ GitLab (Lysator) pikelang/pike:
   #4897: Overzealous compile time type check.
   #4934: pango items are listed as separate functions.
   #5466: Reject misplaced XML prologs.
+  #6092: Fix forkd spawn-request failures and descriptor handoff races.
+  #6153: Fix forkd wait hangs and status-reporting races.
   #7363: Compat resolver related crash.
   #7831: Avoid duplicate headers in asynchronous HTTP requests.
   #8042: Handle invalid Inotify event callbacks.
