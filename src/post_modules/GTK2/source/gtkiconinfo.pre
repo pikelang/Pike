@@ -69,7 +69,7 @@ GDK2.Pixbuf|zero get_builtin_pixbuf()
   }
 }
 
-GDK2.Pixbuf load_icon()
+GDK2.Pixbuf|zero load_icon()
 //! Renders an icon previously looked up in an icon theme using 
 //! GTK2.IconTheme->lookup_icon(); the size will be based on the size passed to
 //! GTK2.IconTheme->lookup_icon().  Note that the resulting pixbuf may not be

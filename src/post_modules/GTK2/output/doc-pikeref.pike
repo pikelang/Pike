@@ -198,7 +198,7 @@ protected string make_function_doc( GtkFunction f, Class c )
     if( t->name == "void" )
       return vtype;
     if( parent->classes[ t->name ] )
-      return class_name(parent->classes[ t->name ]);
+      return class_name(parent->classes[t->name]) + (t->nullable ? "|zero" : "");
     return t->doc_type();
   };
 
