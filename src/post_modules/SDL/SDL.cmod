@@ -2409,7 +2409,7 @@ PIKECLASS Joystick {
  *! Pumps the event loop, gathering events from the input devices.
  *!
  *! Normally you won't need to call this method, as it's called implicitly
- *! by @[SDL.Event->poll()].
+ *! by @[SDL.Event->poll()] and @[SDL.Event->get()].
  *!
  *! @seealso
  *!  @[get_key_state()], @[get_mod_state()]
@@ -3107,11 +3107,15 @@ PIKECLASS Event {
 
   /*! @decl int get()
    *!
-   *! Removes the next event (if any) from the queue and stores it in this
-   *! @[SDL.Event] object.
+   *! Removes the next event from the queue and stores it in this object.
+   *! Returns immediately if the queue is empty. This corresponds to
+   *! @tt{SDL_PollEvent(event)@} in C.
    *!
    *! @returns
-   *!  1 if there was an event to 'get', otherwise 0.
+   *!   1 if an event was retrieved, otherwise 0.
+   *!
+   *! @seealso
+   *!   @[poll()], @[wait()]
    */
   PIKEFUN int get() {
     RETURN SDL_PollEvent(&THIS->event);
@@ -3132,10 +3136,12 @@ PIKECLASS Event {
 
   /*! @decl int poll()
    *!
-   *! Polls for currently pending events.
+   *! Checks whether an event is pending. It leaves pending events in
+   *! the queue and this object's fields unchanged. This corresponds to
+   *! @tt{SDL_PollEvent(NULL)@} in C. Use @[get()] to retrieve an event.
    *!
    *! @returns
-   *!  1 if there are currently pending events, otherwise 0.
+   *!   1 if an event is pending, otherwise 0.
    */
   PIKEFUN int poll() {
     RETURN SDL_PollEvent(NULL);
