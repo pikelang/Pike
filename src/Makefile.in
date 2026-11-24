@@ -1150,11 +1150,13 @@ bin_export:
 	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 	@case " $(CC)" in \
 	  *\ rnt*) \
-	    $(MAKE) $(MAKE_FLAGS) uncompress_header ;\
+	    set -e; $(MAKE) $(MAKE_FLAGS) uncompress_header ;\
 	    echo "Compressing..." ;\
 	    destdir="$(INSTALLER_DESTDIR)"; \
 	    filename="$${destdir:-.}"/`echo *.burk | sed 's@\.burk$$@@g'`.exe ;\
-	    ( cat uncompress_header.exe ; gzip -9 -c *.burk ) > "$$filename" ;\
+	    trap 'rm -f "$$filename.tmp"' 0; \
+	    ( cat uncompress_header.exe && gzip -9 -c *.burk ) > "$$filename.tmp" ;\
+	    mv -f "$$filename.tmp" "$$filename" ;\
 	    echo "Done." ;\
 	  ;; \
 	esac
@@ -1531,8 +1533,10 @@ header_uncompress: $(SRCDIR)/uncompressor.c
 	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o header_uncompress @UNCOMPRESS_LIBZ@
 
 uncompress_header: $(SRCDIR)/uncompressor.c header_uncompress
-	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o uncompress_header @UNCOMPRESS_LIBZ@ -DSEEK_TO=`wc -c header_uncompress|sed 's/[^0-9]//g'`
-	test "`wc -c header_uncompress|sed 's/[^0-9]//g'`" = "`wc -c uncompress_header|sed 's/[^0-9]//g'`"
+	$(CC) -O2 -static $(SRCDIR)/uncompressor.c -o uncompress_header \
+	  @UNCOMPRESS_LIBZ@ -DSEEK_TO=`wc -c < header_uncompress@EXEEXT@ | tr -d '[:space:]'`
+	test "`wc -c < header_uncompress@EXEEXT@`" -eq \
+	     "`wc -c < uncompress_header@EXEEXT@`"
 
 HFILES=						\
   operators.protos				\
