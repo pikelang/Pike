@@ -652,6 +652,9 @@ o Cpp
 
 o Compiler
 
+  - Recursive type comparisons now use the recursion fallback even when
+    an earlier comparison of the same types has been cached.
+
   - Avoid a compiler crash when a constant follows an earlier compilation
     error, including local, typed and explicitly soft-cast constants.
 

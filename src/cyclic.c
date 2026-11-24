@@ -45,6 +45,23 @@ static size_t cyclic_hash_func(CYCLIC *c)
   return h & (CYCLIC_HASH_SIZE-1);
 }
 
+/* Look up an active comparison without inserting an unwind record. */
+void *peek_cyclic(char *id, void *thread, void *a, void *b, void *d)
+{
+  CYCLIC key;
+  CYCLIC *p;
+  key.id = id;
+  key.th = thread;
+  key.a = a;
+  key.b = b;
+  key.d = d;
+  for (p = cyclic_hash[cyclic_hash_func(&key)]; p; p = p->next) {
+    if (a == p->a && b == p->b && id == p->id && thread == p->th && d == p->d)
+      return p->ret;
+  }
+  return NULL;
+}
+
 void low_unlink_cyclic(CYCLIC *c)
 {
   size_t h;

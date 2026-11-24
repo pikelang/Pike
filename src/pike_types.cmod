@@ -5214,6 +5214,18 @@ void gc_free_type_binop_cache(void)
       clear_type_binop_cache_entry(&type_binop_cache[i]);
 }
 
+/* Use the same cycle identity on the cache hit and miss paths. */
+static char type_binop_cycle_id[] = __FILE__ ": type binop";
+
+static struct pike_type *type_binop_cycle_result(
+  enum pt_binop op, struct pike_type *a, struct remap_state *remap,
+  enum pt_remap_flags remap_flags)
+{
+  /* A comparison that depended on a recursion shortcut is unstable. */
+  type_binop_unstable_generation++;
+  return (op & PT_BINOP_AND) ? remap_markers(a, remap, remap_flags) : NULL;
+}
+
 static struct pike_type *uncached_type_binop(enum pt_binop op,
   struct pike_type *a, struct pike_type *b, struct remap_state *remap,
   enum pt_cmp_flags aflags, enum pt_cmp_flags bflags,
@@ -5247,6 +5259,9 @@ static struct pike_type *low_type_binop(enum pt_binop op,
       e->u.key.bflags == (unsigned int)bflags &&
       e->u.key.remap_flags == (unsigned int)remap_flags &&
       e->external == external) {
+    if (peek_cyclic(type_binop_cycle_id, THREAD_T_TO_PTR(th_self()),
+                    a, b, (void *)(ptrdiff_t)op))
+      return type_binop_cycle_result(op, a, remap, remap_flags);
     result = e->u.key.result;
     if (result) add_ref(result);
     if ((external & 3) == 2 && ((cached_state = type_binop_cache_state(e)) ||
@@ -5369,17 +5384,12 @@ static struct pike_type *uncached_type_binop(enum pt_binop op,
 				    AFLAGS, BFLAGS, REMAP_FLAGS)))
 #endif /* DEBUG_MALLOC */
   struct pike_type *ret;
-  DECLARE_CYCLIC();
+  CYCLIC cyclic_struct__;
 
-  if (BEGIN_CYCLIC3(a, b, (ptrdiff_t)op)) {
+  if (begin_cyclic(&cyclic_struct__, type_binop_cycle_id,
+                   THREAD_T_TO_PTR(th_self()), a, b, (void *)(ptrdiff_t)op)) {
     END_CYCLIC();
-    /* The recursion shortcut depends on the active comparison stack. */
-    type_binop_unstable_generation++;
-
-    if (op & PT_BINOP_AND) {
-      return remap_markers(a, remap, remap_flags);
-    }
-    return NULL;
+    return type_binop_cycle_result(op, a, remap, remap_flags);
   }
   SET_CYCLIC_RET(1);
 
