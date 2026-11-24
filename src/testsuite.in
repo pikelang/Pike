@@ -1246,6 +1246,116 @@ test_any([[
   return 1;
 ]], 1)
 
+// A single published caller PC survives getter, operator and setter reentry.
+test_any([[
+  program p=compile_string(#"class Base {
+ int a,b;
+#line 700 \"single-source.pike\"
+ int f(){return a=a+b;}
+#line 700 \"single-source.pike\"
+ void g(){a=a+b;}
+#line 1 \"single-source-fixture.pike\"
+}
+class Access {
+ inherit Base;
+ mixed saved; array seen=({});
+ void record(string stage) {
+  foreach(backtrace(),mixed frame)
+   if(arrayp(frame) && sizeof(frame)>1 &&
+      frame[0]==\"single-source.pike\") {
+    if(frame[1]!=700)error(\"wrong caller line\\n\");
+    seen+=({stage});return;
+   }
+  error(\"missing caller PC\\n\");
+ }
+ mixed first(){record(\"first\");return saved;}
+ mixed `->a(){return first();}
+ mixed second(){record(\"second\");return 1;}
+ mixed `->b(){return second();}
+ void `->a=(mixed value){record(\"store\");saved=value;}
+}","single-source-fixture.pike");
+  class Plus(object target) {
+    int compute() { target->record("add");gc();return 7; }
+    protected int `+(mixed other) { return compute(); }
+  }
+  foreach(({"f","g"}),string method) {
+    object o=p()->Access();o->saved=Plus(o);
+    mixed result=o[method]();
+    if((method=="f" && result!=7) || o->saved!=7 ||
+       !equal(o->seen,({"first","second","add","store"})))return 0;
+  }
+  return 1;
+]],1)
+
+// Shared variants work in both source orders and across later file changes.
+test_any([[
+  string source=#"class Base {
+ int a,b;
+#line 100 \"pc-flat.pike\"
+ int f(){return a=a+b;}
+#line 400 \"pc-mixed.pike\"
+ int g(){return a=(
+#line 410 \"pc-mixed.pike\"
+ a
+#line 420 \"pc-mixed.pike\"
+ +
+#line 430 \"pc-mixed.pike\"
+ b
+#line 440 \"pc-mixed.pike\"
+ )
+#line 450 \"pc-mixed.pike\"
+ ;}
+ int h(){
+#line 800 \"pc-before.pike\"
+ a=a+b;
+#line 800 \"pc-after.pike\"
+ error(\"after\\n\");}
+#line 1 \"pc-fixture.pike\"
+}
+class Access {
+ inherit Base;
+ int fail; mixed saved;
+ mixed `->a(){if(fail==0)error(\"first\\n\");return saved;}
+ mixed `->b(){if(fail==1)error(\"second\\n\");return 1;}
+ void `->a=(mixed value){if(fail==3)error(\"store\\n\");saved=value;}
+}";
+  class Boom {protected mixed `+(mixed other){error("add\n");}}
+  int flat=search(source,"#line 100"), multi=search(source,"#line 400");
+  int after=search(source," int h(){");
+  string reversed=source[..flat-1]+source[multi..after-1]+
+    source[flat..multi-1]+source[after..];
+  foreach(({source,reversed}),string text) {
+    program p=compile_string(text,"pc-fixture.pike");
+    object root=p();
+    foreach(({"f","g"}),string method)for(int which=0;which<4;which++) {
+      object o;
+      if(which==2){o=root->Base();o->a=Boom();o->b=1;}
+      else{o=root->Access();o->fail=which;o->saved=7;}
+      mixed err=catch{o[method]();};
+      if(!err)return 0;
+      string file;int line;
+      foreach(err[1],mixed frame)
+        if(arrayp(frame) && sizeof(frame)>1 &&
+           (frame[0]=="pc-flat.pike" || frame[0]=="pc-mixed.pike")) {
+          file=frame[0];line=frame[1];
+        }
+      if(file!=(method=="f"?"pc-flat.pike":"pc-mixed.pike") ||
+         line!=(method=="f"?100:({420,440,400,450})[which]))return 0;
+    }
+    foreach(({0,1}),int slow) {
+      object o=root->Base();o->a=slow?UNDEFINED:7;o->b=11;
+      mixed err=catch{o->h();};
+      if(!err || !has_prefix(err[0],"after\n"))return 0;
+      int found;
+      foreach(err[1],mixed frame)
+        if(arrayp(frame) && sizeof(frame)>1 &&
+           frame[0]=="pc-after.pike" && frame[1]==800)found=1;
+      if(!found)return 0;
+    }
+  }
+  return 1;
+]],1)
+
 // Shared cold stubs retain a distinct original PC for every throwing stage.
 test_any([[
 string source = #"class Base {

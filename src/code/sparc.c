@@ -612,6 +612,8 @@ static void sparc_ssa_report(void)
           sparc_stats.integer_bitwise_ops, sparc_integer_regions_enabled());
 }
 
+static void sparc_integer_pair_start_function(void);
+
 void sparc_start_function(int UNUSED(store_lines))
 {
   if (!sparc_ssa_initialized) {
@@ -629,6 +631,7 @@ void sparc_start_function(int UNUSED(store_lines))
       getenv("PIKE_SSA_NO_INTEGER_BITWISE") != NULL;
     if (sparc_ssa_stats) atexit(sparc_ssa_report);
   }
+  sparc_integer_pair_start_function();
   sparc_function_start = Pike_compiler->new_program->num_program;
 }
 

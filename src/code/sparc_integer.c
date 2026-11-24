@@ -51,9 +51,34 @@
  * XCC, and pointer/PC traffic remains doubleword. The metadata stays seven
  * words on both ABIs.
  *
+ * PIKE_SSA_INTEGER_GLOBAL_NATIVE_PC=1 experimentally reuses the caller's
+ * published PC for native fragments with one source location. Multiline
+ * regions, disabled source records and opcode tracing keep per-call PCs.
+ * A previously emitted full-PC fragment also serves single-source sites,
+ * avoiding another fragment when multiline code is compiled first.
+ * Only a fresh argument or PC store may fill a call delay slot; adjacent
+ * no-argument calls still need their own NOP slots.
+ *
  * Pointer width follows the ABI; integer loads, stores and condition
  * codes follow Pike's native integer width. Word arithmetic needs only V7
  * instructions. Doubleword values currently require the SPARC64 backend. */
+static struct {
+  int program_id;
+  INT32 offsets[16], ends[16];
+} sparc_integer_pair_cache = { -1, {0}, {0} };
+
+/* eval_low discards temporary code. Invalidate before the next function
+ * can overwrite it and grow past the discarded fragment's old end. */
+static void sparc_integer_pair_start_function(void)
+{
+  struct program *program = Pike_compiler->new_program;
+  unsigned int i;
+  if (sparc_integer_pair_cache.program_id != program->id) return;
+  for (i = 0; i < NELEM(sparc_integer_pair_cache.offsets); i++)
+    if ((size_t)sparc_integer_pair_cache.ends[i] > program->num_program)
+      sparc_integer_pair_cache.offsets[i] = -1;
+}
+
 #if SIZEOF_INT_TYPE == 4
 #define SPARC_INTEGER_LD SPARC_LDUW
 #define SPARC_INTEGER_ST SPARC_STW
@@ -382,6 +407,30 @@ struct sparc_integer_pair_data {
 #define SPARC_PAIR_DUP 1
 #define SPARC_PAIR_STORE 2
 #define SPARC_PAIR_POP 4
+#define SPARC_PAIR_SAME_PC 8
+
+/* Entry publishes code[0]'s PC before any guard or callback. Reuse it
+ * only when every consumed opcode has the same recorded source location.
+ * Ordinary non-control-flow callbacks restore the caller frame and leave
+ * that frame's PC intact. Keep precise per-op PCs for tracing and retain
+ * the old behavior when source records are disabled. */
+static int sparc_integer_pair_single_pc(const struct p_instr_s *code,
+                                        unsigned int consumed,
+                                        int store_lines)
+{
+  static int enabled = -1;
+  unsigned int i;
+  if (enabled < 0)
+    enabled = getenv("PIKE_SSA_INTEGER_GLOBAL_NATIVE_PC") != NULL;
+  if (!enabled || !store_lines || !code[0].file) return 0;
+#ifdef PIKE_DEBUG
+  if (d_flag) return 0;
+#endif
+  for (i = 1; i < consumed; i++)
+    if (code[i].line != code[0].line || code[i].file != code[0].file)
+      return 0;
+  return 1;
+}
 
 static void sparc_integer_pair_fallback(
     const struct sparc_integer_pair_data *data, void *first,
@@ -433,49 +482,79 @@ static void sparc_integer_pair_arg(int reg, int offset)
  * L5 survives ordinary C calls (including callbacks into Pike); its inline
  * descriptor also supplies the continuation, so no return stack is needed.
  * Internal CALLs are relative and must NOT enter the external relocation
- * table. Only the fragment's ordinary opcode calls use ADD_CALL. */
-static void sparc_integer_pair_native_call(void *address, int pc_offset)
+ * table. Only the fragment's ordinary opcode calls use ADD_CALL.
+ *
+ * Every guard/overflow caller has established IP/FP before any callback.
+ * The internal CALL preserves their local registers. The fragment's C
+ * calls preserve those registers too, and its non-control-flow opcodes
+ * restore the caller frame after callbacks. This proves IP/FP at entry
+ * and after each call; SP and object/context storage must be reloaded. */
+static void sparc_integer_pair_native_frame(void)
 {
-  LOAD_PIKE_INTERPRETER();
-  SPARC_FLUSH_UNSTORED();
-  LOAD_PIKE_FP();
-  SPARC_ADD(SPARC_REG_O3, SPARC_REG_L5, pc_offset, 1);
-  PIKE_STPTR(SPARC_REG_O3, SPARC_REG_PIKE_FP,
-             OFFSETOF(pike_frame, pc), 1);
-  pikecode_ssa_barrier(&sparc_ssa, PIKE_SSA_CALL);
-  if (sparc_ssa_stats) sparc_stats.calls++;
-  ADD_CALL(address, 1); /* Publish the site PC in the call delay slot. */
-  sparc_flush_codegen_state();
-  /* These non-control-flow opcodes restore the caller frame after any
-   * callbacks. SP is reloaded from the interpreter if needed. */
   pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
   pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_FP);
   sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET | SPARC_CODEGEN_FP_IS_SET;
 }
 
+static void sparc_integer_pair_native_call(void *address, int pc_offset,
+                                          int argument_in_delay)
+{
+  LOAD_PIKE_INTERPRETER();
+  SPARC_FLUSH_UNSTORED();
+  LOAD_PIKE_FP();
+  if (pc_offset >= 0) {
+    SPARC_ADD(SPARC_REG_O3, SPARC_REG_L5, pc_offset, 1);
+    PIKE_STPTR(SPARC_REG_O3, SPARC_REG_PIKE_FP,
+               OFFSETOF(pike_frame, pc), 1);
+  }
+  pikecode_ssa_barrier(&sparc_ssa, PIKE_SSA_CALL);
+  if (sparc_ssa_stats) sparc_stats.calls++;
+  /* Without a fresh PC store or argument instruction, the preceding word
+   * can be another CALL's delay slot. Never steal it for this call. */
+  ADD_CALL(address, pc_offset >= 0 || argument_in_delay);
+  sparc_flush_codegen_state();
+  /* These non-control-flow opcodes restore the caller frame after any
+   * callbacks. SP is reloaded from the interpreter if needed. */
+  sparc_integer_pair_native_frame();
+}
+
 static INT32 sparc_integer_pair_native(int flags)
 {
-  static int program_id = -1;
-  static INT32 offsets[8];
+  INT32 *offsets = sparc_integer_pair_cache.offsets;
+  INT32 *ends = sparc_integer_pair_cache.ends;
   struct program *program = Pike_compiler->new_program;
   struct sparc_integer_label indirect = {0}, prepared = {0};
   INT32 start;
+  int publish_pc = !(flags & SPARC_PAIR_SAME_PC);
   unsigned int i;
-  if (program_id != program->id) {
-    program_id = program->id;
-    for (i = 0; i < NELEM(offsets); i++) offsets[i] = -1;
+  if (sparc_integer_pair_cache.program_id != program->id) {
+    sparc_integer_pair_cache.program_id = program->id;
+    for (i = 0; i < NELEM(sparc_integer_pair_cache.offsets); i++)
+      offsets[i] = -1;
   }
+  sparc_integer_pair_start_function();
   start = offsets[flags];
   /* Offsets, rather than code pointers, survive reallocations. Regenerate
-   * on a truncated program or before the signed CALL reach is exhausted.
+   * if any of the fragment was truncated or CALL reach is exhausted.
    * Interleaved compilation can lose a cached fragment but cannot reuse
    * one belonging to another program. */
   if (start >= 0 && (size_t)start < program->num_program &&
+      (size_t)ends[flags] <= program->num_program &&
       program->num_program - start < 0x10000000)
     return start;
+  if (flags & SPARC_PAIR_SAME_PC) {
+    /* Publishing each opcode's PC is also correct for a single-source
+     * site. Prefer the existing full fragment to duplicating its body.
+     * Keep a compact fragment if one has already been emitted. */
+    start = offsets[flags & ~SPARC_PAIR_SAME_PC];
+    if (start >= 0 && (size_t)start < program->num_program &&
+        (size_t)ends[flags & ~SPARC_PAIR_SAME_PC] <= program->num_program &&
+        program->num_program - start < 0x10000000)
+      return start;
+  }
   offsets[flags] = start = program->num_program;
   sparc_flush_codegen_state();
-  LOAD_PIKE_INTERPRETER();
+  sparc_integer_pair_native_frame();
   SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O2, 0, 1);
 #ifdef PIKE_BYTECODE_SPARC64
   sparc_integer_branch(&indirect, 0x12600000); /* bne,pn %xcc */
@@ -483,7 +562,7 @@ static INT32 sparc_integer_pair_native(int flags)
   sparc_integer_branch(&indirect, 0x12800000); /* bne %icc */
 #endif
   sparc_integer_push_global();
-  sparc_flush_codegen_state();
+  sparc_integer_balanced_entry();
   sparc_integer_branch(&prepared, 0x10800000);
   sparc_integer_bind(&indirect);
   SPARC_OR(SPARC_REG_O0, SPARC_REG_O4, SPARC_REG_G0, 0);
@@ -491,35 +570,40 @@ static INT32 sparc_integer_pair_native(int flags)
              OFFSETOF(inherit, identifier_level), 1);
   sparc_integer_pair_arg(SPARC_REG_O3, 0);
   SPARC_ADD(SPARC_REG_O1, SPARC_REG_O1, SPARC_REG_O3, 0);
-  sparc_integer_pair_native_call(sparc_integer_global_indirect, 0);
+  sparc_integer_pair_native_call(sparc_integer_global_indirect,
+                                 publish_pc ? 0 : -1, 1);
   sparc_integer_bind(&prepared);
-  /* Both producer paths preserve IP, but only the indirect path loaded
-   * FP. A following opcode call must load it on either path. */
+  /* The direct producer makes no callback; the indirect call restores
+   * its caller frame. Both paths retain the entry IP/FP. */
   sparc_flush_codegen_state();
-  pikecode_ssa_merge_reg(&sparc_ssa, PIKE_SSA_IP);
-  sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET;
+  sparc_integer_pair_native_frame();
   if (flags & SPARC_PAIR_DUP) {
     SET_REG(SPARC_REG_O0, 0);
-    sparc_integer_pair_native_call(instrs[F_DUP-F_OFFSET].address, 4);
+    sparc_integer_pair_native_call(instrs[F_DUP-F_OFFSET].address,
+                                   publish_pc ? 4 : -1, 1);
   } else {
     sparc_integer_pair_arg(SPARC_REG_O0, 4);
     sparc_integer_pair_arg(SPARC_REG_O1, 8);
     sparc_integer_pair_native_call(
-      instrs[F_PRIVATE_IF_DIRECT_GLOBAL-F_OFFSET].address, 4);
+      instrs[F_PRIVATE_IF_DIRECT_GLOBAL-F_OFFSET].address,
+      publish_pc ? 4 : -1, 1);
   }
-  sparc_integer_pair_native_call(instrs[F_ADD_INTS-F_OFFSET].address, 12);
+  sparc_integer_pair_native_call(instrs[F_ADD_INTS-F_OFFSET].address,
+                                 publish_pc ? 12 : -1, 0);
   if (flags & SPARC_PAIR_STORE) {
     sparc_integer_pair_arg(SPARC_REG_O0, 16);
     sparc_integer_pair_arg(SPARC_REG_O1, 20);
     sparc_integer_pair_native_call(
-      instrs[F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL-F_OFFSET].address, 16);
+      instrs[F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL-F_OFFSET].address,
+      publish_pc ? 16 : -1, 1);
     if (flags & SPARC_PAIR_POP)
       sparc_integer_pair_native_call(instrs[F_POP_VALUE-F_OFFSET].address,
-                                     24);
+                                     publish_pc ? 24 : -1, 0);
   }
   SPARC_JMPL(SPARC_REG_G0, SPARC_REG_L5,
               sizeof(struct sparc_integer_pair_data), 1);
   SPARC_NOOP();
+  ends[flags] = program->num_program;
   sparc_flush_codegen_state();
   return start;
 }
@@ -537,7 +621,10 @@ static void sparc_integer_pair_cold(
   INT32 flags = (duplicate ? SPARC_PAIR_DUP : 0) |
     (p->global_store ? SPARC_PAIR_STORE : 0) |
     (p->global_pop ? SPARC_PAIR_POP : 0);
-  INT32 fragment = native ? sparc_integer_pair_native(flags) : -1;
+  INT32 fragment;
+  if (native && sparc_integer_pair_single_pc(code, p->consumed, store_lines))
+    flags |= SPARC_PAIR_SAME_PC;
+  fragment = native ? sparc_integer_pair_native(flags) : -1;
   sparc_integer_bind(guard);
   sparc_integer_count(profile, PIKE_SSA_INTEGER_GUARDS);
   sparc_integer_bind(replay);
