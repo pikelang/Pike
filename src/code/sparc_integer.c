@@ -56,6 +56,9 @@
  * regions, disabled source records and opcode tracing keep per-call PCs.
  * A previously emitted full-PC fragment also serves single-source sites,
  * avoiding another fragment when multiline code is compiled first.
+ * Compact-first shapes share one producer across PC variants and shapes.
+ * L6 carries its continuation. On SPARC32 the indirect helper returns
+ * straight to the suffix. No extra C frame or metadata word is needed.
  * Only a fresh argument or PC store may fill a call delay slot; adjacent
  * no-argument calls still need their own NOP slots.
  *
@@ -65,7 +68,8 @@
 static struct {
   int program_id;
   INT32 offsets[16], ends[16];
-} sparc_integer_pair_cache = { -1, {0}, {0} };
+  INT32 producer, producer_end;
+} sparc_integer_pair_cache = { -1, {0}, {0}, -1, 0 };
 
 /* eval_low discards temporary code. Invalidate before the next function
  * can overwrite it and grow past the discarded fragment's old end. */
@@ -77,6 +81,8 @@ static void sparc_integer_pair_start_function(void)
   for (i = 0; i < NELEM(sparc_integer_pair_cache.offsets); i++)
     if ((size_t)sparc_integer_pair_cache.ends[i] > program->num_program)
       sparc_integer_pair_cache.offsets[i] = -1;
+  if ((size_t)sparc_integer_pair_cache.producer_end > program->num_program)
+    sparc_integer_pair_cache.producer = -1;
 }
 
 #if SIZEOF_INT_TYPE == 4
@@ -497,7 +503,7 @@ static void sparc_integer_pair_native_frame(void)
 }
 
 static void sparc_integer_pair_native_call(void *address, int pc_offset,
-                                          int argument_in_delay)
+                                          int argument_in_delay, int tail)
 {
   LOAD_PIKE_INTERPRETER();
   SPARC_FLUSH_UNSTORED();
@@ -511,11 +517,80 @@ static void sparc_integer_pair_native_call(void *address, int pc_offset,
   if (sparc_ssa_stats) sparc_stats.calls++;
   /* Without a fresh PC store or argument instruction, the preceding word
    * can be another CALL's delay slot. Never steal it for this call. */
-  ADD_CALL(address, pc_offset >= 0 || argument_in_delay);
+  if (tail) {
+    /* Both the direct CALL and the far JMPL install O7 before their
+     * delay slot. Replace that link so the C helper returns directly
+     * to the suffix, bypassing the producer's direct-path return. */
+    SPARC_ADD(SPARC_REG_O7, SPARC_REG_L6, -8, 1);
+    ADD_CALL(address, 1);
+  } else ADD_CALL(address, pc_offset >= 0 || argument_in_delay);
   sparc_flush_codegen_state();
   /* These non-control-flow opcodes restore the caller frame after any
    * callbacks. SP is reloaded from the interpreter if needed. */
   sparc_integer_pair_native_frame();
+}
+
+/* Both PC variants and all shapes resolve the first producer identically.
+ * Keep its precise PC even for compact sites so a single producer can serve
+ * later multiline sites. L6 is unused by ordinary code generation and is
+ * preserved, like L5, across C calls and callbacks into Pike. */
+static void sparc_integer_pair_native_first(int tail)
+{
+  struct sparc_integer_label indirect = {0}, prepared = {0};
+  sparc_flush_codegen_state();
+  sparc_integer_pair_native_frame();
+  SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O2, 0, 1);
+#ifdef PIKE_BYTECODE_SPARC64
+  sparc_integer_branch_start(&indirect, 0x12600000); /* bne,pn %xcc */
+#else
+  sparc_integer_branch_start(&indirect, 0x12800000); /* bne %icc */
+#endif
+  if (tail) {
+    /* O0 is scratch on the direct path. */
+    SPARC_OR(SPARC_REG_O0, SPARC_REG_O4, SPARC_REG_G0, 0);
+  } else SPARC_NOOP();
+  sparc_integer_push_global();
+  sparc_integer_balanced_entry();
+  if (tail) {
+    SPARC_JMPL(SPARC_REG_G0, SPARC_REG_L6, 0, 1);
+    SPARC_NOOP();
+  } else sparc_integer_branch(&prepared, 0x10800000);
+  sparc_integer_bind(&indirect);
+  if (!tail) SPARC_OR(SPARC_REG_O0, SPARC_REG_O4, SPARC_REG_G0, 0);
+  SPARC_LDUH(SPARC_REG_O1, SPARC_REG_O2,
+             OFFSETOF(inherit, identifier_level), 1);
+  sparc_integer_pair_arg(SPARC_REG_O3, 0);
+  SPARC_ADD(SPARC_REG_O1, SPARC_REG_O1, SPARC_REG_O3, 0);
+  sparc_integer_pair_native_call(sparc_integer_global_indirect,
+                                 0, 1, tail);
+  sparc_integer_bind(&prepared);
+  /* The direct producer makes no callback; the indirect call restores
+   * its caller frame. Both paths retain the entry IP/FP. */
+  sparc_flush_codegen_state();
+  sparc_integer_pair_native_frame();
+}
+
+static INT32 sparc_integer_pair_native_producer(void)
+{
+  struct program *program = Pike_compiler->new_program;
+  INT32 start = sparc_integer_pair_cache.producer;
+  if (start >= 0 && (size_t)start < program->num_program &&
+      (size_t)sparc_integer_pair_cache.producer_end <= program->num_program &&
+      program->num_program - start < 0x10000000)
+    return start;
+  sparc_integer_pair_cache.producer = start = program->num_program;
+#ifdef PIKE_BYTECODE_SPARC64
+  /* Returning through the producer is faster on the measured SPARC64
+   * build. Preload the next global offset in its return delay slot. */
+  sparc_integer_pair_native_first(0);
+  SPARC_JMPL(SPARC_REG_G0, SPARC_REG_L6, 0, 1);
+  sparc_integer_pair_arg(SPARC_REG_O0, 4);
+#else
+  sparc_integer_pair_native_first(1);
+#endif
+  sparc_integer_pair_cache.producer_end = program->num_program;
+  sparc_flush_codegen_state();
+  return start;
 }
 
 static INT32 sparc_integer_pair_native(int flags)
@@ -523,12 +598,13 @@ static INT32 sparc_integer_pair_native(int flags)
   INT32 *offsets = sparc_integer_pair_cache.offsets;
   INT32 *ends = sparc_integer_pair_cache.ends;
   struct program *program = Pike_compiler->new_program;
-  struct sparc_integer_label indirect = {0}, prepared = {0};
-  INT32 start;
+  INT32 start, producer = -1;
+  int shared;
   int publish_pc = !(flags & SPARC_PAIR_SAME_PC);
   unsigned int i;
   if (sparc_integer_pair_cache.program_id != program->id) {
     sparc_integer_pair_cache.program_id = program->id;
+    sparc_integer_pair_cache.producer = -1;
     for (i = 0; i < NELEM(sparc_integer_pair_cache.offsets); i++)
       offsets[i] = -1;
   }
@@ -552,53 +628,43 @@ static INT32 sparc_integer_pair_native(int flags)
         program->num_program - start < 0x10000000)
       return start;
   }
+  shared = (flags & SPARC_PAIR_SAME_PC) ||
+    (sparc_integer_pair_cache.producer >= 0 &&
+     (size_t)sparc_integer_pair_cache.producer_end <= program->num_program &&
+     program->num_program - sparc_integer_pair_cache.producer < 0x10000000);
+  if (shared) producer = sparc_integer_pair_native_producer();
   offsets[flags] = start = program->num_program;
-  sparc_flush_codegen_state();
-  sparc_integer_pair_native_frame();
-  SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_O2, 0, 1);
-#ifdef PIKE_BYTECODE_SPARC64
-  sparc_integer_branch(&indirect, 0x12600000); /* bne,pn %xcc */
-#else
-  sparc_integer_branch(&indirect, 0x12800000); /* bne %icc */
-#endif
-  sparc_integer_push_global();
-  sparc_integer_balanced_entry();
-  sparc_integer_branch(&prepared, 0x10800000);
-  sparc_integer_bind(&indirect);
-  SPARC_OR(SPARC_REG_O0, SPARC_REG_O4, SPARC_REG_G0, 0);
-  SPARC_LDUH(SPARC_REG_O1, SPARC_REG_O2,
-             OFFSETOF(inherit, identifier_level), 1);
-  sparc_integer_pair_arg(SPARC_REG_O3, 0);
-  SPARC_ADD(SPARC_REG_O1, SPARC_REG_O1, SPARC_REG_O3, 0);
-  sparc_integer_pair_native_call(sparc_integer_global_indirect,
-                                 publish_pc ? 0 : -1, 1);
-  sparc_integer_bind(&prepared);
-  /* The direct producer makes no callback; the indirect call restores
-   * its caller frame. Both paths retain the entry IP/FP. */
-  sparc_flush_codegen_state();
-  sparc_integer_pair_native_frame();
+  if (shared) {
+    SPARC_CALL(((ptrdiff_t)producer - start) * 4);
+    SPARC_ADD(SPARC_REG_L6, SPARC_REG_O7, 8, 1);
+    sparc_flush_codegen_state();
+    sparc_integer_pair_native_frame();
+  } else sparc_integer_pair_native_first(0);
   if (flags & SPARC_PAIR_DUP) {
     SET_REG(SPARC_REG_O0, 0);
     sparc_integer_pair_native_call(instrs[F_DUP-F_OFFSET].address,
-                                   publish_pc ? 4 : -1, 1);
+                                   publish_pc ? 4 : -1, 1, 0);
   } else {
+#ifdef PIKE_BYTECODE_SPARC64
+    if (!shared)
+#endif
     sparc_integer_pair_arg(SPARC_REG_O0, 4);
     sparc_integer_pair_arg(SPARC_REG_O1, 8);
     sparc_integer_pair_native_call(
       instrs[F_PRIVATE_IF_DIRECT_GLOBAL-F_OFFSET].address,
-      publish_pc ? 4 : -1, 1);
+      publish_pc ? 4 : -1, 1, 0);
   }
   sparc_integer_pair_native_call(instrs[F_ADD_INTS-F_OFFSET].address,
-                                 publish_pc ? 12 : -1, 0);
+                                 publish_pc ? 12 : -1, 0, 0);
   if (flags & SPARC_PAIR_STORE) {
     sparc_integer_pair_arg(SPARC_REG_O0, 16);
     sparc_integer_pair_arg(SPARC_REG_O1, 20);
     sparc_integer_pair_native_call(
       instrs[F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL-F_OFFSET].address,
-      publish_pc ? 16 : -1, 1);
+      publish_pc ? 16 : -1, 1, 0);
     if (flags & SPARC_PAIR_POP)
       sparc_integer_pair_native_call(instrs[F_POP_VALUE-F_OFFSET].address,
-                                     publish_pc ? 24 : -1, 0);
+                                     publish_pc ? 24 : -1, 0, 0);
   }
   SPARC_JMPL(SPARC_REG_G0, SPARC_REG_L5,
               sizeof(struct sparc_integer_pair_data), 1);

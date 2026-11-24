@@ -1249,11 +1249,13 @@ test_any([[
 // A single published caller PC survives getter, operator and setter reentry.
 test_any([[
   program p=compile_string(#"class Base {
- int a,b;
+ int a,b; int x=2,y=3;
 #line 700 \"single-source.pike\"
  int f(){return a=a+b;}
 #line 700 \"single-source.pike\"
  void g(){a=a+b;}
+#line 700 \"single-source.pike\"
+ int inner(){return x+y;}
 #line 1 \"single-source-fixture.pike\"
 }
 class Access {
@@ -1268,7 +1270,11 @@ class Access {
    }
   error(\"missing caller PC\\n\");
  }
- mixed first(){record(\"first\");return saved;}
+ mixed first(){
+  record(\"first\");
+  if(inner()!=5)error(\"inner\\n\");
+  return saved;
+ }
  mixed `->a(){return first();}
  mixed second(){record(\"second\");return 1;}
  mixed `->b(){return second();}
