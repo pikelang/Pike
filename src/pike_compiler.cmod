@@ -638,7 +638,7 @@ int report_compiler_dependency(struct program *p)
 int report_compiler_dependency_level(struct program *p,
                                      enum compiler_dependency_level level)
 {
-  struct Supporter *supplier, *consumer = current_supporter;
+  struct Supporter *supplier = NULL, *consumer = current_supporter;
   struct program *parent;
   struct compiler_dependency *d;
 
