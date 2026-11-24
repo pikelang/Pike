@@ -258,7 +258,7 @@ void fail(string msg, mixed ... args)
   exit(7); /* distinctive error... */
 }
 
-string|zero fname;
+string(8bit) fname = "";
 string data = "";
 string tpos = "";
 int pos;
@@ -1406,7 +1406,7 @@ string expand_node_paths(string code)
   return (parts + ({ code[start..] })) * "";
 }
 
-int main(int argc, array(string) argv)
+int main(int argc, array(string(8bit)) argv)
 {
   if (argc < 2) {
     fail("Expected filename\n");
