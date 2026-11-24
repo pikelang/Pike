@@ -11316,6 +11316,10 @@ test_equal(({1,2,3})%-2,({1}))
 
 
 // testing &&
+dnl A false left comparison must survive folding even if the right is true.
+test_equal(2.0 < 1.0 && 2.0 > 1.0, 0)
+test_equal(2.0 > 1.0 && 2.0 < 1.0, 0)
+test_equal(2.0 > 1.0 && 2.0 > 1.0, 1)
 test_eq(0 && 1,0)
 test_eq(1 && 0,0)
 test_eq(0 && 0,0)

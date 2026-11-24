@@ -5443,12 +5443,14 @@ static node *eval(node *n)
       } else if (!pike_types_le(new->type, n->type, 0, 0)) {
 	/* Try consolidating the type information. */
 	struct pike_type *t = soft_cast(n->type, new->type, 0);
-	if (t) {
-	  free_type(new->type);
-	  new->type = t;
-	} else /* if (!SAFE_IS_ZERO(Pike_sp-1)) */ {
-	  new = mksoftcastnode(n->type, new);
-	}
+        /* For &&, the folded result can be the false left operand,
+         * even when the inferred type only describes the right one. */
+        if (t) {
+          free_type(new->type);
+          new->type = t;
+        } else if (n->token != F_LAND) {
+          new = mksoftcastnode(n->type, new);
+        }
       }
     }
     free_node(n);
