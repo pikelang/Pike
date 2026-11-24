@@ -48,7 +48,8 @@ protected void create()
 }
 
 //! List of supported versions, in order of preference. Defaults to
-//! @[PROTOCOL_TLS_1_3] and @[PROTOCOL_TLS_1_2].
+//! @[PROTOCOL_TLS_1_3] and @[PROTOCOL_TLS_1_2] when elliptic curves are
+//! available, otherwise only @[PROTOCOL_TLS_1_2].
 //!
 //! @note
 //!   These defaults apply since Pike 9.1, which introduced TLS 1.3.
@@ -61,10 +62,8 @@ protected void create()
 //!   removed from the implementation, and a caller may still opt
 //!   back into them explicitly (eg via @[configure_suite_b()] or by
 //!   setting this field directly) for legacy interop.
-array(ProtocolVersion) supported_versions = ({
-  PROTOCOL_TLS_1_3,
-  PROTOCOL_TLS_1_2,
-});
+array(ProtocolVersion) supported_versions = sizeof(ECC_CURVES) ?
+  ({ PROTOCOL_TLS_1_3, PROTOCOL_TLS_1_2 }) : ({ PROTOCOL_TLS_1_2 });
 
 //! Returns a list of possible versions to use, given the version in
 //! the client hello header.
@@ -559,9 +558,10 @@ array(int) get_suites(int(-1..)|void min_keylength,
   // negotiate key exchange via the key_share/pre_shared_key
   // extensions instead of via the suite, so it's not gated behind
   // ke_mode. It's only offered when TLS 1.3 is actually among the
-  // supported versions, so a context that hasn't enabled TLS 1.3
-  // doesn't advertise 1.3-only suite ids it could never select.
-  if (has_value(supported_versions, PROTOCOL_TLS_1_3)) {
+  // supported versions and there are usable key exchange groups, so a
+  // context doesn't advertise 1.3-only suite ids it could never select.
+  if (sizeof(ecc_curves) &&
+      has_value(supported_versions, PROTOCOL_TLS_1_3)) {
     kes[KE_tls13] = 1;
   }
 

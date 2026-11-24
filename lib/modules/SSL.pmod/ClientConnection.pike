@@ -394,8 +394,8 @@ protected Packet client_hello(string(8bit)|void server_name,
     // call).
     int(0..) binder_len = [int(0..)]psk_hash->digest_size();
     int obfuscated_age =
-      (((time(1) - session->tls13_ticket_issue_time) * 1000) +
-       session->tls13_ticket_age_add) & 0xffffffff;
+      [int]((((time(1) - session->tls13_ticket_issue_time) * 1000) +
+             session->tls13_ticket_age_add) & 0xffffffff);
 
     Buffer identities = Buffer();
     identities->add_hstring([string(8bit)]session->ticket, 2);

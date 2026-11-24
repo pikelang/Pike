@@ -1,0 +1,74 @@
+// -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
+#charset utf-8
+#require constant(Crypto.Hash)
+
+// Resolve SSL in fresh processes, before any ECC constants are cached.
+class Mask {
+  protected mixed original;
+  protected multiset(string) hidden;
+
+  protected void create(mixed value, multiset(string) names)
+  {
+    original = value;
+    hidden = names;
+  }
+
+  protected mixed `[](string name)
+  {
+    return hidden[name] ? UNDEFINED : original[name];
+  }
+}
+
+int main(int argc, array(string) argv)
+{
+  if (argc == 1) {
+    foreach (({ "normal", "no-ecc", "legacy-nettle" }), string mode) {
+      object child = Process.spawn_pike(({ __FILE__, mode }),
+                                       ([ "forkd": 0 ]));
+      if (child->wait()) return 1;
+    }
+    Tools.Testsuite.report_result(3, 0);
+    return 0;
+  }
+
+  master()->no_precompile = 1;
+  if (argv[1] == "no-ecc") {
+    add_constant("Crypto", Mask(Crypto, (< "ECC" >)));
+    add_constant("Nettle", Mask(Nettle, (< "ECC_Curve" >)));
+  }
+  else if (argv[1] == "legacy-nettle")
+    add_constant("Nettle", Mask(Nettle,
+                               (< "DH_Params", "dsa_generate_keypair" >)));
+
+  object ssl = master()->resolv("SSL");
+  object crypto = master()->resolv("Crypto");
+  if (!ssl->File || !ssl->ServerConnection || !ssl->ClientConnection ||
+      !master()->resolv("Protocols.HTTP.Query") || !crypto->DH || !crypto->DSA)
+    error("TLS, HTTP or fallback crypto failed to load (%s).\n", argv[1]);
+
+  object context = ssl->Context();
+  object constants = ssl->Constants;
+  int tls13 = constants->PROTOCOL_TLS_1_3;
+  int has_curves = !!sizeof(constants->ECC_CURVES);
+  if (has_value(context->supported_versions, tls13) != has_curves)
+    error("Incorrect default TLS versions (%s).\n", argv[1]);
+
+  // Explicitly enabling 1.3 must not advertise suites without usable groups.
+  context->ecc_curves = ({});
+  context->supported_versions = ({ constants->PROTOCOL_TLS_1_2, tls13 });
+  foreach (context->get_suites(), int suite)
+    if (constants->CIPHER_SUITES[suite][0] == constants->KE_tls13)
+      error("TLS 1.3 suite offered without key exchange groups.\n");
+
+  if (argv[1] == "no-ecc") {
+    if (has_curves || !catch {
+        ssl->Cipher->generate_key_share(context, constants->GROUP_secp256r1);
+      })
+      error("Key generation accepted an unavailable curve.\n");
+    if (ssl->Cipher->compute_key_share_secret(constants->GROUP_secp256r1,
+                                            Gmp.mpz(1), ""))
+      error("Key agreement accepted an unavailable curve.\n");
+  }
+  write("%s: TLS and HTTP loaded; suite selection passed.\n", argv[1]);
+  return 0;
+}
