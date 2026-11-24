@@ -3551,6 +3551,31 @@ static struct pike_type *matching_or_tail(struct pike_type *input,
   return tail;
 }
 
+#ifdef PIKE_DEBUG
+/* Verify the unchanged interior independently of the checked boundary. */
+static void check_integer_or_tail(struct pike_type *tail)
+{
+  int on_stack = 0, count;
+  type_stack_mark();
+  while (tail) {
+    struct pike_type *item = tail, *next = NULL;
+    struct pike_type **before = Pike_compiler->type_stackp;
+    if (tail->type == T_OR) {
+      item = tail->car;
+      next = tail->cdr;
+    }
+    lower_or_pike_types(item, NULL, 0, on_stack);
+    if (Pike_compiler->type_stackp != before + 1 ||
+        *Pike_compiler->type_stackp != item)
+      Pike_fatal("Unnormalized shared integer union tail.\n");
+    tail = next;
+    on_stack = 1;
+  }
+  count = pop_stack_mark();
+  while (count--) free_type(low_pop_type());
+}
+#endif
+
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
 			      int zero_implied)
@@ -3672,6 +3697,22 @@ static void low_or_pike_types(struct pike_type *t1,
           next = rest->cdr;
         }
         lower_or_pike_types(item, NULL, zero_implied, on_stack);
+        if (!zero_implied && next && item->type == T_INT &&
+            (rest->flags & PT_FLAG_INT_COMPAT) &&
+            Pike_compiler->type_stackp == before + 1 &&
+            *Pike_compiler->type_stackp == item) {
+          /* The boundary appended unchanged. This integer-compatible
+           * suffix was already normalized, so retain it without pushing
+           * and releasing all its members. Zero/mask changes need the walk.
+           */
+#ifdef PIKE_DEBUG
+          check_integer_or_tail(rest);
+#endif
+          free_type(low_pop_type());
+          push_finished_type(rest);
+          on_stack = pop_stack_mark();
+          goto join_union_tail;
+        }
         if (*Pike_compiler->type_stackp == item) {
           if (matched && Pike_compiler->type_stackp == before + 1) {
             matched++;
@@ -3720,6 +3761,7 @@ static void low_or_pike_types(struct pike_type *t1,
         on_stack -= matched - 1;
       }
     }
+  join_union_tail:
     while (on_stack > 1) {
       push_reverse_joiner_type(T_OR);
       on_stack--;

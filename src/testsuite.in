@@ -14102,6 +14102,111 @@ return 0;
 // - __automap__
 // - __empty_program
 // - __null_program
+// Integer union suffixes keep disjoint, adjacent and overlapping ranges.
+test_any([[
+  array descriptions = ({
+    ({ "int(-12)|int(-8)|int(-4)|int(4)|int(8)|int(12)",
+       ({ ({-12,-12}), ({-8,-8}), ({-4,-4}), ({4,4}), ({8,8}), ({12,12}) }) }),
+    ({ "int(-9..-7)|int(-1..1)|int(7..9)",
+       ({ ({-9,-7}), ({-1,1}), ({7,9}) }) }),
+    ({ "int(-20..-10)|int(10..20)", ({ ({-20,-10}), ({10,20}) }) }),
+    ({ "int(-5..5)", ({ ({-5,5}) }) }),
+    ({ "int(-10..10)", ({ ({-10,10}) }) }),
+    ({ "int(-20..20)", ({ ({-20,20}) }) }),
+    ({ "int(0)|int(4)|int(8)|int(12)",
+       ({ ({0,0}), ({4,4}), ({8,8}), ({12,12}) }) }),
+    ({ "int(1)|int(3)|int(5)|int(7)",
+       ({ ({1,1}), ({3,3}), ({5,5}), ({7,7}) }) })
+  });
+  array types = ({});
+  foreach (descriptions, array entry)
+    types += ({ compile_string("mixed value() { return typeof([" + entry[0] +
+                              "](mixed)0); }")()->value() });
+  for (int i = 0; i < sizeof(types); i++)
+    for (int j = 0; j < sizeof(types); j++) {
+      mixed result = types[i] | types[j];
+      if (result != (types[j] | types[i])) return 0;
+      for (int n = -22; n <= 22; n++) {
+        int expected;
+        foreach (descriptions[i][1] + descriptions[j][1], array bounds)
+          expected |= bounds[0] <= n && n <= bounds[1];
+        if (!!(result & _typeof(n)) != expected) return 0;
+      }
+    }
+  return 1;
+]], 1)
+
+// Integer-compatible and mixed suffixes preserve canonical grouping.
+test_any([[
+  mixed a = typeof([int(-12)|int(-8)|int(-4)|int(4)|int(8)|int(12)](mixed)0);
+  mixed b = typeof([int(0)|int(4)|int(8)|int(12)](mixed)0);
+  foreach (({ _typeof(0), typeof([int|void](mixed)0),
+              typeof([string](mixed)0), typeof([float](mixed)0),
+              typeof([__attribute__("deprecated",int(2))](mixed)0) }),
+           mixed extra) {
+    mixed left = a | extra, right = b | extra;
+    mixed result = left | right;
+    if (result != (right | left) || result != ((a | b) | extra)) return 0;
+  }
+  return 1;
+]], 1)
+
+// A directly shared suffix survives release of its input and GC.
+test_any([[
+  array values = enumerate(128, 3, -192);
+  mixed tail = _typeof(values[0]);
+  foreach (values[1..], int n) tail |= _typeof(n);
+  array weak = set_weak_flag(({ tail }), 1);
+  mixed result = _typeof(-500) | tail;
+  mixed independent = _typeof(-500);
+  foreach (reverse(values), int n) independent |= _typeof(n);
+  tail = 0;
+  gc();
+  if (!weak[0] || result != independent) return 0;
+  foreach (({ -501,-500,-499,-193,-192,-191,188,189,190,191 }), int n)
+    if (!!(result & _typeof(n)) != (n == -500 || has_value(values,n)))
+      return 0;
+  return 1;
+]], 1)
+
+// Integer suffix boundaries handle the limits of interval representation.
+test_any([[
+  array values = ({ -2147483648, -2147483646, -2147483644,
+                    2147483643, 2147483645, 2147483647 });
+  mixed tail = _typeof(values[0]);
+  foreach (values[1..], int n) tail |= _typeof(n);
+  foreach (({ -2147483647, 2147483644, 2147483646 }), int n) {
+    mixed result = tail | _typeof(n);
+    if (result != (_typeof(n) | tail)) return 0;
+    foreach (values + ({ -2147483647, -2147483645,
+                         2147483644, 2147483646 }), int v)
+      if (!!(result & _typeof(v)) != (v == n || has_value(values,v)))
+        return 0;
+  }
+  return 1;
+]], 1)
+
+// Nested string and array unions retain their normalization rules.
+test_any([[
+  mixed a = typeof([string(1|5|9)](mixed)0);
+  mixed b = typeof([string(3|7)](mixed)0);
+  mixed expected = typeof([string(1|3|5|7|9)](mixed)0);
+  if ((a | b) != expected) return 0;
+  a = typeof([array(int(1)|int(5)|int(9))](mixed)0);
+  b = typeof([array(int(3)|int(7))](mixed)0);
+  expected = typeof([array(int(1)|int(3)|int(5)|int(7)|int(9))](mixed)0);
+  return (a | b) == expected;
+]], 1)
+
+// Enum mask construction keeps its ordinary normalization path.
+test_any([[
+  object o = compile_string("enum Bits { A=1, B=4, C=16 }; "
+    "Bits identity(Bits n) { return n; } "
+    "Bits combine(Bits a, Bits b) { return a | b; }")();
+  return o->identity(0) == 0 && o->identity(21) == 21 &&
+    o->combine(1, 4) == 5 && o->combine(5, 16) == 21;
+]], 1)
+
 // - __parse_pike_type
 // - __placeholder_object
 // - _describe_program

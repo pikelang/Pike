@@ -1340,6 +1340,10 @@ o Command-line options
 
 o Compiler and runtime performance
 
+  Integer type unions can share an unchanged suffix directly after checking
+  its boundary, avoiding repeated traversal and temporary references. This
+  reduces compilation time for large unions of disjoint integer ranges.
+
   Executable-memory allocation now uses larger chunks and skips free
   lists that cannot satisfy a request. This reduces compilation slowdown
   after many programs have been compiled and freed in a long-running
