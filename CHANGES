@@ -652,6 +652,9 @@ o Cpp
 
 o Compiler
 
+  - Avoid a compiler crash when a constant follows an earlier compilation
+    error, including local, typed and explicitly soft-cast constants.
+
   - Hexadecimal floating-point conversion now uses Pike's bundled double
     converter to avoid incorrect rounding near halfway values and
     subnormal boundaries with older libc versions.

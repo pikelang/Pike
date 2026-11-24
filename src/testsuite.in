@@ -18975,4 +18975,30 @@ test_any_equal([[
 ]], ({ ({ 23, 23, 23 }), ({ 42, 42, 42 }) }))
 
 
+dnl Constant error recovery must also work when eval_low() was skipped.
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    local constant number = 1;
+  }
+]])
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    local constant int number = 1;
+  }
+]])
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    constant number = [int(0..)]1;
+  }
+]])
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    constant array(int) numbers = ({ 1 });
+  }
+]])
+
 END_MARKER
