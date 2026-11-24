@@ -1340,6 +1340,11 @@ o Command-line options
 
 o Compiler and runtime performance
 
+  Arrays of constant strings infer their element type directly from the
+  argument union, avoiding repeated generic type binding. This speeds up
+  compilation of large string tables while preserving custom attribute
+  callbacks.
+
   Integer type unions can share an unchanged suffix directly after checking
   its boundary, avoiding repeated traversal and temporary references. This
   reduces compilation time for large unions of disjoint integer ranges.

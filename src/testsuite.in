@@ -14712,6 +14712,84 @@ test_compile_error(int a=grunk(5);)
 // - add_program_path
 // Tested in lib
 
+dnl The string aggregate shortcut must preserve void promotion and its type.
+test_any_equal([[
+  void none() {}
+  return aggregate("a", none(), "z");
+]], ({ "a", 0, "z" }))
+test_equal([[ typeof(aggregate("a", (void)0, "z")); ]],
+           [[ typeof([array(zero | __attribute__("utf8", string('a'|'z')))](mixed)0); ]])
+
+dnl Splices and automapped aggregate calls use the complete argument sequence.
+test_any_equal([[
+  int trace;
+  array words() { trace++; return ({ "cd", "ef" }); }
+  array expanded = aggregate("ab", @words(), "gh");
+  array mapped = aggregate(({ "ab", "cd" })[*], "ef", "gh");
+  return ({ expanded, mapped, trace });
+]], ({ ({ "ab", "cd", "ef", "gh" }),
+        ({ ({ "ab", "ef", "gh" }), ({ "cd", "ef", "gh" }) }), 1 }))
+
+dnl Mixed character widths preserve the same inferred string alternatives.
+test_eq([[ sprintf("%O", typeof(aggregate("\u01ff", "az", "q"))); ]],
+        "array(string(1: 511) | string(97..122))")
+
+dnl A typed callable still checks its declared argument types.
+test_compile_error([[
+  array run(function(int, int, int:array(int)) build) {
+    return build("ab", "cd", "ef");
+  }
+]])
+
+dnl Overridden attribute handlers retain their rejection and side effects.
+test_any_equal([[
+  class Environment {
+    inherit CompilerEnvironment;
+    int events;
+    void report(int severity, string file, int line, string subsystem,
+                string message, mixed ... extra) {}
+    class PikeCompiler {
+      inherit ::this_program;
+      mixed pop_type_attribute(string attr, mixed a, mixed b, mapping state) {
+        if (attr == "utf8") { events++; return 0; }
+        return ::pop_type_attribute(attr, a, b, state);
+      }
+    }
+  }
+  object env = Environment();
+  mixed failure = catch {
+    env->compile("array f() { return ({\"ab\",\"cd\",\"ef\"}); }");
+  };
+  return ({ !!failure, env->events > 0 });
+]], ({ 1, 1 }))
+
+dnl Ordinary literals, empty strings and dynamic callees preserve values.
+test_any_equal([[
+  array f(function build) { return build("ab", "cd", "ef"); }
+  int events;
+  array local_build(mixed ... args) { events++; return args; }
+  return ({ aggregate("", "ab", "az"),
+            f(aggregate), f(local_build), events });
+]], ({ ({ "", "ab", "az" }), ({ "ab", "cd", "ef" }),
+        ({ "ab", "cd", "ef" }), 1 }))
+
+test_any([[
+  class Environment {
+    inherit CompilerEnvironment;
+    int events;
+    class PikeCompiler {
+      inherit ::this_program;
+      mixed pop_type_attribute(string attr, mixed a, mixed b, mapping state) {
+        if (attr == "utf8") events++;
+        return ::pop_type_attribute(attr, a, b, state);
+      }
+    }
+  }
+  object env = Environment();
+  program p = env->compile("array f() { return ({\"ab\",\"cd\",\"ef\"}); }");
+  return env->events > 0 && equal(p()->f(), ({ "ab", "cd", "ef" }));
+]], 1)
+
 // - aggregate
 test_equal(aggregate(),({}))
 test_equal(aggregate(1,2,3,4),({1,2,3,4}))
