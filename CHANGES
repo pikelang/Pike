@@ -2005,6 +2005,11 @@ o Updated the language grammar, Autodoc and testsuite chapters.
 Building and installing
 -----------------------
 
+o Configure now checks the POSIX version advertised by the system headers
+  before selecting a feature level. This avoids unsupported XPG8 settings
+  on Solaris, which selected the legacy socket API and silently discarded
+  transferred file descriptors, leaving forkd requests waiting for an ACK.
+
 o GMP 4.1 or later is now required.
 
 o Nettle 3.5 and 4.0 are now supported.
