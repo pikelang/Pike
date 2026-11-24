@@ -696,61 +696,52 @@ static void do_close_fd_info(int *fd_info)
 /* Restore THIS->fd_info that was removed during the call to writev_fds(). */
 static void restore_fd_info(int *fd_info)
 {
-  int *other_fd_info;
-  if ((other_fd_info = THIS->fd_info)) {
-    /* Someone added fds to send when we weren't looking... */
-    int i, j, cnt;
-    int num_fds = fd_info[1] + other_fd_info[1] + 2;
+  int *other_fd_info = THIS->fd_info;
+  if (other_fd_info) {
+    int old_count = fd_info[1];
+    int new_count = other_fd_info[1];
+    int total = old_count + new_count;
 
 #ifdef PIKE_DEBUG
-    if (other_fd_info == fd_info) {
+    if (other_fd_info == fd_info)
       Pike_fatal("restore_fd_info: Double restore!\n");
-    }
 #endif
 
-    if (num_fds <= fd_info[0]) {
-      cnt = other_fd_info[1] + 2;
-      for (i = 2; i < cnt; i++) {
-	fd_info[fd_info[1] + i] = other_fd_info[i];
-      }
-      fd_info[1] += cnt-2;
+    if (total + 2 <= fd_info[0]) {
+      memcpy(fd_info + 2 + old_count, other_fd_info + 2,
+             new_count * sizeof(int));
       free(other_fd_info);
-    } else if (num_fds <= other_fd_info[0]) {
-      /* Move the other fds so that we can prepend the old ones. */
-      cnt = fd_info[1] + 2;
-      for(i = other_fd_info[1] + 1, j = num_fds-1; j >= cnt; i--, j--) {
-	other_fd_info[j] = other_fd_info[i];
-      }
-      for(i = 2; i < cnt; i++) {
-	other_fd_info[i] = fd_info[i];
-      }
-      other_fd_info[1] = num_fds;
+    } else if (total + 2 <= other_fd_info[0]) {
+      memmove(other_fd_info + 2 + old_count, other_fd_info + 2,
+              new_count * sizeof(int));
+      memcpy(other_fd_info + 2, fd_info + 2, old_count * sizeof(int));
       free(fd_info);
       fd_info = other_fd_info;
     } else {
-      int *new_fd_info = calloc(num_fds, sizeof(int));
-      if (!new_fd_info) {
-	/* FIXME: Huston, we have a problem... */
-	Pike_fatal("Out of memory in send_fd().\n");
-      } else {
-	new_fd_info[0] = num_fds;
-	new_fd_info[1] = num_fds - 2;
-	cnt = fd_info[1] + 2;
-	for (i = 2; i < cnt; i++) {
-	  new_fd_info[i] = fd_info[i];
-	}
-	free(fd_info);
-	fd_info = new_fd_info;
-	new_fd_info += i;
-	cnt = other_fd_info[1] + 2;
-	for (i = 2; i < cnt; i++) {
-	  new_fd_info[i] = other_fd_info[i];
-	}
-	free(other_fd_info);
-      }
+      int *merged = malloc((total + 2) * sizeof(int));
+      if (!merged) Pike_fatal("Out of memory in send_fd().\n");
+      merged[0] = total + 2;
+      memcpy(merged + 2, fd_info + 2, old_count * sizeof(int));
+      memcpy(merged + 2 + old_count, other_fd_info + 2,
+             new_count * sizeof(int));
+      free(fd_info);
+      free(other_fd_info);
+      fd_info = merged;
     }
+    fd_info[1] = total;
   }
   THIS->fd_info = fd_info;
+}
+
+/* A blocked send owns a detached queue. Do not overwrite descriptors
+ * queued by another thread while the interpreter lock was released.
+ * Reattach before interrupt checks, which can throw or perform more I/O.
+ */
+static void finish_fd_info(int *fd_info, ptrdiff_t written)
+{
+  if (written > 0 || FD < 0) do_close_fd_info(fd_info);
+  if (FD < 0) free(fd_info);
+  else restore_fd_info(fd_info);
 }
 #endif
 
@@ -1278,6 +1269,9 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
   /* XPG 4.2 */
   message.msg.msg_flags = 0;
+  message.msg.msg_controllen = 0;
+#else
+  message.msg.msg_accrightslen = 0;
 #endif
 
   SET_ONERROR(ebuf, buffer_free, &buf);
@@ -1311,7 +1305,8 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
       message.iov.iov_len = len;
 
       bytes_read = recvmsg(fd, &message.msg, 0);
-      e=errno;
+      e = bytes_read < 0 ? errno : 0;
+      errno = e;
 
       if (LIKELY(bytes_read >= 0)) {
         /* if less than len were read, rewind the buffer to
@@ -1371,7 +1366,7 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
 #endif
         )) {
       check_message(&message.msg);
-      if (bytes_read && !(mode & PIKE_READ_ONCE)) continue;
+      if (count && bytes_read && !(mode & PIKE_READ_ONCE)) continue;
     }
     break;
   }
@@ -1381,9 +1376,8 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
+  *errnop = e;
   if (e) {
-    *errnop = e;
-
     if (!buffer_content_length(&buf)) {
       CALL_AND_UNSET_ONERROR(ebuf);
       return NULL;
@@ -2499,6 +2493,10 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 
     THREADS_DISALLOW();
 
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) finish_fd_info(fd_info, i);
+#endif
+
     /* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
        fd, (unsigned int)iov, cnt, i); */
 
@@ -2509,11 +2507,6 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 
     if(i<0)
     {
-#ifdef HAVE_PIKE_SEND_FD
-      if (fd_info) {
-        restore_fd_info(fd_info);
-      }
-#endif
       switch(e)
       {
       default: break;
@@ -2526,15 +2519,6 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
       break;
     }else{
       written += i;
-
-#ifdef HAVE_PIKE_SEND_FD
-      if (fd_info) {
-        file->fd_info = fd_info;
-        if (i) {
-          do_close_fd_info(file->fd_info = fd_info);
-        }
-      }
-#endif
 
       /* Avoid extra writev() */
       if(THIS->open_mode & FILE_NONBLOCKING)
@@ -2612,13 +2596,12 @@ static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
       i=fd_write(fd, start, len - written);
     if (i < 0 ) e = errno;
 
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) finish_fd_info(fd_info, i);
+#endif
+
     if(i<0)
     {
-#ifdef HAVE_PIKE_SEND_FD
-      if (fd_info) {
-	restore_fd_info(fd_info);
-      }
-#endif
       switch(e)
       {
       default: break;
@@ -2632,11 +2615,6 @@ static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
     }else{
       written+=i;
 
-#ifdef HAVE_PIKE_SEND_FD
-      if (i && fd_info) {
-	do_close_fd_info(file->fd_info = fd_info);
-      }
-#endif
       /* Avoid extra write() */
       if(file->open_mode & FILE_NONBLOCKING)
 	break;
@@ -2703,6 +2681,10 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
     if (i < 0) e = errno;
     THREADS_DISALLOW();
 
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) finish_fd_info(fd_info, i);
+#endif
+
     /* NB: This is needed in case check_threads_etc() below
      *     triggers some function that performs I/O.
      */
@@ -2710,11 +2692,6 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
 
     if(i<0)
     {
-#ifdef HAVE_PIKE_SEND_FD
-      if (fd_info) {
-	restore_fd_info(fd_info);
-      }
-#endif
       switch(e)
       {
       default: break;
@@ -2728,11 +2705,6 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
     }else{
       written+=i;
 
-#ifdef HAVE_PIKE_SEND_FD
-      if (i && fd_info) {
-	do_close_fd_info(file->fd_info = fd_info);
-      }
-#endif
       /* Avoid extra write() */
       if(file->open_mode & FILE_NONBLOCKING)
 	break;

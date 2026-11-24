@@ -409,20 +409,32 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 
   AC_DEFINE(POSIX_SOURCE, 1)
 
+  AC_CHECK_HEADERS(unistd.h)
   AC_MSG_CHECKING(for level of POSIX to support)
-  AC_CACHE_VAL(pike_cv_posix_c_source, [
+  dnl Use a new cache key: older probes accepted unsupported feature levels.
+  AC_CACHE_VAL(pike_cv_supported_posix_c_source, [
     ORIG_CPPFLAGS="$CPPFLAGS"
-    # NB: Older Solaris fails on attempts to enable newer POSIX
-    #     than supported.
-    for pike_cv_posix_c_source in 202405L 200809L 200112L 199506L 199309L 2 1; do
-      CPPFLAGS="$ORIG_CPPFLAGS -D_POSIX_C_SOURCE=$pike_cv_posix_c_source"
+    # Some headers accept unknown levels but select an older API instead.
+    # Solaris then silently loses descriptors through its legacy socket API.
+    for pike_cv_supported_posix_c_source in \
+        202405L 200809L 200112L 199506L 199309L 2 1; do
+      pike_posix_define="-D_POSIX_C_SOURCE=$pike_cv_supported_posix_c_source"
+      CPPFLAGS="$ORIG_CPPFLAGS $pike_posix_define"
       AC_TRY_CPP([
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#if defined(_POSIX_VERSION) && \
+    _POSIX_VERSION < $pike_cv_supported_posix_c_source
+#error Requested POSIX level is newer than the system headers support.
+#endif
+#endif
       ],break;)
     done
     CPPFLAGS="$ORIG_CPPFLAGS"
   ])
+  pike_cv_posix_c_source=$pike_cv_supported_posix_c_source
   AC_MSG_RESULT($pike_cv_posix_c_source)
   AC_DEFINE_UNQUOTED(_POSIX_C_SOURCE, $pike_cv_posix_c_source)
 

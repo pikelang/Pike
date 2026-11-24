@@ -66,6 +66,184 @@ class RemoteProcess
   }
 }
 
+class NotificationChild {
+  inherit Process.Process;
+  protected void create() {}
+  int pid() { return 1234; }
+  int status() { return 2; }
+  int last_signal() { return 0; }
+  int wait() { return 37; }
+}
+
+class NotificationStream {
+  inherit Tools.Standalone.forkd.ForkStream;
+  array packets = ({});
+  int interrupted;
+  protected void send_packet(string tag, mixed value) {
+    packets += ({ ({ tag, value }) });
+    if (tag == "PID" && !interrupted) {
+      interrupted = 1;
+      // Simulate a SIGCHLD callback during PID packet creation.
+      got_callback(pid);
+    }
+  }
+  void begin() { pid = NotificationChild(); send_pid(); got_callback(pid); }
+  void again() { got_callback(pid); }
+}
+
+class TestProcessModule {
+  inherit Process;
+  int die_before_ack;
+  int reject_handoff;
+  array test_daemons = ({});
+  Stdio.File control_peer;
+  protected int assert_forkd() {
+    if (!die_before_ack && !reject_handoff) return ::assert_forkd();
+    die_before_ack = 0;
+    forkd_pipe = Stdio.File();
+    control_peer = forkd_pipe->pipe(Stdio.PROP_BIDIRECTIONAL|
+                                    Stdio.PROP_SEND_FD);
+    // A live control peer but no reader for the submitted request descriptor.
+    mapping options = ([ "forkd": 0 ]);
+    if (!reject_handoff) options->fds = ({ control_peer });
+    forkd_pid = spawn_pike(({ "-e", "sleep(.2);" }), options);
+    test_daemons += ({ forkd_pid });
+    if (reject_handoff) {
+      reject_handoff = 0;
+      control_peer->close();
+    }
+    return 1;
+  }
+  void cleanup() {
+    if (control_peer) control_peer->close();
+    if (forkd_pid) { forkd_pid->kill(9); forkd_pid->wait(); }
+    foreach (test_daemons, object daemon) { daemon->kill(9); daemon->wait(); }
+  }
+}
+
+void check_notifications()
+{
+  object stream = NotificationStream();
+  stream->begin();
+  if (!equal(stream->packets, ({ ({ "PID", 1234 }) })))
+    error("A native status report ran synchronously.\n");
+  Pike.DefaultBackend(0.0);
+  array expected = ({ ({ "PID", 1234 }), ({ "SIGNAL", 0 }), ({ "EXIT", 37 }) });
+  if (!equal(stream->packets, expected)) error("Invalid PID/EXIT ordering.\n");
+  stream->again(); Pike.DefaultBackend(0.0);
+  if (!equal(stream->packets, expected)) error("Duplicate terminal report.\n");
+}
+
+class ReentrantModule {
+  inherit TestProcessModule;
+  int first = 1;
+  int nested_result;
+  protected int assert_forkd() {
+    if (first) {
+      first = 0;
+      // Simulate a native callback while the startup lock is held.
+      nested_result = Process(({ "/bin/sh", "-c", "exit 11" }),
+                              ([ "forkd": 1 ]))->wait();
+    }
+    return ::assert_forkd();
+  }
+}
+
+void check_reentrant()
+{
+  object module = ReentrantModule();
+  object child = module->Process(({ "/bin/sh", "-c", "exit 3" }),
+                                  ([ "forkd": 1 ]));
+  int result = child->wait();
+  module->cleanup();
+  if (result != 3 || module->nested_result != 11)
+    error("Reentrant forkd startup failed.\n");
+}
+
+void check_failed_submit()
+{
+  object module = TestProcessModule();
+  module->reject_handoff = 1;
+  mixed err = catch {
+    module->Process(({ "/bin/sh", "-c", "exit 0" }), ([ "forkd": 1 ]));
+  };
+  if (!err || !has_prefix(err[0], "Failed to submit forkd spawn request"))
+    error("Broken control channel was not rejected: %O\n", err);
+  object child = module->Process(({ "/bin/sh", "-c", "exit 7" }),
+                                  ([ "forkd": 1 ]));
+  int result = child->wait();
+  module->cleanup();
+  if (result != 7) error("Forkd did not recover after a failed submission.\n");
+}
+
+void check_ack_death()
+{
+  object module = TestProcessModule();
+  module->die_before_ack = 1;
+  mixed err = catch {
+    module->Process(({ "/bin/sh", "-c", "exit 0" }), ([ "forkd": 1 ]));
+  };
+  if (!err || !has_prefix(err[0], "Failed to create spawn request."))
+    error("Unexpected result after daemon death before ACK: %O\n", err);
+  object child = module->Process(({ "/bin/sh", "-c", "exit 7" }),
+                                  ([ "forkd": 1 ]));
+  int result = child->wait();
+  module->cleanup();
+  if (result != 7) error("Forkd did not recover after failed ACK.\n");
+}
+
+#if constant(Thread.Thread)
+void run_job(object module, int id)
+{
+  int expected = id % 64;
+  string payload = sprintf("job%d:", id) + "x" * (id % 257);
+  Stdio.File input = Stdio.File();
+  Stdio.File output = input->pipe();
+  Stdio.File null = Stdio.File("/dev/null", "rw");
+  object child = module->Process(
+    ({ "/bin/sh", "-c", "printf '%s' \"$1\"; exit \"$2\"",
+       "forkd-test", payload, (string)expected }),
+    ([ "forkd": 1, "stdin": null, "stdout": output, "stderr": null,
+       "callback": lambda(object process) {
+         if (process->status() == 2 && process->wait() != expected)
+           error("Incorrect forkd callback result for job %d.\n", id);
+       } ]));
+  output->close();
+  if (input->read() != payload || child->wait() != expected ||
+      child->wait() != expected || child->status() != 2)
+    error("Incorrect forkd output or result for job %d.\n", id);
+  input->close(); null->close();
+}
+
+void check_concurrent()
+{
+  object module = TestProcessModule();
+  Thread.Queue ready = Thread.Queue(), go = Thread.Queue();
+  Thread.Queue errors = Thread.Queue();
+  int done;
+  object backend = Thread.Thread(lambda() {
+    mixed err = catch { while (!done) Pike.DefaultBackend(0.005); };
+    if (err) errors->write(err);
+  });
+  array workers = ({});
+  for (int w = 0; w < 4; w++) {
+    workers += ({ Thread.Thread(lambda(int worker) {
+      ready->write(1); go->read();
+      mixed err = catch {
+        for (int i = 0; i < 12; i++) run_job(module, worker * 12 + i);
+      };
+      if (err) errors->write(err);
+    }, w) });
+  }
+  for (int i = 0; i < 4; i++) ready->read();
+  for (int i = 0; i < 4; i++) go->write(1);
+  foreach (workers, object worker) worker->wait();
+  done = 1; backend->wait(); module->cleanup();
+  if (sizeof(errors)) throw(errors->read());
+}
+#endif
+
+
 int main()
 {
   int checks;
@@ -118,7 +296,15 @@ int main()
   if (process->poll_loop_once() || process->wait() != 255)
     error("Polling rescheduled itself after EOF.\n");
   destruct(process);
-  write("%d forkd channel-closure scenarios passed.\n", checks + 2);
+  check_notifications();
+  check_reentrant();
+  check_failed_submit();
+  check_ack_death();
+#if constant(Thread.Thread)
+  check_concurrent();
+#endif
+  write("%d forkd channel-closure scenarios and process regressions passed.\n",
+        checks + 2);
   return 0;
 }
 #else

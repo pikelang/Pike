@@ -37,8 +37,13 @@ class ForkStream
     fds += ({ fd });
   }
 
+  protected int closed;
+  protected int status_pending;
+
   void do_close(mixed|void ignored)
   {
+    closed = 1;
+    remove_call_out(report_status);
     recv_buf = send_buf = "";
     set_blocking();
     close();
@@ -87,9 +92,19 @@ class ForkStream
 
   protected void got_callback(Process.Process pid)
   {
-    // Note: This function is called from what amounts to a signal
-    //       context, and may thus trigger race-conditions.
+    // Native process callbacks can interrupt packet encoding or writes.
+    // Report the latest status from the backend, where buffer updates and
+    // PID/EXIT ordering cannot be interrupted by another status report.
+    if (!closed && !status_pending) {
+      status_pending = 1;
+      call_out(report_status, 0, pid);
+    }
+  }
 
+  protected void report_status(Process.Process pid)
+  {
+    status_pending = 0;
+    if (closed || state == 2) return;
     send_pid();	// Make sure that the PID is sent first of all.
     int status = pid->status();
     send_packet("SIGNAL", pid->last_signal());

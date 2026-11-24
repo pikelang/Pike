@@ -19140,4 +19140,22 @@ test_compile_error([[
   class Bad { @this: int value; }
 ]])
 
+dnl Local constant class values must retain the runtime parent.
+test_any_equal([[
+  return compile_string(#"
+    class Outer(int value) {
+      class Child { int read() { return value; } }
+      array run() {
+        constant types = ({ Child });
+        constant by_name = ([ \"child\": Child ]);
+        constant constructor = Child;
+        return ({ types[0]()->read(), by_name->child()->read(),
+                  constructor()->read() });
+      }
+    }
+    array run() { return ({ Outer(23)->run(), Outer(42)->run() }); }
+  ")()->run();
+]], ({ ({ 23, 23, 23 }), ({ 42, 42, 42 }) }))
+
+
 END_MARKER

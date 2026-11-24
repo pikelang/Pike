@@ -15,6 +15,8 @@ constant path_separator = ":";
 #if constant(Stdio.__HAVE_SEND_FD__)
 protected Stdio.File forkd_pipe;
 protected create_process forkd_pid;
+// Startup and the send_fd()/write() handoff share one control channel.
+protected Thread.Mutex forkd_mutex = Thread.Mutex();
 
 //! Encoder for data to be sent to @[Tools.Standalone.forkd].
 //!
@@ -69,6 +71,26 @@ protected int assert_forkd()
     }
   }
   return forkd_pid && forkd_pid->kill(0);
+}
+
+// Keeping the peer alive avoids losing a channel while its descriptor is
+// in transit. Poll the specific daemon too: our peer would otherwise mask
+// EOF if that daemon dies before acknowledging the channel.
+protected int wait_forkd_ack(Stdio.File channel, create_process daemon)
+{
+  string acknowledgement = "";
+  while (sizeof(acknowledgement) < 4) {
+    int ready = channel->peek(0.1);
+    if (ready < 0) return 0;
+    if (!ready) {
+      if (!daemon->kill(0)) return 0;
+      continue;
+    }
+    string data = channel->read(4 - sizeof(acknowledgement), 1);
+    if (!data || !sizeof(data)) return 0;
+    acknowledgement += data;
+  }
+  return acknowledgement == "\0\0\0\0";
 }
 #endif
 
@@ -181,12 +203,32 @@ class Process
     // Forkd mode requires send_fd().
     if (undefinedp(new_modifiers->forkd))
       new_modifiers->forkd = forkd_default;
+    mixed forkd_key;
+    if (new_modifiers->forkd) {
+      forkd_key = forkd_mutex->lock(2);
+      // A native process callback can reenter during daemon startup.
+      // Until the daemon is usable, use the ordinary native spawn path.
+      if (!forkd_key && (!forkd_pid || !forkd_pid->kill(0)))
+        new_modifiers->forkd = 0;
+    }
     if (new_modifiers->forkd && assert_forkd()) {
+      create_process request_daemon = forkd_pid;
       process_fd = Stdio.File();
-      forkd_pipe->
-	send_fd(process_fd->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_SEND_FD));
-      while (forkd_pipe->write("\0") < 0)
-	;
+      // Keep an ordinary reference until the receiver confirms ownership.
+      Stdio.File request_peer =
+        process_fd->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_SEND_FD);
+      forkd_pipe->send_fd(request_peer);
+      if (forkd_pipe->write("\0") != 1) {
+        int err = forkd_pipe->errno();
+        process_fd->close();
+        process_fd = UNDEFINED;
+        forkd_pipe->close();
+        forkd_pid = UNDEFINED;
+        error("Failed to submit forkd spawn request (errno: %d).\n", err);
+      }
+      // Per-request encoding and waits must not hold the shared lock:
+      // a user callback can start another process.
+      forkd_key = 0;
 
       m_delete(new_modifiers, "forkd");
       __callback = m_delete(new_modifiers, "callback");
@@ -224,11 +266,12 @@ class Process
 				 ForkdEncoder(process_fd));
       data = sprintf("%4c%s", sizeof(data), data);
       // Wait for forkd to acknowledge the process_fd.
-      if (process_fd->read(4) != "\0\0\0\0") {
+      if (!wait_forkd_ack(process_fd, request_daemon)) {
 	process_fd->close();
 	process_fd = UNDEFINED;
 	error("Failed to create spawn request.\n");
       }
+      request_peer->close();
       int bytes = process_fd->write(data);
       if (bytes != sizeof(data)) {
 	int fd_errno = process_fd->errno();
@@ -252,6 +295,9 @@ class Process
     } else
 #endif
     {
+#if constant(Stdio.__HAVE_SEND_FD__)
+      forkd_key = 0;
+#endif
       ::create( [array(string)]command_args, new_modifiers );
     }
 

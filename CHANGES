@@ -114,6 +114,8 @@ Building and installing
 Issues fixed
 ------------
 
+GitLab (Lysator) pikelang/pike:
+
   #10103: Support rest variables in multi-assignment.
   #10110: Support multi-assignment from mappings.
   #10169: Correct function argument patterns containing defaults.
