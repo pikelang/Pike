@@ -658,6 +658,15 @@ o Compiler
   - Avoid a compiler crash when a constant follows an earlier compilation
     error, including local, typed and explicitly soft-cast constants.
 
+  - Class self-references, sibling classes and qualified class values now
+    resolve to lexical programs in annotations and import expressions.
+    this_program also works in explicit constant expressions. Local
+    constructor constants retain their runtime parent bindings, avoiding
+    "Parent lost, cannot clone program" errors when cloning nested classes.
+
+  - Folding a constant logical AND preserves the left operand when it
+    short-circuits, even if the operand types are disjoint.
+
   - Hexadecimal floating-point conversion now uses Pike's bundled double
     converter to avoid incorrect rounding near halfway values and
     subnormal boundaries with older libc versions.
@@ -811,6 +820,12 @@ o GTK2
   Support GTK2.8 and earlier again.
 
   RcStyle()->set_ythickness() now accepts its integer argument correctly.
+
+  Fixed list and tree insertion after a sibling, text iterator comparison,
+  and the AboutDialog documenters setter. GTK2.Image.get_animation() now
+  returns zero when no animation is present. GDK2.Region.intersect() now
+  computes the intersection, and Pango.TabArray.get_tabs() returns all
+  entries.
 
 o Pike.Backend
 
@@ -2014,16 +2029,30 @@ o Lots of broken cross-references have been fixed.
 
 o Some documentation has been regenerated and updated.
 
+  Native module declarations and documentation now describe nullable
+  results and argument/return types more accurately, including GTK2, GI,
+  Cairo, Nettle, Gmp, SQL drivers, regular expressions and XML/HTML parsers.
+
+  SDL.Event.poll() is documented as checking for a pending event.
+  SDL.Event.get() removes the next event, if any, and stores it in the object.
+
 o Updated the language grammar, Autodoc and testsuite chapters.
 
 
 Building and installing
 -----------------------
 
-o Configure now checks the POSIX version advertised by the system headers
-  before selecting a feature level. This avoids unsupported XPG8 settings
-  on Solaris, which selected the legacy socket API and silently discarded
-  transferred file descriptors, leaving forkd requests waiting for an ACK.
+o Configure now checks the POSIX level supported by the system headers,
+  preferring the header visibility level where available, as on FreeBSD.
+  This avoids unsupported XPG8 settings on Solaris, which selected the
+  legacy socket API and silently discarded transferred file descriptors,
+  leaving forkd requests waiting for an ACK.
+
+o Descriptor passing builds on older Solaris systems whose socket headers
+  provide CMSG_DATA but lack CMSG_LEN.
+
+o Windows binary installer packaging calculates the payload offset from the
+  executable and replaces the output only after successful assembly.
 
 o GMP 4.1 or later is now required.
 
@@ -2084,6 +2113,7 @@ GitLab (Lysator) pikelang/pike:
   #3658: Protocols.HTTP.get_url_nice doesnt follow 302 - header parser bug.
   #3681: ? : and precedence.
   #3917: Fix thread handling on FreeBSD 5.x.
+  #3960: Clarify SDL event polling and retrieval.
   #4312: Stdio.Port: Implementation and documentation differ.
   #4826: New tds module does not handle bindings.
   #4897: Overzealous compile time type check.
