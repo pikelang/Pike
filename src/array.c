@@ -2405,8 +2405,14 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
 
   a=allocate_array_no_init(args,0);
   if (args) {
-    memcpy(ITEM(a),Pike_sp-args,args*sizeof(struct svalue));
-    array_fix_type_field (a);
+    if (args == 1 && !(BITOF(Pike_sp[-1]) & (BIT_OBJECT | BIT_FUNCTION))) {
+      ITEM(a)[0] = Pike_sp[-1];
+      check_svalue(ITEM(a));
+      a->type_field = BITOF(ITEM(a)[0]);
+    } else {
+      memcpy(ITEM(a),Pike_sp-args,args*sizeof(struct svalue));
+      array_fix_type_field(a);
+    }
     Pike_sp-=args;
     DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));
   }
