@@ -3965,6 +3965,67 @@ static struct pike_string *get_name_of_function(node *n)
   return name;
 }
 
+static int aggregate_string_type(struct pike_type *t)
+{
+  return t && (t->type == T_STRING ||
+               (t->type == PIKE_T_ATTRIBUTE &&
+                (struct pike_string *)t->car == MK_STRING("utf8") &&
+                t->cdr && t->cdr->type == T_STRING));
+}
+
+/* Check the leaves too: a union can hide void or attributed arguments
+ * that the ordinary checker needs to diagnose. Walk the cons tail.
+ */
+static int aggregate_string_constants(node *args)
+{
+  for (; args; args = CDR(args)) {
+    node *arg;
+    if (args->token != F_ARG_LIST) return 0;
+    arg = CAR(args);
+    if (!arg || arg->token != F_CONSTANT ||
+        TYPEOF(arg->u.sval) != T_STRING ||
+        !aggregate_string_type(arg->type)) return 0;
+  }
+  return 1;
+}
+
+/* Bypassing the call checker must not suppress overridden attribute
+ * handlers, even for the built-in utf8 attribute on string literals.
+ */
+static int default_type_attribute_handlers(void)
+{
+  int i;
+  for (i = PC_POP_TYPE_ATTRIBUTE_FUN_NUM;
+       i <= PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM; i++) {
+    if (ID_FROM_INT(Pike_fp->current_object->prog,
+                    Pike_fp->context->identifier_level + i) !=
+        ID_FROM_INT(compilation_program, i))
+      return 0;
+  }
+  return 1;
+}
+
+/* Keep this uncommon shortcut out of the general expression checker. */
+static struct pike_type *string_aggregate_type(node *n)
+  ATTRIBUTE((noinline));
+
+static struct pike_type *string_aggregate_type(node *n)
+{
+  if (n->token != F_APPLY || !CAR(n) || CAR(n)->token != F_CONSTANT ||
+      TYPEOF(CAR(n)->u.sval) != T_FUNCTION ||
+      SUBTYPEOF(CAR(n)->u.sval) != FUNCTION_BUILTIN ||
+      CAR(n)->u.sval.u.efun->function != debug_f_aggregate ||
+      CAR(n)->type != CAR(n)->u.sval.u.efun->type ||
+      !default_type_attribute_handlers() ||
+      !aggregate_string_constants(CDR(n)))
+    return NULL;
+
+  type_stack_mark();
+  push_finished_type(CDR(n)->type);
+  push_unlimited_array_type(T_ARRAY);
+  return pop_unfinished_type();
+}
+
 void fix_type_field(node *n)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -4586,6 +4647,7 @@ void fix_type_field(node *n)
       struct pike_type *s;	/* Actual type */
       struct pike_string *name = NULL;
       struct call_state cs;
+      struct pike_type *aggregate_type = NULL;
 #ifdef PIKE_DEBUG
       int save_l_flag = l_flag;
 
@@ -4593,6 +4655,20 @@ void fix_type_field(node *n)
 	l_flag = 3;
       }
 #endif
+
+      /* Constant string aggregates already have an eager element union.
+       * Preserve ordinary checking for voids, custom attributes, splices,
+       * automapping and narrowed or dynamic callables.
+       */
+      if (CDR(n) && CDR(n)->token == F_ARG_LIST && CDDR(n)) {
+        aggregate_type = string_aggregate_type(n);
+#ifndef PIKE_DEBUG
+        if (aggregate_type) {
+          n->type = aggregate_type;
+          break;
+        }
+#endif
+      }
 
       name = get_name_of_function(CAR(n));
 
@@ -4609,6 +4685,10 @@ void fix_type_field(node *n)
       f = debug_malloc_pass(new_check_call(f, CDR(n), &cs, 0));
 
       if (!f) {
+#ifdef PIKE_DEBUG
+        if (aggregate_type)
+          Pike_fatal("String aggregate rejected by call checker.\n");
+#endif
 	/* Errors have been generated. */
 #ifdef PIKE_DEBUG
 	l_flag = save_l_flag;
@@ -4622,6 +4702,14 @@ void fix_type_field(node *n)
       if ((n->type = new_get_return_type(dmalloc_touch(struct pike_type *, f),
 					 &cs, 0))) {
 	/* Type/argument-check OK. */
+#ifdef PIKE_DEBUG
+        if (aggregate_type) {
+          if (aggregate_type != n->type)
+            Pike_fatal("Incorrect aggregate string type: %pT != %pT.\n",
+                       aggregate_type, n->type);
+          free_type(aggregate_type);
+        }
+#endif
 	debug_malloc_touch(n->type);
 
 	free_type(f);
@@ -4645,6 +4733,10 @@ void fix_type_field(node *n)
       }
 
       /* Too few arguments or similar. */
+#ifdef PIKE_DEBUG
+      if (aggregate_type)
+        Pike_fatal("String aggregate has no return type.\n");
+#endif
       copy_pike_type(n->type, mixed_type_string);
 
       if ((s = get_first_arg_type(dmalloc_touch(struct pike_type *, f),
@@ -5580,12 +5672,14 @@ static node *eval(node *n)
       } else if (!pike_types_le(new->type, n->type, 0, 0)) {
 	/* Try consolidating the type information. */
 	struct pike_type *t = soft_cast(n->type, new->type, 0);
-	if (t) {
-	  free_type(new->type);
-	  new->type = t;
-	} else /* if (!SAFE_IS_ZERO(Pike_sp-1)) */ {
-	  new = mksoftcastnode(n->type, new);
-	}
+        /* For &&, the folded result can be the false left operand,
+         * even when the inferred type only describes the right one. */
+        if (t) {
+          free_type(new->type);
+          new->type = t;
+        } else if (n->token != F_LAND) {
+          new = mksoftcastnode(n->type, new);
+        }
       }
     }
     free_node(n);

@@ -1643,7 +1643,13 @@ union pike_hrtime {
 };
 #endif
 
-static void low_thread_yield(int handover);
+#ifdef HAVE_NANOSLEEP
+#define NSUNUSED(x) x
+#else
+#define NSUNUSED(x) UNUSED(x)
+#endif
+
+static void low_thread_yield(int NSUNUSED(handover));
 
 static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *UNUSED(arg2))
 {
@@ -1869,7 +1875,9 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
     return;
 #endif
 
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
   do_yield:;
+#endif
 #ifdef PIKE_DEBUG
   check_threads_yields++;
 #endif
@@ -1914,7 +1922,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
  * without the interpreter_lock_wanted handshake, and nearly never got
  * it in the moment that a yield leaves it free, so it could wait for
  * tens of seconds while this thread ran. */
-static void low_thread_yield(int handover)
+static void low_thread_yield(int NSUNUSED(handover))
 {
   DEBUG_CHECK_THREAD();
 

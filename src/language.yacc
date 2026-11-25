@@ -730,6 +730,11 @@ constant_name: TOK_IDENTIFIER '=' constant_initializer
 	  push_undefined();
 	}
 
+        /* Earlier errors can skip eval_low(), leaving the wrapper untyped.
+         * Use the placeholder value's type while recovering from the error.
+         */
+        if (!$3->type) $3->type = get_type_of_svalue(Pike_sp-1);
+
         if ($<n>0) {
           /* New-style syntax for typed constants. */
           t = $<n>0->u.sval.u.type;

@@ -63,6 +63,7 @@ typedef struct CYCLIC
 
 /* Prototypes begin here */
 void low_unlink_cyclic(CYCLIC *c);
+void *peek_cyclic(char *id, void *thread, void *a, void *b, void *d);
 PMOD_EXPORT void unlink_cyclic(CYCLIC *c);
 void *low_begin_cyclic(CYCLIC *c,
 		       char *id,

@@ -1212,6 +1212,14 @@ static void receive_fds(int *fds, size_t num_fds)
   }
 }
 
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+#if !defined(CMSG_LEN) && defined(_CMSG_DATA_ALIGN)
+/* Older Solaris has CMSG_DATA but no CMSG_LEN. Use the same alignment
+ * rule as CMSG_DATA so the length works for both 32- and 64-bit headers. */
+#define CMSG_LEN(x) (_CMSG_DATA_ALIGN(sizeof(struct cmsghdr)) + (x))
+#endif
+#endif
+
 static void check_message(struct msghdr *msg)
 {
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
