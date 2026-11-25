@@ -1,4 +1,184 @@
 START_MARKER
-cond_begin([[ master()->resolv("_Image_JPEG")->encode ]])
+cond_begin([[ master()->resolv("_Image_JPEG.encode") ]])
+dnl Encoding an image as JPEG in several threads while another replaces
+dnl its memory with _decode() or destructs it should not crash. Without
+dnl the fix it crashes in every run.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond_resolv(Thread.Thread, [[
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      Image.Image img = Image.Image(1024, 1024, 10, 20, 30);
+      int stop;
+      array(Thread.Thread) ts = map(enumerate(3), lambda(int i) {
+          return Thread.Thread(lambda() {
+              while (!stop)
+                catch { Image.JPEG.encode(img, ([ "quality": 50 ])); };
+            });
+        });
+      int t = time();
+      for (int i = 0; time() - t < 5; i++) {
+        sleep(0.002);
+        if (i & 1) {
+          Image.Image old = img;
+          img = Image.Image(1024, 1024, 10, 20, 30);
+          destruct(old);
+        } else {
+          int w = (i & 2) ? 1024 : 512;
+          img->_decode(({ w, w, "\1\2\3" * (w * w) }));
+        }
+      }
+      stop = 1;
+      ts->wait();
+      return 0;
+    #} }));
+    if (r->exitcode) return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
+
+dnl Encoding JPEG data transcodes it without decoding it. Pike needs
+dnl libjpeg's transform support for that.
+cond_begin([[ !catch(Image.JPEG.encode(Image.JPEG.encode(Image.Image(8, 8)))) ]])
+
+dnl The options that would change the image data are ignored, and the
+dnl image stays the same. Without the fix all but smoothing and method
+dnl failed with "Improper call to JPEG library in state 103".
+  test_any([[
+    Image.Image i = Image.Image(64, 48);
+    for (int y = 0; y < 48; y++)
+      for (int x = 0; x < 64; x++)
+        i->setpixel(x, y, x * 4, y * 5, (x * y) % 256);
+    string d = Image.JPEG.encode(i, ([ "optimize": 0 ]));
+    Image.Image s = Image.JPEG.decode(d);
+    foreach (({ ([ "quality": 50 ]), ([ "baseline": 1 ]),
+                ([ "quant_tables": Image.JPEG.quant_tables(50) ]),
+                ([ "smoothing": 50 ]), ([ "method": Image.JPEG.FLOAT ]),
+                ([ "optimize": 0 ]) }), mapping o) {
+      Image.Image r = Image.JPEG.decode(Image.JPEG.encode(d, o));
+      if (max(@(r - s)->max())) return sprintf("%O changed the image", o);
+    }
+    return 0;
+  ]], 0)
+
+dnl Optimizing the Huffman tables keeps the image. Without the fix it
+dnl crashes in every run, so it runs in a child.
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      string d = Image.JPEG.encode(Image.Image(64, 48)->test(),
+                                   ([ "optimize": 0 ]));
+      string o = Image.JPEG.encode(d, ([ "optimize": 1 ]));
+      Image.Image a = Image.JPEG.decode(d), b = Image.JPEG.decode(o);
+      if (max(@(a - b)->max())) { write("changed\n"); return 1; }
+      return 0;
+    #} }));
+    if (r->exitcode)
+      return sprintf("exit %d: %s%s", r->exitcode, r->stdout, r->stderr);
+    return 0;
+  ]], 0)
+
+dnl The density options, progressive and grayscale apply. Without the
+dnl fix the density options had no effect, and progressive and grayscale
+dnl failed.
+  test_any([[
+    string d = Image.JPEG.encode(Image.Image(64, 48)->test());
+    mapping h = Image.JPEG.decode_header(Image.JPEG.encode(d, ([ "density": 300 ])));
+    if (h->x_density != 300 || h->y_density != 300 || h->density_unit != 1)
+      return sprintf("density 300: %d x %d, unit %d",
+                     h->x_density, h->y_density, h->density_unit);
+    h = Image.JPEG.decode_header(Image.JPEG.encode(d, ([ "x_density": 150,
+                                                         "y_density": 200,
+                                                         "density_unit": 2 ])));
+    if (h->x_density != 150 || h->y_density != 200 || h->density_unit != 2)
+      return sprintf("x_density 150, y_density 200, unit 2: %d x %d, unit %d",
+                     h->x_density, h->y_density, h->density_unit);
+    // SOF2: progressive DCT.
+    if (!has_value(Image.JPEG.encode(d, ([ "progressive": 1 ])), "\xff\xc2"))
+      return "progressive: no progressive frame";
+    h = Image.JPEG.decode_header(Image.JPEG.encode(d, ([ "grayscale": 1 ])));
+    if (h->num_components != 1)
+      return sprintf("grayscale: %d components", h->num_components);
+    return 0;
+  ]], 0)
+
+dnl The transforms work on an image that isn't square, and give the image
+dnl transformed. The decoder rounds a little differently in each
+dnl direction, hence the tolerance. Without the fix the transforms that
+dnl swap width and height failed with "Bogus virtual array access".
+  test_any([[
+    Image.Image i = Image.Image(64, 48);
+    for (int y = 0; y < 48; y++)
+      for (int x = 0; x < 64; x++)
+        i->setpixel(x, y, x * 4, y * 5, (x * y) % 256);
+    string d = Image.JPEG.encode(i, ([ "optimize": 0 ]));
+    Image.Image s = Image.JPEG.decode(d);
+    mapping(string:Image.Image) want = ([
+      "FLIP_H": s->mirrorx(), "FLIP_V": s->mirrory(),
+      "ROT_90": s->rotate_cw(), "ROT_180": s->mirrorx()->mirrory(),
+      "ROT_270": s->rotate_ccw(), "TRANSPOSE": s->rotate_cw()->mirrorx(),
+      "TRANSVERSE": s->rotate_ccw()->mirrorx(),
+    ]);
+    foreach (sort(indices(want)), string t) {
+      Image.Image r =
+        Image.JPEG.decode(Image.JPEG.encode(d, ([ "transform": Image.JPEG[t] ])));
+      if (r->xsize() != want[t]->xsize() || r->ysize() != want[t]->ysize())
+        return sprintf("%s: %dx%d", t, r->xsize(), r->ysize());
+      if (max(@(r - want[t])->max()) > 8)
+        return sprintf("%s: not the image transformed", t);
+    }
+    return 0;
+  ]], 0)
+cond_end
+
+dnl Calls that fail, through libjpeg or an option of the wrong type,
+dnl should leave no memory behind. Without the fix, 100 of each grew the
+dnl resident set by 2.8 to 27 MB. Require the Linux VmRSS field, since
+dnl other systems may have a /proc/self/status with a different format.
+cond([[ lambda() { int rss; string|zero status; return !catch(status = Stdio.read_file("/proc/self/status")) && status && sscanf(status, "%*s\nVmRSS:%*[ \t]%d%*[ \t]kB%*1[\n]", rss) == 5 && rss > 0; }() ]], [[
+  test_any([[
+    int rss_kb() {
+      int rss;
+      // VmRSS is in kB, independently of the system page size.
+      if (sscanf(Stdio.read_file("/proc/self/status") || "",
+                 "%*s\nVmRSS:%*[ \t]%d%*[ \t]kB%*1[\n]", rss) != 5)
+        error("Failed to read VmRSS from /proc/self/status.\n");
+      return rss;
+    };
+    // A 60 kB comment, so that lost markers show.
+    string d = Image.JPEG.encode(Image.Image(256, 256)->test(),
+                                 ([ "comment": "x" * 60000 ]));
+    int sos = search(d, "\xff\xda");
+    string corrupt = d[..sos-1] + "\xff\xc0\0\0" + d[sos..];
+    Image.Image i = Image.Image(1024, 64)->test();
+    // Of the wrong types, past the compiler's checks.
+    mixed bad_comment = ([ "comment": ({}) ]), bad_marker = ([ "marker": 17 ]);
+    mixed bad_quant_tables = ([ "quant_tables": 17 ]);
+    mapping(string:function) cases = ([
+      "encode, bad option": lambda() { Image.JPEG.encode(i, bad_marker); },
+      "encode, libjpeg error": lambda() {
+        Image.JPEG.encode(i, ([ "marker": ([ Image.JPEG.Marker.APP1: "x" * 70000 ]) ]));
+      },
+      "decode, bad option": lambda() { Image.JPEG.decode(d, bad_quant_tables); },
+      "decode, corrupt": lambda() { Image.JPEG.decode(corrupt); },
+    ]);
+    if (!catch(Image.JPEG.encode(d)))
+      cases += ([
+        "transcode, bad option": lambda() { Image.JPEG.encode(d, bad_comment); },
+        "transcode, corrupt": lambda() { Image.JPEG.encode(corrupt, ([])); },
+      ]);
+    foreach (sort(indices(cases)), string c) {
+      for (int n = 0; n < 5; n++) catch(cases[c]());
+      gc();
+      int before = rss_kb();
+      for (int n = 0; n < 100; n++)
+        if (!catch(cases[c]())) return c + ": did not fail";
+      gc();
+      if (rss_kb() - before >= 1024)
+        return sprintf("%s: %d kB after 100 calls", c, rss_kb() - before);
+    }
+    return 0;
+  ]], 0)
+]])
+
 cond_end
 END_MARKER

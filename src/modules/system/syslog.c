@@ -185,10 +185,15 @@ void f_openlog(INT32 args)
   char *ident;
   INT_TYPE p_option, p_facility;
   INT_TYPE option=0, facility=0;
+  struct svalue old_ident;
 
   get_all_args(NULL, args, "%c%i%i", &ident, &p_option, &p_facility);
 
-  assign_svalue(&log_ident, Pike_sp - args);
+  /* The old ident is freed only after openlog() below: until then,
+   * syslog() in other threads, which runs without the interpreter lock,
+   * may still be using it. */
+  old_ident = log_ident;
+  assign_svalue_no_free(&log_ident, Pike_sp - args);
 
   if(p_option & (1<<0)) option |= LOG_CONS;
   if(p_option & (1<<1)) option |= LOG_NDELAY;
@@ -226,6 +231,7 @@ void f_openlog(INT32 args)
 
   THREADS_DISALLOW();
 
+  free_svalue(&old_ident);
   pop_n_elems(args);
 }
 

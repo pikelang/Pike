@@ -444,13 +444,11 @@ PIKE_MODULE_INIT
 {
   if( !FT_Init_FreeType( &library ) )
   {
-#ifndef FAKE_DYNAMIC_LOAD
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
     if(!image_program) {
       yyerror("Could not load Image module.");
       return;
     }
-#endif /* DYNAMIC_MODULE */
 
     start_new_program( );
     ADD_STORAGE( struct face );

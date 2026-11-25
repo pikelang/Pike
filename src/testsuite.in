@@ -216,6 +216,14 @@ cond([[Float.EPSILON < 1e-15 && Float.EPSILON > 1e-17]], [[
   test_equal(0x1.00000000000008p0, 1.0)
   test_equal(0x1.000000000000080000000000000000000001p0,
              1.0 + Float.EPSILON)
+  test_equal((float)"0x1.00000000000000001p-1075",
+             array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0])
+  test_equal((float)"0x1.000000000000080000000000000000000001p0",
+             1.0 + Float.EPSILON)
+  test_equal(array_sscanf("0x1.00000000000000001p-1075!", "%f%s"),
+             ({ array_sscanf("\0\0\0\0\0\0\0\1", "%8F")[0], "!" }))
+  test_equal(array_sscanf("0x1.000000000000080000000000000000000001p0!",
+                          "%f%s"), ({ 1.0 + Float.EPSILON, "!" }))
 ]])
 test_equal("abc"[0x1..0x2], "bc")
 test_compile_error([[float f = 0x1.2;]])
@@ -4597,6 +4605,61 @@ test_any_equal([[
        40, 41, 41, 41, 41, 50, 61, 61, 61, 61, 70, 81, 81, 81, 81 }))
 
 test_any([[
+  array(int) destroyed = ({ 0 });
+  class Base(array(int) counter) {
+    inherit Pike.NoExplicitDestruct;
+    mixed link;
+    protected void _destruct() { counter[0]++; }
+  };
+  class Derived { inherit Base; };
+  object|zero o = Derived(destroyed);
+  if (!Program.inherits(Derived, Pike.NoExplicitDestruct)) return 1;
+  if (!catch(destruct(o)) || !o || destroyed[0]) return 2;
+  o = 0;
+  gc();
+  if (destroyed[0] != 1) return 3;
+  o = Derived(destroyed);
+  o->link = o;
+  if (!catch(destruct(o)) || !o || destroyed[0] != 1) return 4;
+  o = 0;
+  gc();
+  return destroyed[0] == 2 ? 0 : 5;
+]], 0)
+
+test_any([[
+  array(int) destroyed = ({ 0 });
+  class Foo(array(int) counter) {
+    inherit Pike.DestructImmediate;
+    inherit Pike.NoExplicitDestruct;
+    protected void _destruct() { counter[0]++; }
+  };
+  object|zero o = Foo(destroyed);
+  if (!catch(destruct(o)) || !o || destroyed[0]) return 0;
+  o = 0;
+  return destroyed[0];
+]], 1)
+
+test_compile_warning([[
+  class Base { inherit Pike.NoExplicitDestruct; };
+  class Derived { inherit Base; };
+  return lambda(Derived o) { destruct(o); };
+]])
+
+test_compile_warning([[
+  class Protected {
+    inherit Pike.NoExplicitDestruct;
+    void f() { destruct(); }
+  };
+  return Protected;
+]])
+
+test_compile_any([[
+  class Protected { inherit Pike.NoExplicitDestruct; };
+  class Ordinary { int x; };
+  void f(Protected|Ordinary o) { destruct(o); }
+]])
+
+test_any([[
   // Test Pike.InhibitDestruct.
   class Foo {
     inherit Pike.InhibitDestruct;
@@ -7678,6 +7741,22 @@ test_false([[Program.implements( class { int x; string y = ""; void foo(int x) {
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
+dnl A string constant used as a type should name a program, as a string
+dnl in object() does. Without the fix the compiler crashes.
+test_any([[
+  string path = combine_path(getcwd(), "string_type_" + getpid() + ".pike");
+  Stdio.write_file(path, "int x = 17;\n");
+  mixed err = catch {
+    program p = compile_string(sprintf("constant T = %q;\n"
+                                       "T o = ((program)T)();\n"
+                                       "int f() { return o->x; }\n", path));
+    int res = p()->f();
+    rm(path);
+    return res;
+  };
+  rm(path);
+  throw(err);
+]], 17)
 test_any([[if(int x=1,y=2) return x;]],1)
 test_any([[int x; x++; if(x) return x; return -1;]],1)
 test_any([[int x; if(x) return x; return -1;]],-1)
@@ -8654,6 +8733,53 @@ test_do([[{
   }]])
 
 // local function tests
+dnl Trailing call blocks have the same outer scope as ordinary functions.
+dnl Coverity CID 1708338: a missing name must not index local_names[-1].
+test_any_equal([[
+  return map(({ 1 })) {
+    int nested() { return 7; };
+    return nested();
+  };
+]], ({ 7 }))
+
+test_any_equal([[
+  return map(({ 1, 2 })) {
+    int later();
+    function saved = later;
+    int later() { return __ARGS__[0] + 6; };
+    return saved();
+  };
+]], ({ 7, 8 }))
+
+test_any_equal([[
+  return map(({ 1, 2 })) {
+    int value() { return __ARGS__[0]; };
+    int result = value();
+    {
+      int value() { return 10; };
+      result += value();
+    }
+    int later();
+    int later() { return value(); };
+    return result + later();
+  };
+]], ({ 12, 14 }))
+
+test_compile_error([[
+  array result = map(({ 1 })) {
+    int nested() { return 1; };
+    int nested() { return 2; };
+    return nested();
+  };
+]])
+
+test_compile_error([[
+  array result = map(({ 1 })) {
+    int missing();
+    return missing();
+  };
+]])
+
 dnl Local function prototypes (#10237).
 test_any_equal([[
   string fn2();
@@ -9868,6 +9994,164 @@ void test()
 	error("Ignore the following line.\n");
     })->wait();
   ]])
+
+dnl Condition waits of 1 ms should not take over 2 seconds while another
+dnl thread runs Pike code that doesn't block. Run 100s of them, in a child
+dnl process killed after 60 seconds.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+  test_any([[
+    Process.Process p = Process.Process(RUNPIKE_ARRAY + ({ "-e", #{
+      int stop;
+      Thread.Thread busy = Thread.Thread(lambda() {
+          int x;
+          while (!stop) x++;
+        });
+      Thread.Mutex m = Thread.Mutex();
+      Thread.Condition c = Thread.Condition();
+      float worst = 0.0;
+      for (int i = 0; i < 200; i++) {
+        int t = gethrtime();
+        object|zero key = m->lock();
+        c->wait(key, 0.001);
+        key = 0;
+        worst = max(worst, (gethrtime() - t) / 1e6);
+      }
+      stop = 1;
+      busy->wait();
+      if (worst > 2.0) {
+        werror("a 1 ms wait took %.2f s\n", worst);
+        return 1;
+      }
+      return 0;
+    #} }));
+    int t = time();
+    while (!p->status() && time() - t < 60) sleep(0.1);
+    if (!p->status()) {
+      p->kill(9);
+      p->wait();
+      return "200 waits of 1 ms took over 60 s";
+    }
+    return p->wait();
+  ]], 0)
+]])
+
+dnl sprintf("%O") of a mutex should name the holder after "Locked by",
+dnl not the thread that waits for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    string s = sprintf("%O", m);
+    destruct(k);
+    waiter->wait();
+    int waiting, locked;
+    if (sscanf(s, "Thread.Mutex(/* Waiting by 0x%x Locked by 0x%x */)",
+               waiting, locked) != 2)
+      return s;
+    return waiting != locked;
+  ]], 1)
+
+dnl lock() and shared_lock() should succeed once the mutex is free, also
+dnl after a thread that waited in lock() was killed.
+  test_any_equal([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    Thread.Thread waiter = Thread.Thread(lambda() {
+        Thread.MutexKey k2 = m->lock();
+        destruct(k2);
+      });
+    sleep(0.2);
+    waiter->kill();
+    sleep(0.2);
+    destruct(k);
+    object got = m->lock(1, 2.0);
+    int got_lock = !!got;
+    if (got) destruct(got);
+    object shared = m->shared_lock(1, 2.0);
+    int got_shared = !!shared;
+    if (shared) destruct(shared);
+    return ({ got_lock, got_shared });
+  ]], ({ 1, 1 }))
+
+dnl The key that a future_lock() gets when the mutex is unlocked should
+dnl belong to the thread that asked for it.
+  test_any([[
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey k = m->lock();
+    object asker, fkey;
+    Thread.Thread t = Thread.Thread(lambda() {
+        asker = this_thread();
+        fkey = m->future_lock()->get();
+      });
+    sleep(0.2);
+    destruct(k);
+    for (int i = 0; i < 100 && !fkey; i++) sleep(0.01);
+    object holder = m->current_locking_thread();
+    mixed err = catch { object k2 = m->trylock(); if (k2) destruct(k2); };
+    int ok = holder == asker && !err;
+    if (fkey) destruct(fkey);
+    t->wait();
+    return ok;
+  ]], 1)
+
+  test_any([[
+    class Derived { inherit Thread.Thread; };
+    if (!Program.inherits(Thread.Thread, Pike.NoExplicitDestruct) ||
+        !Program.inherits(Derived, Pike.NoExplicitDestruct)) return 1;
+    object t = Derived(lambda() { return 42; });
+    if (t->wait() != 42) return 2;
+    if (!catch(destruct(t)) || !t) return 3;
+    return t->wait() == 42 ? 0 : 4;
+  ]], 0)
+
+dnl Cleaning up a finished thread that never took its interrupt should
+dnl not lose the interrupt of the thread doing it. The finished thread
+dnl interrupted itself in a destructor, where interrupts wait; the main
+dnl thread interrupts itself in a destructor too, and there releases the
+dnl last reference to the finished thread's Thread object, cleaning it up.
+dnl Without the fix the main thread's interrupt was lost in every run.
+  test_any([[
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      class SelfInterrupt {
+        protected void _destruct() { this_thread()->interrupt(); }
+      };
+      class Cleanup(Thread.Thread|zero finished) {
+        protected void _destruct() {
+          this_thread()->interrupt("Main thread interrupted.\n");
+          finished = 0;
+        }
+      };
+      void noop() {};
+      // Its Cleanup holds the only reference to the finished thread.
+      object|zero make_cleanup() {
+        Thread.Thread t = Thread.Thread(lambda() { destruct(SelfInterrupt()); });
+        // wait() throws if the thread took its interrupt.
+        if (catch(t->wait())) return 0;
+        return Cleanup(t);
+      };
+      object|zero c = make_cleanup();
+      if (!c) {
+        write("skipped\n");
+        return 0;
+      }
+      mixed err = catch {
+        destruct(c);
+        // Interrupts are taken between calls.
+        for (int i = 0; i < 100000; i++) noop();
+      };
+      write("%s\n", err ? describe_error(err) : "lost");
+      return 0;
+    #} }));
+    if (r->exitcode || sizeof(r->stderr) ||
+        (!has_value(r->stdout, "Main thread interrupted") &&
+         !has_value(r->stdout, "skipped")))
+      return sprintf("exit %d: %s%s", r->exitcode, r->stdout, r->stderr);
+    return 0;
+  ]], 0)
 
 cond_end // thread_create
 
@@ -12719,6 +13003,44 @@ cond([[all_constants()->kill && signum("SIGUSR1") > 0]],
   ]], 2)
 ]])
 
+dnl A process should survive 40000 SIGUSR1s sent while it sleeps in C
+dnl code, and handle them, without "Atomic pipe write failed!!" in debug
+dnl builds. The final different signal and the child's exit status must
+dnl survive FIFO overflow too. In child processes.
+cond([[all_constants()->RUN_VERY_SLOW_TESTS]], [[
+cond([[all_constants()->kill && signum("SIGUSR1") > 0]], [[
+cond([[signum("SIGUSR2") > 0]], [[
+  test_any([[
+    string sender = #{
+      int pid = (int)argv[-1];
+      for (int i = 0; i < 40000; i++) kill(pid, signum("SIGUSR1"));
+      kill(pid, signum("SIGUSR2"));
+      return 42;
+    #};
+    mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{
+      int got, final_signal;
+      signal(signum("SIGUSR1"), lambda() { got++; });
+      signal(signum("SIGUSR2"), lambda() { final_signal++; });
+      object p = Process.Process(
+        Standards.JSON.decode(getenv("SIGNAL_FIFO_SENDER")) +
+        ({ (string)getpid() }));
+      sleep(5);
+      int status = p->wait();
+      sleep(0.5);
+      write("%d signals handled; final signal %d, child status %d\n",
+            got, final_signal, status);
+      return !(got && final_signal && status == 42);
+    #} }), ([ "env": getenv() + ([
+      "SIGNAL_FIFO_SENDER":
+        Standards.JSON.encode(RUNPIKE_ARRAY + ({ "-e", sender })) ]) ]));
+    if (r->exitcode || !has_value(r->stdout, "signals handled"))
+      return sprintf("exit %d: %s", r->exitcode, r->stderr);
+    return 0;
+  ]], 0)
+]])
+]])
+]])
+
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1)")
 test_eq(sprintf("%O", typeof("")),"string(zero:)")
@@ -13479,6 +13801,10 @@ test_equal(({1,2,3})%-2,({1}))
 
 
 // testing &&
+dnl A false left comparison must survive folding even if the right is true.
+test_equal(2.0 < 1.0 && 2.0 > 1.0, 0)
+test_equal(2.0 > 1.0 && 2.0 < 1.0, 0)
+test_equal(2.0 > 1.0 && 2.0 > 1.0, 1)
 test_eq(0 && 1,0)
 test_eq(1 && 0,0)
 test_eq(0 && 0,0)
@@ -13799,6 +14125,26 @@ test_old_style([..],     ({0, Int.NATIVE_MAX})) dnl Upper bound might become lar
 undefine([[test_old_style]])
 
 // casting
+// Constant folding must preserve explicit widening to mixed when the
+// argument list is checked again after optimization.
+test_compile_any([[
+  void accept(string value) {}
+  void multi(int first, string value, int last) {}
+  void caller() {
+    accept((mixed)({ 0, 0 }));
+    accept((mixed)([ 0: 0 ]));
+    accept((mixed)(< 0 >));
+    accept((mixed)allocate(2));
+    accept((0, (mixed)({ 0, 0 })));
+    accept((mixed)(0, ({ 0, 0 })));
+    multi(1, (mixed)({ 0, 0 }), 2);
+  }
+]])
+test_compile_error_any([[
+  void accept(string value) {}
+  void caller() { accept(({ 0, 0 })); }
+]])
+
 test_eq([[(int)1]],[[1]])
 test_eq([[(int)-1]],[[-1]])
 test_eq([[(int)1.0]],[[1]])
@@ -16245,6 +16591,111 @@ return 0;
 // - __automap__
 // - __empty_program
 // - __null_program
+// Integer union suffixes keep disjoint, adjacent and overlapping ranges.
+test_any([[
+  array descriptions = ({
+    ({ "int(-12)|int(-8)|int(-4)|int(4)|int(8)|int(12)",
+       ({ ({-12,-12}), ({-8,-8}), ({-4,-4}), ({4,4}), ({8,8}), ({12,12}) }) }),
+    ({ "int(-9..-7)|int(-1..1)|int(7..9)",
+       ({ ({-9,-7}), ({-1,1}), ({7,9}) }) }),
+    ({ "int(-20..-10)|int(10..20)", ({ ({-20,-10}), ({10,20}) }) }),
+    ({ "int(-5..5)", ({ ({-5,5}) }) }),
+    ({ "int(-10..10)", ({ ({-10,10}) }) }),
+    ({ "int(-20..20)", ({ ({-20,20}) }) }),
+    ({ "int(0)|int(4)|int(8)|int(12)",
+       ({ ({0,0}), ({4,4}), ({8,8}), ({12,12}) }) }),
+    ({ "int(1)|int(3)|int(5)|int(7)",
+       ({ ({1,1}), ({3,3}), ({5,5}), ({7,7}) }) })
+  });
+  array types = ({});
+  foreach (descriptions, array entry)
+    types += ({ compile_string("mixed value() { return typeof([" + entry[0] +
+                              "](mixed)0); }")()->value() });
+  for (int i = 0; i < sizeof(types); i++)
+    for (int j = 0; j < sizeof(types); j++) {
+      mixed result = types[i] | types[j];
+      if (result != (types[j] | types[i])) return 0;
+      for (int n = -22; n <= 22; n++) {
+        int expected;
+        foreach (descriptions[i][1] + descriptions[j][1], array bounds)
+          expected |= bounds[0] <= n && n <= bounds[1];
+        if (!!(result & _typeof(n)) != expected) return 0;
+      }
+    }
+  return 1;
+]], 1)
+
+// Integer-compatible and mixed suffixes preserve canonical grouping.
+test_any([[
+  mixed a = typeof([int(-12)|int(-8)|int(-4)|int(4)|int(8)|int(12)](mixed)0);
+  mixed b = typeof([int(0)|int(4)|int(8)|int(12)](mixed)0);
+  foreach (({ _typeof(0), typeof([int|void](mixed)0),
+              typeof([string](mixed)0), typeof([float](mixed)0),
+              typeof([__attribute__("deprecated",int(2))](mixed)0) }),
+           mixed extra) {
+    mixed left = a | extra, right = b | extra;
+    mixed result = left | right;
+    if (result != (right | left) || result != ((a | b) | extra)) return 0;
+  }
+  return 1;
+]], 1)
+
+// A directly shared suffix survives release of its input and GC.
+test_any([[
+  array values = enumerate(128, 3, -192);
+  mixed tail = _typeof(values[0]);
+  foreach (values[1..], int n) tail |= _typeof(n);
+  array weak = set_weak_flag(({ tail }), 1);
+  mixed result = _typeof(-500) | tail;
+  mixed independent = _typeof(-500);
+  foreach (reverse(values), int n) independent |= _typeof(n);
+  tail = 0;
+  gc();
+  if (!weak[0] || result != independent) return 0;
+  foreach (({ -501,-500,-499,-193,-192,-191,188,189,190,191 }), int n)
+    if (!!(result & _typeof(n)) != (n == -500 || has_value(values,n)))
+      return 0;
+  return 1;
+]], 1)
+
+// Integer suffix boundaries handle the limits of interval representation.
+test_any([[
+  array values = ({ -2147483648, -2147483646, -2147483644,
+                    2147483643, 2147483645, 2147483647 });
+  mixed tail = _typeof(values[0]);
+  foreach (values[1..], int n) tail |= _typeof(n);
+  foreach (({ -2147483647, 2147483644, 2147483646 }), int n) {
+    mixed result = tail | _typeof(n);
+    if (result != (_typeof(n) | tail)) return 0;
+    foreach (values + ({ -2147483647, -2147483645,
+                         2147483644, 2147483646 }), int v)
+      if (!!(result & _typeof(v)) != (v == n || has_value(values,v)))
+        return 0;
+  }
+  return 1;
+]], 1)
+
+// Nested string and array unions retain their normalization rules.
+test_any([[
+  mixed a = typeof([string(1|5|9)](mixed)0);
+  mixed b = typeof([string(3|7)](mixed)0);
+  mixed expected = typeof([string(1|3|5|7|9)](mixed)0);
+  if ((a | b) != expected) return 0;
+  a = typeof([array(int(1)|int(5)|int(9))](mixed)0);
+  b = typeof([array(int(3)|int(7))](mixed)0);
+  expected = typeof([array(int(1)|int(3)|int(5)|int(7)|int(9))](mixed)0);
+  return (a | b) == expected;
+]], 1)
+
+// Enum mask construction keeps its ordinary normalization path.
+test_any([[
+  object o = compile_string("enum Bits { A=1, B=4, C=16 }; "
+    "Bits identity(Bits n) { return n; } "
+    "Bits combine(Bits a, Bits b) { return a | b; }")();
+  return o->identity(0) == 0 && o->identity(21) == 21 &&
+    o->combine(1, 4) == 5 && o->combine(5, 16) == 21;
+]], 1)
+
 // - __parse_pike_type
 // - __placeholder_object
 // - _describe_program
@@ -16749,6 +17200,84 @@ test_compile_error(int a=grunk(5);)
 // - add_module_path
 // - add_program_path
 // Tested in lib
+
+dnl The string aggregate shortcut must preserve void promotion and its type.
+test_any_equal([[
+  void none() {}
+  return aggregate("a", none(), "z");
+]], ({ "a", 0, "z" }))
+test_equal([[ typeof(aggregate("a", (void)0, "z")); ]],
+           [[ typeof([array(zero | __attribute__("utf8", string('a'|'z')))](mixed)0); ]])
+
+dnl Splices and automapped aggregate calls use the complete argument sequence.
+test_any_equal([[
+  int trace;
+  array words() { trace++; return ({ "cd", "ef" }); }
+  array expanded = aggregate("ab", @words(), "gh");
+  array mapped = aggregate(({ "ab", "cd" })[*], "ef", "gh");
+  return ({ expanded, mapped, trace });
+]], ({ ({ "ab", "cd", "ef", "gh" }),
+        ({ ({ "ab", "ef", "gh" }), ({ "cd", "ef", "gh" }) }), 1 }))
+
+dnl Mixed character widths preserve the same inferred string alternatives.
+test_eq([[ sprintf("%O", typeof(aggregate("\u01ff", "az", "q"))); ]],
+        "array(string(1: 511) | string(97..122))")
+
+dnl A typed callable still checks its declared argument types.
+test_compile_error([[
+  array run(function(int, int, int:array(int)) build) {
+    return build("ab", "cd", "ef");
+  }
+]])
+
+dnl Overridden attribute handlers retain their rejection and side effects.
+test_any_equal([[
+  class Environment {
+    inherit CompilerEnvironment;
+    int events;
+    void report(int severity, string file, int line, string subsystem,
+                string message, mixed ... extra) {}
+    class PikeCompiler {
+      inherit ::this_program;
+      mixed pop_type_attribute(string attr, mixed a, mixed b, mapping state) {
+        if (attr == "utf8") { events++; return 0; }
+        return ::pop_type_attribute(attr, a, b, state);
+      }
+    }
+  }
+  object env = Environment();
+  mixed failure = catch {
+    env->compile("array f() { return ({\"ab\",\"cd\",\"ef\"}); }");
+  };
+  return ({ !!failure, env->events > 0 });
+]], ({ 1, 1 }))
+
+dnl Ordinary literals, empty strings and dynamic callees preserve values.
+test_any_equal([[
+  array f(function build) { return build("ab", "cd", "ef"); }
+  int events;
+  array local_build(mixed ... args) { events++; return args; }
+  return ({ aggregate("", "ab", "az"),
+            f(aggregate), f(local_build), events });
+]], ({ ({ "", "ab", "az" }), ({ "ab", "cd", "ef" }),
+        ({ "ab", "cd", "ef" }), 1 }))
+
+test_any([[
+  class Environment {
+    inherit CompilerEnvironment;
+    int events;
+    class PikeCompiler {
+      inherit ::this_program;
+      mixed pop_type_attribute(string attr, mixed a, mixed b, mapping state) {
+        if (attr == "utf8") events++;
+        return ::pop_type_attribute(attr, a, b, state);
+      }
+    }
+  }
+  object env = Environment();
+  program p = env->compile("array f() { return ({\"ab\",\"cd\",\"ef\"}); }");
+  return env->events > 0 && equal(p()->f(), ({ "ab", "cd", "ef" }));
+]], 1)
 
 // - aggregate
 test_equal(aggregate(),({}))
@@ -20852,5 +21381,178 @@ test_any_equal([[
   }
   return Container()->run();
 ]], ({ 22, 9, 19, 31 }))
+
+dnl Issue #10238: class self-references in explicit constant expressions.
+test_any([[
+  return compile_string(#"
+    class Ref {
+      inherit Pike.Annotation;
+      @constant;
+      mixed target;
+      protected void create(mixed p) { target = p; }
+    }
+    class Node {
+      @Ref(Node);
+      @Ref(global::Node): object next;
+      @Node: int bare;
+    }
+    int run() {
+      object p = Node();
+      mapping a = mkmapping(indices(p), annotations(p));
+      return Program.annotations((program)Node)[0]->target == (program)Node &&
+             a->next[0]->target == (program)Node &&
+             a->bare[0] == (program)Node ? 0 : 1;
+    }
+  ")()->run();
+]], 0)
+
+test_any([[
+  class Outer(int value) {
+    class Node {
+      int read() { return value; }
+      function constructor() { return Node; }
+    }
+  }
+  object n = Outer(23)->Node();
+  return n->constructor()()->read();
+]], 23)
+
+test_any([[
+  return compile_string(#"
+    class Ref {
+      inherit Pike.Annotation;
+      @constant;
+      mixed target;
+      protected void create(mixed p) { target = p; }
+    }
+    class Outer(int value) {
+      class Peer {
+        int read() { return value; }
+      }
+      class Node {
+        @Pike.Annotations.Implements(Peer);
+        @Ref(([ 0: Peer, 1: Outer::Peer, 2: Node ])): int field;
+        int read() { return value; }
+      }
+    }
+    int run() {
+      object outer = Outer(42);
+      object node = outer->Node();
+      object peer = outer->Peer();
+      mapping a = mkmapping(indices(node), annotations(node));
+      mapping targets = a->field[0]->target;
+      return targets[0] == object_program(peer) &&
+             targets[1] == object_program(peer) &&
+             targets[2] == object_program(node) && peer->read() == 42;
+    }
+  ")()->run();
+]], 1)
+
+test_any([[
+  class Ref {
+    inherit Pike.Annotation;
+    @constant;
+    mixed target;
+    protected void create(mixed p) { target = p; }
+  }
+  class Node {
+    @Ref(this_program);
+    @Ref(this_program): object next;
+    @Ref(this::this_program): void method() {}
+    @Ref(([ 0: this_program ])): object tagged;
+  }
+  object p = Node();
+  mapping a = mkmapping(indices(p), annotations(p));
+  return Program.annotations(Node)[0]->target == (program)Node &&
+         a->next[0]->target == (program)Node &&
+         a->method[0]->target == (program)Node &&
+         a->tagged[0]->target[0] == (program)Node ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Base {
+    mixed lexical() { constant p = this_program; return p; }
+    mixed qualified() { constant p = this::this_program; return p; }
+    mixed runtime() { return this_program; }
+  }
+  class Derived { inherit Base; }
+  object p = Derived();
+  return p->lexical() == (program)Base &&
+         p->qualified() == (program)Base &&
+         p->runtime() == (program)Derived ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Base { int value; }
+  class Derived {
+    inherit Base;
+    mixed selected() { constant p = Base::this_program; return p; }
+  }
+  return Derived()->selected() == (program)Base ? 0 : 1;
+]], 0)
+
+test_any([[
+  class Node {
+    @global::this_program: int field;
+  }
+  object p = Node();
+  mapping a = mkmapping(indices(p), annotations(p));
+  return a->field[0] == (program)object_program(this_object()) ? 0 : 1;
+]], 0)
+
+test_compile_error([[
+  class Bad {
+    int this_program;
+    @this_program: int value;
+  }
+]])
+
+test_compile_error([[
+  class Bad { @this: int value; }
+]])
+
+dnl Local constant class values must retain the runtime parent.
+test_any_equal([[
+  return compile_string(#"
+    class Outer(int value) {
+      class Child { int read() { return value; } }
+      array run() {
+        constant types = ({ Child });
+        constant by_name = ([ \"child\": Child ]);
+        constant constructor = Child;
+        return ({ types[0]()->read(), by_name->child()->read(),
+                  constructor()->read() });
+      }
+    }
+    array run() { return ({ Outer(23)->run(), Outer(42)->run() }); }
+  ")()->run();
+]], ({ ({ 23, 23, 23 }), ({ 42, 42, 42 }) }))
+
+
+dnl Constant error recovery must also work when eval_low() was skipped.
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    local constant number = 1;
+  }
+]])
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    local constant int number = 1;
+  }
+]])
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    constant number = [int(0..)]1;
+  }
+]])
+test_compile_error([[
+  class Broken {
+    object(MissingProgram) value;
+    constant array(int) numbers = ({ 1 });
+  }
+]])
 
 END_MARKER

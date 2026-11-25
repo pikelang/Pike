@@ -36,6 +36,11 @@ struct pike_frame;
 /* Debug flags */
 #define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
 
+#if defined(HAVE_TH_KILL) && !defined(NT_THREADS)
+/* Resend the signal of an interrupt or kill until it is consumed. */
+#define PIKE_RESEND_IO_INTERRUPTS
+#endif
+
 struct thread_state {
   struct Pike_interpreter_struct state;
   struct object *thread_obj;	/* NOTE: Not ref-counted! */
@@ -47,6 +52,8 @@ struct thread_state {
   THREAD_T id;
 #ifdef NT_THREADS
   struct nt_io_cancel *io_cancel;
+#elif defined(PIKE_RESEND_IO_INTERRUPTS)
+  struct io_interrupt_resend *io_resend;
 #endif
   cpu_time_t interval_start;	/* real_time at THREADS_DISALLOW(). */
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL

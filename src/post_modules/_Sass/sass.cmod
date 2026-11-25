@@ -55,20 +55,20 @@ PIKECLASS Api
    */
   PIKEVAR int(0..3)    output_style;
 
-  /*! @decl string(8bit) source_map_file = UNDEFINED
+  /*! @decl string(8bit)|zero source_map_file = UNDEFINED
    *!
    *! Set the path of the source map file.
    */
   PIKEVAR string(8bit) source_map_file;
 
-  /*! @decl string(8bit) source_map_root
+  /*! @decl string(8bit)|zero source_map_root = UNDEFINED
    *!
    *! Set the root path of the source files, relative to where the source.map
    *! file is written.
    */
   PIKEVAR string(8bit) source_map_root;
 
-  /*! @decl string(8bit) include_path
+  /*! @decl string(8bit)|zero include_path = UNDEFINED
    *!
    *! The base path of @tt{@@import@}s. Note! This needs to be set when
    *! @[compile_string()] is used.
@@ -475,7 +475,7 @@ PIKECLASS Api
  *!
  *! @param options
  *!  This is a bitwise union of compression level (@[STYLE_NESTED],
- *!  @[STYLE_EXPANDED], @[STYLE_COMPACT] and $[STYLE_COMPRESSED]) and the
+ *!  @[STYLE_EXPANDED], @[STYLE_COMPACT] and @[STYLE_COMPRESSED]) and the
  *!  @tt{SASS2SCSS_*@} constants @[SASS2SCSS_KEEP_COMMENT],
  *!  @[SASS2SCSS_STRIP_COMMENT] and @[SASS2SCSS_CONVERT_COMMENT].
  *!  It defaults to @expr{STYLE_NESTED|SASS2SCSS_KEEP_COMMENT@}.

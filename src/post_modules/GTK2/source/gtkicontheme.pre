@@ -17,7 +17,7 @@ void set_search_path(array(string) path)
 //! Sets the search path for the icon theme object.  When looking for an icon
 //! theme, GTK2+ will search for a subdirectory of one or more of the
 //! directories in path with the same name as the icon theme.  (Themes from
-//! multiple of the path elemets are combined to allow themes to be extended
+//! multiple of the path elements are combined to allow themes to be extended
 //! by adding icons in the user's home directory.)
 //! <p>
 //! In addition if an icon found isn't found either in the current icon theme
@@ -79,10 +79,10 @@ void set_custom_theme(string theme_name);
 int has_icon(string icon_name);
 //! Checks whether this icon theme includes an icon for a particular name.
 
-GTK2.IconInfo lookup_icon(string name, int size, int flags)
+GTK2.IconInfo|zero lookup_icon(string name, int size, int flags)
 //! Looks up a named icon and returns an object containing information such as
 //! the filename of the icon.  The icon can then be rendered into a pixbuf
-//! using GTK2.IconInfo->load_icon().
+//! using GTK2.IconInfo->load_icon().  Returns zero if no icon was found.
 {
   pgtk2_verify_inited();
   {
@@ -99,9 +99,9 @@ GTK2.IconInfo lookup_icon(string name, int size, int flags)
   }
 }
 
-GDK2.Pixbuf load_icon(string name, int size, int flags)
+GDK2.Pixbuf|zero load_icon(string name, int size, int flags)
 //! Looks up an icon in an icon theme, scales it to the given size and renders
-//! it into a pixbuf.
+//! it into a pixbuf.  Returns zero if the icon could not be loaded.
 {
   pgtk2_verify_inited();
   {

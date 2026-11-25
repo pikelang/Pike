@@ -235,6 +235,8 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f);
 PMOD_EXPORT struct object *make_pointer_object(void *ptr, void (*destroy_func)(void *));
 PMOD_EXPORT void *get_pointer_from_pointer_object(struct object *o);
 PMOD_EXPORT void set_pointer_in_pointer_object(struct object *o, void *ptr);
+PMOD_EXPORT extern struct program *NoExplicitDestruct_program;
+void init_no_explicit_destruct(void);
 void init_builtin(void);
 void exit_builtin(void);
 

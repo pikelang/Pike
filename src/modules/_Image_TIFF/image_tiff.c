@@ -1037,7 +1037,6 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_WORKING_LIBTIFF
    opt_compression = 0;
-#ifndef FAKE_DYNAMIC_LOAD
    image_program = PIKE_MODULE_IMPORT(Image, image_program);
    image_colortable_program = PIKE_MODULE_IMPORT(Image,
 						image_colortable_program);
@@ -1045,7 +1044,6 @@ PIKE_MODULE_INIT
       yyerror("Could not load Image module.");
       return;
    }
-#endif /* DYNAMIC_MODULE */
 
    TIFFSetWarningHandler(my_tiff_warning_handler);
    TIFFSetErrorHandler(my_tiff_error_handler);

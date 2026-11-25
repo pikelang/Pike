@@ -216,7 +216,7 @@ static void image_x_encode_truecolor(INT32 args)
 
    y=img->ysize;
 
-   THREADS_ALLOW();
+   IMAGE_THREADS_ALLOW();
 
    if (!(rshift&7) && !(gshift&7) && !(bshift&7)
        && sizeof(COLORTYPE)==1
@@ -354,7 +354,7 @@ static void image_x_encode_truecolor(INT32 args)
       }
    }
 
-   THREADS_DISALLOW();
+   IMAGE_THREADS_DISALLOW();
 
    if (nct) free(tmp);
 

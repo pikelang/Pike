@@ -95,8 +95,8 @@ void set_resizable(int setting);
 //! Sets whether the user can resize a window.  Windows are user resizable by
 //! default.
 
-void get_resizable();
-//! Gets the whether this window is resizable.
+int get_resizable();
+//! Gets whether this window is resizable.
 
 void add_accel_group(GTK2.AccelGroup group);
 //! This function adds an accelerator group to the window. The shortcuts in

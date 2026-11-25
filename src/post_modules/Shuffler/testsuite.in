@@ -1,7 +1,7 @@
 START_MARKER
 dnl tests for Shuffler module
 
-cond_begin([[ Shuffler.Shuffle ]])
+cond_begin([[ master()->resolv("Shuffler.Shuffle") ]])
 
 test_any([[
     Stdio.File f = Stdio.File()->pipe();

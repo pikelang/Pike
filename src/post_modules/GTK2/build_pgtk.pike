@@ -44,6 +44,8 @@ string destination_dir = "";
     else                                                                   \
       break;                                                               \
   }                                                                        \
+  if( PEEK() == "|" && i+1 < sizeof(t) && t[i+1] == "zero" )                \
+    tk = ({ tk, GOBBLE(), GOBBLE() });                                      \
   tk=parse_type(tk);                                                       \
 } while(0);
 
@@ -535,7 +537,7 @@ class Property( string name, Type type, int set,
 
 class Type
 {
-  int star, amp, opt, copy, ref, plus;
+  int star, amp, opt, copy, ref, plus, nullable;
   array(Type) subtypes;
   Type array_type;
 
@@ -551,9 +553,7 @@ class Type
   {
     if( subtypes )
       return subtypes->doc_type()*"|";
-    string optp = "";
-    if( opt )
-      optp = "|void";
+    string optp = (nullable ? "|zero" : "") + (opt ? "|void" : "");
     switch( name )
     {
       case "uint":
@@ -598,9 +598,7 @@ class Type
   {
     if( subtypes )
       return subtypes->pike_type(is,1)*"|"+(opt?"|void":"");
-    string optp = "";
-    if( opt )
-      optp = "|void";
+    string optp = (nullable ? "|zero" : "") + (opt ? "|void" : "");
     switch( name )
     {
       case "Stdio.Buffer":
@@ -661,7 +659,7 @@ class Type
 
       default:
 	if( classes[ name ] )
-	  if( nc || opt )
+          if( nc || opt || nullable )
 	    return classes[ name ]->pike_type(is) + optp;
 	  else
 	    return (is ? classes[ name ]->pike_type(1) :
@@ -673,6 +671,10 @@ class Type
 
   protected void create( string n )
   {
+    // Nullable returns use the same native type and conversion as their base.
+    nullable = has_suffix(n, "|zero");
+    if (nullable)
+      n = n[..<5];
     array q = n/"|";
     if( sizeof(q) != 1 )
     {

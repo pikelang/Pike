@@ -64,7 +64,7 @@ PIKECLASS PIKE_NAME
 
   DOCSTART() @class State
     *!
-    *! State for PIKE_NAME encyption.
+    *! State for PIKE_NAME encryption.
     *!
   DOCEND()
   PIKECLASS State

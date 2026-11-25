@@ -39,5 +39,5 @@ void set_tip(GTK2.Widget in, string to, null);
 //! W(Widget).
 
 void force_window();
-//! Realize the tooltip window (as returned from get_gdkwindow())
+//! Realize the tooltip window.
 

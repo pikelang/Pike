@@ -26,6 +26,13 @@ test_eq( Unicode.is_rtlstring("hej"), 0 )
 test_eq( Unicode.is_rtlstring("hej\x5besan"), 1 )
 test_eq( Unicode.is_rtlstring("\uffffffff"), 0)
 
+// Regression tests for an off-by-one that skipped checking index 0
+// of the string, so an RTL character only at the very start (or in
+// a single-character string) went undetected.
+test_eq( Unicode.is_rtlstring("\x5be"), 1 )
+test_eq( Unicode.is_rtlstring("\x5besan"), 1 )
+test_eq( Unicode.is_rtlstring("hej\x5be"), 1 )
+
 test_eq( Unicode.is_whitespace(0), 0 )
 test_eq( Unicode.is_whitespace(' '), 1 )
 test_eq( Unicode.is_whitespace('\t'), 1 )

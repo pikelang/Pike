@@ -2650,6 +2650,14 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
  *!
  *! Builtin constant that evaluates to the current program.
  *!
+ *! In an annotation or local constant expression it refers to the
+ *! statically selected program, including a class still being compiled.
+ *! This permits annotations describing recursive records. The qualified
+ *! form @expr{this::this_program@} has the same behavior.
+ *!
+ *! In ordinary runtime expressions it follows the current object's
+ *! program, including when the expression occurs in an inherited method.
+ *!
  *! @seealso
  *!   @[this], @[this_object()]
  */
@@ -6410,11 +6418,10 @@ void lower_inherit(struct program *p,
   if (!(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(9,0))
     report_compiler_dependency_level(p, COMPILER_DEPENDENCY_FINISHED);
 
-  /* Propagate the HAS_C_METHODS, CLEAR_STORAGE and DESTRUCT_IMMEDIATE flags. */
-  if (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE|PROGRAM_DESTRUCT_IMMEDIATE)) {
-    Pike_compiler->new_program->flags |=
-      (p->flags & (PROGRAM_HAS_C_METHODS|PROGRAM_CLEAR_STORAGE|PROGRAM_DESTRUCT_IMMEDIATE));
-  }
+  /* Propagate storage and destruction flags. */
+  Pike_compiler->new_program->flags |=
+    p->flags & (PROGRAM_HAS_C_METHODS | PROGRAM_CLEAR_STORAGE |
+                PROGRAM_DESTRUCT_IMMEDIATE | PROGRAM_NO_EXPLICIT_DESTRUCT);
 
  /* parent offset was increased by 42 for above test.. */
   if(parent_offset)

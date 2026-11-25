@@ -12,7 +12,7 @@ signal show_menu;
 void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
 //! Create a new GTK2.MenuToolButton.
 //! If icon is a string, label should be omitted.  If it isn't,
-//! it will be igrnored.  The result will be a button from
+//! it will be ignored.  The result will be a button from
 //! a stock item, one of CONST(GTK_STOCK).
 //! If icon is a GTK2.Widget, it will be used as the icon, and label
 //! will be the label.  The label must exist if that is the case.

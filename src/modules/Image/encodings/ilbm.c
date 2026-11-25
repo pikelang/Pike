@@ -296,7 +296,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
     Pike_error("Unsupported ILBM masking %d\n", bmhd->masking);
   }
 
-  THREADS_ALLOW();
+  IMAGE_THREADS_ALLOW();
 
   for(y=0; y<bmhd->h; y++) {
     switch(bmhd->compression) {
@@ -438,7 +438,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
       }
   }
 
-  THREADS_DISALLOW();
+  IMAGE_THREADS_DISALLOW();
 
   if(blen<0)
     Pike_error("truncated or corrupt BODY chunk\n");

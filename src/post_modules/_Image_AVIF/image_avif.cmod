@@ -428,7 +428,7 @@ PIKE_MODULE_INIT
 #ifdef HAVE_LIBAVIF
   /*! @decl constant int version
    *!
-   *! Version of the AVIF library,
+   *! Version of the AVIF library.
    */
   add_integer_constant("version", AVIF_VERSION, 0);
   /*! @decl constant int SPEED_DEFAULT

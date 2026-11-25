@@ -25,7 +25,7 @@ signal editing_started;
 endrequire;
 
 mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
-//! Obtains the width and heigh needed to render the cell.  Used by widgets
+//! Obtains the width and height needed to render the cell.  Used by widgets
 //! to determine the appropriate size for the cell_area passed to render().
 //! If cell_area is present, fills in the x and y offset of the cell relative
 //! to this location.  Please note that the values set in width and height,
@@ -113,7 +113,8 @@ int activate(GDK2.Event event, GTK2.Widget widget, string path,
 void start_editing(GDK2.Event event, GTK2.Widget widget, string path,
 		   GDK2.Rectangle background_area, GDK2.Rectangle cell_area,
 		   int flags)
-//! Passes an activate event to the cell renderer for possible processing.
+//! Starts editing the contents of this cell, through a new W(CellEditable)
+//! widget created by the renderer's start_editing implementation.
 {
   pgtk2_verify_inited();
   {

@@ -59,4 +59,35 @@ dnl Protocols.WebSocket
 
 dnl cf WebSocket.test
 
+dnl An onclose callback that sets a new onclose for the next connection
+dnl should have that one called: the client reconnects three times, and
+dnl every close must be reported.
+cond([[!all_constants()->OMIT_SLOW_TESTS]], [[
+test_any([[
+  int closes;
+  object client;
+  Standards.URI uri;
+  Stdio.Port port = Stdio.Port();
+  port->bind(0, lambda() {
+      Stdio.File f = port->accept();
+      if (f) f->close();
+    }, "127.0.0.1");
+  uri = Standards.URI(sprintf("ws://127.0.0.1:%d/",
+                              (int)(port->query_address() / " ")[1]));
+  void on_close(mixed ... args) {
+    if (++closes < 3) {
+      client->onclose = on_close;
+      call_out(client->connect, 0, uri);
+    }
+  };
+  client = Protocols.WebSocket.Connection();
+  client->onclose = on_close;
+  client->connect(uri);
+  int t = time();
+  while (closes < 3 && time() - t < 10) Pike.DefaultBackend(0.1);
+  port->close();
+  return closes;
+]], 3)
+]])
+
 END_MARKER

@@ -3,7 +3,7 @@ class GTK2.AccelGroup;
 inherit G.Object;
 
 //! An AccelGroup stores keybindings.
-//! A group is automatically created by W(MenuFactory)
+//! A group is automatically created by W(UiManager)
 //!
 //! NOIMG
 

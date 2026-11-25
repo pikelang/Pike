@@ -169,6 +169,16 @@ cond_resolv(Random.Deterministic, [[
   test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000000001")), -1)
   test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000000000")))
 
+  // Reverse power can return an ordinary integer.
+  test_equal(_typeof(Gmp.mpz(2)["``**"]),
+             typeof((function(int|float|object:int|object|float))0))
+  test_eq(Gmp.mpz(4)->pow(Gmp.mpq(1, 2)), 2.0)
+  test_eq(Gmp.mpz(4)->pow(Gmp.mpf(0.5)), 2.0)
+  test_equal(Gmp.mpz(2)["``**"](1), 1)
+  test_equal(Gmp.mpz(0)["``**"](7), 1)
+  test_eq(Gmp.mpz(2)["``**"](Gmp.mpq(3, 2)), Gmp.mpz(1))
+  test_eq(Gmp.mpz(2)["``**"](Gmp.mpf(1.5)), Gmp.mpz(1))
+
   // powm
   test_eq(Gmp.mpz(17)->powm(12,4711),85)
   test_eq((string)Gmp.mpz(2)->powm(270,Gmp.mpz(10)->pow(39)),"428761855001222473056385648716020711424")
@@ -257,7 +267,7 @@ cond_resolv(Random.Deterministic, [[
   test_any([[object o=Gmp.mpz(2); return --o;]],1)
   test_any([[object o=Gmp.mpz(2); return o--;]],2)
 
-cond_begin([[ master()->resolv("Gmp")->mpq ]])
+cond_begin([[ master()->resolv("Gmp.mpq") ]])
 
   test_true(programp(Gmp.mpq))
   test_false(Gmp.mpq())
@@ -364,7 +374,7 @@ cond_begin([[ master()->resolv("Gmp")->mpq ]])
 
 cond_end // Gmp.mpq
 
-  cond([[ master()->resolv("Gmp")->mpq ]],
+  cond([[ master()->resolv("Gmp.mpq") ]],
   [[
     test_eq(Gmp.mpq(234,99)*Gmp.mpz(1000000000000000000000),Gmp.mpq(26000000000000000000000,11))
     test_eq(Gmp.mpz(1000000000000000000000)*Gmp.mpq(234,99),Gmp.mpz(2000000000000000000000))
@@ -372,7 +382,7 @@ cond_end // Gmp.mpq
     test_eq(1000000000000000000000*Gmp.mpq(234,99),Gmp.mpq(26000000000000000000000,11))
   ]])
 
-cond_begin([[ master()->resolv("Gmp")->mpf ]])
+cond_begin([[ master()->resolv("Gmp.mpf") ]])
 
   test_true(programp(Gmp.mpf))
   test_false(Gmp.mpf())
@@ -383,6 +393,8 @@ cond_begin([[ master()->resolv("Gmp")->mpf ]])
   test_eq(Gmp.mpf("10"),10)
   test_eq(Gmp.mpf(10.0),10)
   test_eq(Gmp.mpf("10",0,8),8)
+
+  test_eq(Gmp.mpf(2)->pow(Gmp.mpz(-3)), Gmp.mpf(0.125))
 
   test_eq(Gmp.mpf("17") == "foo", 0)
   test_eq(Gmp.mpf("17") != "foo", 1)
@@ -416,18 +428,18 @@ cond_begin([[ master()->resolv("Gmp")->mpf ]])
 cond_end // Gmp.mpf
 
   define([[mpx_test_cmp]],[[
-    cond( [[ master()->resolv("Gmp")->mpz ]],[[
+    cond( [[ master()->resolv("Gmp.mpz") ]],[[
       test_cmp3($1, Gmp.mpz($2), $3)
       test_cmp3(Gmp.mpz($1), Gmp.mpz($2), Gmp.mpz($3))
     ]])
 
-    cond( [[ master()->resolv("Gmp")->mpq ]],[[
+    cond( [[ master()->resolv("Gmp.mpq") ]],[[
       test_cmp3($1, Gmp.mpq($2), $3)
       test_cmp3(Gmp.mpq($1), Gmp.mpq($2), Gmp.mpq($3))
     ]])
 
 
-    cond( [[ master()->resolv("Gmp")->mpf ]],[[
+    cond( [[ master()->resolv("Gmp.mpf") ]],[[
       test_cmp3($1, Gmp.mpf($2), $3)
       test_cmp3(Gmp.mpf($1), Gmp.mpf($2), Gmp.mpf($3))
     ]])

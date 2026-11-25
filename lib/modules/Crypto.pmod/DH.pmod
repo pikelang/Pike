@@ -57,7 +57,7 @@ class Parameters
 
     Gmp.mpz pub = g->powm(key, p);
 
-    return ({ pub, key });
+    return [array(2:)]({ pub, key });
   }
 #endif
 

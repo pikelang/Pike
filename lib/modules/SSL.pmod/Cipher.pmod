@@ -1856,7 +1856,6 @@ class RC2
 }
 #endif /* Crypto.Arctwo */
 
-#if constant(Crypto.ECC.Curve)
 //! RFC 8446 4.2.8: Generate an ephemeral key share for the given
 //! named @[Constants.NamedGroup].
 //!
@@ -1877,11 +1876,15 @@ class RC2
 //!   @endarray
 array(Gmp.mpz|string(8bit)) generate_key_share(object context, int group)
 {
+#if constant(Crypto.ECC.Curve)
   Crypto.ECC.Curve curve = ECC_CURVES[group];
   if (!curve) error("Unsupported group: %s.\n", fmt_constant(group, "GROUP"));
   string(8bit)|Gmp.mpz secret = curve->new_scalar(context->random);
   Crypto.ECC.Curve.Point p = curve * secret;
   return ({ secret, p->encode() });
+#else
+  error("TLS 1.3 key exchange requires elliptic curve support.\n");
+#endif
 }
 
 //! RFC 8446 4.2.8: Compute the ECDHE shared secret from our ephemeral
@@ -1896,6 +1899,7 @@ string(8bit)|zero compute_key_share_secret(int group,
                                            Gmp.mpz|string(8bit) secret,
                                            string(8bit) peer_key)
 {
+#if constant(Crypto.ECC.Curve)
   Crypto.ECC.Curve curve = ECC_CURVES[group];
   if (!curve) return 0;
   Crypto.ECC.Curve.Point point;
@@ -1904,8 +1908,10 @@ string(8bit)|zero compute_key_share_secret(int group,
   };
   if (!point) return 0;
   return (point*secret)->get_x_str();
+#else
+  return 0;
+#endif
 }
-#endif /* Crypto.ECC.Curve */
 
 //! RFC 8446 4.2.3/4.4.3: sign @[data] under @[key] using the 16-bit
 //! @[SignatureScheme] @[scheme] (eg @[SIGNATURE_ecdsa_secp256r1_sha256]

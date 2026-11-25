@@ -28,6 +28,12 @@ PMOD_EXPORT extern struct program_state * Pike_compiler;
         /* This flag is set when resolve functions should force the lookup so
          * that we don't get a placeholder back. Used for inherits. */
 #define COMPILATION_FORCE_RESOLVE       0x02
+        /* Resolve this_program statically in explicit constant expressions. */
+#define COMPILATION_CONSTANT_EXPRESSION 0x04
+        /* Use lexical programs for class values in annotations/imports.
+         * Local constants must retain their runtime parent bindings.
+         */
+#define COMPILATION_LEXICAL_CLASS_VALUES 0x08
 
 /* #define FORCE_RESOLVE_DEBUG */
 /* Helper macros for force_resolve */

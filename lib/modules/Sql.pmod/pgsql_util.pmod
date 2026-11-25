@@ -161,9 +161,34 @@ protected void create() {
   call_out(default_backend_runs, 0);
 }
 
+private Thread.Mutex destructmux = Thread.Mutex();
+
+//! Destructs @[client] unless another thread is doing so: the local
+//! backend destructs freed connections, and exit the rest.
+final void destruct_client(proxy client) {
+  Thread.MutexKey lock = destructmux->lock(2);
+  if (client)
+    destruct(client);
+}
+
 protected void _destruct() {
   foreach (clients; proxy client; )
-    destruct(client);
+    destruct_client(client);
+}
+
+//! Starts a thread that calls @[fun] in a connection, with @[args].
+//! Pike may switch threads just before the call, and another thread may
+//! destruct the connection meanwhile, the local backend in particular,
+//! which destructs freed connections. The call then fails, which is no
+//! error, since the connection is gone.
+final void connection_thread(function fun, mixed ... args) {
+  Thread.Thread(call_unless_destructed, fun, args);
+}
+
+private void call_unless_destructed(function fun, array args) {
+  mixed err = catch(fun(@args));
+  if (err && fun)
+    throw(err);
 }
 
 private Regexp iregexp(string expr) {
@@ -216,10 +241,7 @@ final void register_backend(proxy client) {
 
 final void throwdelayederror(Result|proxy parent) {
   if (mixed err = parent->delayederror) {
-    if (!objectp(parent->pgsqlsess))
-      parent->untolderror = 0;
-    else if (parent->pgsqlsess)
-      parent->pgsqlsess->untolderror = parent->pgsqlsess->delayederror = 0;
+    parent->_errortold();
     parent->delayederror = 0;
     if (stringp(err))
       err = ({err, backtrace()[..<2]});
@@ -452,8 +474,8 @@ class conxiin {
 #endif
      );
     void|Thread.MutexKey lock = fillreadmux->lock();
-    if (procmsg && id)
-      procmsg = 0, lock = 0, Thread.Thread(id);
+    if (procmsg && functionp(id))
+      procmsg = 0, lock = 0, connection_thread(id);
     else if (fillread)
       didreadcb = 1, fillread.signal();
     return 0;
@@ -646,16 +668,19 @@ outer:
   final int close() {
     if (!closenext && nostash) {
       closenext = 1;
+      // Read first: the signal below may get this object destructed.
+      conxiin in = i;
+      object sock = socket;
       {
-        Thread.MutexKey lock = i->fillreadmux->lock();
-        if (i->fillread) {  // Delayed close() after flushing the output buffer
+        Thread.MutexKey lock = in->fillreadmux->lock();
+        if (in->fillread) {  // Delayed close() after flushing the output buffer
           shuffle->set_done_callback(done_cb);
-          i->fillread.signal();
-          i->fillread = 0;
+          in->fillread.signal();
+          in->fillread = 0;
         }
       }
-      PD("%d>Delayed close, flush write\n", socket->query_fd());
-      i->read_cb(socket->query_id(), 0);
+      PD("%d>Delayed close, flush write\n", sock->query_fd());
+      in->read_cb(sock->query_id(), 0);
       return 0;
     } else
       return -1;
@@ -675,10 +700,12 @@ outer:
           catch {
             foreach (runningportals; Result result; )
               if (!result.datarowtypes) {
+                void|Thread.MutexKey lock = result._ddescribemux->lock(2);
                 result.datarowtypes = ({});
                 if (result._state != PURGED && !result.delayederror)
                   result.delayederror = LOSTERROR;
                 result._ddescribe->broadcast();
+                lock = 0;
                 runningportals[result] = 0;
               } else
                 destruct(result);
@@ -748,7 +775,7 @@ outer:
       socket->set_nonblocking(i->read_cb, 0, close);
       shuffle = shuffler->shuffle(socket);
       if (nossl != 2)
-        Thread.Thread(pgsqlsess->processloop, this);
+        connection_thread(pgsqlsess->processloop, this);
       return;
     };
     PD("Connect error %s\n", describe_backtrace(err));
@@ -971,7 +998,8 @@ class Result {
         }
         lock = 0;			// Force release before acquiring next
         lock = _ddescribemux->lock();
-        if (!statuscmdcomplete)
+        // A failed query is purged, not completed: stop waiting then too.
+        while (!statuscmdcomplete && _state < CLOSED && !delayederror)
           PT(_ddescribe->wait(lock));
       }
       if (this)		// If object already destructed, skip the next call
@@ -1035,7 +1063,7 @@ class Result {
   }
 
   private void losterror(void|string err) {
-    if (pgsqlsess)
+    if (pgsqlsess && pgsqlsess->untolderror)
       err = pgsqlsess->geterror(1) || err;
     if (err)
       error("%s\n", err);
@@ -1046,6 +1074,20 @@ class Result {
       throwdelayederror(this);
     else if (_state == PURGED)
       losterror();
+  }
+
+  //! Called when this result's error has been thrown: the session it
+  //! came from, while still attached, no longer has an untold error.
+  //! The session's own delayed error, if any, is kept for its next call.
+  final void _errortold() {
+    if (pgsqlsess)
+      pgsqlsess->_errortold();
+    else
+      // FIXME Once releaseconditions() has severed the result from its
+      // session, the session can't be told. Its error then still counts
+      // as untold, and the session's _destruct() prints it to stderr,
+      // although the program has caught it.
+      untolderror = 0;
   }
 
   //! @seealso
@@ -1724,10 +1766,13 @@ class Result {
 
   private void releaseconditions(void|int aborted) {
     _unnamedportalkey = _unnamedstatementkey = 0;
-    if (!datarowtypes) {
-      if (_state != PURGED && !delayederror)
-        delayederror = LOSTERROR;
-      datarowtypes = ({});
+    {
+      void|Thread.MutexKey lock = _ddescribemux->lock(2);
+      if (!datarowtypes) {
+        if (_state != PURGED && !delayederror)
+          delayederror = LOSTERROR;
+        datarowtypes = ({});
+      }
       _ddescribe->broadcast();
     }
     if (aborted && delayederror && pgsqlsess && !pgsqlsess.delayederror)
@@ -2043,8 +2088,6 @@ class proxy {
     qportals = Thread.Queue();
     readyforquerycount = 1;
     qportals->write(1);
-    if (!(c = conxion(this, qportals, 0)))
-      error("Couldn't connect to database on %s:%d\n", host, port);
     runtimeparameter = ([]);
     unnamedportalmux = MUTEX();
     unnamedstatement = MUTEX();
@@ -2052,6 +2095,8 @@ class proxy {
     portalsinflight = Thread.ResourceCount();
     statementsinflight = Thread.ResourceCount();
     wasparallelisable = 0;
+    if (!(c = conxion(this, qportals, 0)))
+      error("Couldn't connect to database on %s:%d\n", host, port);
   }
 
   final int is_open() {
@@ -2065,6 +2110,11 @@ class proxy {
       lastmessage = ({});
     warningscollected = 0;
     return sizeof(s) && s;
+  }
+
+  //! Called when this session's error has been thrown.
+  final void _errortold() {
+    untolderror = 0;
   }
 
   final string host_info() {

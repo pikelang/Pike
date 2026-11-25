@@ -165,7 +165,7 @@ void next()
 
 void prev()
 //! Moves the path to point to the previous node at the current depth,
-//! if it exists.  Returns TRUE if the move was made.
+//! if it exists.
 {
   pgtk2_verify_inited();
   gtk_tree_path_prev((GtkTreePath *)THIS->obj);

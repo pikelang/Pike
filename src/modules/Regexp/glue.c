@@ -157,7 +157,7 @@ static void regexp_match(INT32 args)
     SIMPLE_ARG_TYPE_ERROR("match", 1, "string|array(string)");
 }
 
-/*! @decl array(string) split(string s)
+/*! @decl array(string|zero)|zero split(string s)
  *! Works as @[match], but returns an array of the strings that
  *! matched the subregexps. Subregexps are those contained in "( )" in
  *! the regexp. Subregexps that were not matched will contain zero.
@@ -232,8 +232,9 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("match",regexp_match,
 	       tOr(tFunc(tStr, tInt),
 		   tFunc(tArr(tStr), tArr(tStr))), 0);
-  /* function(string:string*) */
-  ADD_FUNCTION("split",regexp_split,tFunc(tStr,tArr(tStr)),0);
+  /* function(string:array(string|zero)|zero) */
+  ADD_FUNCTION("split",regexp_split,
+               tFunc(tStr,tOr(tArr(tOr(tStr,tZero)),tZero)),0);
 
   set_exit_callback(exit_regexp_glue);
   end_class("_SimpleRegexp", 0);

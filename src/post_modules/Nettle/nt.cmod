@@ -86,11 +86,14 @@ PIKECLASS CryptContext
     }
   }
 
-  /*! @decl string(0..255) read(int size, string(0..255)|void init)
+  /*! @decl string(0..255)|zero read(int size, string(0..255)|void init)
    *!
    *! Retreive some random data. Calls CryptGenRandom in the NT API.
+   *!
+   *! @returns
+   *!   Returns zero if CryptGenRandom() fails.
    */
-  PIKEFUN string(0..255) read(int size, string(0..255)|void init)
+  PIKEFUN string(0..255)|zero read(int size, string(0..255)|void init)
     optflags OPT_EXTERNAL_DEPEND;
   {
     struct pike_string *res;
@@ -145,28 +148,28 @@ void nt_init(void)
   /*! @decl constant int PROV_RSA_FULL
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(PROV_RSA_FULL);
 
   /*! @decl constant int PROV_RSA_SIG
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(PROV_RSA_SIG);
 
   /*! @decl constant int PROV_DSS
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(PROV_DSS);
 
   /*! @decl constant int PROV_FORTEZZA
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(PROV_FORTEZZA);
 
@@ -174,7 +177,7 @@ void nt_init(void)
   /*! @decl constant int PROV_MS_EXCHANGE
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32 (if at all).
+   *!   Only available on NT/WIN32 (if at all).
    */
   SIMPCONST(PROV_MS_EXCHANGE);
 #endif
@@ -182,28 +185,28 @@ void nt_init(void)
   /*! @decl constant int PROV_SSL
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(PROV_SSL);
 
   /*! @decl constant int CRYPT_VERIFYCONTEXT
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(CRYPT_VERIFYCONTEXT);
 
   /*! @decl constant int CRYPT_NEWKEYSET
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(CRYPT_NEWKEYSET);
 
   /*! @decl constant int CRYPT_DELETEKEYSET
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32.
+   *!   Only available on NT/WIN32.
    */
   SIMPCONST(CRYPT_DELETEKEYSET);
 
@@ -211,7 +214,7 @@ void nt_init(void)
   /*! @decl constant int CRYPT_MACHINE_KEYSET
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32 (if at all).
+   *!   Only available on NT/WIN32 (if at all).
    */
   SIMPCONST(CRYPT_MACHINE_KEYSET);
 #endif
@@ -220,7 +223,7 @@ void nt_init(void)
   /*! @decl constant int CRYPT_SILENT
    *!
    *! @note
-   *!   Only avaliable on NT/WIN32 (if at all).
+   *!   Only available on NT/WIN32 (if at all).
    */
   SIMPCONST(CRYPT_SILENT);
 #endif

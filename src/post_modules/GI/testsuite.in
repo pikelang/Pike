@@ -1,5 +1,5 @@
 START_MARKER
-cond_begin([[ master()->resolv("GI")->get_default_repository ]])
+cond_begin([[ master()->resolv("GI.get_default_repository") ]])
 dnl pkgsrc can install GI without the separate GLib introspection typelibs.
 cond_begin([[ GI.get_default_repository()->enumerate_versions("GLib") ]])
 
@@ -122,7 +122,7 @@ cond_end
 cond_end
 dnl Gdk 2.0 has GObject constants that are magic pointers, not objects
 dnl (GDK_NO_BG). Select that version even if newer Gdk typelibs exist.
-cond_begin([[ master()->resolv("GI")->get_default_repository ]])
+cond_begin([[ master()->resolv("GI.get_default_repository") ]])
 cond([[ has_value(GI.get_default_repository()->enumerate_versions("Gdk") || ({}), "2.0") ]], [[
   test_any([[
     mapping r = Process.run(RUNPIKE_ARRAY + ({ "-e", #{

@@ -3,7 +3,7 @@ class GTK2.HbuttonBox;
 inherit GTK2.ButtonBox;
 
 //! A HbuttonBox is very similar to a Hbox.
-//! The major diffference is that the button box
+//! The major difference is that the button box
 //! is made to pack buttons in, and has a few convenience function for
 //! normal button layouts.
 //!

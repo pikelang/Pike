@@ -80,7 +80,7 @@ static void pgtk2__signal_connect(const gchar *handler_name,
 
 //! Glade is a free GUI builder for GTK2+ and Gnome.  It's normally used to
 //! create C-code, but can also produce code for other languages.  Libglade
-//! is a utility library that builds the GI from the Glade XML save files.
+//! is a utility library that builds the GUI from the Glade XML save files.
 //! This module uses libglade and allows you to easily make GUI designs to be
 //! used with your Pike applications.
 

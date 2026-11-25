@@ -70,6 +70,19 @@ o Compiler
     This restores array append optimizations and avoids replacing simple
     array allocation with expensive recursive copies of constants.
 
+o SSL
+
+  Load TLS and HTTP modules with older Nettle builds lacking elliptic
+  curves. Such builds default to TLS 1.2 and omit TLS 1.3 cipher suites,
+  since TLS 1.3 key exchange currently requires elliptic curve support.
+  Fix strict-type warnings in the DH/DSA fallbacks and 32-bit ticket ages.
+
+o Gmp.mpf
+
+  Preserve the sign of negative Gmp.mpz exponents in pow() without MPFR.
+  Reject integer object exponents that do not fit in a signed C long
+  instead of silently truncating them.
+
 o Runtime
 
 o Operator functions
@@ -215,6 +228,8 @@ Building and installing
 
 Issues fixed
 ------------
+
+GitLab (Lysator) pikelang/pike:
 
   #10103: Support rest variables in multi-assignment.
   #10110: Support multi-assignment from mappings.

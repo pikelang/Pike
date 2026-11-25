@@ -62,7 +62,9 @@ string(8bit) decrypt_body(string(8bit) dek_info, string(8bit) body,
   key = derive_key(key, iv[..7], key_size);
   Crypto.BufferedCipher._Buffer.State decoder = cipher();
   decoder->set_decrypt_key(key);
-  return decoder->unpad(iv + body, Crypto.PAD_PKCS7)[sizeof(iv)..];
+  string(8bit)|zero decrypted = decoder->unpad(iv + body, Crypto.PAD_PKCS7);
+  if (!decrypted) error("Invalid padding (wrong password?).\n");
+  return decrypted[sizeof(iv)..];
 }
 
 //! Decrypt a PEM Message.

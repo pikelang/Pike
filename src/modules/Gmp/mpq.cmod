@@ -1012,7 +1012,8 @@ float_fallback:
   }
 
   /*! @decl protected Gmp.mpq `%(int|float|object ... a)
-   *! @expr{a%b =  a -  floor(a/b)*b @}
+   *! @expr{a%b = a - trunc(a/b)*b @}, ie the result has the same sign
+   *! as @[a] (or is zero).
    */
   PIKEFUN mpq `%(int|float|object ... UNUSED)
     flags ID_PROTECTED;

@@ -213,7 +213,9 @@ PIKECLASS CalloutBlock
   /*! @decl int callout_string_offset
    *!
    *! The code unit offset to the start of the callout argument string within
-   *! the original pattern string.
+   *! the original pattern string, or @expr{UNDEFINED@} if the PCRE2
+   *! library in use doesn't supply this field (added in callout block
+   *! version 1).
    */
   PIKEFUN int `callout_string_offset()
   {
@@ -224,12 +226,15 @@ PIKECLASS CalloutBlock
       push_undefined();
   }
 
-  /*! @decl string callout_string
+  /*! @decl string|zero callout_string
    *!
    *! For callouts with string arguments, @[callout_number] is always zero,
    *! and this field contains the string that is contained within the pattern.
+   *! @expr{UNDEFINED@} is returned if the PCRE2 library in use doesn't
+   *! supply this field (added in callout block version 1) or there is
+   *! no callout string.
    */
-  PIKEFUN string `callout_string()
+  PIKEFUN string|zero `callout_string()
   {
     pcre2_callout_block_8 *block = THIS->block;
     if (block->version >= 1 && block->callout_string != NULL)
@@ -255,6 +260,9 @@ PIKECLASS CalloutBlock
    *! @endint
    *! Both bits are set when a backtrack has caused a "bumpalong" to a new
    *! starting position in the subject.
+   *!
+   *! @expr{UNDEFINED@} is returned if the PCRE2 library in use doesn't
+   *! supply this field (added in callout block version 2).
    */
   PIKEFUN int `callout_flags()
   {
@@ -774,7 +782,7 @@ PIKECLASS _pcre
     *!     subsequently processed as strings of UTF characters instead of
     *!     single-code-unit strings
     *!   @value  OPTION.NEVER_BACKSLASH_C
-    *!     Ĺock out the use of \C in the pattern that is being compiled
+    *!     Lock out the use of \C in the pattern that is being compiled
     *!   @value  OPTION.ALT_CIRCUMFLEX
     *!     A multiline circumflex also matches after a terminating newline
     *!   @value  OPTION.ALT_VERBNAMES
@@ -1171,7 +1179,7 @@ PIKECLASS _pcre
 /*! @endclass
  */
 
-/*! @decl array(string) split_subject(string subject, @
+/*! @decl array(string|zero) split_subject(string subject, @
  *!                        array(int) previous_result)
  *! Convenience function that
  *! splits a subject string on the result from @[_pcre()->exec()]
@@ -1179,9 +1187,13 @@ PIKECLASS _pcre
  *! equal to
  *! map(previous_result/2,
  *!     lambda(array v) { return subject[v[0]..v[1]-1]; })
+ *!
+ *! Elements corresponding to a pair of offsets that didn't match
+ *! (ie both are @expr{-1@}, as @[_pcre()->exec()] uses for
+ *! unmatched subpatterns) are @expr{0@} rather than a string.
  */
 
-PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
+PIKEFUN array(string|zero) split_subject(string subject,array(int) previous_result)
 {
   int i,j;
   int sz=previous_result->size/2;

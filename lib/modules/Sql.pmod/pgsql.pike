@@ -495,10 +495,17 @@ private void waitauthready() {
   proxy.close();
 }
 
-protected void _destruct() {
+protected void _destruct(int|void reason) {
   if (proxy) {
     proxy.unnamedstatement = 0;		// Forget about pending statements
-    destruct(proxy);
+    if (reason == Object.DESTRUCT_EXPLICIT)
+      destruct(proxy);
+    else
+      // Freed (through the list of objects to destruct) or by the gc:
+      // a signal context, where closing the connection can't lock its
+      // mutexes. The connection's backend thread destructs it instead.
+      .pgsql_util.local_backend->call_out(.pgsql_util.destruct_client, 0,
+                                          proxy);
   }
 }
 

@@ -114,8 +114,9 @@ static void do_free_arrayptr( struct array **x )
  *!   Tokenize a string of C tokens.
  *!
  *! @note
- *!   Don't use this function directly.
- *!   Use @[Parser.C.tokenize()] instead.
+ *!   This low-level tokenizer is not used by @[Parser.C]; that module
+ *!   instead reuses the Pike tokenizer in @[_Pike], since Pike's
+ *!   lexical grammar is a close superset of C's.
  *!
  *! @returns
  *!   Returns an array with an array with C-level tokens, and

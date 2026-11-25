@@ -560,7 +560,7 @@ PIKECLASS ECC_Curve
     ref_push_string(MK_STRING("UNKNOWN"));
   }
 
-  /*! @decl string(7bit) jose_name()
+  /*! @decl string(7bit)|zero jose_name()
    *!
    *! Returns the name of the curve according to JOSE
    *! (@rfc{7518:6.2.1.1@}).
@@ -572,7 +572,7 @@ PIKECLASS ECC_Curve
    *! @seealso
    *!   @[name()]
    */
-  PIKEFUN string(7bit) jose_name()
+  PIKEFUN string(7bit)|zero jose_name()
   {
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
     if (THIS->curve == nettle_get_secp_256r1()) {
@@ -1629,11 +1629,14 @@ PIKECLASS Curve25519
       ref_push_object_inherit(loc.o, loc.inherit - loc.o->prog->inherits);
     }
 
-    /*! @decl string(8bit) get_private_key()
+    /*! @decl string(8bit)|zero get_private_key()
      *!
      *! Get the private key.
+     *!
+     *! @returns
+     *!   Returns @[UNDEFINED] if no private key has been set.
      */
-    PIKEFUN string(8bit) get_private_key()
+    PIKEFUN string(8bit)|zero get_private_key()
     {
       if (THIS->private_key) {
 	ref_push_string(THIS->private_key);
@@ -1673,11 +1676,14 @@ PIKECLASS Curve25519
       point->point = end_shared_string(pub);
     }
 
-    /*! @decl string(8bit) get_x()
+    /*! @decl string(8bit)|zero get_x()
      *!
      *! Get the x coordinate of the public key.
+     *!
+     *! @returns
+     *!   Returns @[UNDEFINED] if no public key has been set.
      */
-    PIKEFUN string(8bit) get_x()
+    PIKEFUN string(8bit)|zero get_x()
     {
       struct Nettle_Curve25519_Point_struct *point;
       point = get_inherited_storage(1, Nettle_Curve25519_Point_program);
@@ -2073,11 +2079,14 @@ PIKECLASS Curve448
       ref_push_object_inherit(loc.o, loc.inherit - loc.o->prog->inherits);
     }
 
-    /*! @decl string(8bit) get_private_key()
+    /*! @decl string(8bit)|zero get_private_key()
      *!
      *! Get the private key.
+     *!
+     *! @returns
+     *!   Returns @[UNDEFINED] if no private key has been set.
      */
-    PIKEFUN string(8bit) get_private_key()
+    PIKEFUN string(8bit)|zero get_private_key()
     {
       if (THIS->private_key) {
         ref_push_string(THIS->private_key);
@@ -2117,11 +2126,14 @@ PIKECLASS Curve448
       point->point = end_shared_string(pub);
     }
 
-    /*! @decl string(8bit) get_x()
+    /*! @decl string(8bit)|zero get_x()
      *!
      *! Get the x coordinate of the public key.
+     *!
+     *! @returns
+     *!   Returns @[UNDEFINED] if no public key has been set.
      */
-    PIKEFUN string(8bit) get_x()
+    PIKEFUN string(8bit)|zero get_x()
     {
       struct Nettle_Curve448_Point_struct *point;
       point = get_inherited_storage(1, Nettle_Curve448_Point_program);

@@ -86,6 +86,9 @@ static void init_builtin_modules(void)
   TRACE("Init error handling...\n");
   init_error();
 
+  TRACE("Init Pike.NoExplicitDestruct...\n");
+  init_no_explicit_destruct();
+
   TRACE("Init threads...\n");
   th_init();
 

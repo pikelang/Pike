@@ -184,7 +184,7 @@ class State {
 	if (p->probably_prime_p())
 	{
 	  /* Done */
-	  return ({ p, q });
+          return [array(2:)]({ p, q });
 	}
       }
     }

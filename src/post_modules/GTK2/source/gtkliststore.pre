@@ -207,7 +207,7 @@ void remove(GTK2.TreeIter iter)
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert_after",sizeof(GtkTreeIter));
-    gtk_list_store_insert_before(GTK_LIST_STORE(THIS->obj),
+    gtk_list_store_insert_after(GTK_LIST_STORE(THIS->obj),
 	gt,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
     push_pgdk2object(gt,pgtk2_tree_iter_program,1);

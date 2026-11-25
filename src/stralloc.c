@@ -15,6 +15,7 @@
 #include "interpret.h"
 #include "operators.h"
 #include "pike_float.h"
+#include "pike_dtoa.h"
 #include "pike_types.h"
 #include "block_allocator.h"
 #include "whitespace.h"
@@ -3096,9 +3097,7 @@ static char *hex_float_decimal(PCHARP start, PCHARP *end, int mant_dig)
       exponent < 4 * (DBL_MIN_EXP - DBL_MANT_DIG)) {
 #endif
     mpz_clear(&value);
-    buf = xalloc(16);
-    strcpy(buf, exponent > 0 ? "1e999999" : "1e-999999");
-    return buf;
+    return xstrdup(exponent > 0 ? "1e999999" : "1e-999999");
   }
 
   if (exponent >= 0) {
@@ -3168,7 +3167,8 @@ static double low_strtod_pcharp(const PCHARP nptr, PCHARP *endptr,
     PCHARP end;
     char *hex = hex_float_decimal(s, &end, mant_dig);
     if (hex) {
-      num = strtod(hex, NULL);
+      /* Older libc converters can round away the sticky bit at a tie. */
+      num = pike_strtod(hex, NULL);
       free(hex);
       if (endptr) *endptr = end;
       return num * sign;

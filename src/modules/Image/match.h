@@ -131,7 +131,7 @@ void INAME(INT32 args)
       if (needle_cert)
 	needle_certi=needle_cert->img;
 
-THREADS_ALLOW();
+IMAGE_THREADS_ALLOW();
       nxs=needle->xsize;
       nys=needle->ysize;
       xs=this->xsize;
@@ -206,7 +206,7 @@ THREADS_ALLOW();
 #undef PIXEL_VALUE_DISTANCE
 #undef DOUBLE_LOOP
 
-THREADS_DISALLOW();
+IMAGE_THREADS_DISALLOW();
     }
   push_object(o);
 }

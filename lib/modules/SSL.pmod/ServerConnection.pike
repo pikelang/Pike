@@ -603,10 +603,14 @@ protected int select_signature_scheme_1_3(CertificatePair cp,
   // Encrypt's ECDSA intermediates are secp384r1 while commonly
   // issuing secp256r1 leaf certificates).
   object curve = [object]cp->key->get_curve();
+  if (!curve) return -1;
   int scheme;
-  if (curve == Crypto.ECC.SECP_256R1) scheme = SIGNATURE_ecdsa_secp256r1_sha256;
-  else if (curve == Crypto.ECC.SECP_384R1) scheme = SIGNATURE_ecdsa_secp384r1_sha384;
-  else if (curve == Crypto.ECC.SECP_521R1) scheme = SIGNATURE_ecdsa_secp521r1_sha512;
+  if (curve == ECC_CURVES[GROUP_secp256r1])
+    scheme = SIGNATURE_ecdsa_secp256r1_sha256;
+  else if (curve == ECC_CURVES[GROUP_secp384r1])
+    scheme = SIGNATURE_ecdsa_secp384r1_sha384;
+  else if (curve == ECC_CURVES[GROUP_secp521r1])
+    scheme = SIGNATURE_ecdsa_secp521r1_sha512;
   else return -1; // Unsupported curve for a live TLS 1.3 signature.
   return has_value(peer_schemes, scheme) ? scheme : -1;
 }
@@ -771,8 +775,8 @@ protected int(-1..0) reply_new_session_1_3(array(int) cipher_suites,
     // doesn't match how old we think it actually is, within our
     // tolerance.
     int ticket_age_ms =
-      (obfuscated_ticket_age - [int]psk_session->tls13_ticket_age_add) &
-      0xffffffff;
+      [int]((obfuscated_ticket_age - [int]psk_session->tls13_ticket_age_add) &
+            0xffffffff);
     int actual_age_ms =
       (time(1) - [int]psk_session->tls13_ticket_issue_time) * 1000;
     accept_0rtt = (abs(ticket_age_ms - actual_age_ms) <=

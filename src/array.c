@@ -66,25 +66,11 @@ PMOD_EXPORT void dont_accept_unfinished_type_fields (void *orig)
 #endif
 
 
-/**
- * Allocate an array. This might be changed in the future to allocate
- * linked lists or something. The new array has zero references.
- *
- * When building arrays, it is recommended that you push the values on
- * the stack and call aggregate_array or f_aggregate instead of
- * allocating and filling in the values 'by hand'.
- *
- * @param size The size of the new array, in elements.
- * @param extra_space The number of extra elements space
- * should be reserved for.
- * @return A pointer to the allocated array struct.
- *
- * NB: The array storage is allocated with xcalloc(), so the elements
- *     (including the over-allocated elements) are all initialized to
- *     { T_INT, NUMBER_NUMBER, 0 } (ie plain integer zeroes).
- */
-PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
-					      ptrdiff_t extra_space)
+/* The caller must fill all items when clear_items is false, before the
+ * array can be passed to other code or observed by the GC. */
+static inline struct array *allocate_array_storage(ptrdiff_t size,
+                                                   ptrdiff_t extra_space,
+                                                   int clear_items)
 {
   struct array *v;
   size_t length = size;
@@ -109,7 +95,12 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   if (DO_SIZE_T_MUL_OVERFLOW(length, sizeof(struct svalue), &length) ||
       DO_SIZE_T_ADD_OVERFLOW(length, sizeof(struct array), &length)) goto TOO_BIG;
 
-  v=xcalloc(length, 1);
+  if (clear_items) {
+    v = xcalloc(length, 1);
+  } else {
+    v = xalloc(length);
+    memset(v, 0, offsetof(struct array, u));
+  }
 
   GC_ALLOC(v);
   gc_fast_init_marker(v);
@@ -124,8 +115,32 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   DOUBLELINK (first_array, v);
 
   return v;
+
 TOO_BIG:
   Pike_error("Too large array (size %"PRINTSIZET"d is too big).\n", length);
+}
+
+/**
+ * Allocate an array. This might be changed in the future to allocate
+ * linked lists or something. The new array has zero references.
+ *
+ * When building arrays, it is recommended that you push the values on
+ * the stack and call aggregate_array or f_aggregate instead of
+ * allocating and filling in the values 'by hand'.
+ *
+ * @param size The size of the new array, in elements.
+ * @param extra_space The number of extra elements space
+ * should be reserved for.
+ * @return A pointer to the allocated array struct.
+ *
+ * NB: The array storage is allocated with xcalloc(), so the elements
+ *     (including the over-allocated elements) are all initialized to
+ *     { T_INT, NUMBER_NUMBER, 0 } (ie plain integer zeroes).
+ */
+PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
+                                              ptrdiff_t extra_space)
+{
+  return allocate_array_storage(size, extra_space, 1);
 }
 
 /**
@@ -2403,10 +2418,17 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
 {
   struct array *a;
 
-  a=allocate_array_no_init(args,0);
+  /* All slots are overwritten before the array is used. */
+  a = dmalloc_touch(struct array *, allocate_array_storage(args, 0, 0));
   if (args) {
-    memcpy(ITEM(a),Pike_sp-args,args*sizeof(struct svalue));
-    array_fix_type_field (a);
+    if (args == 1 && !(BITOF(Pike_sp[-1]) & (BIT_OBJECT | BIT_FUNCTION))) {
+      ITEM(a)[0] = Pike_sp[-1];
+      check_svalue(ITEM(a));
+      a->type_field = BITOF(ITEM(a)[0]);
+    } else {
+      memcpy(ITEM(a),Pike_sp-args,args*sizeof(struct svalue));
+      array_fix_type_field(a);
+    }
     Pike_sp-=args;
     DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));
   }

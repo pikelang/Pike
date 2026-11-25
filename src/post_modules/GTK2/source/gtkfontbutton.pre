@@ -54,7 +54,7 @@ int get_show_style();
 
 void set_show_size(int setting);
 //! If setting is true, the font size will be displayed along with the name of
-//! the selected of the selected font.
+//! the selected font.
 
 int get_show_size();
 //! Returns whether the font size will be shown in the label.
