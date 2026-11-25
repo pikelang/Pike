@@ -20,13 +20,13 @@ struct object
 {
   GC_MARKER_MEMBERS;
   unsigned INT32 flags;
-  struct program *prog;
-  struct object *next;
-  struct object *prev;
   unsigned INT32 inhibit_destruct;
 #ifdef PIKE_DEBUG
   INT32 program_id;
 #endif
+  struct program *prog;
+  struct object *next;
+  struct object *prev;
   char *storage;
 };
 
