@@ -1301,7 +1301,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
   case T_SVALUE_PTR:
     {
       struct svalue *s = func.sval;
-      check_destructed(s);
+      if (UNLIKELY(IS_DESTRUCTED(s))) check_destructed(s);
       assign_svalue_no_free(to, s);
       break;
     }
@@ -1337,7 +1337,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
   case PIKE_T_NO_REF_MIXED:
     {
       struct svalue *s=(struct svalue *)ptr;
-      check_destructed(s);
+      if (UNLIKELY(IS_DESTRUCTED(s))) check_destructed(s);
       assign_svalue_no_free(to, s);
       break;
     }
