@@ -23,6 +23,17 @@ define(dotest,[[
 
   test_true(Gz.File)
   test_any([[
+    Stdio.FakeFile f = Stdio.FakeFile("", "wb");
+    Gz.File g = Gz.File(f, "wb");
+    g->write("a");
+    g->write("b");
+    g->close();
+    g = Gz.File(Stdio.FakeFile((string)f, "rb"), "rb");
+    string readback = g->read();
+    g->close();
+    return readback;
+  ]], "ab")
+  test_any([[
     string orig = ((string) Array.enumerate(256)) * 1024;
     object f = Gz.File("gz_test.gz", "wb");
     f->write(orig);
@@ -119,6 +130,8 @@ cond_resolv(Gz.crc32,
 [[
   test_eq(Gz.crc32(""), 0)
   test_eq(Gz.crc32("a"), 0xe8b7be43)
+  test_eq(Gz.crc32("b", Gz.crc32("a")), 0x9e83486d)
+  test_eq(Gz.crc32("", 0xffffffff), 0xffffffff)
   test_eq(Gz.crc32("abc"), 0x352441c2)
   test_eq(Gz.crc32("12345678901234567890123456789012345678901234567890123456789012345678901234567890"), 0x7ca94a72)
 

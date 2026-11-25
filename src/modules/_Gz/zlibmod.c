@@ -1250,10 +1250,10 @@ static void gz_crc32(INT32 args)
     Pike_error("Cannot input wide string to Gz.crc32\n");
 
    if (args>1) {
-      if (TYPEOF(sp[1-args]) != T_INT)
-	 Pike_error("Gz.crc32: illegal argument 2 (expected integer)\n");
-      else
-	 crc=(unsigned INT32)sp[1-args].u.integer;
+      INT64 seed;
+      if (!int64_from_svalue(&seed, &sp[1-args]))
+         Pike_error("Gz.crc32: illegal argument 2 (expected integer)\n");
+      crc = (unsigned INT32)seed;
    } else
       crc=0;
 
