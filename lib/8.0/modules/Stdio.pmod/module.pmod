@@ -37,3 +37,19 @@ class FILE
     return this;
   }
 }
+
+class Readline
+{
+  inherit Stdio.Readline;
+
+  // Keep the old hook available to subclasses, including calls to ::destroy().
+  protected void destroy(void|int reason)
+  {
+    ::_destruct();
+  }
+
+  protected void _destruct(void|int reason)
+  {
+    destroy(reason);
+  }
+}
