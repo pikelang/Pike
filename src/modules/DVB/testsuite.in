@@ -1,1 +1,24 @@
+START_MARKER
 
+cond_resolv(DVB, [[
+  test_do([[
+    catch {
+      object d = DVB.dvb();
+      object s = d->stream(0);
+      if (objectp(s)) {
+        mixed r0 = s->read();
+        mixed r1 = s->read(0);
+        mixed r2 = s->read(1);
+        if (!(stringp(r0) || intp(r0)))
+          error("read() returned an unexpected type.\n");
+        if (!(stringp(r1) || intp(r1)))
+          error("read(0) returned an unexpected type.\n");
+        if (!(stringp(r2) || intp(r2)))
+          error("read(1) returned an unexpected type.\n");
+        s->_destruct();
+      }
+    };
+  ]])
+]])
+
+END_MARKER

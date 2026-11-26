@@ -1386,7 +1386,7 @@ static void f_stream_read(INT32 args) {
     Pike_error("Object destroyed!\n");
 
   check_all_args(NULL, args, BIT_INT | BIT_VOID, 0);
-  if(args > 1)
+  if(args)
     all = (u_short)Pike_sp[-1].u.integer;
   pop_n_elems(args);
 
