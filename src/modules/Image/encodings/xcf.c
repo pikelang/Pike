@@ -937,8 +937,10 @@ static unsigned char read_char( struct buffer *from )
 */
 
 /*
-**! method object decode(string data)
+**! method object decode(string data, mapping|void options)
 **! 	Decodes a XCF image to a single image object.
+**!
+**! Takes the same options mapping as <ref>_decode</ref>.
 **!
 **! note
 **!	Throws upon error in data, you will loose quite a lot of
@@ -947,7 +949,7 @@ static unsigned char read_char( struct buffer *from )
 
 
 /*
-**! method mapping _decode(string|object data,mapping|void options)
+**! method mapping _decode(string|mapping|object data,mapping|void options)
 **! 	Decodes a XCF image to a mapping, with at least an
 **!   'image' and possibly an 'alpha' object. Data is either a XCF image, or
 **!    a XCF.GimpImage object structure (as received from __decode)
@@ -982,7 +984,7 @@ static unsigned char read_char( struct buffer *from )
 */
 
 /*
-**! method object __decode(string|mapping data, mapping|void options)
+**! method object __decode(string|mapping data)
 **! 	Decodes a XCF image to a Image.XCF.GimpImage object.
 **!
 **!     <pre>Returned structure reference
@@ -1084,7 +1086,7 @@ static unsigned char read_char( struct buffer *from )
 */
 
 /*
-**! method object ___decode(string|mapping data)
+**! method mapping ___decode(string data)
 **! 	Decodes a XCF image to a mapping.
 **!
 **!     <pre>Structure reference

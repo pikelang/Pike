@@ -641,7 +641,7 @@ static void image_color_bits( INT32 args )
 **!	the color, or the <ref>hex</ref>(2) if it isn't one
 **!	of the 16 <tt>HTML</tt> colors.
 **!
-**! returns a new <ref>Image.Color.Color</ref> object
+**! returns a string
 **! see also: rgb, hsv, Image.Color
 */
 
@@ -1018,25 +1018,25 @@ static void image_color___hash(INT32 args)
 **!	<table>
 **!	<tr><th>method</th><th width=50%>effect</th>
 **!	<th>h</th><th>s</th><th>v</th><th>as</th></tr>
-**!	<tr><td>light </td><td>raise light level</td><td>±0</td><td> ±0</td><td>+50</td>
+**!	<tr><td>light </td><td>raise light level</td><td>±0</td><td> ±0</td><td>+20</td>
 **!	<td><illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"])</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->light())</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->light()->light())</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->light()->light()->light())</illustration></td></tr>
 **!
-**!	<tr><td>dark  </td><td>lower light level</td><td>±0</td><td> ±0</td><td>-50</td>
+**!	<tr><td>dark  </td><td>lower light level</td><td>±0</td><td> ±0</td><td>-20</td>
 **!	<td><illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"])</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->dark())</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->dark()->dark())</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->dark()->dark()->dark())</illustration></td></tr>
 **!
-**!	<tr><td>bright</td><td>brighter color   </td><td>±0</td><td>+50</td><td>+50</td>
+**!	<tr><td>bright</td><td>brighter color   </td><td>±0</td><td>+20</td><td>+20</td>
 **!	<td><illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"])</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->bright())</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->bright()->bright())</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->bright()->bright()->bright())</illustration></td></tr>
 **!
-**!	<tr><td>dull  </td><td>greyer color     </td><td>±0</td><td>-50</td><td>-50</td>
+**!	<tr><td>dull  </td><td>greyer color     </td><td>±0</td><td>-20</td><td>-20</td>
 **!	<td><illustration>return Image.Image(20,20,@(array)Image.Color.red)</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color.red->dull())</illustration>
 **!	<illustration>return Image.Image(20,20,@(array)Image.Color.red->dull()->dull())</illustration>
@@ -1480,6 +1480,9 @@ static void image_make_color(INT32 args)
 **!	or the <tt>#rrggbb</tt> form. It is case insensitive.
 **!
 **! returns the created object.
+**! note:
+**!     <ref>html</ref>() returns zero_type if given a string it can't
+**!     parse as a color.
 */
 
 static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b)
@@ -1726,11 +1729,12 @@ void init_image_colors(void)
 
    ADD_FUNCTION("cast",image_color_cast,tFunc(tStr,tOr(tArray,tStr)),ID_PROTECTED);
    ADD_FUNCTION("_sprintf",image_color__sprintf,
-		tFunc(tInt tMap(tStr,tMix),tStr),0);
+                tFunc(tInt tMap(tStr,tMix),tStr),0);
    ADD_FUNCTION("`[]",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
    ADD_FUNCTION("`->",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
-   ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObjImpl_IMAGE_COLOR_COLOR,tInt),
-					      tInt),0);
+   ADD_FUNCTION("`==",image_color_equal,
+                tFunc(tOr4(tObjImpl_IMAGE_COLOR_COLOR,tInt,tArr(tInt),tStr),
+                      tInt),0);
    ADD_FUNCTION("__hash",image_color___hash,tFunc(tNone,tInt),0);
 
    ADD_FUNCTION("_encode", image_color__encode,tFunc(tNone,tArr(tInt)),0);
@@ -1747,7 +1751,7 @@ void init_image_colors(void)
    ADD_FUNCTION("hsvf",image_color_hsvf,tFunc(tNone,tArr(tFlt)),0);
    ADD_FUNCTION("cmyk",image_color_cmyk,tFunc(tNone,tArr(tFlt)),0);
    ADD_FUNCTION("greylevel",image_color_greylevel,tOr(tFunc(tNone,tInt),
-						      tFunc(tInt tInt tInt,tInt)),0);
+                                                      tFunc(tInt tInt tInt,tInt)),0);
 
    /* color conversion methods */
 
@@ -1774,32 +1778,33 @@ void init_image_colors(void)
 
    /* this is the Image.Color stuff */
 
-   ADD_FUNCTION("`[]",image_colors_index,tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),0);
+   ADD_FUNCTION("`[]",image_colors_index,
+                tFunc(tStr,tOr(tObjIs_IMAGE_COLOR_COLOR,tZero)),0);
    ADD_FUNCTION("`()",image_make_color,
-		tOr3(tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),
+                tOr3(tFunc(tStr,tOr(tObjIs_IMAGE_COLOR_COLOR,tZero)),
                      tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),
                      tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR)),0);
    ADD_FUNCTION("rgb",image_make_rgb_color,
-		tOr(tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),
+                tOr(tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),
                     tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR)),0);
    ADD_FUNCTION("hsv",image_make_hsv_color,
-		tOr(tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR),
-		    tFunc(tFlt tFlt tFlt,tObjIs_IMAGE_COLOR_COLOR)),0);
+                tOr(tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR),
+                    tFunc(tFlt tFlt tFlt,tObjIs_IMAGE_COLOR_COLOR)),0);
    ADD_FUNCTION("cmyk",image_make_cmyk_color,tFunc(tOr(tInt,tFlt)
-						   tOr(tInt,tFlt)
-						   tOr(tInt,tFlt)
-						   tOr(tInt,tFlt),
-						   tObjIs_IMAGE_COLOR_COLOR), 0);
+                                                   tOr(tInt,tFlt)
+                                                   tOr(tInt,tFlt)
+                                                   tOr(tInt,tFlt),
+                                                   tObjIs_IMAGE_COLOR_COLOR), 0);
    ADD_FUNCTION("html",image_make_html_color,
-		tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),0);
+                tFunc(tStr,tOr(tObjIs_IMAGE_COLOR_COLOR,tZero)),0);
    ADD_FUNCTION("guess",image_guess_color,
-		tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),0);
+                tFunc(tStr,tOr(tObjIs_IMAGE_COLOR_COLOR,tZero)),0);
    ADD_FUNCTION("greylevel",image_make_greylevel_color,
-		tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),0);
+                tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR),0);
    ADD_FUNCTION("_indices",image_colors_indices,
-		tFunc(tNone,tArr(tStr)),0);
+                tFunc(tNone,tArr(tStr)),0);
    ADD_FUNCTION("_values",image_colors_values,
-		tFunc(tNone,tArr(tObjIs_IMAGE_COLOR_COLOR)),0);
+                tFunc(tNone,tArr(tObjIs_IMAGE_COLOR_COLOR)),0);
 
    image_color_program->id = PROG_IMAGE_COLOR_COLOR_ID;
 

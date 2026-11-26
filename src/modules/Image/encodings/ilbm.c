@@ -89,7 +89,7 @@ struct BMHD {
 **!	({int xsize,int ysize,      // 0: size of image drawing area
 **!	  string bitmapheader,      // 2: BMHD chunk
 **!	  void|string colortable,   // 3: opt. colortable chunk (CMAP)
-**!	  void|string colortable,   // 4: opt. colormode chunk (CAMG)
+**!	  void|string colormode,    // 4: opt. colormode chunk (CAMG)
 **!	  string body,		    // 5: BODY chunk
 **!	  mapping more_chunks})	    // 6: mapping with other chunks
 **!	</pre>
@@ -154,7 +154,7 @@ static void image_ilbm___decode(INT32 args)
 
 
 /*
-**! method array _decode(string|array data)
+**! method mapping _decode(string|array data)
 **! 	Decode an ILBM image file.
 **!
 **!     Result is a mapping,

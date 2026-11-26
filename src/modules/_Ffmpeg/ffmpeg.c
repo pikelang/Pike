@@ -572,6 +572,9 @@ static void f_decode(INT32 args) {
  *! Returns @expr{1@} on success, @expr{0@} otherwise.
  *!
  *! @note
+ *!   Not implemented, yet. Always returns @expr{0@}.
+ *!
+ *! @note
  *!   Usable only in encoder
  *!
  *! @seealso
@@ -584,12 +587,13 @@ static void f_encode(INT32 args) {
 }
 
 
-/*! @decl array(mapping) list_codecs()
+/*! @decl array(mapping)|int list_codecs()
  *!
  *! Gets all supported codecs.
  *!
  *! @returns
- *!   Array of mapping with codec features.
+ *!   Array of mapping with codec features, or @expr{0@} (zero) if
+ *!   no codecs are available.
  */
 static void f_list_codecs(INT32 args) {
   int cnt = 0;
@@ -848,9 +852,11 @@ PIKE_MODULE_INIT {
   ADD_STORAGE(ffmpeg_data);
 
   ADD_FUNCTION("create", f_create, tFunc(tInt tInt tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid), tVoid), 0);
-  ADD_FUNCTION("get_codec_info", f_codec_info, tFunc(tVoid,tMapping), 0);
-  ADD_FUNCTION("decode", f_decode, tFunc(tStr,tOr(tMapping,tInt)), 0);
-  ADD_FUNCTION("encode", f_encode, tFunc(tStr,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("get_codec_info", f_codec_info, tFunc(tVoid,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("decode", f_decode,
+               tFunc(tStr tOr(tFunction,tVoid),tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("encode", f_encode,
+               tFunc(tStr tOr(tFunction,tVoid),tOr(tMapping,tInt)), 0);
   ADD_FUNCTION("set_codec_param", f_set_codec_param, tFunc(tStr tMix,tInt), 0);
   ADD_FUNCTION("get_codec_status", f_get_codec_status, tFunc(tVoid,tOr(tMapping,tInt)), 0);
 

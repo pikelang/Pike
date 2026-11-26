@@ -824,7 +824,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 
 /* Pike functions. */
 /*
-**! method object _decode(string data)
+**! method mapping _decode(string data)
 **! 	Decodes a Targa image to a mapping.
 **!       The mapping follows this format:
 **!           ([ "image":img_object, "alpha":alpha_channel ])

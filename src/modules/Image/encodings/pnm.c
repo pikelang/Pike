@@ -16,7 +16,7 @@
 **!
 **!	This format doesn't use any color palette.
 **!
-**!	The format is divided into seven subformats;
+**!	The format is divided into six subformats;
 **!
 **!	<pre>
 **!	P1(PBM) - ascii bitmap (only two colors)
@@ -25,7 +25,6 @@
 **!	P4(PBM) - binary bitmap
 **!	P5(PGM) - binary greymap
 **!	P6(PPM) - binary truecolor
-**! 	P7 - binary truecolor (used by xv for thumbnails)
 **!	</pre>
 **!
 **!	Simple encoding:<br>

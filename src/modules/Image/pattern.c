@@ -335,8 +335,8 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
       : def )
 
 /*
-**! method void noise(array(float|int|array(int)) colorrange)
-**! method void noise(array(float|int|array(int)) colorrange,float scale,float xdiff,float ydiff,float cscale)
+**! method object noise(array(float|int|array(int)) colorrange)
+**! method object noise(array(float|int|array(int)) colorrange,float scale,float xdiff,float ydiff,float cscale)
 **! 	Gives a new image with the old image's size,
 **!	filled width a 'noise' pattern.
 **!
@@ -406,8 +406,8 @@ void image_noise(INT32 args)
 }
 
 /*
-**! method void turbulence(array(float|int|array(int)) colorrange)
-**! method void turbulence(array(float|int|array(int)) colorrange,int octaves,float scale,float xdiff,float ydiff,float cscale)
+**! method object turbulence(array(float|int|array(int)) colorrange)
+**! method object turbulence(array(float|int|array(int)) colorrange,int octaves,float scale,float xdiff,float ydiff,float cscale)
 **! 	gives a new image with the old image's size,
 **!	filled width a 'turbulence' pattern
 **!
@@ -427,7 +427,7 @@ void image_noise(INT32 args)
 **! arg float ydiff
 **!	default value is 0,0
 **! arg float cscale
-**!	default value is 1
+**!	default value is 2
 **! see also: noise, Image.Color
 */
 

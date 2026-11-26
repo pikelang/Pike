@@ -998,14 +998,14 @@ void image_x_decode_truecolor_masks(INT32 args)
    int rbits,rshift,gbits,gshift,bbits,bshift;
 
    if (args<9)
-      Pike_error("Image.X.decode_truecolor_masks: too few arguments (expected 7 arguments)\n");
+      Pike_error("Image.X.decode_truecolor_masks: too few arguments (expected 9 arguments)\n");
    if (TYPEOF(sp[-args]) != T_STRING)
-      Pike_error("Image.X.decode_truecolor_masks: illegal argument 1 (expected image object)\n");
+      Pike_error("Image.X.decode_truecolor_masks: illegal argument 1 (expected string)\n");
 
    if (args>9)
        if (TYPEOF(sp[9-args]) != T_OBJECT ||
-	  !get_storage(ct=sp[9-args].u.object,image_colortable_program))
-	 Pike_error("Image.X.decode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
+          !get_storage(ct=sp[9-args].u.object,image_colortable_program))
+         Pike_error("Image.X.decode_truecolor_masks: illegal argument 10 (expected colortable object)\n");
 
    if (TYPEOF(sp[6-args]) != T_INT)
       Pike_error("Image.X.decode_truecolor_masks: illegal argument 7 (expected integer)\n");
@@ -1016,8 +1016,8 @@ void image_x_decode_truecolor_masks(INT32 args)
       Pike_error("Image.X.decode_truecolor_masks: illegal argument 9 (expected integer)\n");
 
    image_x_examine_mask(sp+6-args,"argument 7 (red mask)",&rbits,&rshift);
-   image_x_examine_mask(sp+7-args,"argument 8 (blue mask)",&gbits,&gshift);
-   image_x_examine_mask(sp+8-args,"argument 9 (green mask)",&bbits,&bshift);
+   image_x_examine_mask(sp+7-args,"argument 8 (green mask)",&gbits,&gshift);
+   image_x_examine_mask(sp+8-args,"argument 9 (blue mask)",&bbits,&bshift);
 
    if (ct) add_ref(ct);
    pop_n_elems(args-6);

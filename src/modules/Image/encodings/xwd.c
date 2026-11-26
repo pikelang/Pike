@@ -74,7 +74,7 @@ void image_x_convert_xy_to_z(INT32 args);
 **! note
 **!	This function may throw errors upon illegal or unknown XWD data.
 **!
-**! returns the decoded image as an image object
+**! returns the decoded image as a mapping
 */
 
 static inline unsigned long int_from_32bit(unsigned char *data)
@@ -520,7 +520,8 @@ void init_image_xwd(void)
 
    ADD_FUNCTION("decode",image_xwd_decode,tFunc(tStr,tObj),0);
 
-   ADD_FUNCTION("decode_header",image_xwd_decode_header,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("decode_header",image_xwd_decode_header,
+                tFunc(tStr,tMap(tStr,tOr3(tInt,tArray,tObj))),0);
 
    ADD_FUNCTION("encode", image_xwd_encode, tFunc(tObj, tStr), 0);
 }

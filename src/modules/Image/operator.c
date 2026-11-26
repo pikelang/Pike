@@ -129,9 +129,9 @@ STANDARD_OPERATOR_HEADER("`-")
    else
    while (i--)
    {
-      d->r=MAXIMUM(absdiff(s1->r,rgb.r),255);
-      d->g=MAXIMUM(absdiff(s1->g,rgb.g),255);
-      d->b=MAXIMUM(absdiff(s1->b,rgb.b),255);
+      d->r=absdiff(s1->r,rgb.r);
+      d->g=absdiff(s1->g,rgb.g);
+      d->b=absdiff(s1->b,rgb.b);
       s1++; d++;
    }
    IMAGE_THREADS_DISALLOW();
@@ -334,7 +334,10 @@ STANDARD_OPERATOR_HEADER("`*")
 **!
 **! see also: `-, `+, `|, `&, `*, Image.Layer
 **!
-**! note: Divide is really not a/b but a/((b+1)/255).
+**! note: For the object and Color overloads, divide is really not a/b
+**!       but a/((b+1)/255). The int/float value overload of `/ instead
+**!       divides by multiplying with the reciprocal (a*(1.0/b)), and does
+**!       not have this quantization.
 **!	  It isn't possible to do a modulo 256 either. (why?)
 */
 

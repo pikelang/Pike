@@ -541,7 +541,8 @@ void img_bmp_encode(INT32 args)
 **!
 **! see also: encode
 **!
-**! returns the encoded image as a string
+**! returns the decoded image as an object (<ref>decode</ref>) or a
+**!     mapping (<ref>_decode</ref>, <ref>decode_header</ref>)
 **!
 **! bugs
 **!	Doesn't support all BMP modes. At all.

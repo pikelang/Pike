@@ -1072,10 +1072,6 @@ static void image_layer_alpha_value(INT32 args)
 **!
 **!	<ref>available_modes</ref>() simply gives an array
 **!	containing the names of these modes.
-**!
-**! note:
-**!	image and alpha channel must be of the same size,
-**!	or canceled.
 */
 
 static void image_layer_set_mode(INT32 args)
@@ -1218,7 +1214,7 @@ static void image_layer_fill_alpha(INT32 args)
 **!
 **! method int xsize()
 **! method int ysize()
-**!	Query layer offset. This is the same as layer
+**!	Query layer size. This is the same as layer
 **!	image/alpha image size.
 */
 
@@ -1439,6 +1435,7 @@ static void image_layer_create(INT32 args)
 **!    "alpha":image,
 **!    "xoffset":int,
 **!    "yoffset":int,
+**!    "alpha_value":float,
 **!    "fill":image,
 **!    "fill_alpha":image
 **!    "tiled":int,

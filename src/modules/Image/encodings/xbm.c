@@ -217,8 +217,8 @@ static void image_xbm_decode( INT32 args )
 
 
 /*
-**! method object _decode(string data)
-**! method object _decode(string data, mapping options)
+**! method mapping _decode(string data)
+**! method mapping _decode(string data, mapping options)
 **! 	Decodes a XBM image to a mapping.
 **!
 **! 	<pre>
@@ -325,7 +325,7 @@ static void image_xbm__decode( INT32 args )
     {
       struct array *tmp = fg;
       fg = bg;
-      bg = fg;
+      bg = tmp;
     }
     apply(a, "xsize", 0);
     apply(a, "ysize", 0);

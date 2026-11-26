@@ -811,7 +811,8 @@ void image_polyfill(INT32 args)
 
    if (!v) {
      free(buf);
-     return; /* no vertices */
+     ref_push_object(THISOBJ); /* no vertices */
+     return;
    }
 
    polyfill_some(THIS,v,buf);

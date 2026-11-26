@@ -516,7 +516,7 @@ IMAGE_THREADS_DISALLOW();
 **!	</tr></table>
 **!
 **!	The image can also be calculated from some special methods,
-**!	for convinience:
+**!	for convenience:
 **!
 **!	<pre>
 **!	channel modes; followed by a number of 1-char-per-pixel strings
@@ -2018,8 +2018,8 @@ static void image_tuned_box(INT32 args)
 }
 
 /*
-**! method int gradients(array(int) point, ...)
-**! method int gradients(array(int) point, ..., float grad)
+**! method object gradients(array(int) point, ...)
+**! method object gradients(array(int) point, ..., float grad)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
@@ -2241,7 +2241,7 @@ static void select_random(INT32 args)
 /*
 **! method object test()
 **! method object test(int seed)
-**! method object test(function(int:string) random)
+**! method object test(function(int:int) random)
 **!    	Generates a test image, currently random gradients.
 **!
 **!	<table><tr valign=center>
@@ -2650,7 +2650,7 @@ void image_threshold(INT32 args)
 **!    When converting to HSV, the resulting data is stored like this:
 **!     pixel.r = h; pixel.g = s; pixel.b = v;
 **!
-**!    When converting to RGB, the input data is asumed to be placed in
+**!    When converting to RGB, the input data is assumed to be placed in
 **!    the pixels as above.
 **!
 **!	<table><tr valign=center>
@@ -2896,7 +2896,7 @@ void image_rgb_to_hsv(INT32 args)
 **!	</tr></table>
 **!
 **!
-**!    RGB to YUB calculation (this follows CCIR.601):
+**!    RGB to YUV calculation (this follows CCIR.601):
 **!    <pre>
 **!    in = input pixel
 **!    out = destination pixel
@@ -3646,10 +3646,14 @@ CHRONO("apply_matrix, end");
 /*
 **! method object outline()
 **! method object outline(int olr,int olg,int olb)
+**! method object outline(int olr,int olg,int olb,int ola)
 **! method object outline(int olr,int olg,int olb,int bkgr,int bkgg,int bkgb)
+**! method object outline(int olr,int olg,int olb,int ola,int bkgr,int bkgg,int bkgb)
 **! method object outline(array(array(int)) mask)
 **! method object outline(array(array(int)) mask,int olr,int olg,int olb)
+**! method object outline(array(array(int)) mask,int olr,int olg,int olb,int ola)
 **! method object outline(array(array(int)) mask,int olr,int olg,int olb,int bkgr,int bkgg,int bkgb)
+**! method object outline(array(array(int)) mask,int olr,int olg,int olb,int ola,int bkgr,int bkgg,int bkgb)
 **! method object outline_mask()
 **! method object outline_mask(int bkgr,int bkgg,int bkgb)
 **! method object outline_mask(array(array(int)) mask)
@@ -3684,13 +3688,13 @@ CHRONO("apply_matrix, end");
 **! arg int olg
 **! arg int olb
 **!	outline color. Default is current.
+**! arg int ola
+**!     alpha value of the outline color. Default is 0 (opaque).
 **! arg int bkgr
 **! arg int bkgg
 **! arg int bkgb
 **!	background color (what color to outline to);
 **!	default is color of pixel 0,0.
-**! arg int|float div
-**!	division factor, default is 1.0.
 **!
 **! note
 **!	no antialias!
@@ -4243,8 +4247,8 @@ static void image_apply_curve( INT32 args )
 
 
 /*
-**! method object gamma(float g)
-**! method object gamma(float gred, float ggreen, float gblue)
+**! method object gamma(int|float g)
+**! method object gamma(int|float gred, int|float ggreen, int|float gblue)
 **!     Calculate pixels in image by gamma curve.
 **!
 **!	Intensity of new pixels are calculated by:<br>
@@ -4254,14 +4258,14 @@ static void image_apply_curve( INT32 args )
 **!	with gamma 2.2. To correct your image to the correct
 **!	gamma value, do something like:
 **!
-**!	<tt>my_display_image(my_image()->gamma(1/2.2);</tt>
+**!	<tt>my_display_image(my_image()->gamma(1/2.2));</tt>
 **!
 **! returns a new image object
 **!
-**! arg int g
-**! arg int gred
-**! arg int ggreen
-**! arg int gblue
+**! arg int|float g
+**! arg int|float gred
+**! arg int|float ggreen
+**! arg int|float gblue
 **!	gamma value
 **!
 **! see also: grey, `*, color
@@ -4412,9 +4416,9 @@ void image_write_lsb_rgb(INT32 args)
       if (b==0) { b=128; l--; s++; }
       if (l>0) d->r=(d->r&254)|(((*s)&b)?1:0); else d->r&=254; b>>=1;
       if (b==0) { b=128; l--; s++; }
-      if (l>0) d->g=(d->r&254)|(((*s)&b)?1:0); else d->g&=254; b>>=1;
+      if (l>0) d->g=(d->g&254)|(((*s)&b)?1:0); else d->g&=254; b>>=1;
       if (b==0) { b=128; l--; s++; }
-      if (l>0) d->b=(d->r&254)|(((*s)&b)?1:0); else d->b&=254; b>>=1;
+      if (l>0) d->b=(d->b&254)|(((*s)&b)?1:0); else d->b&=254; b>>=1;
       d++;
    }
 
@@ -4597,7 +4601,7 @@ static void image__sprintf( INT32 args )
 /*
 **! method object grey_blur(int no_pass)
 **!	Works like blur, but only operates on the r color channel.
-**!     A faster alternative to blur for grey scale images. @[no_pass]
+**!     A faster alternative to blur for grey scale images. no_pass
 **!     is the number of times the blur matrix is applied.
 **!
 **!	<table><tr valign=center>
@@ -4662,10 +4666,10 @@ static void image_grey_blur( INT32 args )
 }
 
 /*
-**! method string blur(int no_pass)
+**! method object blur(int no_pass)
 **!	A special case of apply_matrix that creates a blur effect.
 **!     About four times faster than the generic apply_matrix.
-**!     @[no_pass] is the number of times the blur matrix is applied.
+**!     no_pass is the number of times the blur matrix is applied.
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
@@ -5123,7 +5127,7 @@ void init_image_image(void)
    ADD_FUNCTION("orient4",image_orient4,
 		tFunc(tNone,tArr(tObj)),0);
    ADD_FUNCTION("orient",image_orient,
-		tFunc(tNone,tObj),0);
+                tFunc(tOr3(tInt,tFlt,tVoid) tOr(tArr(tObj),tVoid),tObj),0);
 
    ADD_FUNCTION("phaseh",image_phaseh,
 		tFunc(tNone,tObj),0);

@@ -63,7 +63,7 @@ static void chrono(char *x)
 #endif
 
 /*
-**! method object orient(void|array(object) something)
+**! method object orient(void|int|float mag, void|array(object) something)
 **! method array(object) orient4()
 **!	Draws images describing the orientation
 **!     of the current image.
@@ -88,6 +88,12 @@ static void chrono(char *x)
 **!	amount of different directions, see above.
 **!
 **! returns an image or an array of the four new image objects
+**!
+**! arg int|float mag
+**!     magnitude (value-channel) scale factor; default is 1.0
+**! arg array(object) something
+**!     previously computed @[orient4] output to use as input,
+**!     instead of recomputing it from the current image
 **!
 **! note
 **!	experimental status; may not be exact the same
@@ -151,6 +157,7 @@ void image_orient(INT32 args)
   rgb_group *d,*s1,*s2,*s3,*s0;
   double mag;
   int i, w, h;
+  struct array *held_arr = NULL;
 
   CHECK_INIT();
 
@@ -197,6 +204,15 @@ void image_orient(INT32 args)
     }
     for(i=0; i<4; i++)
         img[i]=get_storage(sp[1-args].u.array->item[i].u.object,image_program);
+    /* img[0..3] above are borrowed pointers into the storage of the
+     * objects in this array. Keep the array (and thus those objects)
+     * alive past the pop_n_elems() below, which would otherwise be
+     * able to free them if this array has no other references
+     * (e.g. when the caller passes a freshly constructed array
+     * directly as the argument), leaving img[0..3] dangling.
+     */
+    held_arr = sp[1-args].u.array;
+    add_ref(held_arr);
     pop_n_elems(args);
     push_int(this->xsize);
     push_int(this->ysize);
@@ -263,6 +279,8 @@ IMAGE_THREADS_DISALLOW();
     pop_n_elems(5);
     push_object(o[4]);
   }
+
+  if (held_arr) free_array(held_arr);
 }
 
 
