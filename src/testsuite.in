@@ -4745,6 +4745,30 @@ test_compile([[Stdio.File foo=Stdio.FILE();]])
 
 dnl variant
 test_any([[
+  return compile_string("#pike 8.0\n" + #"
+    typedef string|Builder Content;
+    class Builder {
+      string selected;
+      protected void create(string tag, mapping|void attributes) {
+        selected = \"attributes\";
+      }
+      protected variant void create(string tag, Content|array(Content) content) {
+        selected = \"content\";
+      }
+      protected variant void create(string tag, mapping attributes,
+                                    Content|array(Content) content) {
+        selected = \"both\";
+      }
+    }
+    string run() {
+      return ({ Builder(\"tag\", ([]))->selected,
+                Builder(\"tag\", \"text\")->selected,
+                Builder(\"tag\", ([]), \"text\")->selected }) * \"/\";
+    }
+  ")()->run();
+]], "attributes/content/both")
+
+test_any([[
   class A {
     variant string a() { return "A:a()"; }
     variant string a(string s) { return sprintf("A:a(%q)", s); }

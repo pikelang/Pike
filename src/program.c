@@ -8525,7 +8525,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
   struct reference *funp;
   struct identifier *fun;
   int id, i, depth, last_inh;
-  int tentative = -1;
+  int tentative = -1, tentative_rank = -1;
 
 #if 1
 #ifdef COMPILER_DEBUG
@@ -8571,7 +8571,21 @@ int really_low_find_variant_identifier(struct pike_string *name,
       if ((Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) &&
 	  !(funp->id_flags & ID_INHERITED) &&
 	  match_types(fun->type, type)) {
-	tentative = i;
+        /* Forward types can change between passes. In compatibility
+         * mode even unrelated arguments can overlap through zero.
+         * Prefer the same declaration, then a first-pass prototype.
+         */
+        struct compilation *c = THIS_COMPILATION;
+        int rank = fun->run_time_type == T_MIXED;
+        if (fun->linenumber == c->lex.current_line &&
+            fun->filename_strno < prog->num_strings &&
+            prog->strings[fun->filename_strno] == c->lex.current_file) {
+          rank += 2;
+        }
+        if (rank >= tentative_rank) {
+          tentative = i;
+          tentative_rank = rank;
+        }
       }
       continue;
     }

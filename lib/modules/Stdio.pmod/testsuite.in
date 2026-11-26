@@ -1,6 +1,24 @@
 
 START_MARKER
 
+test_any_equal([[
+  return compile_string("#pike 8.0\n" + #"
+    int called;
+    class Reader {
+      inherit Stdio.Readline;
+      protected void destroy() {
+        called++;
+        ::destroy();
+      }
+    }
+    int run() {
+      Reader reader = Reader(Stdio.FakeFile(\"\"), \"dumb\");
+      destruct(reader);
+      return called;
+    }
+  ")()->run();
+]], 1)
+
 test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz") ]], "../foo/bar/baz")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz", "../fie/../faz") ]], "../foo/bar/baz/faz")
