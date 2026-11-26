@@ -134,9 +134,7 @@ mapping func_cat = ([
 
   glAreTexturesResident
   glBitmap
-  glDrawElements
   glEvalMesh
-  glFeedbackBuffer
   glGetClipPlane
   glGetLight
   glGetMap
@@ -150,7 +148,6 @@ mapping func_cat = ([
   glGetTexParameter
   glPixelMap
   glPixelTransfer
-  glMapGrid
   glMap1
   glMap2
   glPolygonStipple

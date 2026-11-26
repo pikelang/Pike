@@ -252,7 +252,7 @@ PIKEFUN void glUseProgram( int prg )
 
 // uniforms
 PIKEFUN int glGetUniformLocation(int prg, string name )
-/*! @decl  void glGetUniformLocation(int program, string uniform )
+/*! @decl int glGetUniformLocation(int program, string uniform )
  */
 {
     RETURN (INT_TYPE)glGetUniformLocation(UI(prg),name->str);
@@ -312,7 +312,7 @@ PIKEFUN void glUniform(int location, int v0, int v1, int v2, int v3);
 
 /* per-vertex attributes */
 PIKEFUN int glGetAttribLocation(int prog,string name)
-/*! @decl int glGetAttribLocation( int progra, string name )
+/*! @decl int glGetAttribLocation( int program, string name )
  *! @decl void glVertexAttrib( int location, float value )
  *! @decl void glVertexAttrib( int location, float v1, float v2 )
  *! @decl void glVertexAttrib( int location, float v1, float v2, float v3 )
@@ -418,7 +418,7 @@ PIKEFUN array(int) glGenRenderbuffersEXT(int num)
 }
 
 PIKEFUN void glRenderbufferStorageEXT(int type,int width, int height)
-/*! @decl void glRenderbufferStorageET(int type, int width, int height )
+/*! @decl void glRenderbufferStorageEXT(int type, int width, int height )
  */
 {
     glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT,type,width,height);
@@ -448,7 +448,7 @@ PIKEFUN int glCheckFramebufferStatusEXT()
 
 #if defined(HAVE_GLGENERATEMIPMAPEXT)
 PIKEFUN void glGenerateMipmapEXT(int f)
-/*!  @decl int glGenerateMipmapEXT(int target)
+/*!  @decl void glGenerateMipmapEXT(int target)
  */
 {
     glGenerateMipmapEXT(f);
@@ -468,7 +468,7 @@ PIKEFUN void glCompressedTexImage2D( int target, int level, int internal,
 
 PIKEFUN void glTexImage2DNoImage( int target, int level, int internal, int width, int height,
 				  int border, int format, int type )
-/*!  @decl int glTexImage2DNoImage( int target, int level, int internal, int width, int height, int border, int format, int type )
+/*!  @decl void glTexImage2DNoImage( int target, int level, int internal, int width, int height, int border, int format, int type )
  *! This is used by the framebuffer code on the pikelevel.
  */
 {
@@ -568,9 +568,9 @@ PIKEFUN void glBufferSubData( int type, int dest, object data, int(0..) mem_star
 }
 
 PIKEFUN void glBufferSubData(int target, int offset, object data )
-/*! @decl void glBufferData(int target, int offset, System.Memory data )
- *! @decl void glBufferData(int target, int offset, System.Memory data, int data_start, int data_len )
- *! @decl void glBufferData(int target, int offset, array(float) data )
+/*! @decl void glBufferSubData(int target, int offset, System.Memory data )
+ *! @decl void glBufferSubData(int target, int offset, System.Memory data, int data_start, int data_len )
+ *! @decl void glBufferSubData(int target, int offset, array(float) data )
  */
 {
     struct memory mem = get_memptr( data );
@@ -664,7 +664,7 @@ PIKEFUN void glDisableClientState( int state )
 /*! @decl void glDisableClientState( int state )
  */
 {
-    glEnableClientState( state );
+    glDisableClientState( state );
 }
 
 PIKEFUN void glEnableVertexAttribArray( int index )

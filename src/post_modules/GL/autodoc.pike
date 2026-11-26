@@ -1749,10 +1749,9 @@ void main()
              ({"glGet", "+QIV" }),
            }), array func)
   {
-    doc += document(func[0], func[1]) + "\n";
     if(catch { doc += document(func[0], func[1]) + "\n"; })
     {
-      error("Failed with %s [%s]\n", @func);
+      werror("Failed with %s [%s]\n", @func);
       not_documented += ({ func[0] });
     }
   }
