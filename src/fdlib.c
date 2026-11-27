@@ -1143,79 +1143,77 @@ static int IsUncRoot(const p_wchar1 *path)
   return 0 ;
 }
 
-p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
+PMOD_EXPORT size_t pike_dwim_utf8_to_utf16_buffer(const p_wchar0 *str,
+                                                size_t len,
+                                                p_wchar1 *buffer,
+                                                size_t capacity)
 {
-  /* NB: Maximum expansion factor is 2.
-   *
-   *   UTF8	UTF16	Range			Expansion
-   *   1 byte	2 bytes	U000000 - U00007f	2
-   *   2 bytes	2 bytes	U000080 - U0007ff	1
-   *   3 bytes	2 bytes	U000800 - U00ffff	0.67
-   *   4 bytes	4 bytes	U010000 - U10ffff	1
-   *
-   * NB: Some extra padding at the end for NUL and adding
-   *     of terminating slashes, etc.
-   *
-   * FIXME: Consider prefixing path with "\\?\", which removes
-   *        the MAXPATH (ie 260 character) length limit. Note
-   *        that this removes the support for ".." and ".".
-   */
-  p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
-  size_t i = 0, j = 0;
+  size_t i = 0, used = 0;
 
-  if (!res) {
-    return NULL;
+  if (!buffer) capacity = 0;
+  if (len == (size_t)-1) {
+    if (capacity) buffer[0] = 0;
+    return 0;
   }
 
   while (i < len) {
     p_wchar0 c = str[i++];
-    p_wchar2 ch, mask = 0x3f;
-    if (!(c & 0x80)) {
-      /* US-ASCII */
-      res[j++] = c;
-      continue;
-    }
-    if (!(c & 0x40)) {
-      /* Continuation character. Invalid. Retry as Latin-1. */
-      goto latin1_to_utf16;
-    }
-    ch = c;
-    while (c & 0x40) {
-      p_wchar0 cc = str[i++];
-      if ((cc & 0xc0) != 0x80) {
-	/* Expected continuation character. */
-	goto latin1_to_utf16;
+    UINT32 ch = c;
+    size_t units = 1;
+
+    if (c & 0x80) {
+      UINT32 mask = 0x3f;
+
+      if (!(c & 0x40)) goto latin1_to_utf16;
+      while (c & 0x40) {
+        p_wchar0 cc;
+
+        if (i == len) goto latin1_to_utf16;
+        cc = str[i++];
+        if ((cc & 0xc0) != 0x80) goto latin1_to_utf16;
+        ch = (ch << 6) | (cc & 0x3f);
+        mask |= mask << 5;
+        c <<= 1;
       }
-      ch = ch<<6 | (cc & 0x3f);
-      mask |= mask << 5;
-      c <<= 1;
+      ch &= mask;
+      if (ch > 0x10ffff) goto latin1_to_utf16;
+      if (ch >= 0x10000) units = 2;
     }
-    ch &= mask;
-    if (ch < 0) {
-      goto latin1_to_utf16;
+    if (used < capacity && units < capacity - used) {
+      if (units == 1) {
+        buffer[used] = ch;
+      } else {
+        ch -= 0x10000;
+        buffer[used] = 0xd800 | (ch >> 10);
+        buffer[used + 1] = 0xdc00 | (ch & 0x3ff);
+      }
     }
-    if (ch < 0x10000) {
-      res[j++] = ch;
-      continue;
-    }
-    ch -= 0x10000;
-    if (ch >= 0x100000) {
-      goto latin1_to_utf16;
-    }
-    /* Encode with surrogates. */
-    res[j++] = 0xd800 | ch >> 10;
-    res[j++] = 0xdc00 | (ch & 0x3ff);
+    used += units;
   }
   goto done;
 
  latin1_to_utf16:
   /* DWIM: Assume Latin-1. Just widen the string. */
-  for (j = 0; j < len; j++) {
-    res[j] = str[j];
+  used = len;
+  if (used < capacity) {
+    for (i = 0; i < len; i++) {
+      buffer[i] = str[i];
+    }
   }
 
  done:
-  res[j++] = 0;	/* NUL-termination. */
+  if (capacity) buffer[used < capacity ? used : 0] = 0;
+  return used + 1;
+}
+
+p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
+{
+  p_wchar1 *res;
+
+  /* Leave extra space for callers that append path separators, etc. */
+  if (len > (size_t)-1 / sizeof(*res) - 4) return NULL;
+  res = malloc((len + 4) * sizeof(*res));
+  if (res) pike_dwim_utf8_to_utf16_buffer(str, len, res, len + 4);
   return res;
 }
 
@@ -1224,85 +1222,57 @@ PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
   return low_dwim_utf8_to_utf16(str, strlen((const char *) str));
 }
 
+PMOD_EXPORT size_t pike_utf16_to_utf8_buffer(const p_wchar1 *str,
+                                           p_wchar0 *buffer,
+                                           size_t capacity)
+{
+  static const p_wchar0 prefix[] = { 0, 0, 0xc0, 0xe0, 0xf0 };
+  size_t used = 0;
+  UINT32 ch;
+
+  if (!buffer) capacity = 0;
+
+  while ((ch = *str++)) {
+    size_t bytes;
+
+    if ((ch & 0xfc00) == 0xd800 && (*str & 0xfc00) == 0xdc00) {
+      ch = 0x10000 + ((ch & 0x3ff) << 10) + (*str++ & 0x3ff);
+    }
+    /* Preserve unpaired surrogates as-is for Windows filenames. */
+    if (ch < 0x80) bytes = 1;
+    else if (ch < 0x800) bytes = 2;
+    else if (ch < 0x10000) bytes = 3;
+    else bytes = 4;
+
+    if (bytes > (size_t)-1 - 1 - used) {
+      if (capacity) buffer[0] = 0;
+      return 0;
+    }
+    if (used < capacity && bytes < capacity - used) {
+      size_t j = bytes;
+
+      while (--j) {
+        buffer[used + j] = 0x80 | (ch & 0x3f);
+        ch >>= 6;
+      }
+      buffer[used] = prefix[bytes] | ch;
+    }
+    used += bytes;
+  }
+
+  if (capacity) buffer[used < capacity ? used : 0] = 0;
+  return used + 1;
+}
+
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
 {
-  /* NB: Maximum expansion factor is 1.5.
-   *
-   *   UTF16	UTF8	Range			Expansion
-   *   2 bytes	1 byte	U000000 - U00007f	0.5
-   *   2 bytes	2 bytes	U000080 - U0007ff	1
-   *   2 bytes	3 bytes	U000800 - U00d7ff	1.5
-   *   2 bytes	2 bytes	U00d800 - U00dfff	1
-   *   2 bytes	3 bytes	U00e000 - U00ffff	1.5
-   *   4 bytes	4 bytes	U010000 - U10ffff	1
-   *
-   * NB: Some extra padding at the end for NUL and adding
-   *     of terminating slashes, etc.
-   *
-   * NB: According to Wikipedia, win32 doesn't enforce correct
-   *     pairing of surrogates. Encode such code units as-is.
-   */
-  size_t i = 0, j = 0;
-  size_t sz = 0;
-  p_wchar1 c;
-  p_wchar0 *ret;
+  size_t size = pike_utf16_to_utf8_buffer(str, NULL, 0);
+  p_wchar0 *result;
 
-  while ((c = str[i++])) {
-    sz++;
-    if (c < 0x80) continue;
-    sz++;
-    if (c < 0x0800) continue;
-#if 0
-    /* NB: The following is only correct if all surrogates are paired correctly. */
-    if ((c & 0xf800) == 0xd800) {
-      /* One half of a surrogate pair. */
-      continue;
-    }
-#endif /* 0 */
-    sz++;
-  }
-  sz++;	/* NUL termination. */
-
-  ret = malloc(sz);
-  if (!ret) return NULL;
-
-  for (i = 0; (c = str[i]); i++) {
-    if (c < 0x80) {
-      ret[j++] = c & 0x7f;
-      continue;
-    }
-    if (c < 0x800) {
-      ret[j++] = 0xc0 | (c>>6);
-      ret[j++] = 0x80 | (c & 0x3f);
-      continue;
-    }
-    if ((c & 0xf800) == 0xd800) {
-      /* Surrogate */
-      if ((c & 0xfc00) == 0xd800) {
-	p_wchar2 ch = str[++i];
-	if ((ch & 0xfc00) == 0xdc00) {
-          ch = 0x10000 + ((c & 0x3ff) << 10) + (ch & 0x3ff);
-	  ret[j++] = 0xf0 | (ch >> 18);
-	  ret[j++] = 0x80 | ((ch >> 12) & 0x3f);
-	  ret[j++] = 0x80 | ((ch >> 6) & 0x3f);
-	  ret[j++] = 0x80 | (ch & 0x3f);
-	  continue;
-	}
-	/* Invalid surrogate pair.
-	 * Unget the second code unit.
-	 */
-	i--;
-      }
-      /* Invalid or lone surrogate.
-       * Encode as-is.
-       */
-    }
-    ret[j++] = 0xe0 | (c >> 12);
-    ret[j++] = 0x80 | ((c >> 6) & 0x3f);
-    ret[j++] = 0x80 | (c & 0x3f);
-  }
-  ret[j++] = 0;
-  return ret;
+  if (!size) return NULL;
+  result = malloc(size);
+  if (result) pike_utf16_to_utf8_buffer(str, result, size);
+  return result;
 }
 
 /* Note 1: s->st_mtime is the creation time for non-root directories.
