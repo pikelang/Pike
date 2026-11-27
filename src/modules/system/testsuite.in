@@ -223,6 +223,28 @@ cond([[System->normalize_path]],
     if (!test_normalize_path ("\303\245\303\244\303\266")) return 0;
 #ifdef __NT__
     if (!test_normalize_path ("\360\237\230\200")) return 0;
+
+    // Use absolute paths, since Windows still limits relative paths.
+    string path = System.normalize_path("testsuite_test");
+    array(string) dirs = ({});
+    mixed failure = catch {
+      while (sizeof(path) <= 300) {
+        string next = combine_path_nt(path, "long_path_" + "x" * 50);
+        if (!mkdir(next)) {
+          // Older Windows and hosts without long paths can stop here.
+          if (sizeof(next) < 248)
+            error("Failed to create directory %O.\n", next);
+          break;
+        }
+        dirs += ({ next });
+        path = next;
+      }
+      if (sizeof(path) > 300 &&
+          System.normalize_path(path) != replace(path, "/", "\\"))
+        error("Failed to normalize long path %O.\n", path);
+    };
+    foreach (reverse(dirs), string dir) rm(dir);
+    if (failure) throw(failure);
 #endif
     return 1;
   ]], 1)

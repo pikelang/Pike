@@ -1275,6 +1275,37 @@ PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
   return result;
 }
 
+/* The wide path APIs return the required capacity (including the NUL)
+ * when the supplied buffer is too small. Leave room for a trailing slash.
+ */
+static WCHAR *get_absolute_path(const WCHAR *path)
+{
+  DWORD size = GetFullPathNameW(path, 0, NULL, NULL);
+
+  while (size) {
+    WCHAR *result;
+    DWORD length;
+
+    if (size > (size_t)-1 / sizeof(WCHAR) - 1 ||
+        !(result = malloc(((size_t)size + 1) * sizeof(WCHAR)))) {
+      SetLastError(ERROR_OUTOFMEMORY);
+      return NULL;
+    }
+    length = GetFullPathNameW(path, size, result, NULL);
+    if (length && length < size) return result;
+    if (!length) {
+      DWORD error = GetLastError();
+
+      free(result);
+      SetLastError(error);
+      return NULL;
+    }
+    free(result);
+    size = length;
+  }
+  return NULL;
+}
+
 /* Note 1: s->st_mtime is the creation time for non-root directories.
  *
  * Note 2: Root directories (e.g. C:\) and network share roots (e.g.
@@ -1311,12 +1342,14 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   }
 
   l = wcslen(fname);
-  /* Get rid of terminating slashes. */
-  while (l && ISSEPARATOR(fname[l-1])) {
+  /* Trim trailing slashes, preserving the drive root. */
+  while (l && ISSEPARATOR(fname[l - 1]) &&
+         !(l == 3 && fname[1] == ':')) {
     fname[--l] = 0;
   }
   if( l==0 )
   {
+    free(fname);
     errno = ENOENT;
     return -1;
   }
@@ -1363,17 +1396,17 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       return -1;
     }
 
-    /* NB: One extra byte for the terminating separator. */
-    abspath = malloc((l + _MAX_PATH + 1 + 1) * sizeof(p_wchar1));
+    abspath = get_absolute_path(fname);
     if (!abspath) {
+      DWORD error = GetLastError();
+
       free(fname);
-      errno = ENOMEM;
+      set_errno_from_win32_error(error);
       return -1;
     }
 
-    if (!_wfullpath( abspath, fname, l + _MAX_PATH ) ||
-	/* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
-	(wcslen(abspath) > 3 && !IsUncRoot (abspath))) {
+    /* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
+    if (wcslen(abspath) > 3 && !IsUncRoot(abspath)) {
       STATDEBUG (fprintf (stderr, "not a root %S\n", abspath));
       free(abspath);
       free(fname);
@@ -1965,77 +1998,108 @@ PMOD_EXPORT char *debug_fd_get_current_dir_name(void)
 
 PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
 {
-  p_wchar1 *pname = pike_dwim_utf8_to_utf16((const p_wchar0 *) path);
-  p_wchar1 *buffer;
+  /* Use DWORD for SIGDN to support SDKs predating Vista. */
+  typedef HRESULT (WINAPI *get_name_fn)(LPCITEMIDLIST, DWORD, WCHAR **);
+  get_name_fn get_name = (get_name_fn)(void *)
+    GetProcAddress(GetModuleHandleW(L"shell32.dll"), "SHGetNameFromIDList");
+  WCHAR *input = pike_dwim_utf8_to_utf16((const p_wchar0 *)path);
+  WCHAR *absolute, *buffer = NULL;
+  WCHAR *shell_path = NULL;
   char *res;
   size_t len;
   PIDLIST_ABSOLUTE idl;
   HRESULT hres;
 
-  if (!pname) {
+  if (!input) {
     errno = ENOMEM;
     return NULL;
   }
 
-  /* First convert to an absolute path. */
-  len = MAX_PATH;
-  do {
-    size_t ret;
+  absolute = get_absolute_path(input);
+  if (!absolute) {
+    DWORD error = GetLastError();
 
-    buffer = malloc(len * sizeof(p_wchar1));
+    free(input);
+    set_errno_from_win32_error(error);
+    return NULL;
+  }
+  free(input);
+
+  hres = isf->lpVtbl->ParseDisplayName(isf, NULL, NULL, absolute,
+                                      NULL, &idl, NULL);
+  if (hres == S_OK) {
+    if (get_name) {
+      /* SIGDN_FILESYSPATH. The shell allocates the result. */
+      if (get_name(idl, 0x80058000UL, &shell_path) == S_OK)
+        buffer = shell_path;
+    } else {
+      /* On pre-Vista systems the shell API uses a MAX_PATH buffer. */
+      buffer = malloc(MAX_PATH * sizeof(WCHAR));
+      if (!buffer) {
+        CoTaskMemFree(idl);
+        free(absolute);
+        errno = ENOMEM;
+        return NULL;
+      }
+      if (!SHGetPathFromIDListW(idl, buffer)) {
+        free(buffer);
+        buffer = NULL;
+      }
+    }
+    CoTaskMemFree(idl);
+  }
+
+  if (!buffer && wcslen(absolute) < MAX_PATH) {
+    if (shell_path) CoTaskMemFree(shell_path);
+    free(absolute);
+    if (hres == S_OK) errno = EINVAL;
+    else set_errno_from_win32_error(hres);
+    return NULL;
+  }
+
+  if (!buffer) {
+    /* The shell can reject paths supported by the filesystem APIs. */
+    DWORD size = GetLongPathNameW(absolute, NULL, 0);
+
+    while (size) {
+      DWORD length;
+
+      if (size > (size_t)-1 / sizeof(WCHAR) ||
+          !(buffer = malloc((size_t)size * sizeof(WCHAR)))) {
+        SetLastError(ERROR_OUTOFMEMORY);
+        break;
+      }
+      length = GetLongPathNameW(absolute, buffer, size);
+      if (length && length < size) break;
+      if (!length) {
+        DWORD error = GetLastError();
+
+        free(buffer);
+        buffer = NULL;
+        SetLastError(error);
+        break;
+      }
+      free(buffer);
+      buffer = NULL;
+      size = length;
+    }
     if (!buffer) {
-      errno = ENOMEM;
+      DWORD error = GetLastError();
+
+      if (shell_path) CoTaskMemFree(shell_path);
+      free(absolute);
+      set_errno_from_win32_error(error);
       return NULL;
     }
-
-    ret = GetFullPathNameW(pname, len, buffer, NULL);
-
-    if (!ret) {
-      set_errno_from_win32_error(GetLastError());
-      return NULL;
-    }
-    if (ret*2 < len) break;
-
-    /* Buffer too small. Reallocate.
-     * NB: We over allocate 100% to be able to reuse the
-     *     buffer safely with SHGetPathFromIDListW() below.
-     */
-    free(buffer);
-    len = (ret+1)*2;
-  } while(1);
-  free(pname);
-
-  if ((hres = isf->lpVtbl->ParseDisplayName(isf, NULL, NULL, buffer,
-					    NULL, &idl, NULL)) != S_OK) {
-    free(buffer);
-    set_errno_from_win32_error(hres);
-    return NULL;
   }
-
-  if (!SHGetPathFromIDListW(idl, buffer)) {
-    /* FIXME: Use SHGetPathFromIDListExW() (Vista/2008 and later),
-     *        to ensure that we don't overrun the buffer.
-     *        It however doesn't seem to be documented how
-     *        to detect whether it fails due to a too small
-     *        buffer or for some other reason, so we couldn't
-     *        use it to grow the res buffer and retry.
-     */
-    free(buffer);
-    CoTaskMemFree (idl);
-    errno = EINVAL;
-    return NULL;
-  }
-  CoTaskMemFree (idl);
+  free(absolute);
 
   /* Remove trailing slashes, except after a drive letter. */
   len = wcslen(buffer);
-  while(len && buffer[len-1]=='\\') {
+  while (len > 1 && buffer[len - 1] == L'\\' &&
+         !(len == 3 && buffer[1] == L':'))
     len--;
-  }
-  if (!len || (len == 2 && buffer[len-1] == ':')) {
-    buffer[len++] = '\\';
-  }
-  buffer[len + 1] = 0;
+  buffer[len] = 0;
 
   /* Convert host and share in an UNC path to lowercase since Windows
    * Shell doesn't do that consistently.
@@ -2060,11 +2124,24 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
     }
   }
 
-  res = (char *) pike_utf16_to_utf8(buffer);
-  free(buffer);
+  res = (char *)pike_utf16_to_utf8(buffer);
+  if (buffer != shell_path) free(buffer);
+  if (shell_path) CoTaskMemFree(shell_path);
   if (!res) {
     errno = ENOMEM;
     return NULL;
+  }
+
+  if (!len || (len == 2 && res[1] == ':')) {
+    char *with_slash = realloc(res, strlen(res) + 2);
+
+    if (!with_slash) {
+      free(res);
+      errno = ENOMEM;
+      return NULL;
+    }
+    res = with_slash;
+    strcat(res, "\\");
   }
 
   return res;
