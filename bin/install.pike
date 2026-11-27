@@ -2628,11 +2628,17 @@ class InstallHandler(mapping vars, string prefix) {
     if(pos>=0)
     {
       status("Finalizing",pike_bin_file,"...");
+      int master_pos = pos+sizeof(MASTER_COOKIE);
+      string master_value = combine_path(lib_prefix,"master.pike")+"\0";
+      if (master_pos + sizeof(master_value) > sizeof(pike_bin) ||
+          pike_bin[master_pos..master_pos+sizeof(master_value)-1] !=
+          "\0" * sizeof(master_value)) {
+        error_msg("Master path does not fit in %s.\n", pike_bin_file);
+        exit(1);
+      }
       pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
       Stdio.write_file(pike_bin_file, pike_bin);
       Stdio.File f=Stdio.File(pike_bin_file,"rw");
-      int master_pos = pos+sizeof(MASTER_COOKIE);
-      string master_value = combine_path(lib_prefix,"master.pike");
       f->seek(master_pos);
       f->write(master_value);
       fix_macos_adhoc_signature(f, master_pos, sizeof(master_value));

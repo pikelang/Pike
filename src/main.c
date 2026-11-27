@@ -81,54 +81,163 @@
 
 #define MASTER_COOKIE MASTER_COOKIE1 MASTER_COOKIE2
 
+/* The installer patches this slot in the executable. Allow up to three
+ * UTF-8 bytes per Windows path code unit, plus the terminator.
+ */
+#ifdef __NT__
+#define MASTER_PATH_SLOT_SIZE (3 * 32767 + 1)
+#else
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 32768
 #endif
+#define MASTER_PATH_SLOT_SIZE MAXPATHLEN
+#endif
 
-static const char _master_location[MAXPATHLEN+CONSTANT_STRLEN(MASTER_COOKIE)] = MASTER_COOKIE "\0";
+static const char _master_location[
+    CONSTANT_STRLEN(MASTER_COOKIE) + MASTER_PATH_SLOT_SIZE] = MASTER_COOKIE;
 static const char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_COOKIE);
+
+/* These allocations precede initialization of the debug allocator. */
+#ifdef DEBUG_MALLOC
+#define startup_malloc (malloc)
+#define startup_free (free)
+#else
+#define startup_malloc malloc
+#define startup_free free
+#endif
 
 static void set_master(const char *file)
 {
-  if( master_file_location != _master_location+CONSTANT_STRLEN(MASTER_COOKIE))
-    free((void*)master_file_location);
-#ifdef DEBUG_MALLOC
-#undef strdup /* We can't use dmalloc strdup before pike_memory is initialized. */
-#endif /* DEBUG_MALLOC */
-#if defined(__NT__) && !defined(strdup)
-  /* strdup() is broken on WIN32, but _strdup() isn't... */
-#define strdup _strdup
-#endif /* __NT__ */
-  master_file_location = strdup( file );
+  size_t length = strlen(file) + 1;
+  char *new_location = startup_malloc(length);
+
+  if (!new_location) {
+    fprintf(stderr, "Out of memory setting master path.\n");
+    exit(1);
+  }
+  memcpy(new_location, file, length);
+  if (master_file_location != _master_location + CONSTANT_STRLEN(MASTER_COOKIE))
+    startup_free((void *)master_file_location);
+  master_file_location = new_location;
+}
+
+/* Replace the filename in path with name, keeping the directory prefix. */
+static char *replace_filename(const char *path, const char *name)
+{
+  const char *base = path;
+  const char *p;
+  size_t prefix, len = strlen(name);
+  char *result;
+
+  for (p = path; *p; p++) {
+    if (*p == '/'
+#ifdef __NT__
+        || *p == '\\'
+#endif
+       )
+      base = p + 1;
+  }
+  prefix = base - path;
+  if (len >= (size_t)-1 - prefix ||
+      !(result = startup_malloc(prefix + len + 1))) {
+    fprintf(stderr, "Out of memory constructing startup path.\n");
+    exit(1);
+  }
+  memcpy(result, path, prefix);
+  memcpy(result + prefix, name, len + 1);
+  return result;
 }
 
 #ifdef __NT__
+static char *startup_utf16_to_utf8(const WCHAR *path)
+{
+  size_t length = pike_utf16_to_utf8_buffer(path, NULL, 0);
+  char *utf8;
+
+  if (!length) return NULL;
+  utf8 = startup_malloc(length);
+  if (utf8) pike_utf16_to_utf8_buffer(path, (p_wchar0 *)utf8, length);
+  return utf8;
+}
+
 static void get_master_key(HKEY cat)
 {
-  HKEY k;
-  char buffer[4096];
-  DWORD len=sizeof(buffer)-1,type=REG_SZ;
+  HKEY key;
+  LONG error;
+  DWORD size = 0, type;
 
-  if(RegOpenKeyEx(cat,
-		  (LPCTSTR)("SOFTWARE\\Pike\\"
-			    DEFINETOSTR(PIKE_MAJOR_VERSION)
-			    "."
-			    DEFINETOSTR(PIKE_MINOR_VERSION)
-			    "."
-			    DEFINETOSTR(PIKE_BUILD_VERSION)),
-		  0,KEY_READ,&k)==ERROR_SUCCESS)
-  {
-    if(RegQueryValueEx(k,
-		       "PIKE_MASTER",
-		       0,
-		       &type,
-		       (LPBYTE)buffer,
-		       &len)==ERROR_SUCCESS)
-    {
-      /* FIXME: Look at len? UNICODE? */
-      set_master(buffer);
+  if (RegOpenKeyExA(cat,
+                    "SOFTWARE\\Pike\\"
+                    DEFINETOSTR(PIKE_MAJOR_VERSION) "."
+                    DEFINETOSTR(PIKE_MINOR_VERSION) "."
+                    DEFINETOSTR(PIKE_BUILD_VERSION),
+                    0, KEY_READ, &key) != ERROR_SUCCESS)
+    return;
+
+  error = RegQueryValueExW(key, L"PIKE_MASTER", NULL, &type, NULL, &size);
+  while (error == ERROR_SUCCESS && type == REG_SZ) {
+    WCHAR *path;
+    DWORD length = size;
+
+    if (size > (size_t)-1 - sizeof(WCHAR) ||
+        !(path = startup_malloc((size_t)size + sizeof(WCHAR))))
+      break;
+    error = RegQueryValueExW(key, L"PIKE_MASTER", NULL, &type,
+                             (LPBYTE)path, &length);
+    if (error == ERROR_SUCCESS && type == REG_SZ) {
+      if (!(length % sizeof(WCHAR))) {
+        char *utf8;
+
+        /* RegQueryValueExW does not guarantee a terminating NUL. */
+        path[length / sizeof(WCHAR)] = 0;
+        utf8 = startup_utf16_to_utf8(path);
+        if (utf8) {
+          set_master(utf8);
+          startup_free(utf8);
+        }
+      }
     }
-    RegCloseKey(k);
+    startup_free(path);
+    if (error != ERROR_MORE_DATA || length <= size) break;
+    size = length;
+    error = ERROR_SUCCESS;
+  }
+  RegCloseKey(key);
+}
+
+static char *get_executable_path(void)
+{
+  DWORD capacity = 256;
+
+  for (;;) {
+    WCHAR *buffer = startup_malloc(capacity * sizeof(WCHAR));
+    DWORD length;
+
+    if (!buffer) {
+      SetLastError(ERROR_OUTOFMEMORY);
+      return NULL;
+    }
+    length = GetModuleFileNameW(NULL, buffer, capacity);
+    if (!length) {
+      DWORD error = GetLastError();
+
+      startup_free(buffer);
+      SetLastError(error);
+      return NULL;
+    }
+    if (length < capacity) {
+      char *path = startup_utf16_to_utf8(buffer);
+
+      startup_free(buffer);
+      if (!path) SetLastError(ERROR_OUTOFMEMORY);
+      return path;
+    }
+    startup_free(buffer);
+    if (capacity > ((DWORD)-1 / sizeof(WCHAR)) / 2) {
+      SetLastError(ERROR_FILENAME_EXCED_RANGE);
+      return NULL;
+    }
+    capacity *= 2;
   }
 }
 #endif /* __NT__ */
@@ -145,51 +254,43 @@ static void set_default_master(const char *bin_name)
   if(!*mp) get_master_key(HKEY_LOCAL_MACHINE);
 #endif
 
-  if(!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5) != 0)
-  {
-    char tmp[CONSTANT_STRLEN( DEFAULT_MASTER ) + 10 + 10 + 10];
-    snprintf (tmp, sizeof(tmp)-1,
-              DEFAULT_MASTER
-#if !defined(__NT__) && !defined(__amigaos__)
-              ,PIKE_MAJOR_VERSION
-              ,PIKE_MINOR_VERSION
-              ,PIKE_BUILD_VERSION
+  if (!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5) != 0) {
+#if defined(__NT__) || defined(__amigaos__)
+    set_master(DEFAULT_MASTER);
+#else
+    char tmp[CONSTANT_STRLEN(DEFAULT_MASTER) + 10 + 10 + 10];
+
+    snprintf(tmp, sizeof(tmp), DEFAULT_MASTER, PIKE_MAJOR_VERSION,
+             PIKE_MINOR_VERSION, PIKE_BUILD_VERSION);
+    set_master(tmp);
 #endif
-              );
-    set_master( tmp );
   }
 
 #ifdef __NT__
   (void) bin_name;
-  if (!(*mp == '/' || *mp == '\\' || (isalpha (*mp) && mp[1] == ':'))) {
-    char exepath[MAXPATHLEN];
-    if (!*mp) set_master("master.pike");
+  if (!(*mp == '/' || *mp == '\\' ||
+        (isalpha((unsigned char)*mp) && mp[1] == ':'))) {
+    char *exepath;
 
-    if (!GetModuleFileName (NULL, exepath, _MAX_PATH))
-      fprintf (stderr, "Failed to get path to exe file: %lu\n",
-	       (unsigned long)GetLastError());
-    else {
-      char tmp[MAXPATHLEN * 2];
-      char *p = strrchr (exepath, '\\');
-      if (p) *p = 0;
-      snprintf (tmp, sizeof (tmp), "%s/%s", exepath, mp);
-      set_master( tmp );
+    if (!*mp) set_master("master.pike");
+    exepath = get_executable_path();
+    if (!exepath) {
+      fprintf(stderr, "Failed to get path to exe file: %lu\n",
+              (unsigned long)GetLastError());
+    } else {
+      char *path = replace_filename(exepath, mp);
+
+      set_master(path);
+      startup_free(path);
+      startup_free(exepath);
     }
   }
 #else
   if (!*mp) {
-    /* Attempt to find a master via the path to the binary. */
-    /* Note: We assume that MAXPATHLEN is > 18 characters. */
-    if (strlen(bin_name) + CONSTANT_STRLEN("master.pike") < MAXPATHLEN) {
-      char tmp[MAXPATHLEN];
-      char *p;
-      strlcpy(tmp, bin_name, sizeof(tmp));
-      p = strrchr(tmp, '/');
-      if (!p) p = tmp;
-      else p++;
-      strlcpy(p, "master.pike", sizeof(tmp) - (p - tmp));
-      set_master( tmp );
-    }
+    char *path = replace_filename(bin_name, "master.pike");
+
+    set_master(path);
+    startup_free(path);
   }
 #endif
 
@@ -198,7 +299,7 @@ static void set_default_master(const char *bin_name)
 }
 
 #ifdef LIBPIKE
-static char libpike_file[MAXPATHLEN * 2];
+static char *libpike_file;
 static void *libpike;
 
 typedef void (*modfun)(void);
@@ -272,27 +373,7 @@ static void find_lib_dir(int argc, char **argv)
   }
 
 #ifdef LIBPIKE
-  {
-    char *p;
-    char *dir;
-    strcpy(libpike_file, master_file_location);
-    for (p = dir = libpike_file; *p; p++) {
-      if ((*p == '/')
-#ifdef __NT__
-	  || (*p == '\\')
-#endif /* __NT__ */
-	 )
-	dir = p+1;
-    }
-    if ((dir + CONSTANT_STRLEN("pike.so")) >= libpike_file + 2*MAXPATHLEN) {
-      /* Not likely to happen as long as MASTER_COOKIE is longer than "pike.so".
-       */
-      fprintf(stderr, "Too long path to pike.so.\n");
-      exit(1);
-    }
-    /* Don't forget the NUL! */
-    memcpy(dir, "pike.so", CONSTANT_STRLEN("pike.so") + 1);
-  }
+  libpike_file = replace_filename(master_file_location, "pike.so");
 #endif /* LIBPIKE */
 }
 
