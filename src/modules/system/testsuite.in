@@ -221,6 +221,9 @@ cond([[System->normalize_path]],
     if (!test_normalize_path ("\345\344\366")) return 0;
 #endif
     if (!test_normalize_path ("\303\245\303\244\303\266")) return 0;
+#ifdef __NT__
+    if (!test_normalize_path ("\360\237\230\200")) return 0;
+#endif
     return 1;
   ]], 1)
 ]])

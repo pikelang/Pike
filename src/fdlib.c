@@ -1281,7 +1281,7 @@ PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
       if ((c & 0xfc00) == 0xd800) {
 	p_wchar2 ch = str[++i];
 	if ((ch & 0xfc00) == 0xdc00) {
-	  ch = 0x100000 | (ch & 0x3ff) | ((c & 0x3ff)<<10);
+          ch = 0x10000 + ((c & 0x3ff) << 10) + (ch & 0x3ff);
 	  ret[j++] = 0xf0 | (ch >> 18);
 	  ret[j++] = 0x80 | ((ch >> 12) & 0x3f);
 	  ret[j++] = 0x80 | ((ch >> 6) & 0x3f);
