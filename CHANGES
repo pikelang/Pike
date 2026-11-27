@@ -931,11 +931,19 @@ o Stdio.File, Stdio.Port
   This defaults to OpenBSD. Use --enable-socket-wakeup-workaround or
   --disable-socket-wakeup-workaround to override it.
 
-o Windows long paths (#10172).
+o Windows long paths.
 
   pike.exe declares long-path awareness. On Windows 10 version 1607 and
   later, supported Win32 filesystem operations can use long paths when
   the host has enabled the LongPathsEnabled policy.
+
+  To enable the machine-wide setting from an elevated prompt during
+  installation, run:
+
+    msiexec /i Pike.msi PIKE_ENABLE_LONG_PATHS=1
+
+  By default the MSI leaves this setting alone. Repair and uninstall
+  leave the setting under the administrator's control.
 
 o Stdio.File: Support concurrent close() during read() and write().
 
@@ -2252,6 +2260,7 @@ GitLab (Lysator) pikelang/pike:
   #10168: Unicode 17.2.0.
   #10170: Support mmaping of devices with System.Memory.
   #10171: Add support for the apr1 password hash to Crypto.Password.
+  #10172: Support LONG paths on WIN32 automatically.
   #10173: Segfault relating to annotations.
   #10174: Add a LaTeX renderer to Parser.Markdown.
   #10175: Fix lexer handling of NUL characters.
