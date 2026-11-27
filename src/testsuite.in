@@ -2334,6 +2334,38 @@ test_compile_any([[
   }
 ]])
 
+test_compile_warning([[
+  class Base {
+    protected void _destruct() {}
+  }
+  class Child {
+    inherit Base;
+    void f() { ::destroy(); }
+  }
+]])
+
+test_program_equal([[
+#pragma no_deprecation_warnings
+string calls = "";
+class Modern {
+  protected void _destruct() { calls += "modern"; }
+}
+class Legacy {
+  protected void destroy() { calls += "legacy"; }
+}
+class Child {
+  inherit Legacy : old;
+  inherit Modern : current;
+  string run() {
+    ::destroy();
+    current::destroy();
+    old::_destruct();
+    return calls;
+  }
+}
+mixed a() { return Child()->run(); }
+]], "legacymodernlegacy")
+
 test_any_equal([[
   // Test Pike.DestructImmediate.
   class Foo {
