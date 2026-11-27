@@ -931,6 +931,12 @@ o Stdio.File, Stdio.Port
   This defaults to OpenBSD. Use --enable-socket-wakeup-workaround or
   --disable-socket-wakeup-workaround to override it.
 
+o Windows long paths (#10172).
+
+  pike.exe declares long-path awareness. On Windows 10 version 1607 and
+  later, supported Win32 filesystem operations can use long paths when
+  the host has enabled the LongPathsEnabled policy.
+
 o Stdio.File: Support concurrent close() during read() and write().
 
   Previously this had an inconsistent behavior.
