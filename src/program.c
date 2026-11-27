@@ -2559,9 +2559,9 @@ PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
  *   -2 global::
  *   -3 ::
  */
-struct node_s *find_inherited_identifier(struct program_state *inherit_state,
-                                         int inherit_depth, int inh,
-					 struct pike_string *ident)
+static struct node_s *find_exact_inherited_identifier(
+    struct program_state *inherit_state, int inherit_depth, int inh,
+    struct pike_string *ident)
 {
   int id;
   struct program *p = inherit_state->new_program;
@@ -2570,9 +2570,6 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
   fprintf(stderr, "find_inherited_identifier(%p, %d, %d, \"%s\")\n",
 	  inherit_state, inherit_depth, inh, ident->str);
 #endif /* 0 */
-  if (!p) {
-    return NULL;
-  }
   if (inh == INHERIT_ALL) {
     /* Unspecified inherit, but not inherit #0. */
     struct node_s *res = NULL;
@@ -2607,9 +2604,6 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
 
       return res;
     }
-
-    /* Restore the argument. */
-    inh = INHERIT_ALL;
   } else {
     if (inh > 0) {
       /* Specified inherit. */
@@ -2634,8 +2628,42 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
     }
   }
 
-  if ((inh < 0) && (inh != INHERIT_GENERATOR)) inh = -1;
+  return NULL;
+}
 
+struct node_s *find_inherited_identifier(struct program_state *inherit_state,
+                                         int inherit_depth, int inh,
+                                         struct pike_string *ident)
+{
+  struct node_s *res;
+  struct svalue *lfun_id;
+
+  if (!inherit_state->new_program) return NULL;
+
+  res = find_exact_inherited_identifier(inherit_state, inherit_depth, inh,
+                                        ident);
+  if (res) return res;
+
+  lfun_id = low_mapping_string_lookup(lfun_ids, ident);
+  if (lfun_id && TYPEOF(*lfun_id) == PIKE_T_INT) {
+    int lfun = lfun_id->u.integer;
+    struct pike_string *alternate = lfun_compat_strings[lfun];
+
+    if (alternate) {
+      if (ident == alternate) alternate = lfun_strings[lfun];
+      res = find_exact_inherited_identifier(inherit_state, inherit_depth, inh,
+                                            alternate);
+      if (res) {
+        if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+            !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
+          yywarning("Compat: Substituting %pS() for %pS().", alternate, ident);
+        }
+        return res;
+      }
+    }
+  }
+
+  if ((inh < 0) && (inh != INHERIT_GENERATOR)) inh = -1;
   return program_magic_identifier(inherit_state, inherit_depth, inh, ident, 1);
 }
 
