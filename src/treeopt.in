@@ -1823,8 +1823,8 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
        F_ADD_EQ(1 = +[ !depend_p($$, $$) ],
 		2 = +[ !depend_p($$, $1) ][ !depend_p($$, $$) ]
 		[ !($$->tree_info & OPT_SIDE_EFFECT) ]
-		[ ((($$->type == int_type_string) &&
-		    ($1->type == int_type_string)) ||
+                [ ((pike_types_le($$->type, int_type_string, 0, 0) &&
+                    pike_types_le($1->type, int_type_string, 0, 0)) ||
 		   pike_types_le($$->type, string_type_string, 0, 0)) ])):
   {
     $$ = mknode(F_POP_VALUE,
