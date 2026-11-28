@@ -1,5 +1,48 @@
 START_MARKER(8.0)
 
+test_any_equal([[
+  mixed constants = all_constants();
+  int size = sizeof(constants);
+  mapping visited = ([]);
+  foreach (constants; string name; mixed value) visited[name] = value;
+  return ({ size > 0, size == sizeof(visited), visited["write"] == write });
+]], [[({ 1, 1, 1 })]])
+
+test_any_equal([[
+  mapping parent = ([ "x": 3, "y": 4 ]);
+  object shadow = Mapping.ShadowedMapping(parent);
+  shadow["x"] = UNDEFINED;
+  int before = sizeof(shadow);
+  mixed visible = shadow["x"];
+  mixed mismatch = m_delete(shadow, "x", 3);
+  mixed unchanged = shadow["x"];
+  // Removing the shadow must leave the parent's entry intact.
+  m_delete(shadow, "x");
+  parent["z"] = 5;
+  return ({ before, visible, undefinedp(visible), undefinedp(mismatch),
+            unchanged, undefinedp(unchanged),
+            sizeof(shadow), shadow["x"], parent["x"] });
+]], [[({ 2, 0, 0, 1, 0, 0, 3, 3, 3 })]])
+
+test_any_equal([[
+  mapping parent = ([ "x": 3, "y": 4 ]);
+  object shadow = Mapping.ShadowedMapping(parent, ([ "x": 5 ]), 2);
+  mixed first = m_delete(shadow, "x", 3);
+  mixed second = m_delete(shadow, "y", 3);
+  mixed removed = m_delete(shadow, "x", 5);
+  return ({ undefinedp(first), undefinedp(second), removed, parent,
+            sizeof(shadow) });
+]], [[({ 1, 1, 5, ([ "y": 4 ]), 1 })]])
+
+test_any_equal([[
+  mapping parent = ([ "old": 1 ]);
+  object shadow = Mapping.ShadowedMapping(parent);
+  object iterator = get_iterator(shadow);
+  parent["new"] = 2;
+  return ({ iterator->index(), iterator->value(), iterator->next(),
+            sizeof(shadow) });
+]], [[({ "old", 1, 0, 2 })]])
+
 // Concurrent.AggregateState remains an aggregation diagnostics extension point.
 test_do([[
   class TracedConcurrent {
