@@ -205,8 +205,14 @@ class CipherSpec {
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
-      string sign =
-        session->private_key->pkcs_sign(data, HASH_lookup[signature_hash]);
+      Crypto.Sign.State key = session->private_key;
+      string sign;
+      if (EDDSA_SIG_CURVE[signature_alg]) {
+        // RFC 8422 5.4: EdDSA signs the data itself, without a hash.
+        sign = key->raw_sign(data);
+      } else {
+        sign = key->pkcs_sign(data, HASH_lookup[signature_hash]);
+      }
       struct->add_int(signature_hash|signature_alg, 2);
       struct->add_hstring(sign, 2);
       return struct;
@@ -256,7 +262,9 @@ class CipherSpec {
       int sign_id = signature_scheme & SIGNATURE_MASK;
       string sign = input->read_hstring(2);
 
-      if( sign_id != signature_alg )
+      // RFC 5246 7.4.1.4.1: The server may use any of the offered
+      // schemes that suit its key.
+      if( signature_key_type(sign_id) != signature_key_type(signature_alg) )
       {
         SSL3_DEBUG_MSG("Signature pair <%d,%d> doesn't match "
                        "negotiated <%d,%d>\n", hash_id, sign_id,
@@ -264,9 +272,16 @@ class CipherSpec {
         return 0;
       }
 
+      // RFC 8422 5.4: EdDSA signs the data itself, without a hash.
+      if (EDDSA_SIG_CURVE[sign_id]) {
+        if ((hash_id != HASH_intrinsic) || (pkc->name() != "EdDSA") ||
+            (pkc->get_curve()->name() != EDDSA_SIG_CURVE[sign_id]))
+          return 0;
+        return pkc->raw_verify(data, sign);
+      }
+
       Crypto.Hash hash = HASH_lookup[hash_id];
       if (!hash) return 0;
-
       return pkc->pkcs_verify(data, hash, sign);
     }
 
@@ -306,6 +321,14 @@ class CipherSpec {
     // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
     if( signature_alg == SIGNATURE_anonymous || !signature_algorithms )
       return;
+
+    if (EDDSA_SIG_CURVE[signature_alg]) {
+      // RFC 8422 5.1.3: EdDSA is always sent with HASH_intrinsic.
+      if (!has_value(signature_algorithms, HASH_intrinsic|signature_alg))
+        error("No acceptable hash algorithm.\n");
+      signature_hash = HASH_intrinsic;
+      return;
+    }
 
     int hash_id = -1;
     SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
@@ -1943,6 +1966,22 @@ class RC2
 }
 #endif /* Crypto.Arctwo */
 
+// The type of key that a signature algorithm needs. In TLS 1.2 the
+// suite only gives the type of the server's key, and the server may
+// sign with any offered scheme for that key (RFC 5246 7.4.1.4.1), so
+// EdDSA with an ECDSA suite (RFC 8422 2.1).
+protected int signature_key_type(int sig_id)
+{
+  if (EDDSA_SIG_CURVE[sig_id]) return SIGNATURE_ecdsa;
+  return sig_id;
+}
+
+// The curves of the EdDSA signature algorithms.
+protected constant EDDSA_SIG_CURVE = ([
+  SIGNATURE_ed25519: "Curve25519",
+  SIGNATURE_ed448: "Curve448",
+]);
+
 //! Lookup the crypto parameters for a cipher suite.
 //!
 //! @param suite
@@ -1958,12 +1997,18 @@ class RC2
 //! @param max_hash_size
 //!   The maximum hash size supported for the signature algorithm.
 //!
+//! @param signature_alg
+//!   Signature algorithm to use instead of the one implied by the
+//!   @[suite], for keys of the same type. Eg @[SIGNATURE_ed25519]
+//!   for an ECDHE_ECDSA suite with an Ed25519 certificate.
+//!
 //! @returns
 //!   Returns @expr{0@} (zero) for unsupported combinations, otherwise
 //!   returns an initialized @[CipherSpec] for the @[suite].
 object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
                                array(int)|zero signature_algorithms,
-                               int max_hash_size)
+                               int max_hash_size,
+                               SignatureAlgorithm|void signature_alg)
 {
   CipherSpec res = CipherSpec();
 
@@ -2346,6 +2391,11 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
 #endif
   default:
     error( "Internal error.\n" );
+  }
+
+  if (signature_alg &&
+      (signature_key_type(signature_alg) == res->signature_alg)) {
+    res->signature_alg = signature_alg;
   }
 
   if (version >= PROTOCOL_TLS_1_2)

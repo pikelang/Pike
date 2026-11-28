@@ -199,7 +199,8 @@ int verify(string(8bit) password, string(7bit) hash)
   switch( split[0] ) {
   case "pbkdf2_sha256":  // As implemented by Django
     return MIME.encode_base64(Crypto.SHA256.pbkdf2(passwd, split[2],
-						   (int)split[1], 32)) == split[3];
+                                                   [int(1..)](int)split[1],
+                                                   32)) == split[3];
   }
 
   // Detect the password hashing scheme.

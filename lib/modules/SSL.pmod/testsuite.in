@@ -1846,6 +1846,174 @@ test_any([[
 
 cond_end
 
+dnl TLS 1.2 ServerKeyExchange signed with EdDSA for an ECDSA suite.
+cond_resolv(Crypto.ECC.Curve25519, [[
+test_any_equal([[
+  object key = Crypto.ECC.Curve25519.EdDSA()->generate_key();
+  object session = SSL.Session();
+  session->version = SSL.Constants.PROTOCOL_TLS_1_2;
+  session->peer_public_key = key;
+  object cs = SSL.Cipher.CipherSpec();
+  cs->signature_alg = SSL.Constants.SIGNATURE_ecdsa;
+  string data = "Signed data";
+  array res = ({});
+  foreach(({ SSL.Constants.SIGNATURE_ed25519_intrinsic,
+             SSL.Constants.SIGNATURE_ed448_intrinsic,
+             SSL.Constants.SIGNATURE_rsa_pss_sha256 }), int scheme) {
+    Stdio.Buffer input = Stdio.Buffer();
+    input->add_int(scheme, 2);
+    input->add_hstring(key->pkcs_sign(data), 2);
+    res += ({ cs->verify(session, data, input) });
+  }
+  return res;
+]], ({ 1, 0, 0 }))
+]])
+
+dnl TLS 1.2 servers with EdDSA certificates sign with EdDSA.
+cond_resolv(Crypto.ECC.Curve448, [[
+test_any_equal([[
+  array res = ({});
+  foreach(({ Crypto.ECC.Curve25519, Crypto.ECC.Curve448 }), object curve) {
+    Crypto.Sign key = curve->EdDSA()->generate_key();
+    object server_ctx = SSL.Context();
+    server_ctx->add_cert(key, ({
+      Standards.X509.make_selfsigned_certificate(key, 3600,
+                                                 ([ "commonName": "*" ])) }));
+    object client_ctx = SSL.Context();
+    client_ctx->max_version = SSL.Constants.PROTOCOL_TLS_1_2;
+    object a = Stdio.File();
+    object b = a->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+    SSL.File server = SSL.File(a, server_ctx);
+    SSL.File client = SSL.File(b, client_ctx);
+    server->set_nonblocking(0, 0, 0);
+    client->set_nonblocking(0, 0, 0);
+    server->accept();
+    client->connect();
+    function handshaking = lambda(SSL.File f) {
+      object c = f->query_connection();
+      return !c || (c->state & SSL.Constants.CONNECTION_handshaking);
+    };
+    for (int i = 0; (handshaking(client) || handshaking(server)) && (i < 100);
+         i++) {
+      Pike.DefaultBackend(0.1);
+    }
+    if (handshaking(client) || handshaking(server)) {
+      res += ({ "Handshake failed" });
+    } else {
+      res += ({ server->query_connection()->session->cipher_spec->signature_alg });
+    }
+  }
+  return res;
+]], ({ SSL.Constants.SIGNATURE_ed25519, SSL.Constants.SIGNATURE_ed448 }))
+]])
+
+dnl The key exchange follows the type of the leaf certificate's key, not
+dnl the type of the key that signed it.
+cond_resolv(Crypto.ECC.Curve25519, [[
+test_any_equal([[
+  object rsa = Crypto.RSA()->generate_key(1024);
+  object ecdsa = Crypto.ECC.SECP_256R1.ECDSA()->generate_key();
+  object ed25519 = Crypto.ECC.Curve25519.EdDSA()->generate_key();
+  array res = ({});
+  foreach(({ ({ ecdsa, rsa }), ({ rsa, ecdsa }), ({ ed25519, rsa }),
+             ({ rsa, ed25519 }) }), array(object) pair) {
+    object key = pair[0], ca = pair[1];
+    mapping ca_name = ([ "commonName": "CA" ]);
+    object tbs = Standards.X509.make_tbs(
+      Standards.PKCS.Certificate.build_distinguished_name(ca_name),
+      ca->pkcs_signature_algorithm_id(Crypto.SHA256),
+      Standards.PKCS.Certificate.build_distinguished_name(
+        ([ "commonName": "*" ])),
+      key->pkcs_public_key(), Standards.ASN1.Types.Integer(2), 3600, 0);
+    array(string) certs = ({
+      Standards.X509.sign_tbs(tbs, ca, Crypto.SHA256)->get_der(),
+      Standards.X509.make_selfsigned_certificate(ca, 3600, ca_name) });
+    object server_ctx = SSL.Context();
+    server_ctx->add_cert(key, certs);
+    object client_ctx = SSL.Context();
+    client_ctx->min_version = client_ctx->max_version =
+      SSL.Constants.PROTOCOL_TLS_1_2;
+    object a = Stdio.File();
+    object b = a->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+    SSL.File server = SSL.File(a, server_ctx);
+    SSL.File client = SSL.File(b, client_ctx);
+    server->set_nonblocking(0, 0, 0);
+    client->set_nonblocking(0, 0, 0);
+    server->accept();
+    client->connect();
+    function handshaking = lambda(SSL.File f) {
+      object c = f->query_connection();
+      return !c || (c->state & SSL.Constants.CONNECTION_handshaking);
+    };
+    mixed err = catch {
+      for (int i = 0;
+           (handshaking(client) || handshaking(server)) && (i < 100); i++) {
+        Pike.DefaultBackend(0.1);
+      }
+    };
+    if (err || handshaking(client) || handshaking(server)) {
+      res += ({ "Handshake failed" });
+    } else {
+      res += ({ SSL.Constants.CIPHER_SUITES[client->query_suite()][0] });
+    }
+  }
+  return res;
+]], ({ SSL.Constants.KE_ecdhe_ecdsa, SSL.Constants.KE_ecdhe_rsa,
+       SSL.Constants.KE_ecdhe_ecdsa, SSL.Constants.KE_ecdhe_rsa }))
+]])
+
+dnl Certificates signed with sha512WithRSAEncryption are recognized as
+dnl such, and a TLS 1.2 server gives each client the certificate signed
+dnl with the algorithm it lists, whatever order they were added in.
+test_any_equal([[
+  object k256 = Crypto.RSA()->generate_key(1024);
+  object k512 = Crypto.RSA()->generate_key(1024);
+  string c256 = Standards.X509.make_selfsigned_certificate(k256, 3600,
+    ([ "commonName": "*" ]), ([]), Crypto.SHA256);
+  string c512 = Standards.X509.make_selfsigned_certificate(k512, 3600,
+    ([ "commonName": "*" ]), ([]), Crypto.SHA512);
+  array res = ({ SSL.Constants.CertificatePair(k512, ({ c512 }))->sign_algs });
+  foreach(({ SSL.Constants.SIGNATURE_rsa_pkcs1_sha256,
+             SSL.Constants.SIGNATURE_rsa_pkcs1_sha512 }), int scheme) {
+    foreach(({ 0, 1 }), int sha512_first) {
+      object server_ctx = SSL.Context();
+      if (sha512_first) {
+        server_ctx->add_cert(k512, ({ c512 }));
+        server_ctx->add_cert(k256, ({ c256 }));
+      } else {
+        server_ctx->add_cert(k256, ({ c256 }));
+        server_ctx->add_cert(k512, ({ c512 }));
+      }
+      object client_ctx = SSL.Context();
+      client_ctx->max_version = SSL.Constants.PROTOCOL_TLS_1_2;
+      client_ctx->signature_algorithms = ({ scheme });
+      object a = Stdio.File();
+      object b = a->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+      SSL.File server = SSL.File(a, server_ctx);
+      SSL.File client = SSL.File(b, client_ctx);
+      server->set_nonblocking(0, 0, 0);
+      client->set_nonblocking(0, 0, 0);
+      server->accept();
+      client->connect();
+      function handshaking = lambda(SSL.File f) {
+        object c = f->query_connection();
+        return !c || (c->state & SSL.Constants.CONNECTION_handshaking);
+      };
+      for (int i = 0; (handshaking(client) || handshaking(server)) && (i < 100);
+           i++) {
+        Pike.DefaultBackend(0.1);
+      }
+      if (handshaking(client) || handshaking(server)) {
+        res += ({ "Handshake failed" });
+      } else {
+        string cert = server->query_connection()->session->certificate_chain[0];
+        res += ({ (cert == c512) ? 512 : 256 });
+      }
+    }
+  }
+  return res;
+]], ({ ({ SSL.Constants.SIGNATURE_rsa_pkcs1_sha512 }), 256, 256, 512, 512 }))
+
 test_do( add_constant("S") )
 
 END_MARKER

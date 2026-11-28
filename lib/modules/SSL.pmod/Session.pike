@@ -166,6 +166,19 @@ int(0..1) has_required_certificates()
   return 1;
 }
 
+// The TLS 1.2 signature algorithm of an EdDSA key, or zero for other keys.
+protected SignatureAlgorithm|zero eddsa_signature_alg(Crypto.Sign.State key)
+{
+#if constant(Crypto.ECC.Curve)
+  if (key->name() == "EdDSA") {
+    Crypto.ECC.Curve c = [object(Crypto.ECC.Curve)]key->get_curve();
+    return ([ "Curve25519": SIGNATURE_ed25519,
+              "Curve448": SIGNATURE_ed448 ])[c->name()];
+  }
+#endif
+  return 0;
+}
+
 //! Used to filter certificates not supported by the peer.
 //!
 //! @param cp
@@ -192,6 +205,12 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     // combinations it supports, cf below.
     if (!(ke_mask & cp->ke_mask_invariant)) return 0;
 
+    // An EdDSA key can only sign with its own scheme (RFC 8422 2.1),
+    // whatever its certificate chain is signed with.
+    int(8bit) eddsa = eddsa_signature_alg(cp->key);
+    if (eddsa && !has_value(signature_algorithms, HASH_intrinsic|eddsa))
+      return 0;
+
     // Check that all sign_algs in the cert chain are supported by the peer.
     foreach([array(SignatureScheme)]cp->sign_algs, int sign_alg) {
       int found;
@@ -202,6 +221,13 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     }
   } else if (!(ke_mask & cp->ke_mask))
     return 0;
+
+  if (eddsa_signature_alg(cp->key)) {
+    // RFC 8422 5.1.1: EdDSA is negotiated with the signature_algorithms
+    // extension of TLS 1.2 and later, checked above. The x25519 and
+    // x448 supported groups are for ECDHE, not for the key.
+    return version >= PROTOCOL_TLS_1_2;
+  }
 
 #if constant(Crypto.ECC.Curve)
   if (cp->key->get_curve) {
@@ -429,6 +455,7 @@ int select_cipher_suite(array(CertificatePair) certs,
   SSL3_DEBUG_MSG("Selecting server key and certificate.\n");
 
   int max_hash_size = 512;
+  int(8bit) signature_alg;
 
   // Now we can select the actual cert to use.
   if ( !KE_Anonymous[ke_method] ) {
@@ -471,10 +498,14 @@ int select_cipher_suite(array(CertificatePair) certs,
       //        the block size is 61 bytes, allow for 23 bytes of overhead.
       max_hash_size = [int]private_key->block_size() - 23;
     }
+
+    // RFC 8422 2.1: An EdDSA key signs with EdDSA, not ECDSA, in the
+    // ECDHE_ECDSA suites.
+    signature_alg = eddsa_signature_alg(private_key);
   }
 
   return set_cipher_suite(suite, version, signature_algorithms,
-			  max_hash_size);
+                          max_hash_size, signature_alg);
 }
 
 //! Sets the proper authentication method and cipher specification
@@ -493,14 +524,20 @@ int select_cipher_suite(array(CertificatePair) certs,
 //!
 //! @param max_hash_size
 //!
+//! @param signature_alg
+//!   Signature algorithm to use instead of the one implied by the
+//!   @[suite], see @[Cipher.lookup()].
+//!
 int set_cipher_suite(int suite, ProtocolVersion version,
 		     array(int)|zero signature_algorithms,
-		     int max_hash_size)
+                     int max_hash_size,
+                     SignatureAlgorithm|void signature_alg)
 {
   this::version = version;
 
   cipher_spec = Cipher.lookup(suite, version, signature_algorithms,
-                            truncated_hmac?512:max_hash_size);
+                            truncated_hmac?512:max_hash_size,
+                            signature_alg);
   if (!cipher_spec) return 0;
 
   cipher_suite = suite;

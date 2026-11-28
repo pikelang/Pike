@@ -891,6 +891,25 @@ o SSL
   Improved session reuse and handling of session tickets, key exchange
   errors and the maximum fragment length extension.
 
+  - The default signature algorithms of SSL.Context now include Ed448
+    when Crypto.ECC.Curve448 is available.
+
+  - TLS 1.2 clients now accept server key exchanges signed with
+    EdDSA, as sent by servers with Ed25519 and Ed448 certificates.
+
+  - TLS 1.2 servers with Ed25519 and Ed448 certificates now sign
+    with EdDSA, and Ed448 certificates no longer need the x448 group.
+
+  - Servers now choose key exchanges by the type of the certificate's
+    own key, not the type of the key that signed it. Eg ECDSA
+    certificates issued by RSA CAs now work.
+
+  - TLS 1.2 servers now match certificates signed with RSA and
+    SHA-512 against the client's rsa_pkcs1_sha512 signature
+    algorithm. A server with RSA certificates signed with SHA-256 and
+    SHA-512 now sends the one the client lists, whatever order they
+    were added in.
+
 o SSL.File: Propagate fatal alerts to close and write callbacks.
 
   SSL did not call the close_callback on SSL.File()s that connect outgoing

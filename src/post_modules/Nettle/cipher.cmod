@@ -5296,6 +5296,9 @@ PIKECLASS BlockCipher16
        *!   For @[iv]s of length other than @expr{12@}, an encryption or
        *!   decryption key must have been set first.
        *!
+       *! @note
+       *!   The @[iv] must not be empty.
+       *!
        *! @seealso
        *!   @[set_encrypt_key()], @[set_decrypt_key()].
        */
@@ -5304,6 +5307,8 @@ PIKECLASS BlockCipher16
       {
 	iv->flags |= STRING_CLEAR_ON_EXIT;
 	NO_WIDE_STRING(iv);
+        if (!iv->len)
+          Pike_error("Invalid iv/nonce.\n");
 	if ((THIS->mode < 0) && (iv->len != GCM_IV_SIZE))
 	  Pike_error("The key must be set to use an iv of length other than %d.\n",
 		     GCM_IV_SIZE);
@@ -6061,18 +6066,31 @@ PIKECLASS BlockCipher16
         push_object(this_object());
       }
 
-      /*! @decl this_program set_iv(string(0..255) iv)
+      /*! @decl this_program set_iv(string(0..255) iv, @
+       *!                           void|int(1..16) tag_length)
        *! Set the initialization vector to @[iv].
+       *!
+       *! @param iv
+       *!   Nonce of at most @expr{15@} bytes (see @[iv_size()]).
+       *!
+       *! @param tag_length
+       *!   Length of the authentication tag. Defaults to @expr{16@}.
        */
       PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv,
                                                int(1..16)|void tag_length)
       {
         pike_nettle_crypt_func func = pike_crypt_func;
         void *ctx = THIS->encrypt_object;
-        THIS->tag_length = tag_length?tag_length->u.integer:OCB_DIGEST_SIZE;
 
         iv->flags |= STRING_CLEAR_ON_EXIT;
         NO_WIDE_STRING(iv);
+
+        if (iv->len > OCB_MAX_NONCE_SIZE)
+          Pike_error("Invalid iv/nonce.\n");
+        if (tag_length && ((tag_length->u.integer < 1) ||
+                           (tag_length->u.integer > OCB_DIGEST_SIZE)))
+          SIMPLE_ARG_TYPE_ERROR("set_iv", 2, "int(1..16)");
+        THIS->tag_length = tag_length?tag_length->u.integer:OCB_DIGEST_SIZE;
 
         if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
           func = THIS->encrypt_state->crypt;
@@ -6093,6 +6111,9 @@ PIKECLASS BlockCipher16
         if (!public_data->len) return;
 
         NO_WIDE_STRING(public_data);
+
+        if (THIS->ocb_ctx.message_count)
+          Pike_error("Public data not allowed after crypt().\n");
 
         if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
           func = THIS->encrypt_state->crypt;
@@ -6592,7 +6613,7 @@ PIKECLASS ARCTWO
       state->ctx = &THIS->arctwo;
     }
 
-    /*! @decl State set_encrypt_key(string(0..255) key, int|void ekb)
+    /*! @decl State set_encrypt_key(string(0..255) key, void|int(0..1024) ekb)
      *!
      *! Initializes the object for encryption. The @[key] memory will be
      *! cleared before released.
@@ -6616,6 +6637,8 @@ PIKECLASS ARCTWO
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
       NO_WIDE_STRING(key);
+      if (ekb && ((ekb->u.integer < 0) || (ekb->u.integer > 1024)))
+        SIMPLE_ARG_TYPE_ERROR("set_encrypt_key", 2, "int(0..1024)");
       if (!ekb) {
 	if (args > 1) pop_n_elems(args - 1);
 	push_int(key->len * 8);
@@ -6624,7 +6647,7 @@ PIKECLASS ARCTWO
       apply_current(f_ARCTWO_State_inherited_set_encrypt_key_fun_num, args);
     }
 
-    /*! @decl State set_decrypt_key(string(0..255) key, void|int ekb)
+    /*! @decl State set_decrypt_key(string(0..255) key, void|int(0..1024) ekb)
      *!
      *! Initializes the object for decryption. The @[key] memory will be
      *! cleared before released.
@@ -6643,11 +6666,13 @@ PIKECLASS ARCTWO
      *! @seealso
      *!   @[set_encrypt_key], @[crypt]
      */
-    PIKEFUN object set_decrypt_key(string(0..255) key, void|int ekb)
+    PIKEFUN object set_decrypt_key(string(0..255) key, void|int(0..1024) ekb)
       optflags OPT_SIDE_EFFECT;
       rawtype tFunc(tStr8 tOr(tInt, tVoid), tObjImpl_NETTLE_CIPHER_STATE);
     {
       NO_WIDE_STRING(key);
+      if (ekb && ((ekb->u.integer < 0) || (ekb->u.integer > 1024)))
+        SIMPLE_ARG_TYPE_ERROR("set_decrypt_key", 2, "int(0..1024)");
       if (!ekb) {
 	if (args > 1) pop_n_elems(args - 1);
 	push_int(key->len * 8);
