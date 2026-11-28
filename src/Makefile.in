@@ -134,6 +134,8 @@ CANDLE_OPTS=@CANDLE_OPTS@
 LIGHT=@LIGHT@ -nologo $(LIGHT_OPTS)
 LIGHT_VERSION=@LIGHT_VERSION@
 LIGHT_OPTS=@LIGHT_OPTS@
+MTEXE=@MTEXE@
+PIKE_EXE_MANIFEST=@PIKE_EXE_MANIFEST@
 RCEXE=@RCEXE@
 WINDRES=@WINDRES@
 
@@ -412,15 +414,31 @@ tpike@EXEEXT@: master-stamp
 #
 # @LDSHARED_BASE_REQS@ expands to pike if dynamic modules are used
 # on MacOS X 12.0 or later.
-pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
+pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms \
+    modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ \
+    @PIKE_ICON_RES@ $(PIKE_EXE_MANIFEST)
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.exe ] ; then mv pike.exe pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
+	@if test -n "$(PIKE_EXE_MANIFEST)" && test -n "$(MTEXE)"; then \
+	  rm -f pike.exe.manifest; \
+	fi
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS) @PIKE_ICON_RES@ -o pike
-	@MT_FIX_PIKE_EXE@
+# Preserve the CRT and other settings supplied by the linker.
+	@if test -n "$(PIKE_EXE_MANIFEST)" && test -n "$(MTEXE)"; then \
+	  linker_manifest=; \
+	  if test -f pike.exe.manifest; then \
+	    linker_manifest=pike.exe.manifest; \
+	  elif $(MTEXE) -nologo '-inputresource:pike.exe;1' \
+	         -out:pike_embedded.manifest > /dev/null 2>&1; then \
+	    linker_manifest=pike_embedded.manifest; \
+	  fi; \
+	  $(MTEXE) -nologo -manifest $$linker_manifest $(PIKE_EXE_MANIFEST) \
+	    '-outputresource:pike.exe;1'; \
+	fi
 # Turn off PaX mprotect inhibition on NetBSD and others.
 	@$(PAXCTL_ALLOW_MPROTECT) pike
 # The dumped modules are removed whenever Pike is relinked since some
@@ -693,8 +711,14 @@ force :
 pike.ico: $(PACKAGINGDIR)/windows/pike.ico
 	cp "$<" $@
 
-pike_icon.res: pike.ico
+pike_long_paths.manifest: $(PACKAGINGDIR)/windows/pike_long_paths.manifest
+	cp "$<" "$@"
+
+pike_icon.res: pike.ico $(PIKE_EXE_MANIFEST)
 	echo 'pike ICON pike.ico' > pike_icon.rc
+	@if test -n "$(PIKE_EXE_MANIFEST)" && test -z "$(MTEXE)"; then \
+	  echo '1 24 "$(PIKE_EXE_MANIFEST)"' >> pike_icon.rc; \
+	fi
 	if test "$(RCEXE)" = "" ; then $(WINDRES) -o $@ pike_icon.rc ; \
 	else $(RCEXE) /fo $@ pike_icon.rc ; fi
 
@@ -751,6 +775,7 @@ clean: clean_here
 
 clean_pike:
 	-rm -f pike pike.lib pike.exe pike.exe.manifest pike.exp
+	-rm -f pike_embedded.manifest pike_long_paths.manifest
 
 # Clean up everything that needs to go if the configure args change.
 config_change_clean: clean clean_pike

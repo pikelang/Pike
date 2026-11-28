@@ -2779,17 +2779,23 @@ if test "x${MTEXE-}" = x ; then
   PIKE_NT_PROG(MTEXE, mt.exe, , $PATH:$EXTRA_PATH)
   export MTEXE
 fi
+AC_SUBST(MTEXE)
 
 # Resource compiler
 if test "x${RCEXE-}" = x ; then
   PIKE_NT_PROG(RCEXE, rc.exe, , $PATH:$EXTRA_PATH)
   export RCEXE
 fi
-AC_SUBST(RCEXE)
 if test "x${WINDRES-}" = x ; then
   AC_PATH_PROG(WINDRES, windres, , $PATH:$EXTRA_PATH)
   export WINDRES
 fi
+if test "$pike_cv_is_mingw" = yes && test -n "$WINDRES"; then
+  # GNU ld requires a COFF object, even with a .res filename.
+  RCEXE=
+  WINDRES="$WINDRES -O coff"
+fi
+AC_SUBST(RCEXE)
 AC_SUBST(WINDRES)
 
 #############################################################################
@@ -9025,30 +9031,26 @@ if test "x$MTEXE" != x; then
   # Embed the manifests. C.f. http://msdn2.microsoft.com/en-us/library/ms235591.aspx
   # You might want to disable this if you want to try private crts.
   # See also the PRIVATE_CRT parts of install.pike.
-  MT_FIX_PIKE_EXE="\
-    @if test -f pike.exe.manifest; then \
-      echo \"$MTEXE -nologo -manifest pike.exe.manifest '-outputresource:pike.exe;1'\"; \
-      $MTEXE -nologo -manifest pike.exe.manifest '-outputresource:pike.exe;1'; \
-    else :; fi"
   MT_FIX_MODULE_SO="\
     @if test -f module.so.manifest; then \
       echo \"$MTEXE -nologo -manifest module.so.manifest '-outputresource:module.so;2'\"; \
       $MTEXE -nologo -manifest module.so.manifest '-outputresource:module.so;2'; \
     else :; fi"
 else
-  MT_FIX_PIKE_EXE=@:
   MT_FIX_MODULE_SO=@:
 fi
-
-AC_SUBST(MT_FIX_PIKE_EXE)
 
 if test "x$pike_cv_sys_os" = xWindows_NT; then
   if test "x$RCEXE$WINDRES" != x; then
     # Windows icon
     PIKE_ICON_RES=pike_icon.res
   fi
+  if test "x$MTEXE$RCEXE$WINDRES" != x; then
+    PIKE_EXE_MANIFEST=pike_long_paths.manifest
+  fi
 fi
 AC_SUBST(PIKE_ICON_RES)
+AC_SUBST(PIKE_EXE_MANIFEST)
 
 if test "x$enable_pikelib" != "xno"; then
   # Everything needs to be compiled for library use.

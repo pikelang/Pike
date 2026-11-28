@@ -159,14 +159,14 @@ class struct {
 
   //! Reads an array of integers as written by @[put_fix_uint_array]
   //! from the buffer.
-  array(int) get_fix_uint_array(int(8bit) item_size, int size)
+  array(int)|zero get_fix_uint_array(int(8bit) item_size, int size)
   {
     return read_ints(size, item_size);
   }
 
   //! Reads an array of integers as written by @[put_var_uint_array]
   //! from the buffer.
-  array(int) get_var_uint_array(int(8bit) item_size, int(0..) len)
+  array(int)|zero get_var_uint_array(int(8bit) item_size, int(0..) len)
   {
     int size = read_int(len);
     int elems = size/item_size;

@@ -2628,11 +2628,17 @@ class InstallHandler(mapping vars, string prefix) {
     if(pos>=0)
     {
       status("Finalizing",pike_bin_file,"...");
+      int master_pos = pos+sizeof(MASTER_COOKIE);
+      string master_value = combine_path(lib_prefix,"master.pike")+"\0";
+      if (master_pos + sizeof(master_value) > sizeof(pike_bin) ||
+          pike_bin[master_pos..master_pos+sizeof(master_value)-1] !=
+          "\0" * sizeof(master_value)) {
+        error_msg("Master path does not fit in %s.\n", pike_bin_file);
+        exit(1);
+      }
       pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
       Stdio.write_file(pike_bin_file, pike_bin);
       Stdio.File f=Stdio.File(pike_bin_file,"rw");
-      int master_pos = pos+sizeof(MASTER_COOKIE);
-      string master_value = combine_path(lib_prefix,"master.pike");
       f->seek(master_pos);
       f->write(master_value);
       fix_macos_adhoc_signature(f, master_pos, sizeof(master_value));
@@ -2805,6 +2811,38 @@ class WixInstallHandler {
 #endif /* 1 */
       ;
 
+    // The empty GUID leaves machine policy outside MSI component tracking.
+    // Repair and uninstall must leave the value under the administrator's
+    // control after the initial opt-in.
+    WixNodeT long_paths = WixNode("Component", ([
+      "Id":"EnableLongPaths",
+      "Guid":"",
+    ]))->add_child(WixNode("Condition", ([]),
+                           "NOT Installed AND PIKE_ENABLE_LONG_PATHS = \"1\" "
+                           "AND PIKE_WINDOWS_BUILD >= 14393"))->
+      add_child(WixNode(wix_version && wix_version < "3" ?
+                        "Registry" : "RegistryValue", ([
+        "Id":"LongPathsEnabled",
+        "Root":"HKLM",
+        "Key":"SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+        "Name":"LongPathsEnabled",
+        "Type":"integer",
+        "Value":"1",
+        "KeyPath":"yes",
+      ])));
+
+    // MSI's version properties can report Windows 8.1 on newer systems.
+    WixNodeT windows_build = WixNode("Property", ([
+      "Id":"PIKE_WINDOWS_BUILD",
+      "Secure":"yes",
+    ]))->add_child(WixNode("RegistrySearch", ([
+      "Id":"PikeWindowsBuild",
+      "Root":"HKLM",
+      "Key":"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+      "Name":"CurrentBuildNumber",
+      "Type":"raw",
+    ])));
+
     WixNodeT feature_node =
       WixNode("Feature", ([
 		"ConfigurableDirectory":"TARGETDIR",
@@ -2815,6 +2853,8 @@ class WixInstallHandler {
       add_child(line_feed)->
       add_child(WixNode ("ComponentRef",
 			 (["Id": root->get_component_id("bin")])))->
+      add_child(line_feed)->
+      add_child(WixNode("ComponentRef", (["Id":"EnableLongPaths"])))->
       add_child(line_feed)->
       add_child(WixNode("MergeRef", ([ "Id":"Pike" ])))->
       add_child(line_feed);
@@ -2899,7 +2939,16 @@ an extra CRT instance.\n");
 					      "Id":"1",
 					    ])))->
 			  add_child(line_feed)->
-			  add_child(root->gen_xml(UNDEFINED, "1"))->
+                          add_child(WixNode("Property", ([
+                            "Id":"PIKE_ENABLE_LONG_PATHS",
+                            "Secure":"yes",
+                          ])))->
+                          add_child(line_feed)->
+                          add_child(windows_build)->
+                          add_child(line_feed)->
+                          add_child(root->gen_xml(UNDEFINED, "1")->
+                                    add_child(line_feed)->
+                                    add_child(long_paths))->
 			  add_child(line_feed)->
 			  add_child(feature_node)->
 			  add_child(line_feed)->

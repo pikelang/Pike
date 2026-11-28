@@ -9,9 +9,10 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 #ifndef __NT__
 #include <unistd.h>
-#include <string.h>
 #else
 #include <windows.h>
 #include <io.h>
@@ -55,8 +56,8 @@ static void gr(char *ptr, int len)
 static unsigned int read_int(void)
 {
   unsigned char x[4];
-  gr(x,4);
-  return (x[0] << 24) | (x[1]<<16) | (x[2]<<8) | x[3];
+  gr((char *)x, sizeof(x));
+  return ((unsigned int)x[0] << 24) | (x[1]<<16) | (x[2]<<8) | x[3];
 }
 
 #if !( SEEK_TO - 0 )
@@ -68,14 +69,35 @@ static unsigned int read_int(void)
 #endif
 
 
-void my_uncompress(char *file,int argc, char **argv)
+static char *alloc_buffer(size_t size)
 {
-  unsigned int len;
-  char buffer[8192];
-  int fd;
-  char *d;
+  char *buffer = malloc(size);
 
-  fd=open(file, O_RDONLY);
+  if (!buffer) {
+    fputs("Out of memory unpacking installer.\n", stderr);
+    exit(1);
+  }
+  return buffer;
+}
+
+#ifdef __NT__
+static int open_archive(const WCHAR *file)
+{
+  HANDLE handle = CreateFileW(file, GENERIC_READ, FILE_SHARE_READ, NULL,
+                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  int fd;
+
+  if (handle == INVALID_HANDLE_VALUE) return -1;
+  fd = _open_osfhandle((intptr_t)handle, _O_RDONLY | _O_BINARY);
+  if (fd == -1) CloseHandle(handle);
+  return fd;
+}
+#endif
+
+static void my_uncompress(int fd, int argc, char **argv)
+{
+  const char *d;
+
   if(fd == -1) return;
 
   if(lseek(fd, SEEK_TO, SEEK_SET)<0)
@@ -109,13 +131,17 @@ void my_uncompress(char *file,int argc, char **argv)
   while(1)
   {
     char type;
-    int len;
-    char *data;
+    unsigned int len;
+    char *buffer;
     GR(type);
 
     len=read_int();
-    WERR("namelen=%d\n",len);
-
+    WERR("namelen=%u\n",len);
+    if (len > INT_MAX) {
+      fputs("Installer entry name too long.\n", stderr);
+      exit(1);
+    }
+    buffer = alloc_buffer((size_t)len + 1);
     gr(buffer, len);
     buffer[len]=0;
 
@@ -132,21 +158,38 @@ void my_uncompress(char *file,int argc, char **argv)
 
       case 'e': /* setenv */
         WERR("putenv(%s)\n",buffer);
-        putenv(buffer);
-	break;
+        /* On POSIX, putenv retains the supplied string. */
+#ifdef __NT__
+        _putenv(buffer);
+#else
+        if (!putenv(buffer)) buffer = NULL;
+#endif
+        break;
 
       case 's': /* system */
 	/* We ignore error so that we can continue with
 	 * file deletion
 	 */
-	/* FIXME:
-	 * Add support for concatenating all the parameters
-	 * to this command
-	 */
-	if(buffer[strlen(buffer)-1]=='$')
-	{
-	  char *ptr=buffer+strlen(buffer)-1;
-	  int e;
+        if (len && buffer[len - 1] == '$') {
+          size_t size = (size_t)len;
+          char *command, *ptr;
+          int e;
+
+          for (e = 0; e < argc; e++) {
+            size_t arglen = strlen(argv[e]);
+
+            if (size > (size_t)-1 - 3 ||
+                arglen > ((size_t)-1 - size - 3) / 4) {
+              fputs("Installer command too long.\n", stderr);
+              exit(1);
+            }
+            size += 4 * arglen + 3;
+          }
+          command = alloc_buffer(size);
+          memcpy(command, buffer, len - 1);
+          free(buffer);
+          buffer = command;
+          ptr = buffer + len - 1;
 	  for(e=0;e<argc;e++)
 	  {
 	    char *c;
@@ -194,32 +237,33 @@ void my_uncompress(char *file,int argc, char **argv)
 
       case 'f': /* file */
       {
-	FILE *f;
+        FILE *f;
+        char chunk[8192];
         WERR("file(%s)\n",buffer);
         f=fopen(buffer,"wb");
-	if(!f)
-	{
-	  perror("fopen");
-	  fprintf(stderr,"Failed to open %s\n",buffer);
-	  exit(1);
-	}
-	len=read_int();
-	while(len)
-	{
-	  int r=len > sizeof(buffer) ? sizeof(buffer) : len;
-	  gr(buffer, r);
-	  if(fwrite(buffer, 1, r, f) != r)
-	  {
-	    perror("fwrite");
-	    exit(1);
-	  }
-	  len-=r;
-	}
-	if(fclose(f)<0)
-	{
-	  perror("fclose");
-	  exit(1);
-	}
+        if(!f)
+        {
+          perror("fopen");
+          fprintf(stderr,"Failed to open %s\n",buffer);
+          exit(1);
+        }
+        len=read_int();
+        while(len)
+        {
+          unsigned int r = len > sizeof(chunk) ? sizeof(chunk) : len;
+          gr(chunk, r);
+          if(fwrite(chunk, 1, r, f) != r)
+          {
+            perror("fwrite");
+            exit(1);
+          }
+          len-=r;
+        }
+        if(fclose(f)<0)
+        {
+          perror("fclose");
+          exit(1);
+        }
       }
       break;
 
@@ -239,64 +283,66 @@ void my_uncompress(char *file,int argc, char **argv)
 	fprintf(stderr,"Wrong type (%c (%d))!\n",type,type);
 	exit(1);
     }
+    free(buffer);
   }
 }
 
 int main(int argc, char **argv)
 {
-  char tmp[16384];
-  char *file;
-
 #ifdef __NT__
-  _fmode=_O_BINARY;
-  if(SearchPath(0,
-	     argv[0],
-	     ".exe",
-	     sizeof(tmp),
-	     tmp,
-	     &file))
-    my_uncompress(tmp,argc-1,argv+1);
+  DWORD capacity = 256;
+
+  _fmode = _O_BINARY;
+  for (;;) {
+    WCHAR *path = (WCHAR *)alloc_buffer(capacity * sizeof(WCHAR));
+    DWORD length = GetModuleFileNameW(NULL, path, capacity);
+
+    if (length && length < capacity) {
+      int fd = open_archive(path);
+
+      free(path);
+      my_uncompress(fd, argc - 1, argv + 1);
+      break;
+    }
+    free(path);
+    if (!length || capacity > ((DWORD)-1 / sizeof(WCHAR)) / 2) break;
+    capacity *= 2;
+  }
 #else
-  char *path=getenv("PATH");
-  char *pos;
-  file=argv[0];
-  if(!path || strchr(file, SLASH))
-  {
-    my_uncompress(file,argc-1,argv-1);
+  const char *path = getenv("PATH");
+  const char *file = argv[0];
+  size_t file_length = strlen(file);
+  const char *pos;
+
+  if (!path || strchr(file, SLASH)) {
+    my_uncompress(open(file, O_RDONLY), argc - 1, argv + 1);
     perror("open");
     exit(1);
   }
 
-  pos=path;
-  while(1)
-  {
-    char *next;
-    next=FEND(pos,DELIM);
-    if(next!=pos)
-    {
-      char *ptr=tmp;
+  for (pos = path;;) {
+    const char *end = FEND(pos, DELIM);
+    size_t prefix_length = end - pos;
 
-      memcpy(ptr=tmp,pos,next-pos);
-      ptr+=next-pos;
-      if(*ptr != '/'
-#ifdef __NT
-	 && *ptr != SLASH
-#endif
-	 )
-	*(ptr++)='/';
+    if (prefix_length) {
+      char *candidate;
+      size_t separator = !ISSLASH(end[-1]);
+      int fd;
 
-      memcpy(ptr,
-	     file,
-	     strlen(file));
-      ptr+=strlen(file);
-      *ptr=0;
-
-      my_uncompress(tmp,argc-1,argv+1);
+      if (file_length > (size_t)-1 - prefix_length - separator - 1)
+        break;
+      candidate = alloc_buffer(prefix_length + separator + file_length + 1);
+      memcpy(candidate, pos, prefix_length);
+      if (separator) candidate[prefix_length] = SLASH;
+      memcpy(candidate + prefix_length + separator, file, file_length + 1);
+      fd = open(candidate, O_RDONLY);
+      free(candidate);
+      my_uncompress(fd, argc - 1, argv + 1);
     }
-    if(!*next) break;
-    pos=next+1;
+    if (!*end) break;
+    pos = end + 1;
   }
 #endif
   puts("Failed to find self!");
-  exit(9);
+  return 9;
 }

@@ -1231,10 +1231,14 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   /* No need to propagate */
   *prev=k->next;
   free_svalue(& k->ind);
-  if(to)
+  if(to) {
     move_svalue (to, &k->val);
-  else
+    /* As for indexing, an existing integer entry is a plain number. */
+    if (TYPEOF(*to) == T_INT)
+      SET_SVAL_SUBTYPE(*to, NUMBER_NUMBER);
+  } else {
     free_svalue(& k->val);
+  }
 
   FREE_KEYPAIR(md, k);
 
@@ -1356,6 +1360,8 @@ PMOD_EXPORT void map_atomic_get_set(struct mapping *m,
   tmp = k->val;
   k->val = *from_to;
   *from_to = tmp;
+  if (TYPEOF(*from_to) == T_INT)
+    SET_SVAL_SUBTYPE(*from_to, NUMBER_NUMBER);
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif

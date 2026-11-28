@@ -8,7 +8,16 @@ constant Iterator = __builtin.mapping_iterator;
 
 //! A mapping look-alike that overrides (ie shadows) another @[parent] mapping.
 //!
-//! The class implements most of the usual mapping operations.
+//! The class implements most of the usual mapping operations, including
+//! @[sizeof()] and @tt{foreach}. Iteration uses a snapshot of the merged
+//! entries.
+//!
+//! @[m_delete()] removes a shadow entry if present, or the parent entry
+//! otherwise. With modify_parent set to 2, deleting a shadow entry also
+//! removes the corresponding parent entry.
+//!
+//! @note
+//!   Use a mapping cast to obtain a mapping value from the view.
 class ShadowedMapping(protected mapping|ShadowedMapping parent)
 {
   protected mapping shadow = ([]);
@@ -93,17 +102,31 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
     return equal(other, joined);
   }
 
-  protected mixed _m_delete(mixed ind)
+  protected mixed _m_delete(mixed ind, mixed|void expected)
   {
-    mixed res = m_delete(shadow, ind);
-    if (undefinedp(res)) {
-      res = m_delete(parent, ind);
-    } else if (modify_parent == 2) {
-      m_delete(parent, ind);
+    mixed res;
+    if (has_index(shadow, ind)) {
+      res = m_delete(shadow, ind, expected);
+      if (modify_parent == 2 && !has_index(shadow, ind)) {
+        m_delete(parent, ind);
+      }
+    } else {
+      res = m_delete(parent, ind, expected);
     }
     joined = 0;
-
     return res;
+  }
+
+  protected int _sizeof()
+  {
+    update_joined();
+    return sizeof(joined);
+  }
+
+  protected Iterator _get_iterator()
+  {
+    update_joined();
+    return Iterator(joined);
   }
 
   protected array(mixed) _indices()

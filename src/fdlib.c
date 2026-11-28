@@ -1147,79 +1147,77 @@ static int IsUncRoot(const p_wchar1 *path)
   return 0 ;
 }
 
-p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
+PMOD_EXPORT size_t pike_dwim_utf8_to_utf16_buffer(const p_wchar0 *str,
+                                                size_t len,
+                                                p_wchar1 *buffer,
+                                                size_t capacity)
 {
-  /* NB: Maximum expansion factor is 2.
-   *
-   *   UTF8	UTF16	Range			Expansion
-   *   1 byte	2 bytes	U000000 - U00007f	2
-   *   2 bytes	2 bytes	U000080 - U0007ff	1
-   *   3 bytes	2 bytes	U000800 - U00ffff	0.67
-   *   4 bytes	4 bytes	U010000 - U10ffff	1
-   *
-   * NB: Some extra padding at the end for NUL and adding
-   *     of terminating slashes, etc.
-   *
-   * FIXME: Consider prefixing path with "\\?\", which removes
-   *        the MAXPATH (ie 260 character) length limit. Note
-   *        that this removes the support for ".." and ".".
-   */
-  p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
-  size_t i = 0, j = 0;
+  size_t i = 0, used = 0;
 
-  if (!res) {
-    return NULL;
+  if (!buffer) capacity = 0;
+  if (len == (size_t)-1) {
+    if (capacity) buffer[0] = 0;
+    return 0;
   }
 
   while (i < len) {
     p_wchar0 c = str[i++];
-    p_wchar2 ch, mask = 0x3f;
-    if (!(c & 0x80)) {
-      /* US-ASCII */
-      res[j++] = c;
-      continue;
-    }
-    if (!(c & 0x40)) {
-      /* Continuation character. Invalid. Retry as Latin-1. */
-      goto latin1_to_utf16;
-    }
-    ch = c;
-    while (c & 0x40) {
-      p_wchar0 cc = str[i++];
-      if ((cc & 0xc0) != 0x80) {
-	/* Expected continuation character. */
-	goto latin1_to_utf16;
+    UINT32 ch = c;
+    size_t units = 1;
+
+    if (c & 0x80) {
+      UINT32 mask = 0x3f;
+
+      if (!(c & 0x40)) goto latin1_to_utf16;
+      while (c & 0x40) {
+        p_wchar0 cc;
+
+        if (i == len) goto latin1_to_utf16;
+        cc = str[i++];
+        if ((cc & 0xc0) != 0x80) goto latin1_to_utf16;
+        ch = (ch << 6) | (cc & 0x3f);
+        mask |= mask << 5;
+        c <<= 1;
       }
-      ch = ch<<6 | (cc & 0x3f);
-      mask |= mask << 5;
-      c <<= 1;
+      ch &= mask;
+      if (ch > 0x10ffff) goto latin1_to_utf16;
+      if (ch >= 0x10000) units = 2;
     }
-    ch &= mask;
-    if (ch < 0) {
-      goto latin1_to_utf16;
+    if (used < capacity && units < capacity - used) {
+      if (units == 1) {
+        buffer[used] = ch;
+      } else {
+        ch -= 0x10000;
+        buffer[used] = 0xd800 | (ch >> 10);
+        buffer[used + 1] = 0xdc00 | (ch & 0x3ff);
+      }
     }
-    if (ch < 0x10000) {
-      res[j++] = ch;
-      continue;
-    }
-    ch -= 0x10000;
-    if (ch >= 0x100000) {
-      goto latin1_to_utf16;
-    }
-    /* Encode with surrogates. */
-    res[j++] = 0xd800 | ch >> 10;
-    res[j++] = 0xdc00 | (ch & 0x3ff);
+    used += units;
   }
   goto done;
 
  latin1_to_utf16:
   /* DWIM: Assume Latin-1. Just widen the string. */
-  for (j = 0; j < len; j++) {
-    res[j] = str[j];
+  used = len;
+  if (used < capacity) {
+    for (i = 0; i < len; i++) {
+      buffer[i] = str[i];
+    }
   }
 
  done:
-  res[j++] = 0;	/* NUL-termination. */
+  if (capacity) buffer[used < capacity ? used : 0] = 0;
+  return used + 1;
+}
+
+p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
+{
+  p_wchar1 *res;
+
+  /* Leave extra space for callers that append path separators, etc. */
+  if (len > (size_t)-1 / sizeof(*res) - 4) return NULL;
+  res = malloc((len + 4) * sizeof(*res));
+  if (res) pike_dwim_utf8_to_utf16_buffer(str, len, res, len + 4);
   return res;
 }
 
@@ -1228,85 +1226,88 @@ PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
   return low_dwim_utf8_to_utf16(str, strlen((const char *) str));
 }
 
+PMOD_EXPORT size_t pike_utf16_to_utf8_buffer(const p_wchar1 *str,
+                                           p_wchar0 *buffer,
+                                           size_t capacity)
+{
+  static const p_wchar0 prefix[] = { 0, 0, 0xc0, 0xe0, 0xf0 };
+  size_t used = 0;
+  UINT32 ch;
+
+  if (!buffer) capacity = 0;
+
+  while ((ch = *str++)) {
+    size_t bytes;
+
+    if ((ch & 0xfc00) == 0xd800 && (*str & 0xfc00) == 0xdc00) {
+      ch = 0x10000 + ((ch & 0x3ff) << 10) + (*str++ & 0x3ff);
+    }
+    /* Preserve unpaired surrogates as-is for Windows filenames. */
+    if (ch < 0x80) bytes = 1;
+    else if (ch < 0x800) bytes = 2;
+    else if (ch < 0x10000) bytes = 3;
+    else bytes = 4;
+
+    if (bytes > (size_t)-1 - 1 - used) {
+      if (capacity) buffer[0] = 0;
+      return 0;
+    }
+    if (used < capacity && bytes < capacity - used) {
+      size_t j = bytes;
+
+      while (--j) {
+        buffer[used + j] = 0x80 | (ch & 0x3f);
+        ch >>= 6;
+      }
+      buffer[used] = prefix[bytes] | ch;
+    }
+    used += bytes;
+  }
+
+  if (capacity) buffer[used < capacity ? used : 0] = 0;
+  return used + 1;
+}
+
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
 {
-  /* NB: Maximum expansion factor is 1.5.
-   *
-   *   UTF16	UTF8	Range			Expansion
-   *   2 bytes	1 byte	U000000 - U00007f	0.5
-   *   2 bytes	2 bytes	U000080 - U0007ff	1
-   *   2 bytes	3 bytes	U000800 - U00d7ff	1.5
-   *   2 bytes	2 bytes	U00d800 - U00dfff	1
-   *   2 bytes	3 bytes	U00e000 - U00ffff	1.5
-   *   4 bytes	4 bytes	U010000 - U10ffff	1
-   *
-   * NB: Some extra padding at the end for NUL and adding
-   *     of terminating slashes, etc.
-   *
-   * NB: According to Wikipedia, win32 doesn't enforce correct
-   *     pairing of surrogates. Encode such code units as-is.
-   */
-  size_t i = 0, j = 0;
-  size_t sz = 0;
-  p_wchar1 c;
-  p_wchar0 *ret;
+  size_t size = pike_utf16_to_utf8_buffer(str, NULL, 0);
+  p_wchar0 *result;
 
-  while ((c = str[i++])) {
-    sz++;
-    if (c < 0x80) continue;
-    sz++;
-    if (c < 0x0800) continue;
-#if 0
-    /* NB: The following is only correct if all surrogates are paired correctly. */
-    if ((c & 0xf800) == 0xd800) {
-      /* One half of a surrogate pair. */
-      continue;
+  if (!size) return NULL;
+  result = malloc(size);
+  if (result) pike_utf16_to_utf8_buffer(str, result, size);
+  return result;
+}
+
+/* The wide path APIs return the required capacity (including the NUL)
+ * when the supplied buffer is too small. Leave room for a trailing slash.
+ */
+static WCHAR *get_absolute_path(const WCHAR *path)
+{
+  DWORD size = GetFullPathNameW(path, 0, NULL, NULL);
+
+  while (size) {
+    WCHAR *result;
+    DWORD length;
+
+    if (size > (size_t)-1 / sizeof(WCHAR) - 1 ||
+        !(result = malloc(((size_t)size + 1) * sizeof(WCHAR)))) {
+      SetLastError(ERROR_OUTOFMEMORY);
+      return NULL;
     }
-#endif /* 0 */
-    sz++;
+    length = GetFullPathNameW(path, size, result, NULL);
+    if (length && length < size) return result;
+    if (!length) {
+      DWORD error = GetLastError();
+
+      free(result);
+      SetLastError(error);
+      return NULL;
+    }
+    free(result);
+    size = length;
   }
-  sz++;	/* NUL termination. */
-
-  ret = malloc(sz);
-  if (!ret) return NULL;
-
-  for (i = 0; (c = str[i]); i++) {
-    if (c < 0x80) {
-      ret[j++] = c & 0x7f;
-      continue;
-    }
-    if (c < 0x800) {
-      ret[j++] = 0xc0 | (c>>6);
-      ret[j++] = 0x80 | (c & 0x3f);
-      continue;
-    }
-    if ((c & 0xf800) == 0xd800) {
-      /* Surrogate */
-      if ((c & 0xfc00) == 0xd800) {
-	p_wchar2 ch = str[++i];
-	if ((ch & 0xfc00) == 0xdc00) {
-	  ch = 0x100000 | (ch & 0x3ff) | ((c & 0x3ff)<<10);
-	  ret[j++] = 0xf0 | (ch >> 18);
-	  ret[j++] = 0x80 | ((ch >> 12) & 0x3f);
-	  ret[j++] = 0x80 | ((ch >> 6) & 0x3f);
-	  ret[j++] = 0x80 | (ch & 0x3f);
-	  continue;
-	}
-	/* Invalid surrogate pair.
-	 * Unget the second code unit.
-	 */
-	i--;
-      }
-      /* Invalid or lone surrogate.
-       * Encode as-is.
-       */
-    }
-    ret[j++] = 0xe0 | (c >> 12);
-    ret[j++] = 0x80 | ((c >> 6) & 0x3f);
-    ret[j++] = 0x80 | (c & 0x3f);
-  }
-  ret[j++] = 0;
-  return ret;
+  return NULL;
 }
 
 /* Note 1: s->st_mtime is the creation time for non-root directories.
@@ -1345,12 +1346,14 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   }
 
   l = wcslen(fname);
-  /* Get rid of terminating slashes. */
-  while (l && ISSEPARATOR(fname[l-1])) {
+  /* Trim trailing slashes, preserving the drive root. */
+  while (l && ISSEPARATOR(fname[l - 1]) &&
+         !(l == 3 && fname[1] == ':')) {
     fname[--l] = 0;
   }
   if( l==0 )
   {
+    free(fname);
     errno = ENOENT;
     return -1;
   }
@@ -1397,17 +1400,17 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       return -1;
     }
 
-    /* NB: One extra byte for the terminating separator. */
-    abspath = malloc((l + _MAX_PATH + 1 + 1) * sizeof(p_wchar1));
+    abspath = get_absolute_path(fname);
     if (!abspath) {
+      DWORD error = GetLastError();
+
       free(fname);
-      errno = ENOMEM;
+      set_errno_from_win32_error(error);
       return -1;
     }
 
-    if (!_wfullpath( abspath, fname, l + _MAX_PATH ) ||
-	/* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
-	(wcslen(abspath) > 3 && !IsUncRoot (abspath))) {
+    /* Neither root dir ('C:\') nor UNC root dir ('\\server\share\'). */
+    if (wcslen(abspath) > 3 && !IsUncRoot(abspath)) {
       STATDEBUG (fprintf (stderr, "not a root %S\n", abspath));
       free(abspath);
       free(fname);
@@ -2049,77 +2052,108 @@ PMOD_EXPORT char *debug_fd_get_current_dir_name(void)
 
 PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
 {
-  p_wchar1 *pname = pike_dwim_utf8_to_utf16((const p_wchar0 *) path);
-  p_wchar1 *buffer;
+  /* Use DWORD for SIGDN to support SDKs predating Vista. */
+  typedef HRESULT (WINAPI *get_name_fn)(LPCITEMIDLIST, DWORD, WCHAR **);
+  get_name_fn get_name = (get_name_fn)(void *)
+    GetProcAddress(GetModuleHandleW(L"shell32.dll"), "SHGetNameFromIDList");
+  WCHAR *input = pike_dwim_utf8_to_utf16((const p_wchar0 *)path);
+  WCHAR *absolute, *buffer = NULL;
+  WCHAR *shell_path = NULL;
   char *res;
   size_t len;
   PIDLIST_ABSOLUTE idl;
   HRESULT hres;
 
-  if (!pname) {
+  if (!input) {
     errno = ENOMEM;
     return NULL;
   }
 
-  /* First convert to an absolute path. */
-  len = MAX_PATH;
-  do {
-    size_t ret;
+  absolute = get_absolute_path(input);
+  if (!absolute) {
+    DWORD error = GetLastError();
 
-    buffer = malloc(len * sizeof(p_wchar1));
+    free(input);
+    set_errno_from_win32_error(error);
+    return NULL;
+  }
+  free(input);
+
+  hres = isf->lpVtbl->ParseDisplayName(isf, NULL, NULL, absolute,
+                                      NULL, &idl, NULL);
+  if (hres == S_OK) {
+    if (get_name) {
+      /* SIGDN_FILESYSPATH. The shell allocates the result. */
+      if (get_name(idl, 0x80058000UL, &shell_path) == S_OK)
+        buffer = shell_path;
+    } else {
+      /* On pre-Vista systems the shell API uses a MAX_PATH buffer. */
+      buffer = malloc(MAX_PATH * sizeof(WCHAR));
+      if (!buffer) {
+        CoTaskMemFree(idl);
+        free(absolute);
+        errno = ENOMEM;
+        return NULL;
+      }
+      if (!SHGetPathFromIDListW(idl, buffer)) {
+        free(buffer);
+        buffer = NULL;
+      }
+    }
+    CoTaskMemFree(idl);
+  }
+
+  if (!buffer && wcslen(absolute) < MAX_PATH) {
+    if (shell_path) CoTaskMemFree(shell_path);
+    free(absolute);
+    if (hres == S_OK) errno = EINVAL;
+    else set_errno_from_win32_error(hres);
+    return NULL;
+  }
+
+  if (!buffer) {
+    /* The shell can reject paths supported by the filesystem APIs. */
+    DWORD size = GetLongPathNameW(absolute, NULL, 0);
+
+    while (size) {
+      DWORD length;
+
+      if (size > (size_t)-1 / sizeof(WCHAR) ||
+          !(buffer = malloc((size_t)size * sizeof(WCHAR)))) {
+        SetLastError(ERROR_OUTOFMEMORY);
+        break;
+      }
+      length = GetLongPathNameW(absolute, buffer, size);
+      if (length && length < size) break;
+      if (!length) {
+        DWORD error = GetLastError();
+
+        free(buffer);
+        buffer = NULL;
+        SetLastError(error);
+        break;
+      }
+      free(buffer);
+      buffer = NULL;
+      size = length;
+    }
     if (!buffer) {
-      errno = ENOMEM;
+      DWORD error = GetLastError();
+
+      if (shell_path) CoTaskMemFree(shell_path);
+      free(absolute);
+      set_errno_from_win32_error(error);
       return NULL;
     }
-
-    ret = GetFullPathNameW(pname, len, buffer, NULL);
-
-    if (!ret) {
-      set_errno_from_win32_error(GetLastError());
-      return NULL;
-    }
-    if (ret*2 < len) break;
-
-    /* Buffer too small. Reallocate.
-     * NB: We over allocate 100% to be able to reuse the
-     *     buffer safely with SHGetPathFromIDListW() below.
-     */
-    free(buffer);
-    len = (ret+1)*2;
-  } while(1);
-  free(pname);
-
-  if ((hres = isf->lpVtbl->ParseDisplayName(isf, NULL, NULL, buffer,
-					    NULL, &idl, NULL)) != S_OK) {
-    free(buffer);
-    set_errno_from_win32_error(hres);
-    return NULL;
   }
-
-  if (!SHGetPathFromIDListW(idl, buffer)) {
-    /* FIXME: Use SHGetPathFromIDListExW() (Vista/2008 and later),
-     *        to ensure that we don't overrun the buffer.
-     *        It however doesn't seem to be documented how
-     *        to detect whether it fails due to a too small
-     *        buffer or for some other reason, so we couldn't
-     *        use it to grow the res buffer and retry.
-     */
-    free(buffer);
-    CoTaskMemFree (idl);
-    errno = EINVAL;
-    return NULL;
-  }
-  CoTaskMemFree (idl);
+  free(absolute);
 
   /* Remove trailing slashes, except after a drive letter. */
   len = wcslen(buffer);
-  while(len && buffer[len-1]=='\\') {
+  while (len > 1 && buffer[len - 1] == L'\\' &&
+         !(len == 3 && buffer[1] == L':'))
     len--;
-  }
-  if (!len || (len == 2 && buffer[len-1] == ':')) {
-    buffer[len++] = '\\';
-  }
-  buffer[len + 1] = 0;
+  buffer[len] = 0;
 
   /* Convert host and share in an UNC path to lowercase since Windows
    * Shell doesn't do that consistently.
@@ -2144,11 +2178,24 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
     }
   }
 
-  res = (char *) pike_utf16_to_utf8(buffer);
-  free(buffer);
+  res = (char *)pike_utf16_to_utf8(buffer);
+  if (buffer != shell_path) free(buffer);
+  if (shell_path) CoTaskMemFree(shell_path);
   if (!res) {
     errno = ENOMEM;
     return NULL;
+  }
+
+  if (!len || (len == 2 && res[1] == ':')) {
+    char *with_slash = realloc(res, strlen(res) + 2);
+
+    if (!with_slash) {
+      free(res);
+      errno = ENOMEM;
+      return NULL;
+    }
+    res = with_slash;
+    strcat(res, "\\");
   }
 
   return res;

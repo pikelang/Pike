@@ -232,6 +232,18 @@ PMOD_EXPORT int debug_fd_isatty(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init(void);
 void fd_exit(void);
+/* Return the required capacity in destination code units, including the
+ * terminator, or zero if it overflows size_t. A NULL buffer queries the
+ * capacity. An undersized nonempty buffer is left with an empty string.
+ * The UTF-8 input length excludes the terminator and may include NULs.
+ */
+PMOD_EXPORT size_t pike_dwim_utf8_to_utf16_buffer(const p_wchar0 *str,
+                                                size_t len,
+                                                p_wchar1 *buffer,
+                                                size_t capacity);
+PMOD_EXPORT size_t pike_utf16_to_utf8_buffer(const p_wchar1 *str,
+                                           p_wchar0 *buffer,
+                                           size_t capacity);
 p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len);
 PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str);
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str);

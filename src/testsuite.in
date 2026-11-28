@@ -8076,6 +8076,29 @@ cond([[0]],
 test_any_equal([[ mapping m=([1:1]); m_delete(m,0); return m; ]],[[ ([1:1]) ]])
 test_any_equal([[ mapping m=([1:1,0:3]); m_delete(m,0); return m; ]],[[ ([1:1]) ]])
 test_any([[mapping a=([1:1]); return m_delete(a,1)]],1)
+test_any_equal([[
+  mapping m = ([]);
+  m["x"] = UNDEFINED;
+  mixed visible = m["x"];
+  mixed removed = m_delete(m, "x");
+  mixed missing = m_delete(m, "x");
+  m["x"] = UNDEFINED;
+  mixed mismatch = m_delete(m, "x", 1);
+  mixed matched = m_delete(m, "x", 0);
+  return ({ visible, undefinedp(visible), removed, undefinedp(removed),
+            undefinedp(missing), undefinedp(mismatch), matched,
+            undefinedp(matched), sizeof(m) });
+]], ({ 0, 0, 0, 0, 1, 1, 0, 0, 0 }))
+test_any_equal([[
+  mapping m = ([]);
+  m["x"] = UNDEFINED;
+  mixed replaced = atomic_get_set(m, "x", 7);
+  m["x"] = UNDEFINED;
+  mixed removed = atomic_get_set(m, "x", UNDEFINED);
+  mixed missing = atomic_get_set(m, "x", UNDEFINED);
+  return ({ replaced, undefinedp(replaced), removed, undefinedp(removed),
+            undefinedp(missing), sizeof(m) });
+]], ({ 0, 0, 0, 0, 1, 0 }))
 test_any([[mapping m=([]); m[1]++; return m[1];]],1)
 test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([1:1]); m[1]++; return m[1]++;]],2)
