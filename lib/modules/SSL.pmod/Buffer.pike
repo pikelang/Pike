@@ -51,6 +51,14 @@ this_program add_string_array(array(string(8bit)) data, int(0..) item_size,
   return [object(this_program)]add_hstring(sub, len);
 }
 
+array(int(0..)) read_ints(int count, int(8bit) width)
+{
+  array(int(0..))|zero values = ::read_ints(count, width);
+  if (!values)
+    throw(.BufferError("Not enough data to read integer array.\n"));
+  return [array(int(0..))]values;
+}
+
 //! Reads an array of integers as written by @[add_int_array]
 //! from the buffer.
 array(int) read_int_array(int(8bit) item_size, int(0..) len)
