@@ -1,13 +1,37 @@
-Pike by Fredrik Hübinette 1994-2001 and the Pike team 2001-2021
+PIKE
 
-Permission to copy, modify, and distribute this source for any legal
-purpose granted as long as my name is still attached to it.  More
-specifically, the GPL, LGPL and MPL licenses apply to this software.
+Pike is a general-purpose, interpreted programming language with a
+syntax similar to C. It is for programs where you want the
+convenience of a scripting language without giving up types or
+speed. It is easy to learn, has no separate compile step, and has
+powerful built-in data types that make data handling simple and fast.
 
-New releases can be found on http://pike.lysator.liu.se/download/
-Report bugs at https://git.lysator.liu.se/pikelang/pike/-/issues
-There is also a mailing list, to subscribe to it mail:
-pike-request@roxen.com
+  o Types as strict as you want them. Declare int, string or
+    mapping(string(8bit):array(int(4..72))) and the compiler checks
+    them. Use mixed where you'd rather not.
+
+  o Rich built-in data types. Arrays, mappings (hash tables) and
+    multisets are part of the language. Strings are Unicode, indexed by
+    character. Integers grow into bignums as needed, and memory is
+    managed automatically.
+
+  o Programs are values. Classes, functions and closures are
+    first-class, and code can be compiled at runtime.
+
+  o A large standard library. HTTP, TLS, DNS, SMTP, LDAP, JSON, XML,
+    SQL (MySQL/MariaDB, PostgreSQL, SQLite, ODBC), cryptography
+    (Nettle), image processing and more, all maintained together with
+    the language.
+
+  o Old code keeps running. A program can declare the version it was
+    written for (#pike 8.0), and a compatibility layer keeps it working
+    after a major upgrade of the language.
+
+Run pike without arguments for an interactive prompt (Hilfe).
+
+Documentation and a tutorial: https://pike.lysator.liu.se/docs/
+New releases: https://pike.lysator.liu.se/download/
+Questions and discussion: https://pike.lysator.liu.se/forums/
 
 
 HOW TO BUILD PIKE
@@ -15,34 +39,57 @@ HOW TO BUILD PIKE
 If you are building Pike from git, read README-GIT instead.
 
 The top-level makefile (in this directory, not the src directory) has
-all the magic you need to build Pike. Just type 'make'.
-To install type "make install" or "make install_interactive".
+all the magic you need to build Pike. Just type 'make'. To install
+type "make install" or "make install_interactive".
 
 You will need a C compiler and libgmp. You probably also want to have
 GNU make and libnettle.
 
 If that doesn't work, refer to README-GIT, in particular the sections
-on additional "DEPENDENCIES", on "CONFIGURE OPTIONS AND BUILD VARIABLES",
-on "MANUAL BUILDING" and, if needed, the section "IF IT DOESN'T WORK".
+on additional "DEPENDENCIES", on "CONFIGURE OPTIONS AND BUILD
+VARIABLES", on "MANUAL BUILDING" and, if needed, the section "IF IT
+DOESN'T WORK".
 
 
 BUGS
 
-If you find a bug in the interpreter, the first thing to do is to make
-sure the interpreter is compiled with PIKE_DEBUG defined.  If not,
-recompile with PIKE_DEBUG and see if you get another error.  When
-you've done this, please report the bug to us at
-https://git.lysator.liu.se/pikelang/pike/-/issues and include as much
-as you can muster of the following:
+Report bugs at https://git.lysator.liu.se/pikelang/pike/-/issues and
+include as much as you can muster of the following:
 
-  o The version of the driver. (Try pike --version or look in
+  o The version of the interpreter. (Try pike --version or look in
     src/version.h)
   o What kind of system hardware/software you use (OS, compiler, etc.)
-  o The piece of code that crashes or bugs, preferably in a very
-    small Pike-script with the bug isolated.  Please send a complete
-    running example of something that makes the interpreter bug.
-  o A description of what it is that bugs and when.
+  o The piece of code that crashes or misbehaves, preferably in a
+    very small Pike script with the bug isolated. Please send a
+    complete running example that triggers the bug.
+  o A description of what goes wrong and when.
   o If you know how, then also give us a backtrace and dump of vital
     variables at the point of crash.
-  o Or, if you found the error and corrected it, just send us the
-    bugfix along with a description of what you did and why.
+  o Or, if you found the error and corrected it, open a merge request
+    at https://git.lysator.liu.se/pikelang/pike with a description
+    of what you did and why.
+
+If you find a bug in the interpreter and want to debug it yourself,
+first make sure the interpreter is built with runtime debug checks:
+configure with --with-rtldebug (or --with-debug, which also adds
+debug symbols), rebuild, and see if you get another error.
+
+
+HISTORY
+
+Pike has a long history in high-traffic network servers. It began in
+1994 as µLPC, Fredrik Hübinette's standalone take on LPC, the language
+of LPMud game servers. It was renamed Pike in 1996 and grew up as the
+language of the Roxen web server. Today it is maintained by the Pike
+team and the wider community, and hosted by Lysator at Linköping
+University.
+
+
+COPYRIGHT
+
+Pike by Fredrik Hübinette 1994-2001 and the Pike team 2001-2026
+
+Permission to copy, modify, and distribute this source for any legal
+purpose granted as long as my name is still attached to it.  More
+specifically, the GPL, LGPL and MPL licenses apply to this software.
+See COPYING and COPYRIGHT for the license texts.
