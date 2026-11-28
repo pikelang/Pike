@@ -2020,7 +2020,7 @@ PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s,
     sz = s->len + 1;
     res = malloc(sz<<1);
     if (!res) break;
-    memcpy(res, s->str, sz);
+    memcpy(res, s->str, sz<<1);
     break;
 
   case eightbit:
@@ -2034,7 +2034,7 @@ PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s,
     {
       ptrdiff_t i;
       ptrdiff_t j;
-      sz = 0;
+      sz = s->len;
       for (i = 0; i < s->len; i++) {
         p_wchar2 c = STR2(s)[i];
         if (c & 0xffff0000) {
